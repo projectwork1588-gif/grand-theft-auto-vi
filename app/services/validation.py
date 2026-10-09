@@ -2,6 +2,8 @@
 import re
 
 CONTENT_STATUSES = ("official", "fan", "demo")
+MISSION_TYPES = ("story", "side", "heist", "activity")  # mirrors the missions.mission_type ENUM
+LOCATION_TYPES = ("city", "district", "landmark", "venue", "wilderness", "waterfront")  # locations.location_type ENUM
 SLUG_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 MAX_QUERY_LENGTH = 80
 MAX_PER_PAGE = 50
@@ -79,3 +81,12 @@ def raise_if_problems(problems):
 def pagination_meta(page, per_page, total):
     pages = max(1, -(-total // per_page))  # ceiling division
     return {"page": page, "per_page": per_page, "total": total, "pages": pages}
+
+
+def require_slug(slug):
+    """Raise NotFound for anything that is not a lowercase slug. MySQL's collation ignores case, so
+    without this 'Jason-Duval' would resolve to a second URL for the same record."""
+    from werkzeug.exceptions import NotFound
+    if not slug or len(slug) > 80 or not SLUG_PATTERN.match(slug):
+        raise NotFound("No record with that address.")
+    return slug

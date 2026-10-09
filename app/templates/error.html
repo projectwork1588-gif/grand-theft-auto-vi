@@ -1,10 +1,20 @@
 {% extends "base.html" %}
 {% block title %}{{ status }} {{ title }}{% endblock %}
 {% block content %}
-<section class="hero">
-  <p class="eyebrow">Error {{ status }}</p>
-  <h1>{{ title }}</h1>
-  <p class="status-note">{{ message }}</p>
-  <p><a href="{{ url_for('main.index') }}">Back to the homepage</a></p>
+<section class="error-page">
+  <div class="container">
+    <p class="eyebrow">Error {{ status }}</p>
+    <h1>{{ title }}</h1>
+    <p class="lede">{{ message }}</p>
+    {% if details %}
+    <ul class="link-list error-details">
+      {% for name, problem in details.items() %}<li><div class="row"><span class="name">{{ name }}</span><span class="meta">{{ problem }}</span></div></li>{% endfor %}
+    </ul>
+    {% endif %}
+    <p class="error-actions">
+      <a class="btn" href="{{ url_for('main.index') }}">Back to the homepage</a>
+      <a class="btn btn--ghost" href="{{ url_for('pages.characters') }}">Browse characters</a>
+    </p>
+  </div>
 </section>
 {% endblock %}

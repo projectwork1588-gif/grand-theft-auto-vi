@@ -24,12 +24,18 @@ def list_characters(args):
     }
 
 
-def get_character(slug):
+def get_character_with_id(slug):
+    """The public payload plus the internal id (kept server-side, used to attach media and co-stars)."""
+    v.require_slug(slug)
     character = repo.get_by_slug(slug)
     if character is None:
         raise NotFound("No character with that slug.")
-    character_id = character.pop("character_id")  # internal key stays server-side
+    character_id = character.pop("character_id")  # internal key never reaches the API response
     character["relationships"] = repo.relationships_for(character_id)
     character["missions"] = repo.missions_for(character_id)
     character["locations"] = repo.locations_for(character_id)
-    return character
+    return character, character_id
+
+
+def get_character(slug):
+    return get_character_with_id(slug)[0]

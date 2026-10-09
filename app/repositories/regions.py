@@ -41,3 +41,13 @@ def characters_based_in(region_id):
            ORDER BY c.full_name""",
         (region_id,),
     )
+
+
+def ids_by_slug(slugs):
+    """{slug: region_id}, used to attach media."""
+    slugs = list(slugs)
+    if not slugs:
+        return {}
+    marks = ", ".join(["%s"] * len(slugs))
+    rows = query_all(f"SELECT slug, region_id FROM regions WHERE slug IN ({marks})", slugs)
+    return {row["slug"]: row["region_id"] for row in rows}

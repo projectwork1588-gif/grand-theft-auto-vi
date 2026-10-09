@@ -1,0 +1,80 @@
+{# Reusable macros. Import with: {% from "_components.html" import badge, picture, pager %} #}
+
+{% macro badge(status) -%}
+  <span class="badge badge--{{ status }}">{{ status_labels.get(status, status) }}</span>
+{%- endmacro %}
+
+{% macro type_badge(text) -%}
+  <span class="badge badge--type">{{ text }}</span>
+{%- endmacro %}
+
+{# An official image (remote, from Rockstar) over an original fallback. Safe against bad database values. #}
+{% macro picture(m, fallback='', sizes='(min-width: 900px) 33vw, 100vw', alt=none, cls='', eager=false) -%}
+  {% set src = image_src(m.embed_url, 1280) if m else none %}
+  <div class="media {{ cls }}">
+    <span class="media__fallback" aria-hidden="true">{{ fallback }}</span>
+    {% if src %}
+      <img class="media__img" src="{{ src }}" srcset="{{ image_srcset(m.embed_url) }}" sizes="{{ sizes }}"
+           alt="{{ m.title if alt is none else alt }}" {% if eager %}fetchpriority="high"{% else %}loading="lazy"{% endif %}
+           decoding="async" referrerpolicy="no-referrer">
+    {% endif %}
+  </div>
+{%- endmacro %}
+
+{% macro initials(name) -%}
+  {{ (name.split()[:2] | map('first') | join('')) | upper }}
+{%- endmacro %}
+
+{% macro attribution(m) -%}
+  {% if m %}<p class="attribution">{{ m.attribution }} <a href="{{ m.source_url }}" target="_blank" rel="noopener noreferrer">Source</a></p>{% endif %}
+{%- endmacro %}
+
+{# Pagination. `p` is the pagination dict from the services. #}
+{% macro pager(p) -%}
+  {% if p.pages > 1 %}
+  <nav class="pager" aria-label="Pagination">
+    {% if p.page > 1 %}<a href="{{ page_url(p.page - 1) }}" rel="prev" aria-label="Previous page">Prev</a>{% else %}<span class="is-disabled" aria-hidden="true">Prev</span>{% endif %}
+    {% for n in page_window(p.page, p.pages) %}
+      {% if n is none %}<span aria-hidden="true">&hellip;</span>
+      {% elif n == p.page %}<span aria-current="page"><span class="visually-hidden">Page </span>{{ n }}</span>
+      {% else %}<a href="{{ page_url(n) }}"><span class="visually-hidden">Page </span>{{ n }}</a>{% endif %}
+    {% endfor %}
+    {% if p.page < p.pages %}<a href="{{ page_url(p.page + 1) }}" rel="next" aria-label="Next page">Next</a>{% else %}<span class="is-disabled" aria-hidden="true">Next</span>{% endif %}
+  </nav>
+  {% endif %}
+{%- endmacro %}
+
+{# Explains a record's classification, with its source. #}
+{% macro source_box(item) -%}
+  {% if item.content_status == 'official' %}
+    <div class="source-box"><strong>Official.</strong> {% if item.source_url %}Source: <a href="{{ item.source_url }}" target="_blank" rel="noopener noreferrer">{{ item.source_url | replace('https://', '') }}</a>.{% endif %}{% if item.source_note %} {{ item.source_note }}{% endif %}</div>
+  {% elif item.content_status == 'fan' %}
+    <div class="source-box"><strong>Fan interpretation.</strong> Not confirmed by Rockstar.{% if item.source_note %} {{ item.source_note }}{% endif %}</div>
+  {% else %}
+    <div class="source-box source-box--demo"><strong>Fictional demo record.</strong> Invented by Team Valkyrie to demonstrate the database. It is not part of the game.</div>
+  {% endif %}
+{%- endmacro %}
+
+{# Filter form field helpers. `selected` compares against the validated filter value. #}
+{% macro option(value, label, selected) -%}
+  <option value="{{ value }}"{% if selected == value %} selected{% endif %}>{{ label }}</option>
+{%- endmacro %}
+
+{# Short banner at the top of every catalogue and detail page. #}
+{% macro page_hero(eyebrow, title, lede='', cover=none, tall=false) -%}
+  <section class="page-hero{% if tall %} page-hero--tall{% endif %}">
+    {% if cover %}{{ picture(cover, alt='', sizes='100vw', cls='page-hero__bg', eager=true) }}{% else %}<div class="media page-hero__bg"><span class="media__fallback" aria-hidden="true"></span></div>{% endif %}
+    <div class="page-hero__shade" aria-hidden="true"></div>
+    <div class="container page-hero__inner">
+      <p class="eyebrow">{{ eyebrow }}</p>
+      <h1>{{ title }}</h1>
+      {% if lede %}<p class="page-hero__lede">{{ lede }}</p>{% endif %}
+      {{ caller() if caller else '' }}
+    </div>
+  </section>
+{%- endmacro %}
+
+{% macro results_line(p) -%}
+  {% if p.total == 0 %}No matches
+  {% else %}Showing {{ (p.page - 1) * p.per_page + 1 }}&ndash;{{ [p.page * p.per_page, p.total] | min }} of {{ p.total }}{% endif %}
+{%- endmacro %}

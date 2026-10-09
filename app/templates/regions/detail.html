@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% from "_components.html" import badge, type_badge, picture, initials, page_hero, source_box, attribution %}
+{% block title %}{{ region.name }}{% endblock %}
+{% block description %}{{ region.summary }}{% endblock %}
+{% block content %}
+{% call page_hero('Region of Leonida', region.name, region.summary, cover=region.cover, tall=true) %}
+  <p class="hero-badges">{{ badge(region.content_status) }} <span class="badge badge--type">{{ region.locations | length }} location{{ '' if region.locations | length == 1 else 's' }}</span></p>
+{% endcall %}
+
+<section class="section section--tight">
+  <div class="container detail">
+    <div class="detail__main stack">
+      <h2 class="panel-title">About {{ region.name }}</h2>
+      <p class="lede">{{ region.description }}</p>
+      {{ source_box(region) }}
+      {{ attribution(region.cover) }}
+
+      <h2 class="panel-title">Locations</h2>
+      {% if region.locations %}
+      <ul class="link-list">
+        {% for l in region.locations %}
+        <li><a href="{{ url_for('pages.location_detail', slug=l.slug) }}"><span><span class="name">{{ l.name }}</span><br><span class="meta">{{ l.summary }}</span></span><span>{{ type_badge(l.location_type) }} {{ badge(l.content_status) }}</span></a></li>
+        {% endfor %}
+      </ul>
+      {% else %}<p class="muted">No locations are stored for this region yet.</p>{% endif %}
+
+      {% if region.gallery | length > 1 %}
+      <h2 class="panel-title">Official images</h2>
+      <ul class="gallery">
+        {% for m in region.gallery %}{% if image_src(m.embed_url, 1920) %}
+        <li><a href="{{ image_src(m.embed_url, 1920) }}" data-lightbox data-caption="{{ m.title }}">{{ picture(m, sizes='(min-width: 900px) 25vw, 50vw') }}</a></li>
+        {% endif %}{% endfor %}
+      </ul>
+      <p class="attribution">Images &copy; Rockstar Games / Take-Two Interactive, shown from Rockstar's own site.</p>
+      {% endif %}
+    </div>
+
+    <aside class="detail__side stack">
+      <section aria-labelledby="rc-title">
+        <h2 class="panel-title" id="rc-title">Based here</h2>
+        {% if region.characters %}
+        <ul class="link-list">
+          {% for c in region.characters %}
+          <li><a href="{{ url_for('pages.character_detail', slug=c.slug) }}"><span><span class="name">{{ c.full_name }}</span><br><span class="meta">{{ c.role_title }} &middot; {{ c.home_location_name }}</span></span>{{ badge(c.content_status) }}</a></li>
+          {% endfor %}
+        </ul>
+        {% else %}<p class="muted">No stored character has a home in this region. Rockstar's official page connects some characters to regions, but we only list homes we can source.</p>{% endif %}
+      </section>
+      <section aria-labelledby="rm-title">
+        <h2 class="panel-title" id="rm-title">Stories here</h2>
+        {% if region.missions %}
+        <ul class="link-list">
+          {% for m in region.missions %}
+          <li><a href="{{ url_for('pages.mission_detail', slug=m.slug) }}"><span class="name">{{ m.title }}</span><span>{{ type_badge(m.mission_type) }} {{ badge(m.content_status) }}</span></a></li>
+          {% endfor %}
+        </ul>
+        {% else %}<p class="muted">No stored story passes through this region.</p>{% endif %}
+      </section>
+    </aside>
+  </div>
+
+  <div class="container">
+    <h2 class="panel-title other-title">Elsewhere in Leonida</h2>
+    <ul class="mini-rail">
+      {% for r in region.other_regions %}
+      <li><a class="mini-card" href="{{ url_for('pages.region_detail', slug=r.slug) }}">
+        {{ picture(r.cover, fallback=initials(r.name), sizes='(min-width: 900px) 16vw, 45vw', alt='') }}
+        <span class="mini-card__name display">{{ r.name }}</span>
+      </a></li>
+      {% endfor %}
+    </ul>
+    <p class="section-more"><a class="link-arrow" href="{{ url_for('pages.regions') }}">All regions</a></p>
+  </div>
+</section>
+{% endblock %}

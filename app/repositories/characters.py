@@ -93,3 +93,51 @@ def locations_for(character_id):
            ORDER BY l.name""",
         (character_id,),
     )
+
+
+def costars_for(character_id, limit=6):
+    """Characters who share at least one mission with this character, most shared missions first."""
+    return query_all(
+        """SELECT c.slug, c.full_name, c.role_title, c.content_status, COUNT(*) AS shared_missions
+           FROM mission_characters me
+           JOIN mission_characters other ON other.mission_id = me.mission_id AND other.character_id <> me.character_id
+           JOIN characters c ON c.character_id = other.character_id
+           WHERE me.character_id = %s
+           GROUP BY c.character_id, c.slug, c.full_name, c.role_title, c.content_status
+           ORDER BY shared_missions DESC, c.full_name LIMIT %s""",
+        (character_id, limit),
+    )
+
+
+def featured_official(limit=8):
+    """Official characters in database order (the two leads first)."""
+    return query_all(
+        """SELECT c.character_id, c.slug, c.full_name, c.role_title, c.summary, c.content_status
+           FROM characters c WHERE c.content_status = 'official'
+           ORDER BY c.character_id LIMIT %s""",
+        (limit,),
+    )
+
+
+def official_relationships(limit=6):
+    """Relationships Rockstar's own page states, with both names."""
+    return query_all(
+        """SELECT a.slug AS from_slug, a.full_name AS from_name, b.slug AS to_slug, b.full_name AS to_name,
+                  cr.relationship_type, cr.description
+           FROM character_relationships cr
+           JOIN characters a ON a.character_id = cr.from_character_id
+           JOIN characters b ON b.character_id = cr.to_character_id
+           WHERE cr.content_status = 'official'
+           ORDER BY cr.from_character_id, cr.to_character_id LIMIT %s""",
+        (limit,),
+    )
+
+
+def ids_by_slug(slugs):
+    """{slug: character_id} for a list of slugs (used to attach media)."""
+    slugs = list(slugs)
+    if not slugs:
+        return {}
+    marks = ", ".join(["%s"] * len(slugs))
+    rows = query_all(f"SELECT slug, character_id FROM characters WHERE slug IN ({marks})", slugs)
+    return {row["slug"]: row["character_id"] for row in rows}

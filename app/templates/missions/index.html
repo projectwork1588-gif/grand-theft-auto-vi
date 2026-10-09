@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% from "_components.html" import badge, type_badge, pager, page_hero, results_line, option %}
+{% block title %}Stories{% endblock %}
+{% block description %}The Team Valkyrie demo story archive: fictional missions linked to characters, vehicles and locations in the GTA VI fan database.{% endblock %}
+{% block content %}
+{{ page_hero('The archive', 'Stories', 'Case files linking characters, vehicles and places.') }}
+
+<section class="section section--tight">
+  <div class="container">
+    <div class="notice notice--demo">
+      <strong>Fictional demo stories</strong>
+      <p>Rockstar has not published mission details, so every story here was invented by Team Valkyrie to demonstrate the database. They deliberately use only fictional characters, never the real GTA VI cast.</p>
+    </div>
+
+    <nav class="chips chips--spaced" aria-label="Mission types">
+      <a class="chip" href="{{ url_for('pages.missions') }}"{% if not filters.type %} aria-current="true"{% endif %}>All types</a>
+      {% for t in mission_types %}
+      <a class="chip" href="{{ url_for('pages.missions', type=t) }}"{% if filters.type == t %} aria-current="true"{% endif %}>{{ t | capitalize }}</a>
+      {% endfor %}
+    </nav>
+
+    <form class="filters" method="get" action="{{ url_for('pages.missions') }}" role="search" aria-label="Search and filter stories">
+      <label>Search
+        <input type="search" name="q" value="{{ filters.q or '' }}" maxlength="80" placeholder="Title or summary">
+      </label>
+      <label>Type
+        <select name="type">
+          {{ option('', 'Any type', filters.type or '') }}
+          {% for t in mission_types %}{{ option(t, t | capitalize, filters.type) }}{% endfor %}
+        </select>
+      </label>
+      <label>Sort by
+        <select name="sort">
+          {{ option('title_asc', 'Title A to Z', filters.sort) }}
+          {{ option('title_desc', 'Title Z to A', filters.sort) }}
+          {{ option('type', 'Type', filters.sort) }}
+          {{ option('newest', 'Newest records', filters.sort) }}
+        </select>
+      </label>
+      <div class="filters__actions">
+        <button class="btn" type="submit">Apply</button>
+        <a class="link-arrow" href="{{ url_for('pages.missions') }}">Reset</a>
+      </div>
+    </form>
+
+    <p class="results-meta" role="status">{{ results_line(pagination) }}</p>
+
+    {% if data %}
+    <ol class="dossiers dossiers--page" start="{{ (pagination.page - 1) * pagination.per_page + 1 }}">
+      {% for m in data %}
+      <li class="reveal">
+        <a class="dossier" href="{{ url_for('pages.mission_detail', slug=m.slug) }}">
+          <span class="dossier__num display" aria-hidden="true">{{ '%02d' | format((pagination.page - 1) * pagination.per_page + loop.index) }}</span>
+          <span class="dossier__main">
+            <span class="dossier__title">{{ m.title }}</span>
+            <span class="dossier__summary">{{ m.summary }}</span>
+            <span class="dossier__counts">{{ m.cast_count }} characters &middot; {{ m.vehicle_count }} vehicles &middot; {{ m.location_count }} locations</span>
+          </span>
+          <span class="dossier__tags">{{ type_badge(m.mission_type) }} {{ badge(m.content_status) }}</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}
+    <div class="empty"><h2>No stories found</h2><p>Nothing matches those filters. <a href="{{ url_for('pages.missions') }}">Reset the filters</a>.</p></div>
+    {% endif %}
+    {{ pager(pagination) }}
+  </div>
+</section>
+{% endblock %}

@@ -4,15 +4,95 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Grand Theft Auto VI{% endblock %} | Team Valkyrie</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <meta name="description" content="{% block description %}An unofficial educational fan project by Team Valkyrie exploring the characters, regions, vehicles and stories of Grand Theft Auto VI.{% endblock %}">
+  <meta name="theme-color" content="#0c0713">
+  <script src="{{ url_for('static', filename='js/boot.js') }}"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages.css') }}">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header {% block header_class %}site-header--solid{% endblock %}" data-header>
+    <div class="container header-inner">
+      <a class="brand" href="{{ url_for('main.index') }}" aria-label="Grand Theft Auto VI fan project, home">
+        <span class="brand__small">Grand Theft Auto</span><span class="brand__vi" aria-hidden="true">VI</span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" data-nav-toggle>
+        <span></span><span></span><span></span><span class="visually-hidden">Menu</span>
+      </button>
+      <nav class="primary-nav" id="primary-nav" aria-label="Primary" data-nav>
+        <ul>
+          {% for endpoints, label in nav_items %}
+          <li><a href="{{ url_for(endpoints[0]) }}"{% if request.endpoint in endpoints %} aria-current="page"{% endif %}>{{ label }}</a></li>
+          {% endfor %}
+        </ul>
+      </nav>
+    </div>
+  </header>
+
   <main id="main">
     {% block content %}{% endblock %}
   </main>
+
   <footer class="site-footer">
-    <p class="disclaimer">{{ disclaimer }}</p>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a class="brand" href="{{ url_for('main.index') }}">
+            <span class="brand__small">Grand Theft Auto</span><span class="brand__vi" aria-hidden="true">VI</span>
+          </a>
+          <p>Welcome, gamers. Team Valkyrie presents a database-driven fan guide to the state of Leonida, built for a Web Technologies and DBMS course.</p>
+        </div>
+        <div class="footer-col">
+          <h2>Explore</h2>
+          <ul>
+            {% for endpoints, label in nav_items %}<li><a href="{{ url_for(endpoints[0]) }}">{{ label }}</a></li>{% endfor %}
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h2>Official sources</h2>
+          <ul>
+            <li><a href="https://www.rockstargames.com/VI" rel="noopener noreferrer" target="_blank">rockstargames.com/VI</a></li>
+            <li><a href="https://www.rockstargames.com/VI/only-in-leonida" rel="noopener noreferrer" target="_blank">Characters and regions</a></li>
+            <li><a href="https://www.rockstargames.com/VI/media" rel="noopener noreferrer" target="_blank">Official media</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h2>Data</h2>
+          <ul>
+            <li><a href="{{ url_for('api.list_characters') }}">API: characters</a></li>
+            <li><a href="{{ url_for('api.list_vehicles') }}">API: vehicles</a></li>
+            <li><a href="{{ url_for('main.health') }}">Health check</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-base">
+        <p class="disclaimer">{{ disclaimer }}</p>
+        <small>Grand Theft Auto VI, its characters and its official images and videos are the property of Rockstar Games and Take-Two Interactive. They are shown here by reference to Rockstar's own pages and are never copied into this project. Vehicles, missions and locations marked "Fictional demo" were invented by Team Valkyrie. Site code &copy; Team Valkyrie, MIT licence.</small>
+      </div>
+    </div>
   </footer>
+
+  <dialog id="video-dialog" aria-label="Trailer player">
+    <div class="dialog-frame">
+      <button class="dialog-close" type="button" data-close>Close</button>
+      <div class="player" data-player></div>
+      <p class="dialog-caption" data-caption></p>
+    </div>
+  </dialog>
+  <dialog id="image-dialog" aria-label="Image viewer">
+    <div class="dialog-frame">
+      <button class="dialog-close" type="button" data-close>Close</button>
+      <img class="lightbox-img" alt="" data-image referrerpolicy="no-referrer">
+      <p class="dialog-caption" data-caption></p>
+    </div>
+  </dialog>
+
+  <script src="{{ url_for('static', filename='js/site.js') }}" defer></script>
 </body>
 </html>

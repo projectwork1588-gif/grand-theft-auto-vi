@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+{% from "_components.html" import badge, type_badge, picture, initials %}
+{% block header_class %}{% endblock %}
+{% block content %}
+
+{# ============================== HERO ============================== #}
+<section class="hero" aria-labelledby="hero-title">
+  <div class="hero__bg" aria-hidden="true">
+    <div class="hero__sky"></div>
+    {% for m in hero %}
+      <div class="media hero__slide{% if hero | length > 1 %} hero__slide--cycle{% endif %}" data-slide="{{ loop.index }}">
+        {% if image_src(m.embed_url, 1920) %}
+        <img class="media__img" src="{{ image_src(m.embed_url, 1920) }}" srcset="{{ image_srcset(m.embed_url) }}" sizes="100vw"
+             alt="" {% if loop.first %}fetchpriority="high"{% else %}loading="lazy"{% endif %} decoding="async" referrerpolicy="no-referrer">
+        {% endif %}
+      </div>
+    {% endfor %}
+    <div class="hero__sun"></div>
+    <div class="hero__shade"></div>
+  </div>
+
+  <div class="container hero__content">
+    <p class="hero__welcome">Welcome, gamers</p>
+    <p class="hero__presents">Team Valkyrie presents</p>
+    <h1 id="hero-title" class="hero__title">
+      <span class="hero__line">Grand Theft Auto</span>
+      <span class="hero__vi" aria-label="Six">VI</span>
+    </h1>
+    <p class="hero__lede">Step into the state of Leonida. Meet the cast, drive the garage, explore six regions and follow the stories, all pulled live from our database.</p>
+    <div class="hero__actions">
+      <a class="btn" href="#leonida">Explore Leonida</a>
+      {% if videos %}
+      <button class="btn btn--ghost" type="button" data-video="{{ player_src(videos[1].embed_url if videos | length > 1 else videos[0].embed_url, true) }}"
+              data-title="{{ (videos[1] if videos | length > 1 else videos[0]).title }}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> Watch trailer
+      </button>
+      {% else %}
+      <a class="btn btn--ghost" href="{{ links.site }}" target="_blank" rel="noopener noreferrer">Watch on rockstargames.com</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <p class="hero__release"><strong>{{ release_note }}</strong><span>as stated on Rockstar's official site</span></p>
+  <a class="hero__cue" href="#cast" aria-label="Scroll to the cast"><span></span></a>
+</section>
+
+{# ============================== CAST ============================== #}
+<section class="section" id="cast" aria-labelledby="cast-title">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow">01 &middot; The cast</p>
+      <h2 id="cast-title">The people of Leonida</h2>
+      <p>The eight named characters on Rockstar's official character page. Open a profile to see everything our database connects to them.</p>
+    </div>
+
+    {% set leads = characters[:2] %}
+    {% set supporting = characters[2:] %}
+    {% if leads %}
+    <div class="leads">
+      {% for c in leads %}
+      <a class="lead reveal" data-delay="{{ loop.index }}" href="{{ url_for('pages.character_detail', slug=c.slug) }}">
+        {{ picture(c.cover, fallback=initials(c.full_name), sizes='(min-width: 900px) 50vw, 100vw', alt='') }}
+        <span class="lead__body">
+          <span class="lead__role">{{ c.role_title }}</span>
+          <span class="lead__name display">{{ c.full_name }}</span>
+          <span class="lead__summary">{{ c.summary }}</span>
+          {{ badge(c.content_status) }}
+        </span>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if supporting %}
+    <ul class="rail" aria-label="Supporting cast">
+      {% for c in supporting %}
+      <li class="reveal" data-delay="{{ (loop.index0 % 3) + 1 }}">
+        <a class="poster" href="{{ url_for('pages.character_detail', slug=c.slug) }}">
+          {{ picture(c.cover, fallback=initials(c.full_name), sizes='(min-width: 900px) 22vw, 60vw', alt='') }}
+          <span class="poster__body">
+            <span class="poster__role">{{ c.role_title }}</span>
+            <span class="poster__name display">{{ c.full_name }}</span>
+          </span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    <p class="section-more"><a class="link-arrow" href="{{ url_for('pages.characters') }}">Browse every character</a></p>
+  </div>
+</section>
+
+{# ============================== LEONIDA ============================== #}
+<section class="section section--surface" id="leonida" aria-labelledby="leonida-title">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow">02 &middot; Explore Leonida</p>
+      <h2 id="leonida-title">Six regions, one state</h2>
+      <p>From the neon of Vice City to the national park at Mount Kalaga. Each region is a real record in MySQL with its own locations and connections.</p>
+    </div>
+  </div>
+  <div class="container container--wide">
+    <ol class="region-rail">
+      {% for r in regions %}
+      <li class="region-panel reveal" data-delay="{{ (loop.index0 % 3) + 1 }}">
+        <a href="{{ url_for('pages.region_detail', slug=r.slug) }}">
+          {{ picture(r.cover, fallback=r.name, sizes='(min-width: 900px) 40vw, 100vw', alt='') }}
+          <span class="region-panel__shade" aria-hidden="true"></span>
+          <span class="region-panel__body">
+            <span class="region-panel__num">{{ '%02d' | format(loop.index) }}</span>
+            <span class="region-panel__name display">{{ r.name }}</span>
+            <span class="region-panel__summary">{{ r.summary }}</span>
+            <span class="region-panel__meta">{{ r.location_count }} location{{ '' if r.location_count == 1 else 's' }} in the database</span>
+          </span>
+        </a>
+      </li>
+      {% endfor %}
+    </ol>
+  </div>
+</section>
+
+{# ============================== GARAGE ============================== #}
+<section class="section" id="garage" aria-labelledby="garage-title">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow">03 &middot; The garage</p>
+      <h2 id="garage-title">Wheels, hulls and handlebars</h2>
+      <p>One vehicle from each of the first four categories. These are fictional demo records we invented to show how the database works. None is a confirmed GTA VI vehicle.</p>
+    </div>
+    <ul class="bays">
+      {% for v in vehicles %}
+      <li class="reveal" data-delay="{{ loop.index0 % 3 + 1 }}">
+        <a class="bay" href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}">
+          <svg class="bay__art" viewBox="0 0 240 100" aria-hidden="true"><use href="{{ url_for('static', filename='img/vehicles.svg') }}#{{ v.category_slug }}"></use></svg>
+          <span class="bay__cat">{{ v.category_name }}</span>
+          <span class="bay__name display">{{ v.name }}</span>
+          <span class="bay__make">{{ v.manufacturer or 'Manufacturer not stated' }}</span>
+          {{ badge(v.content_status) }}
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    <p class="section-more"><a class="link-arrow" href="{{ url_for('pages.vehicles') }}">Open the garage</a></p>
+  </div>
+</section>
+
+{# ============================== STORIES ============================== #}
+<section class="section section--surface" id="stories" aria-labelledby="stories-title">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow">04 &middot; Stories and connections</p>
+      <h2 id="stories-title">Follow the links</h2>
+      <p>Every record connects to others. Official connections come from Rockstar's own words. The story archive is fictional demo material.</p>
+    </div>
+    <div class="split">
+      <div>
+        <h3 class="panel-title">Demo story archive</h3>
+        <ol class="dossiers">
+          {% for m in missions %}
+          <li class="reveal" data-delay="{{ loop.index }}">
+            <a class="dossier" href="{{ url_for('pages.mission_detail', slug=m.slug) }}">
+              <span class="dossier__num display">{{ '%02d' | format(loop.index) }}</span>
+              <span class="dossier__main">
+                <span class="dossier__title">{{ m.title }}</span>
+                <span class="dossier__summary">{{ m.summary }}</span>
+                <span class="dossier__counts">{{ m.cast_count }} characters &middot; {{ m.vehicle_count }} vehicles &middot; {{ m.location_count }} locations</span>
+              </span>
+              <span class="dossier__tags">{{ type_badge(m.mission_type) }} {{ badge(m.content_status) }}</span>
+            </a>
+          </li>
+          {% endfor %}
+        </ol>
+        <p class="section-more"><a class="link-arrow" href="{{ url_for('pages.missions') }}">Open the archive</a></p>
+      </div>
+      <aside class="reveal" aria-labelledby="links-title">
+        <h3 class="panel-title" id="links-title">Official connections</h3>
+        {% if official_links %}
+        <ul class="link-list">
+          {% for l in official_links %}
+          <li><div class="row">
+            <span><a class="name" href="{{ url_for('pages.character_detail', slug=l.from_slug) }}">{{ l.from_name }}</a>
+              <span class="meta">{{ l.relationship_type }} of</span>
+              <a class="name" href="{{ url_for('pages.character_detail', slug=l.to_slug) }}">{{ l.to_name }}</a></span>
+            {{ badge('official') }}
+          </div></li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="muted">No official connections are stored yet.</p>
+        {% endif %}
+        <h3 class="panel-title legend-title">How to read the labels</h3>
+        <ul class="legend">
+          <li>{{ badge('official') }}<span>Stated on Rockstar's own website, with a source link.</span></li>
+          <li>{{ badge('fan') }}<span>Community or team interpretation, not confirmed.</span></li>
+          <li>{{ badge('demo') }}<span>Invented by Team Valkyrie for this course project.</span></li>
+        </ul>
+      </aside>
+    </div>
+  </div>
+</section>
+
+{# ============================== MEDIA ============================== #}
+<section class="section" id="media" aria-labelledby="media-title">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow">05 &middot; Official media</p>
+      <h2 id="media-title">See it for yourself</h2>
+      <p>Trailers and images come straight from Rockstar. Videos play in Rockstar's own player only when you press play. Images load from Rockstar's servers. Nothing is copied into this project.</p>
+    </div>
+
+    {% if videos %}
+    <ul class="videos">
+      {% for m in videos %}
+      {% set poster = video_posters[loop.index0] if video_posters | length > loop.index0 else none %}
+      <li class="reveal" data-delay="{{ loop.index }}">
+        <button class="video-card" type="button" data-video="{{ player_src(m.embed_url, true) }}" data-title="{{ m.title }}">
+          {{ picture(poster, fallback='VI', sizes='(min-width: 900px) 33vw, 100vw', alt='') }}
+          <span class="video-card__shade" aria-hidden="true"></span>
+          <span class="video-card__play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+          <span class="video-card__title">{{ m.title }}</span>
+        </button>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="notice notice--official reveal">
+      <strong>Trailers on Rockstar's site</strong>
+      <p>Watch <a href="https://www.rockstargames.com/VI/trailer-1" target="_blank" rel="noopener noreferrer">Trailer 1</a>,
+        <a href="https://www.rockstargames.com/VI/trailer-2" target="_blank" rel="noopener noreferrer">Trailer 2</a> and
+        <a href="https://www.rockstargames.com/VI/an-extended-look" target="_blank" rel="noopener noreferrer">An Extended Look</a> on rockstargames.com.</p>
+    </div>
+    {% endif %}
+
+    {% if screenshots %}
+    <ul class="mosaic" aria-label="Official screenshots">
+      {% for m in screenshots %}
+      <li class="reveal" data-delay="{{ loop.index0 % 3 + 1 }}">
+        <a href="{{ image_src(m.embed_url, 1920) }}" data-lightbox data-caption="{{ m.title }}">
+          {{ picture(m, sizes='(min-width: 900px) 30vw, 50vw') }}
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    <div class="media-links reveal">
+      <a class="btn btn--ghost" href="{{ links.videos }}" target="_blank" rel="noopener noreferrer">All videos</a>
+      <a class="btn btn--ghost" href="{{ links.screenshots }}" target="_blank" rel="noopener noreferrer">All screenshots</a>
+      <a class="btn" href="{{ links.wallpapers }}" target="_blank" rel="noopener noreferrer">Official wallpapers</a>
+    </div>
+    <p class="attribution">Images and videos &copy; Rockstar Games / Take-Two Interactive. Source: <a href="{{ links.media }}" target="_blank" rel="noopener noreferrer">rockstargames.com/VI/media</a>.</p>
+  </div>
+</section>
+
+{# ============================== NUMBERS ============================== #}
+<section class="section section--tight section--surface" aria-labelledby="numbers-title">
+  <div class="container">
+    <h2 class="panel-title" id="numbers-title">The archive in numbers</h2>
+    <p class="muted">Counted from MySQL every time this page loads.</p>
+    <dl class="stat-grid">
+      {% for name, count in stats.items() %}
+      <div class="stat">
+        <dt>{{ name | replace('_', ' ') | title }}</dt>
+        <dd>{{ count }}</dd>
+      </div>
+      {% endfor %}
+    </dl>
+  </div>
+</section>
+{% endblock %}

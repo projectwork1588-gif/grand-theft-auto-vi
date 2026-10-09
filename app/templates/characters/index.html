@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% from "_components.html" import badge, picture, initials, pager, page_hero, results_line, option %}
+{% block title %}Characters{% endblock %}
+{% block description %}Every named character from Grand Theft Auto VI's official line-up, plus fictional demo characters, with search, filters and profiles.{% endblock %}
+{% block content %}
+{{ page_hero('The cast', 'Characters', 'Official characters from Rockstar\'s own line-up, and fictional demo characters we invented to test the database. Every card says which is which.') }}
+
+<section class="section section--tight">
+  <div class="container">
+    <form class="filters" method="get" action="{{ url_for('pages.characters') }}" role="search" aria-label="Search and filter characters">
+      <label>Search
+        <input type="search" name="q" value="{{ filters.q or '' }}" maxlength="80" placeholder="Name, alias or role">
+      </label>
+      <label>Source
+        <select name="status">
+          {{ option('', 'All sources', filters.status or '') }}
+          {{ option('official', 'Official', filters.status) }}
+          {{ option('fan', 'Fan interpretation', filters.status) }}
+          {{ option('demo', 'Fictional demo', filters.status) }}
+        </select>
+      </label>
+      <label>Region
+        <select name="region">
+          {{ option('', 'Any region', filters.region or '') }}
+          {% for r in regions %}{{ option(r.slug, r.name, filters.region) }}{% endfor %}
+        </select>
+      </label>
+      <label>Sort by
+        <select name="sort">
+          {{ option('name_asc', 'Name A to Z', filters.sort) }}
+          {{ option('name_desc', 'Name Z to A', filters.sort) }}
+          {{ option('newest', 'Newest records', filters.sort) }}
+        </select>
+      </label>
+      <div class="filters__actions">
+        <button class="btn" type="submit">Apply</button>
+        <a class="link-arrow" href="{{ url_for('pages.characters') }}">Reset</a>
+      </div>
+    </form>
+
+    <p class="results-meta" role="status">{{ results_line(pagination) }}</p>
+
+    {% if data %}
+    <ul class="wall">
+      {% for c in data %}
+      <li class="reveal" data-delay="{{ loop.index0 % 3 + 1 }}">
+        <a class="poster poster--wall" href="{{ url_for('pages.character_detail', slug=c.slug) }}">
+          {{ picture(c.cover, fallback=initials(c.full_name), sizes='(min-width: 900px) 25vw, 50vw', alt='') }}
+          <span class="poster__body">
+            <span class="poster__badges">{{ badge(c.content_status) }}</span>
+            <span class="poster__role">{{ c.role_title }}{% if c.alias %} &middot; &ldquo;{{ c.alias }}&rdquo;{% endif %}</span>
+            <span class="poster__name display">{{ c.full_name }}</span>
+            {% if c.region_name %}<span class="poster__where">{{ c.region_name }}</span>{% endif %}
+          </span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty">
+      <h2>No characters found</h2>
+      <p>Nothing matches those filters. Try a shorter search, or <a href="{{ url_for('pages.characters') }}">reset the filters</a>.</p>
+    </div>
+    {% endif %}
+    {{ pager(pagination) }}
+  </div>
+</section>
+{% endblock %}
