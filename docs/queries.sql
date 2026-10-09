@@ -92,8 +92,16 @@ UNION ALL
 SELECT 'missions', content_status, COUNT(*) FROM missions GROUP BY content_status
 ORDER BY entity, content_status;
 
--- 12. Media waiting for a human decision
-SELECT title, media_type, usage_status, approval_status
+-- 12. Media inventory: official media by type and permission state (GROUP BY on two columns)
+SELECT media_type, usage_status, approval_status, COUNT(*) AS items
 FROM media_assets
-WHERE approval_status = 'pending_review'
-ORDER BY title;
+GROUP BY media_type, usage_status, approval_status
+ORDER BY media_type, usage_status;
+
+-- 13. Many-to-many with the Phase 2 junction: official images attached to each region
+SELECT r.name AS region, COUNT(mr.media_id) AS images, MIN(m.slug) AS first_image
+FROM regions r
+JOIN media_regions mr ON mr.region_id = r.region_id
+JOIN media_assets m ON m.media_id = mr.media_id AND m.approval_status = 'approved'
+GROUP BY r.region_id, r.name
+ORDER BY r.name;

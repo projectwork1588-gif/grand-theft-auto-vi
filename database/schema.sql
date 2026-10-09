@@ -15,6 +15,7 @@
 
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS media_regions;
 DROP TABLE IF EXISTS media_locations;
 DROP TABLE IF EXISTS media_characters;
 DROP TABLE IF EXISTS media_assets;
@@ -343,4 +344,17 @@ CREATE TABLE media_locations (
         REFERENCES media_assets (media_id) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_medl_location FOREIGN KEY (location_id)
         REFERENCES locations (location_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Added in Phase 2 (see database/migrations/001_phase2_media.sql): official region imagery
+-- belongs to REGIONS, not to the fictional demo locations, so it needs its own junction.
+CREATE TABLE media_regions (
+    media_id   INT UNSIGNED      NOT NULL,
+    region_id  SMALLINT UNSIGNED NOT NULL,
+    PRIMARY KEY (media_id, region_id),
+    KEY ix_media_regions_region (region_id),
+    CONSTRAINT fk_medr_media FOREIGN KEY (media_id)
+        REFERENCES media_assets (media_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_medr_region FOREIGN KEY (region_id)
+        REFERENCES regions (region_id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

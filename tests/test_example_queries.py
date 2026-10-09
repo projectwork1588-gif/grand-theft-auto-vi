@@ -8,8 +8,8 @@ from scripts.sqlfile import split_statements
 QUERIES = split_statements((Path(__file__).resolve().parent.parent / "docs" / "queries.sql").read_text(encoding="utf-8"))
 
 
-def test_file_contains_twelve_queries():
-    assert len(QUERIES) == 12
+def test_file_contains_thirteen_queries():
+    assert len(QUERIES) == 13
 
 
 @pytest.mark.parametrize("sql", QUERIES, ids=[f"query_{i}" for i in range(1, len(QUERIES) + 1)])

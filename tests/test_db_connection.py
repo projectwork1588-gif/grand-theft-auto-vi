@@ -8,7 +8,7 @@ EXPECTED_TABLES = {
     "users", "regions", "locations", "characters", "character_relationships",
     "vehicle_categories", "vehicles", "missions", "mission_characters", "mission_vehicles",
     "mission_locations", "favourite_characters", "favourite_vehicles", "favourite_missions",
-    "favourite_locations", "media_assets", "media_characters", "media_locations",
+    "favourite_locations", "media_assets", "media_characters", "media_locations", "media_regions",
 }
 
 
@@ -49,7 +49,7 @@ def test_foreign_keys_are_defined(cur):
         "SELECT COUNT(*) AS n FROM information_schema.REFERENTIAL_CONSTRAINTS "
         "WHERE CONSTRAINT_SCHEMA = DATABASE()"
     )
-    assert cur.fetchone()["n"] == 23
+    assert cur.fetchone()["n"] == 25  # 23 from Phase 1 plus media_regions
 
 
 def test_composite_primary_keys_exist(cur):
@@ -58,7 +58,7 @@ def test_composite_primary_keys_exist(cur):
         "WHERE TABLE_SCHEMA = DATABASE() AND CONSTRAINT_NAME = 'PRIMARY' "
         "GROUP BY TABLE_NAME HAVING COUNT(*) > 1"
     )
-    assert len(cur.fetchall()) == 10
+    assert len(cur.fetchall()) == 11  # 10 from Phase 1 plus media_regions
 
 
 def test_pool_connection_from_flask_app(app_context):

@@ -6,7 +6,7 @@ from scripts.init_db import init_database
 
 TABLES = ("regions", "locations", "characters", "character_relationships", "vehicle_categories",
           "vehicles", "missions", "mission_characters", "mission_vehicles", "mission_locations",
-          "media_assets")
+          "media_assets", "media_characters", "media_regions")
 
 
 def count(cur, table):
@@ -17,8 +17,8 @@ def count(cur, table):
 def test_exact_row_counts(cur):
     expected = {"regions": 6, "locations": 8, "characters": 11, "character_relationships": 7,
                 "vehicle_categories": 6, "vehicles": 8, "missions": 5, "mission_characters": 10,
-                "mission_vehicles": 8, "mission_locations": 8, "media_assets": 3,
-                "users": 0}
+                "mission_vehicles": 8, "mission_locations": 8, "media_assets": 57,
+                "media_characters": 46, "media_regions": 20, "media_locations": 0, "users": 0}
     for table, n in expected.items():
         assert count(cur, table) == n, table
 
@@ -73,18 +73,46 @@ def test_every_region_has_a_location_and_every_mission_a_primary_location(cur):
     assert cur.fetchall() == []
 
 
-def test_media_sources_are_official_pages(cur):
-    cur.execute("SELECT source_url FROM media_assets ORDER BY media_id")
-    assert [r["source_url"] for r in cur.fetchall()] == [
-        "https://www.rockstargames.com/VI/trailer-1",
-        "https://www.rockstargames.com/VI/trailer-2",
-        "https://www.rockstargames.com/VI/media"]
+def test_media_sources_are_official_rockstar_pages(cur):
+    cur.execute("SELECT slug, source_url FROM media_assets")
+    for row in cur.fetchall():
+        assert row["source_url"].startswith("https://www.rockstargames.com/VI"), row["slug"]
 
 
-def test_media_rows_are_links_only_and_await_human_review(cur):
-    cur.execute("SELECT COUNT(*) AS n FROM media_assets WHERE local_path IS NOT NULL OR embed_url IS NOT NULL")
+def test_media_is_remote_official_only_and_nothing_is_copied_locally(cur):
+    """Images and players are remote references to Rockstar. No file is stored in this project."""
+    cur.execute("SELECT COUNT(*) AS n FROM media_assets WHERE local_path IS NOT NULL")
     assert cur.fetchone()["n"] == 0
-    cur.execute("SELECT COUNT(*) AS n FROM media_assets WHERE approval_status <> 'pending_review'")
+    cur.execute("SELECT slug, embed_url FROM media_assets WHERE embed_url IS NOT NULL")
+    for row in cur.fetchall():
+        assert (row["embed_url"].startswith("https://www.rockstargames.com/VI/_next/static/media/")
+                or row["embed_url"].startswith("https://www.rockstargames.com/videoplayer?")), row["slug"]
+
+
+def test_video_embeds_are_official_players_and_documented(cur):
+    cur.execute("SELECT slug, usage_status, approval_status, embed_url FROM media_assets "
+                "WHERE media_type IN ('trailer', 'video') ORDER BY media_id")
+    rows = cur.fetchall()
+    assert [r["slug"] for r in rows] == ["official-trailer-1", "official-trailer-2", "official-an-extended-look"]
+    for r in rows:
+        assert r["usage_status"] == "embed_permitted" and "videoplayer?id=" in r["embed_url"]
+
+
+def test_every_official_character_and_region_has_official_media(cur):
+    cur.execute("SELECT c.slug FROM characters c LEFT JOIN media_characters mc ON mc.character_id = c.character_id "
+                "WHERE c.content_status = 'official' GROUP BY c.character_id, c.slug HAVING COUNT(mc.media_id) = 0")
+    assert cur.fetchall() == []
+    cur.execute("SELECT r.slug FROM regions r LEFT JOIN media_regions mr ON mr.region_id = r.region_id "
+                "GROUP BY r.region_id, r.slug HAVING COUNT(mr.media_id) = 0")
+    assert cur.fetchall() == []
+
+
+def test_demo_records_never_get_official_media(cur):
+    """Official images must not be attached to fictional characters or locations."""
+    cur.execute("SELECT COUNT(*) AS n FROM media_characters mc JOIN characters c ON c.character_id = mc.character_id "
+                "WHERE c.content_status = 'demo'")
+    assert cur.fetchone()["n"] == 0
+    cur.execute("SELECT COUNT(*) AS n FROM media_locations")
     assert cur.fetchone()["n"] == 0
 
 
