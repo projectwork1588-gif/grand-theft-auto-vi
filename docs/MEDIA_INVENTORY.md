@@ -1,22 +1,31 @@
 # Media inventory
 
-**Policy.** Nothing from Rockstar is downloaded or committed. Official images and videos are **remote references to Rockstar's own published media**, shown with attribution and a link back to the source page. Watermarks and copyright notices are never removed. Fictional demo records (vehicles, locations, missions, three characters) never receive official images. All visuals the project itself owns are original (the vehicle silhouettes in `app/static/img/vehicles.svg`, the CSS fallbacks).
+**Policy.** Nothing from Rockstar is downloaded or committed. Official images and videos are **remote references to Rockstar's own published media**, shown with attribution and a link back to the source page. Watermarks and copyright notices are never removed. Concept records (some characters, all locations and missions, and the concept vehicles) never receive official images. Everything the project owns is original: the CSS fallbacks and the brand mark.
 
-The database table `media_assets` holds exactly the rows below, with `media_characters` and `media_regions` linking them to characters and regions. The table is generated from one manifest, so this page and the database cannot drift apart. A test (`test_seed_and_migration_agree`) proves a fresh seed and an upgraded database match.
+The database table `media_assets` holds exactly the rows below, linked to characters, regions and vehicles through `media_characters`, `media_regions` and `media_vehicles`. Rows 1-57 come from migration 001 and rows 58-85 from migration 002. Both are generated from manifests, and a test (`test_seed_and_migration_agree`) proves that a fresh seed and an upgraded Phase 1 database end up identical.
 
-## Where the media came from (checked 2026-10-09)
+## Where the media came from (checked 2026-10-09 and 2026-10-10)
 
 | Source page | What it offers |
 |-------------|----------------|
 | https://www.rockstargames.com/VI/media/artwork-wallpapers | 23 artwork and wallpaper items (character portraits, Jason and Lucia art, region postcards) |
-| https://www.rockstargames.com/VI/media/screenshots | 162 official screenshots (per character and per region, plus edition content) |
+| https://www.rockstargames.com/VI/media/screenshots | 162 official screenshots (per character, per region, and the Ultimate Edition and Vintage Vice City Pack vehicle sets) |
+| https://www.rockstargames.com/VI/media/videos | Three videos, the cover-art animation, and eight character clips, each with a poster image |
 | https://www.rockstargames.com/VI/trailer-1, /trailer-2, /an-extended-look | Official videos, each embedding Rockstar's own player (`/videoplayer?id=...&embed`) |
+| https://www.rockstargames.com/VI/editions | The vehicle names (for example the '95 Grotti Cheetah) |
 
-All 57 referenced URLs were requested before they were recorded and returned HTTP 200 with the expected content type. The player pages send no framing restriction (they are built to be embedded). Images load with a foreign referrer and Rockstar's image service accepts a width parameter, which the site uses to request 640, 1280 and 1920 pixel versions.
+All 85 referenced URLs were requested before they were recorded and returned HTTP 200 with the expected content type. Rockstar's player pages send no framing restriction (they are built to be embedded). Rockstar's image service accepts a width parameter, which the site uses to request 640, 1280 and 1920 pixel versions.
+
+## What changed in the refinement pass
+
+* **Official garage.** Only vehicles that Rockstar names and shows are public: the '95 Grotti Cheetah, '67 Vapid Dominator Buggy, Shitzu Squalo, Vapid Stanier and Vapid Ganado Retro Build (17 official screenshots). Several names that look like vehicles (Stock 305, Electric Fang, Rideout Customs, One-Eyed Willie's) are stores or services on Rockstar's own page, and were **not** added. The concept vehicles stay in the database for the story archive but get no public page and no official imagery.
+* **Posters.** Each trailer card uses the official poster Rockstar publishes for that video.
+* **Character clips.** Rockstar publishes one short clip per named character. The clip files are **not** hosted or played here. Each character gets a poster-and-link card that opens Rockstar's Videos page. The poster image is stored in `embed_url`, and the clip page in `source_url`.
 
 ## Integration approach
 
-* **Videos:** a poster card on the homepage opens a native `<dialog>`. Only then does JavaScript create the iframe pointing at Rockstar's player, so nothing loads until a visitor presses play. Closing the dialog removes the iframe, which stops playback.
+* **Videos:** a poster card opens a native `<dialog>`. Only then does JavaScript create the iframe that points at Rockstar's player, so nothing loads until a visitor presses play. Closing the dialog removes the iframe, which stops playback.
+* **Why no autoplay background video:** the only video files Rockstar publishes are 4K and large (Trailer 2 is about 1.2 GB and the cover-art animation is 37 MB). Streaming that as an ambient loop would harm performance and bandwidth for every visitor, so the site uses official stills and the on-demand player instead.
 * **Images:** ordinary `<img>` elements with `srcset`, `loading="lazy"` (the hero image uses `fetchpriority="high"`) and `referrerpolicy="no-referrer"`, over an original fallback layer. If an image fails, the fallback shows.
 * **Safety:** templates only render a URL that starts with Rockstar's exact image prefix or player prefix (`app/media_urls.py`). The Content-Security-Policy allows images and frames only from `www.rockstargames.com`. A hostile database value is ignored (tested).
 * **Reduced motion:** visitors who ask for reduced motion get a still first hero image and no slideshow.
@@ -26,12 +35,12 @@ All 57 referenced URLs were requested before they were recorded and returned HTT
 | Item | Status |
 |------|--------|
 | Rockstar states **no licence terms** on its Media page, only an invitation to download and share | **Human review recommended.** The Phase 2 media brief authorised use of official sources, and nothing is copied, but the owner should confirm this is acceptable. |
-| Image file names are **build-hashed** (for example `Cal_Hampton_landscape.17k7bnt3myg.2.jpg`) | They may change when Rockstar redeploys. The site then falls back to original artwork. Re-run the URL check and update `database/migrations/` to refresh. |
-| Official vehicle imagery | **Not used.** Rockstar's pre-order screenshots name real vehicles, but the schema has no media-to-vehicle link, and attaching them to fictional demo vehicles would mislead. A `media_vehicles` junction is a Phase 3 or 5 decision. |
-| Trailer thumbnails | Rockstar publishes none we can reference, so posters use official screenshots instead. |
-| Music, wallpaper downloads (zip files) | **Not used or downloaded.** The site links to Rockstar's own download page. |
+| Image file names are **build-hashed** (for example `Cal_Hampton_landscape.17k7bnt3myg.2.jpg`) | They may change when Rockstar redeploys. The site then falls back to original artwork. Re-run the URL check and refresh the migrations. |
+| Vehicle specifications | Rockstar publishes none, so none are shown. |
+| Vehicle categories | Judged from Rockstar's own screenshots where its page does not state a type (for example the Shitzu Squalo). Each such record says so in its source note. |
+| Character clip files and the 4K videos | **Not used or downloaded.** The site links to Rockstar's own pages. |
 
-## Inventory (57 rows)
+## Inventory (85 rows)
 
 | ID | Slug | Type | Source page | Remote reference | Linked to | Usage | Approval |
 |----|------|------|-------------|------------------|-----------|-------|----------|
@@ -92,12 +101,40 @@ All 57 referenced URLs were requested before they were recorded and returned HTT
 | 55 | `shot-ambrosia-02` | screenshot | /VI/media/screenshots | `…/media/Ambrosia_02.0wtqs05ozl.ym.jpg` | Ambrosia | embed_permitted | approved |
 | 56 | `shot-mount-kalaga-01` | screenshot | /VI/media/screenshots | `…/media/Mount_Kalaga_National_Park_01.0v5fl0f83hjv_.jpg` | Mount Kalaga | embed_permitted | approved |
 | 57 | `shot-mount-kalaga-02` | screenshot | /VI/media/screenshots | `…/media/Mount_Kalaga_National_Park_02.0f24dhopdprvx.jpg` | Mount Kalaga | embed_permitted | approved |
+| 58 | `poster-trailer-1` | artwork | /VI/media/videos | `…/media/GTAVI_Trailer1_poster.12x2gvspcm_3m.jpg` | none | embed_permitted | approved |
+| 59 | `poster-trailer-2` | artwork | /VI/media/videos | `…/media/GTAVI_Trailer2_poster.0cosv-uzbpt91.jpg` | none | embed_permitted | approved |
+| 60 | `poster-extended-look` | artwork | /VI/media/videos | `…/media/GTAVI_An_Extended_Look_poster.0ijbsha5fo1te.jpg` | none | embed_permitted | approved |
+| 61 | `clip-jason-duval` | video | /VI/media/videos | `…/media/Jason_Duval_Video_Clip.024oe-y640yxp.jpg` | Jason Duval | link_only | approved |
+| 62 | `clip-lucia-caminos` | video | /VI/media/videos | `…/media/Lucia_Caminos_Video_Clip.0uqwkm_u_fu_9.jpg` | Lucia Caminos | link_only | approved |
+| 63 | `clip-cal-hampton` | video | /VI/media/videos | `…/media/Cal_Hampton_Video_Clip.127phn-5fdl9r.jpg` | Cal Hampton | link_only | approved |
+| 64 | `clip-boobie-ike` | video | /VI/media/videos | `…/media/Boobie_Ike_Video_Clip.06_gu6y13hufm.jpg` | Boobie Ike | link_only | approved |
+| 65 | `clip-dequan-priest` | video | /VI/media/videos | `…/media/DreQuan_Priest_Video_Clip.0p5nv9luhe2va.jpg` | Dre'Quan Priest | link_only | approved |
+| 66 | `clip-real-dimez` | video | /VI/media/videos | `…/media/Real_Dimez_Video_Clip.05f8p4_2sk82a.jpg` | Real Dimez | link_only | approved |
+| 67 | `clip-raul-bautista` | video | /VI/media/videos | `…/media/Raul_Bautista_Video_Clip.07g3eeo2bgg2k.jpg` | Raul Bautista | link_only | approved |
+| 68 | `clip-brian-heder` | video | /VI/media/videos | `…/media/Brian_Heder_Video_Clip.0wbjj2r2i_2~c.jpg` | Brian Heder | link_only | approved |
+| 69 | `vehicle-grotti-cheetah-01` | screenshot | /VI/media/screenshots | `…/media/ULTIMATE_EDITION_GROTTI_CHEETAH_01.0a.wy3s_ogjey.jpg` | '95 Grotti Cheetah | embed_permitted | approved |
+| 70 | `vehicle-grotti-cheetah-02` | screenshot | /VI/media/screenshots | `…/media/ULTIMATE_EDITION_GROTTI_CHEETAH_02.0rkrlsu_dg~ww.jpg` | '95 Grotti Cheetah | embed_permitted | approved |
+| 71 | `vehicle-grotti-cheetah-03` | screenshot | /VI/media/screenshots | `…/media/ULTIMATE_EDITION_GROTTI_CHEETAH_03.0v3_dryhtjarc.jpg` | '95 Grotti Cheetah | embed_permitted | approved |
+| 72 | `vehicle-grotti-cheetah-04` | screenshot | /VI/media/screenshots | `…/media/ULTIMATE_EDITION_GROTTI_CHEETAH_04.0caq_y0_f1rvt.jpg` | '95 Grotti Cheetah | embed_permitted | approved |
+| 73 | `vehicle-vapid-dominator-buggy-01` | screenshot | /VI/media/screenshots | `…/media/ULTIMATE_EDITION_VAPID_BUGGY_01.0jxfiql~371ik.jpg` | '67 Vapid Dominator Buggy | embed_permitted | approved |
+| 74 | `vehicle-vapid-dominator-buggy-02` | screenshot | /VI/media/screenshots | `…/media/ULTIMATE_EDITION_VAPID_BUGGY_04.0_29d.bgfvon7.jpg` | '67 Vapid Dominator Buggy | embed_permitted | approved |
+| 75 | `vehicle-vapid-dominator-buggy-03` | screenshot | /VI/media/screenshots | `…/media/ULTIMATE_EDITION_VAPID_BUGGY_02.0tf15jp~61bkj.jpg` | '67 Vapid Dominator Buggy | embed_permitted | approved |
+| 76 | `vehicle-vapid-dominator-buggy-04` | screenshot | /VI/media/screenshots | `…/media/ULTIMATE_EDITION_VAPID_BUGGY_03.0s2rbkg98-0ac.jpg` | '67 Vapid Dominator Buggy | embed_permitted | approved |
+| 77 | `vehicle-shitzu-squalo-01` | screenshot | /VI/media/screenshots | `…/media/ULTIMATE_EDITION_SQUALO_01.0cim7hj58ypb1.jpg` | Shitzu Squalo | embed_permitted | approved |
+| 78 | `vehicle-shitzu-squalo-02` | screenshot | /VI/media/screenshots | `…/media/ULTIMATE_EDITION_SQUALO_04.00vlesedwtiuy.jpg` | Shitzu Squalo | embed_permitted | approved |
+| 79 | `vehicle-shitzu-squalo-03` | screenshot | /VI/media/screenshots | `…/media/ULTIMATE_EDITION_SQUALO_02.09qplkj.rjnk7.jpg` | Shitzu Squalo | embed_permitted | approved |
+| 80 | `vehicle-shitzu-squalo-04` | screenshot | /VI/media/screenshots | `…/media/ULTIMATE_EDITION_SQUALO_03.0quncwrsw97j1.jpg` | Shitzu Squalo | embed_permitted | approved |
+| 81 | `vehicle-vapid-stanier-01` | screenshot | /VI/media/screenshots | `…/media/VINTAGE_VICE_CITY_PACK_VAPID_STANIER_01.004m_8d1~qngy.jpg` | Vapid Stanier | embed_permitted | approved |
+| 82 | `vehicle-vapid-stanier-02` | screenshot | /VI/media/screenshots | `…/media/VINTAGE_VICE_CITY_PACK_VAPID_STANIER_02.0s2wun4_vzld2.jpg` | Vapid Stanier | embed_permitted | approved |
+| 83 | `vehicle-vapid-stanier-03` | screenshot | /VI/media/screenshots | `…/media/VINTAGE_VICE_CITY_PACK_VAPID_STANIER_03.0dzlk-r0ehlu4.jpg` | Vapid Stanier | embed_permitted | approved |
+| 84 | `vehicle-vapid-stanier-04` | screenshot | /VI/media/screenshots | `…/media/VINTAGE_VICE_CITY_PACK_VAPID_STANIER_04.0n002i9p87b~q.jpg` | Vapid Stanier | embed_permitted | approved |
+| 85 | `vehicle-vapid-ganado-01` | screenshot | /VI/media/screenshots | `…/media/ULTIMATE_EDITION_VAPID_GANADO_RETRO_BUILD_01.062dgvkwdynw5.jpg` | Vapid Ganado Retro Build | embed_permitted | approved |
 
-Attribution for every row: *Copyright Rockstar Games / Take-Two Interactive.* Intended use: character portraits and galleries, region covers, the homepage hero, trailer previews and the screenshot mosaic.
+Attribution for every row: *Copyright Rockstar Games / Take-Two Interactive.*
 
 ## Adding a new asset (checklist)
 
 1. Read the URL from the official page. Request it once to confirm it loads.
-2. Add it to the manifest, regenerate `database/migrations/` and the seed block, and add it here.
-3. Link it to the right character or region. Never link official media to a fictional demo record.
+2. Add it to the manifest, regenerate the next migration and the seed block, and add it here.
+3. Link it to the right character, region or vehicle. Never link official media to a concept record.
 4. Never commit the file itself.

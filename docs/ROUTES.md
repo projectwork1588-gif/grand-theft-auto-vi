@@ -9,8 +9,8 @@
 | `/` | Cinematic homepage: hero, cast, six regions, garage highlights, stories and official connections, media preview, live statistics |
 | `/characters` | Poster wall. Query: `q`, `status`, `region`, `sort` (name_asc, name_desc, newest), `page`, `per_page` |
 | `/characters/<slug>` | Profile: biography, source, connections, missions, places, co-stars, official images |
-| `/vehicles` | Garage. Query: `q`, `category`, `status`, `sort` (name_asc, name_desc, category, newest), `page`, `per_page` |
-| `/vehicles/<slug>` | Detail: missions, places, more in the category |
+| `/vehicles` | Garage: **official vehicles only**. Query: `q`, `category`, `sort` (featured, name_asc, name_desc, category), `page`, `per_page` |
+| `/vehicles/<slug>` | Detail with an official image gallery. Concept vehicles return a styled 404 here (they have no public page) |
 | `/regions` | The six regions in Rockstar's order |
 | `/regions/<slug>` | Detail: locations, people based there, stories, gallery, other regions |
 | `/locations` | Index. Query: `q`, `region`, `type`, `status`, `sort` (region, name_asc, name_desc, newest), `page`, `per_page` |
@@ -25,7 +25,7 @@
 |------|-------|
 | `/characters`, `/characters/<slug>` | Phase 1, unchanged |
 | `/regions`, `/regions/<slug>` | Phase 1, unchanged |
-| `/vehicles`, `/vehicles/<slug>`, `/vehicle-categories` | New |
+| `/vehicles`, `/vehicles/<slug>`, `/vehicle-categories` | New. The API serves the whole table (13 vehicles). Use `?status=official` for the public garage. `sort=featured` gives editorial order. `/vehicle-categories?status=official` counts official vehicles only |
 | `/missions`, `/missions/<slug>` | New. Lists include cast, vehicle and location counts |
 | `/locations`, `/locations/<slug>` | New |
 

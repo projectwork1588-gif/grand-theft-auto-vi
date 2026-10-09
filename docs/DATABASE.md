@@ -30,6 +30,8 @@ erDiagram
     CHARACTERS ||--o{ MEDIA_CHARACTERS : "shown in"
     MEDIA_ASSETS ||--o{ MEDIA_LOCATIONS : "shows"
     LOCATIONS ||--o{ MEDIA_LOCATIONS : "shown in"
+    MEDIA_ASSETS ||--o{ MEDIA_VEHICLES : "shows"
+    VEHICLES ||--o{ MEDIA_VEHICLES : "shown in"
     MEDIA_ASSETS ||--o{ MEDIA_REGIONS : "shows"
     REGIONS ||--o{ MEDIA_REGIONS : "shown in"
 
@@ -99,9 +101,11 @@ erDiagram
                       int location_id PK_FK }
     MEDIA_REGIONS { int media_id PK_FK
                     smallint region_id PK_FK }
+    MEDIA_VEHICLES { int media_id PK_FK
+                     int vehicle_id PK_FK }
 ```
 
-## Tables and why each exists (19)
+## Tables and why each exists (20)
 
 | # | Table | Why it exists | Key points |
 |---|-------|---------------|-----------|
@@ -121,6 +125,7 @@ erDiagram
 | 17 | `media_characters` | Many-to-many media <-> character. | Composite PK. |
 | 18 | `media_locations` | Many-to-many media <-> location. | Composite PK. |
 | 19 | `media_regions` | **Added in Phase 2.** Many-to-many media <-> region. Official region imagery belongs to regions. Linking it to the fictional demo locations would be misleading. | Composite PK, both FKs ON DELETE CASCADE. Created by `database/migrations/001_phase2_media.sql` and also part of `schema.sql`. |
+| 20 | `media_vehicles` | **Added in the Phase 2 refinement.** Many-to-many media <-> vehicle. Official vehicle screenshots belong to the five vehicles Rockstar names. A concept vehicle never gets one (a test enforces it). | Composite PK, both FKs ON DELETE CASCADE. Created by `database/migrations/002_phase2_garage.sql` and also part of `schema.sql`. |
 
 ### Decision: four favourite tables instead of one "polymorphic" table
 A single `favourites(user_id, entity_type, entity_id)` table cannot have a real foreign key, so MySQL could not stop a
@@ -136,7 +141,7 @@ enforces, not just a convention.
 
 * **One-to-many:** regions -> locations, vehicle_categories -> vehicles, locations -> characters (home).
 * **Many-to-many:** characters <-> characters, missions <-> characters / vehicles / locations, users <-> each entity (favourites), media <-> characters / locations.
-* **Composite primary keys:** 11 tables (`character_relationships`, 3 mission junctions, 4 favourites, 3 media junctions).
+* **Composite primary keys:** 12 tables (`character_relationships`, 3 mission junctions, 4 favourites, 4 media junctions).
 * **Cascade rules:** deleting a character removes its junction rows (CASCADE) but only blanks `home_location_id` on
   characters when a location is deleted (SET NULL). Deleting a region or category that is still in use is **blocked** (RESTRICT).
 
@@ -168,13 +173,15 @@ Search currently uses `LIKE '%text%'`, which cannot use a normal index. That is 
 | Regions | Vice City, Leonida Keys, Grassrivers, Port Gellhorn, Ambrosia, Mount Kalaga (6) | `official`: all six are listed on the same Rockstar page. We store only what it states |
 | Locations, vehicles, missions | all | `demo` |
 | Relationships | Jason-Lucia, Brian-Jason, Cal-Jason, Boobie Ike-Dre'Quan | `official` (stated on that page). The other three are `demo` |
-| Media | 57 rows: 3 official videos (Rockstar's own player), 1 link to the official Media page, 53 official images (artwork, region postcards, screenshots). 46 character links and 20 region links. See `docs/MEDIA_INVENTORY.md` | Remote references only. `approved` for display by the Phase 2 media brief. Rockstar states no licence terms, so human review is recommended. Fictional records get no official media |
+| Vehicles | '95 Grotti Cheetah, '67 Vapid Dominator Buggy, Shitzu Squalo, Vapid Stanier, Vapid Ganado Retro Build (5), each with Rockstar's own screenshots | `official` (names from rockstargames.com/VI/editions and the screenshots page). No specifications are stored because Rockstar has published none |
+| Vehicles | 8 concept vehicles used by the story archive | `demo` (shown as Concept, no public page) |
+| Media | 85 rows: 3 official videos (Rockstar's own player), 1 link to the official Media page, 3 trailer posters, 8 character clip cards, 70 official images (artwork, region postcards, screenshots, vehicle screenshots). 54 character, 20 region and 17 vehicle links. See `docs/MEDIA_INVENTORY.md` | Remote references only. `approved` for display by the Phase 2 media brief. Rockstar states no licence terms, so human review is recommended. Fictional records get no official media |
 
 **Correction history:** the first Phase 1 seed marked five regions as `fan` and omitted Real Dimez because only secondary sources had been reachable. A direct check of Rockstar's Leonida page confirmed them, so they were reclassified.
 
 Demo missions deliberately contain **only demo characters**, so the project never invents story for real GTA VI characters.
 
-## Phase 2 migration (non-destructive)
+## Phase 2 migrations (non-destructive)
 
 Phase 1 databases (including the owner's) lack `media_regions` and the official media rows. `database/migrations/001_phase2_media.sql`:
 
@@ -184,6 +191,12 @@ Phase 1 databases (including the owner's) lack `media_regions` and the official 
 
 It contains no `DROP`, `DELETE` or `TRUNCATE`, and `scripts.migrate_db` refuses to run a file that does. Run `python -m scripts.migrate_db --plan` first (read-only). Tests prove it is idempotent, that it changes no content table, and that an upgraded database equals a freshly seeded one.
 Until it is applied the website still works: media lookups tolerate the missing table and pages show original fallbacks.
+
+**Migration 002 (`002_phase2_garage.sql`)** creates `media_vehicles`, upserts the five official vehicles (ids 9 to 13, source-linked to Rockstar's pages), and adds 28 media rows: three trailer posters, eight character clip cards (poster image plus a link to Rockstar's Videos page) and 17 vehicle screenshots.
+
+**Migration 003 (`003_concept_copy.sql`)** contains only `UPDATE` statements that rewrite the text of concept characters, locations, stories, vehicles and relationships so it reads naturally, with a `WHERE content_status = 'demo'` guard on every statement. A test restores the old wording, applies the migration and proves that no official row changed and that the result equals a fresh seed.
+
+The public Garage lists only `content_status = 'official'` vehicles. The eight concept vehicles remain in the database because the story archive links them to missions (many-to-many), but they have no public page, and the JSON API still serves the whole table.
 
 ## Accounts and privileges
 

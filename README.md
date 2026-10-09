@@ -11,7 +11,7 @@ A cinematic, database-driven GTA VI fan guide built for a Web Technologies and D
 |------|---------|---------------|
 | Homepage | `/` | Cinematic hero (Welcome, Gamers / Team Valkyrie presents / Grand Theft Auto VI), the cast, six regions, garage highlights, story connections, official media preview. |
 | Characters | `/characters`, `/characters/<slug>` | Poster wall with search, source and region filters, sorting and pagination. Profiles with biography, connections, missions, places and official images. |
-| Garage | `/vehicles`, `/vehicles/<slug>` | Category chips, search, sorting. Detail pages with the missions and places each vehicle appears in. |
+| Garage | `/vehicles`, `/vehicles/<slug>` | Five vehicles Rockstar names and shows in its own screenshots, as a photo mosaic with category chips, search and sorting. Each page has an official image gallery. |
 | Leonida | `/regions`, `/regions/<slug>` | The six regions on Rockstar's official page, each with its locations, people, stories and gallery. |
 | Locations | `/locations`, `/locations/<slug>` | Searchable index filtered by region and type. |
 | Stories | `/missions`, `/missions/<slug>` | Case-file archive with type filters. Cast, vehicles, places and related stories. |
@@ -21,20 +21,22 @@ Every page reads MySQL. Nothing about a character, vehicle, region, location or 
 
 ## Content honesty
 
-Every record carries a `content_status`, shown as a badge on every card and page:
+Every record carries a `content_status`, shown as a quiet label on every card and page (the stored values are `official`, `fan` and `demo`):
 
 | Status | Meaning |
 |--------|---------|
-| **Official** | Stated on Rockstar's own website, with a source link. The eight named characters and six regions are official (checked against rockstargames.com/VI/only-in-leonida on 2026-10-09). |
-| **Fan interpretation** | Community or team interpretation, not confirmed. None is seeded at present. |
-| **Fictional demo** | Invented by Team Valkyrie to demonstrate the database: all vehicles, locations, missions and three characters. Demo stories deliberately use only demo characters, so we never invent story for the real cast. |
+| **Official** | Stated on Rockstar's own website, with a source link. The eight named characters, six regions and five vehicles are official (checked against rockstargames.com on 2026-10-09 and 2026-10-10). |
+| **Fan view** | Community or team interpretation, not confirmed. None is seeded at present. |
+| **Concept** | Created by Team Valkyrie for this project: three characters, all locations and all stories (plus eight concept vehicles that stay in the database for the story archive and have no public page). Concept stories deliberately use only concept characters, so we never invent story for the real cast. |
 
 ## Official media (nothing is copied)
 
 Images and trailers are **remote references to Rockstar's own published media**:
 
-* Trailer 1, Trailer 2 and "An Extended Look" play in **Rockstar's own embeddable player**, loaded only when a visitor presses play.
-* Character artwork, region postcards and screenshots load from Rockstar's servers. They are never downloaded or committed.
+* Trailer 1, Trailer 2 and "An Extended Look" play in **Rockstar's own embeddable player**, loaded only when a visitor presses play. Each card uses the official poster Rockstar publishes for that video.
+* Each named character has a poster-and-link card for Rockstar's official clip. The clip itself plays on rockstargames.com.
+* Character artwork, region postcards, vehicle screenshots and posters load from Rockstar's servers. They are never downloaded or committed.
+* There is deliberately **no autoplay background video**: Rockstar publishes only very large 4K files, and streaming one to every visitor would hurt performance.
 * Every image has a built-in original fallback, so the site still looks right if Rockstar moves a file or you are offline.
 
 See [docs/MEDIA_INVENTORY.md](docs/MEDIA_INVENTORY.md) for every asset, its source and its permission status. **Rockstar states no licence terms on its Media page**, so the owner should confirm the use is acceptable.
@@ -75,14 +77,14 @@ Open <http://127.0.0.1:5000/>.
 
 ### Upgrading a database you already set up in Phase 1
 
-Phase 2 adds the official media records and one small table (`media_regions`). **Your existing data is never dropped.** The migration only creates that table if missing and inserts or refreshes the media rows.
+Phase 2 adds the official media records, two small link tables (`media_regions`, `media_vehicles`), five official vehicles and natural-sounding copy for the concept records, in three migrations. **Your existing data is never dropped.** The migrations only create those tables if missing, insert or refresh the new rows, and update the text of concept rows. They never touch what Rockstar states.
 
 ```powershell
 python -m scripts.migrate_db --plan     # READ-ONLY: shows what exists now and what would run
 python -m scripts.migrate_db            # applies it after you type YES
 ```
 
-Until you apply it, every page still works, but without the official images and trailers (original fallbacks are shown instead).
+Until you apply them, every page still works, but without the official images and trailers (original fallbacks are shown instead), and the Garage is empty because it lists only official vehicles.
 
 ### What `setup_db` does (and never does)
 
@@ -136,8 +138,8 @@ GTA 6/
 │   ├── services/              validation, business rules, page view-models (site.py)
 │   ├── repositories/          ALL SQL lives here
 │   ├── templates/             Jinja2: base, _components, home, characters/, vehicles/, regions/, locations/, missions/
-│   └── static/                css/ (site, components, pages), js/ (boot, site), img/vehicles.svg
-├── database/                  schema.sql, seed.sql, migrations/001_phase2_media.sql
+│   └── static/                css/ (site, components, pages), js/ (boot, site)
+├── database/                  schema.sql, seed.sql, migrations/001 to 003
 ├── scripts/                   setup_db.py, init_db.py, migrate_db.py, make_env.py, schema_info.py, sqlfile.py
 ├── docs/                      ARCHITECTURE, DATABASE (+ER diagram), ROUTES, MEDIA_INVENTORY, VERIFICATION, queries.sql
 ├── media/                     reserved for original/licensed assets only (empty)
@@ -165,4 +167,4 @@ GTA 6/
 
 ## Licence and rights
 
-Original source code, including the vehicle silhouettes in `app/static/img/vehicles.svg`: MIT, see [LICENSE](LICENSE). Grand Theft Auto VI, its names, characters, logos, images and videos belong to Rockstar Games / Take-Two Interactive and are **not** covered by that licence. This repository contains no Rockstar media: official images and videos are referenced from Rockstar's own servers. See [docs/MEDIA_INVENTORY.md](docs/MEDIA_INVENTORY.md).
+Original source code: MIT, see [LICENSE](LICENSE). Grand Theft Auto VI, its names, characters, logos, images and videos belong to Rockstar Games / Take-Two Interactive and are **not** covered by that licence. This repository contains no Rockstar media: official images and videos are referenced from Rockstar's own servers. See [docs/MEDIA_INVENTORY.md](docs/MEDIA_INVENTORY.md).

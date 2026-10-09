@@ -66,6 +66,66 @@ Screenshots were viewed during development but are **not committed**: they conta
 * Official image URLs are build-hashed and may change.
 * Rockstar states no licence terms for its media: human review recommended.
 
+## Phase 2 design refinement pass (2026-10-10)
+
+### Test results (real MySQL 8.0.46 service, `gta6_vi_test` database only)
+
+```
+python -m pytest -q
+259 passed in 92.59s
+```
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `test_pages.py` | 55 | Every page, filters, search, sorting, pagination, labels, 400/404 pages, and the design feedback (hero text removed, brand lockup, calm labels, official-only garage, clip cards, closing band, page backdrops) |
+| `test_api_phase2.py` | 15 | Vehicles (13 in the API, 5 official), categories with `status`, missions, locations, Phase 1 shapes unchanged |
+| `test_media.py` | 9 | URL allow-listing, covers, hostile URLs, missing tables |
+| `test_security_and_failures.py` | 53 | CSP, no inline script or style, escaping, safe 503 and 500 pages |
+| `test_site_integrity.py` | 5 | Link crawl, assets, HTML balance, one `h1`, alt text |
+| `test_migration.py` | 7 | Three migrations: non-destructive, idempotent, upgrade equals a fresh seed, official rows untouched |
+| Earlier files | 115 | Connectivity, integrity, seed (now 85 media rows, 13 vehicles), privileges, setup safety, SQL runner, example queries (14) |
+
+The suite grew from 244 to 259. No test was removed or weakened. Expectations changed only where the feedback deliberately changed behaviour (the garage, the label wording, the removed silhouette sprite).
+
+### Browser verification (built-in browser)
+
+| Check | Result |
+|-------|--------|
+| Desktop (1280 px): hero, cast, garage mosaic, stories band, media reel with posters and clip rail, closing band, footer | Verified by screenshot |
+| Desktop: garage list, vehicle page, character profile with clip card, concept story page | Verified by screenshot |
+| **Tablet (768 px):** hero, regions (two columns), garage (wide feature plus 2 by 2), stacked trailers | Verified by screenshot |
+| Tablet: no horizontal overflow on characters, character profile, garage, vehicle, regions, story and locations pages | Verified by script |
+| Phone (375 px): no overflow on the homepage, garage, vehicle, character and stories pages | Verified by script |
+| Phone hero and mobile menu | Verified by screenshot and script |
+| Trailer dialog opens Rockstar's player and closes cleanly | Verified (earlier pass, code unchanged) |
+
+Screenshots were viewed during development and are **not** committed: they contain Rockstar's artwork.
+
+### Official sources checked
+
+* /VI/editions: named vehicles. Several look like vehicles but are stores or services (Stock 305, Electric Fang, Rideout Customs, One-Eyed Willie's), so they were **not** added.
+* /VI/media/screenshots: the vehicle image sets. The images were looked at to confirm each shows the named vehicle.
+* /VI/media/videos: eight character clips, trailer posters, and the video files. The files are 4K and large (Trailer 2 is about 1.2 GB), so no autoplay background video was built.
+* All 28 new image URLs returned HTTP 200 with the expected content type.
+
+### Problems found and fixed in this pass
+
+| # | What failed | Category | Cause and fix | How verified |
+|---|-------------|----------|---------------|--------------|
+| 1 | Page tests found "Fictional demo mission invented by Team Valkyrie..." on pages | Content | The blunt wording was stored in the **database copy**, not only the templates. Rewrote the copy in the seed and added migration 003 (UPDATE only) | Tests assert the old wording appears nowhere on public pages. The upgrade test restores the old text, migrates, and compares with a fresh seed |
+| 2 | Closing band showed no artwork | Code (CSS) | The image frame inside the band collapsed to zero height | Fixed the frame to fill the band. Seen in a screenshot |
+| 3 | The large garage tile showed the car park, not the car | Design | Wrong focal point | Adjusted the crop. Seen in a screenshot |
+| 4 | `tests/test_pages.py` was emptied | Tooling | My script opened the file for writing, then failed on a Windows text-encoding error | Restored the file from Git and re-applied the edits. All 55 tests present and passing |
+| 5 | SQL error in a new seed test | Code (test) | `character` is a reserved word in MySQL | Renamed the alias |
+| 6 | A test regex and two counts were wrong | Code (test) | Escape and prefix mistakes in my own tests | Corrected and re-run |
+| 7 | A meaningless `or True` assertion in a draft migration test | Code (test) | Would have passed whatever happened | Replaced with a real check that official rows are unchanged, and searched the suite for any other `or True` |
+| 8 | Garage tests, table counts, FK counts, the migration file list | Expected change | The new vehicles, `media_vehicles` and migrations changed totals on purpose | Expectations updated and new tests added |
+
+### Not yet done
+
+* **The owner's development database has not been migrated.** `python -m scripts.migrate_db --plan` then `python -m scripts.migrate_db` applies migrations 001 to 003. Until then that site shows fallbacks and an empty garage.
+* MySQL 8.4 LTS untested. Rockstar states no licence terms for its media. Image file names are build-hashed and may change.
+
 ---
 
 ## Phase 1 post-review verification (historical record)

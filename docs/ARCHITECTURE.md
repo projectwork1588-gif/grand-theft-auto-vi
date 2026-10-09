@@ -39,7 +39,7 @@ Phase 2 added `services/site.py`, which builds the **page view-models**: it call
 
 **Stack:** HTML5, CSS3, vanilla JavaScript, Jinja2. No framework and no library. Two small scripts: `boot.js` (one line, marks that JavaScript works) and `site.js` (about 120 lines). Every page works without JavaScript. The script only adds the mobile menu, scroll reveals, the trailer and image dialogs, and image-failure fallbacks.
 
-**Design system.** A late-afternoon Florida palette (aubergine night, hot pink, sunset orange, Gulf teal) with a condensed poster display face (Anton) and Inter for text. The sunset gradient appears only as a brand device: the hero sky, fallbacks and the wordmark. Tokens live in `static/css/site.css`, reusable pieces in `components.css`, page layouts in `pages.css`. The three Jinja files `_components.html` (badges, image frame, pager, source box, page hero), `base.html` and the page templates form the component layer.
+**Design system.** A late-afternoon Florida palette (deep aubergine, soft pink, sunset orange, a touch of Gulf teal). Type is Barlow Condensed for display and Inter for reading, with system fallbacks. The sunset gradient appears only as a brand device: the hero sky, image fallbacks and the numerals. Tokens live in `static/css/site.css` (with the header and footer), reusable pieces in `components.css`, page layouts in `pages.css`. The Jinja files `_components.html` (labels, image frame, vehicle tile, pager, provenance line, page hero), `base.html` and the page templates form the component layer.
 
 **Distinct layouts, not one card grid repeated:**
 
@@ -47,11 +47,11 @@ Phase 2 added `services/site.py`, which builds the **page view-models**: it call
 |---------|--------|
 | Cast | Two large lead panels, then a horizontally scrolling poster rail; the catalogue is a poster wall with some double-width posters |
 | Regions | Expanding panels (homepage), alternating full-bleed features (regions page) |
-| Garage | Horizontal rows with a category silhouette, not cards |
+| Garage | A photo mosaic: one large feature tile and four smaller ones, all official screenshots |
 | Stories | Numbered case-file rows |
 | Locations | Numbered index list |
 
-**Content labels.** Every record shows an *Official*, *Fan interpretation* or *Fictional demo* badge whose meaning is in its text, never colour alone. Detail pages explain the classification and link the source.
+**Content labels.** Every record shows a quiet *Official*, *Fan view* or *Concept* label whose meaning is in its text, never colour alone. Detail pages end with a single provenance line (the source link for official records, or "Created by Team Valkyrie for this project. Not part of the game." for concept ones). The large "fictional demo" notice boxes of the first Phase 2 pass were removed, and the stored copy for concept records was rewritten so it reads naturally.
 
 **Accessibility.** Skip link, semantic landmarks, one `h1` per page, labelled search forms, visible focus rings, `aria-current` in the navigation, `role="status"` result counts, keyboard-operable dialogs, 44px minimum targets, and full support for `prefers-reduced-motion` (a still hero, no slideshow, no reveal animation).
 
@@ -86,3 +86,16 @@ See `docs/MEDIA_INVENTORY.md`. In short: official images and Rockstar's own vide
 * CSRF approach for Phase 3 (a small hand-written session token is planned).
 * Whether the use of Rockstar's published media is acceptable without stated licence terms.
 * Whether to add `media_vehicles` so official vehicle imagery can be shown without misleading demo records.
+
+## Design refinement pass (Team Valkyrie feedback)
+
+| Feedback | What changed |
+|----------|--------------|
+| Heavy, awkward hero | Lighter overlays, a tracked "Grand Theft Auto" line over a large gradient VI, the lede cut to one line, and a circular play control. The extra glow layer was removed. The release date sits quietly bottom right and the "as stated on Rockstar's official site" line is gone. |
+| Weak brand and header | A gradient-bordered VI mark with a tracked wordmark and a "Team Valkyrie - Fan guide" subline, a transparent-to-solid header, and a Trailers pill. |
+| Blunt "fictional demo" wording | Calm labels, one provenance line, no notice boxes, and natural copy for every concept record (migration 003). |
+| Weak garage | Only the five vehicles Rockstar names and shows are public, each with real screenshots. The silhouette art was deleted. |
+| Plain statistics | Replaced by a full-bleed closing band over official artwork with four large numerals. |
+| Typography | Anton replaced by Barlow Condensed at lighter weights, smaller section titles, more generous spacing and a stronger type scale. |
+| Official clips and video | Official trailer posters, the on-demand Rockstar player, and one poster-and-link clip card per character. No autoplay background video, for performance reasons (see the media inventory). |
+| Responsiveness | Reviewed at phone, tablet and desktop widths. Tablet layouts are explicit: two-column regions, a wide feature plus a 2 by 2 garage grid, and stacked trailers. |
