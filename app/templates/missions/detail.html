@@ -3,16 +3,14 @@
 {% block title %}{{ mission.title }}{% endblock %}
 {% block description %}{{ mission.summary }}{% endblock %}
 {% block content %}
-{% call page_hero('Case file · ' ~ (mission.mission_type | capitalize), mission.title, mission.summary, tall=true) %}
+{% call page_hero('Case file · ' ~ (mission.mission_type | capitalize), mission.title, mission.summary, cover=mission.backdrop, tall=true) %}
   <p class="hero-badges">{{ badge(mission.content_status) }} {{ type_badge(mission.mission_type) }}</p>
+  {% if mission.backdrop %}<p class="hero-caption">Background: official artwork of {{ mission.backdrop_region }}, not of this story.</p>{% endif %}
 {% endcall %}
 
 <section class="section section--tight">
   <div class="container detail">
     <div class="detail__main stack">
-      {% if mission.content_status == 'demo' %}
-      <div class="notice notice--demo"><strong>Fictional demo story</strong><p>Invented by Team Valkyrie. It is not part of the game, and it involves no real GTA VI characters.</p></div>
-      {% endif %}
       <h2 class="panel-title">Synopsis</h2>
       <p class="lede">{{ mission.synopsis }}</p>
       {{ source_box(mission) }}
@@ -30,7 +28,11 @@
       {% if mission.vehicles %}
       <ul class="link-list">
         {% for v in mission.vehicles %}
+        {% if v.content_status == 'official' %}
         <li><a href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}"><span><span class="name">{{ v.name }}</span><br><span class="meta">{{ v.usage_note }} &middot; {{ v.category_name }}</span></span>{{ badge(v.content_status) }}</a></li>
+        {% else %}
+        <li><div class="row"><span><span class="name">{{ v.name }}</span><br><span class="meta">{{ v.usage_note }} &middot; {{ v.category_name }}</span></span>{{ badge(v.content_status) }}</div></li>
+        {% endif %}
         {% endfor %}
       </ul>
       {% else %}<p class="muted">No vehicles are attached to this story.</p>{% endif %}

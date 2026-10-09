@@ -1,17 +1,12 @@
 {% extends "base.html" %}
 {% from "_components.html" import badge, type_badge, pager, page_hero, results_line, option %}
 {% block title %}Stories{% endblock %}
-{% block description %}The Team Valkyrie demo story archive: fictional missions linked to characters, vehicles and locations in the GTA VI fan database.{% endblock %}
+{% block description %}Original concept stories by Team Valkyrie, linking characters, vehicles and places across Leonida.{% endblock %}
 {% block content %}
-{{ page_hero('The archive', 'Stories', 'Case files linking characters, vehicles and places.') }}
+{{ page_hero('The archive', 'Stories', 'Original concept stories by Team Valkyrie. They link characters, vehicles and places to show how the archive connects, and they never use Rockstar\'s real cast.', cover=hero_cover) }}
 
 <section class="section section--tight">
   <div class="container">
-    <div class="notice notice--demo">
-      <strong>Fictional demo stories</strong>
-      <p>Rockstar has not published mission details, so every story here was invented by Team Valkyrie to demonstrate the database. They deliberately use only fictional characters, never the real GTA VI cast.</p>
-    </div>
-
     <nav class="chips chips--spaced" aria-label="Mission types">
       <a class="chip" href="{{ url_for('pages.missions') }}"{% if not filters.type %} aria-current="true"{% endif %}>All types</a>
       {% for t in mission_types %}
@@ -46,17 +41,17 @@
     <p class="results-meta" role="status">{{ results_line(pagination) }}</p>
 
     {% if data %}
-    <ol class="dossiers dossiers--page" start="{{ (pagination.page - 1) * pagination.per_page + 1 }}">
+    <ol class="story-list" start="{{ (pagination.page - 1) * pagination.per_page + 1 }}">
       {% for m in data %}
       <li class="reveal">
-        <a class="dossier" href="{{ url_for('pages.mission_detail', slug=m.slug) }}">
-          <span class="dossier__num display" aria-hidden="true">{{ '%02d' | format((pagination.page - 1) * pagination.per_page + loop.index) }}</span>
-          <span class="dossier__main">
-            <span class="dossier__title">{{ m.title }}</span>
-            <span class="dossier__summary">{{ m.summary }}</span>
-            <span class="dossier__counts">{{ m.cast_count }} characters &middot; {{ m.vehicle_count }} vehicles &middot; {{ m.location_count }} locations</span>
+        <a class="story" href="{{ url_for('pages.mission_detail', slug=m.slug) }}">
+          <span class="story__num" aria-hidden="true">{{ '%02d' | format((pagination.page - 1) * pagination.per_page + loop.index) }}</span>
+          <span class="story__main">
+            <span class="story__title">{{ m.title }}</span>
+            <span class="story__summary">{{ m.summary }}</span>
+            <span class="story__counts">{{ m.cast_count }} characters &middot; {{ m.vehicle_count }} vehicles &middot; {{ m.location_count }} locations</span>
           </span>
-          <span class="dossier__tags">{{ type_badge(m.mission_type) }} {{ badge(m.content_status) }}</span>
+          <span class="story__tags">{{ type_badge(m.mission_type) }} {{ badge(m.content_status) }}</span>
         </a>
       </li>
       {% endfor %}

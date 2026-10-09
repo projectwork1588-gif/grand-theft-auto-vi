@@ -3,7 +3,7 @@
 {% block title %}Leonida{% endblock %}
 {% block description %}Explore the six regions of Leonida named on Rockstar's official site, with the locations, characters and stories our database connects to each.{% endblock %}
 {% block content %}
-{{ page_hero('The state of Leonida', 'Leonida', 'Six regions named on Rockstar\'s official site. Open one to see its locations, the people based there and the stories that pass through.') }}
+{{ page_hero('The state of Leonida', 'Leonida', 'Six regions named on Rockstar\'s official site. Open one to see its locations, the people based there and the stories that pass through.', cover=hero_cover) }}
 
 <section class="region-features" aria-label="Regions of Leonida">
   {% for r in data %}

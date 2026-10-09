@@ -39,7 +39,7 @@ def vehicle_detail(slug):
 
 @api_bp.route("/vehicle-categories")
 def list_vehicle_categories():
-    return jsonify(vehicles.list_categories())
+    return jsonify(vehicles.list_categories(request.args))
 
 
 @api_bp.route("/missions")

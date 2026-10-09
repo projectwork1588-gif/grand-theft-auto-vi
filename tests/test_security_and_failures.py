@@ -10,7 +10,7 @@ from app.repositories import regions as regions_repo
 from app.repositories import system as system_repo
 from app.repositories import vehicles as vehicles_repo
 
-PAGES = ["/", "/characters", "/characters/jason-duval", "/vehicles", "/vehicles/corvina-gt", "/regions",
+PAGES = ["/", "/characters", "/characters/jason-duval", "/vehicles", "/vehicles/grotti-cheetah", "/regions",
          "/regions/vice-city", "/locations", "/locations/neon-row-district", "/missions", "/missions/harbour-lights"]
 
 
@@ -77,7 +77,7 @@ def _broken(*args, **kwargs):
     ("/characters", characters_repo, "search"),
     ("/characters/jason-duval", characters_repo, "get_by_slug"),
     ("/vehicles", vehicles_repo, "search"),
-    ("/vehicles/corvina-gt", vehicles_repo, "get_by_slug"),
+    ("/vehicles/grotti-cheetah", vehicles_repo, "get_by_slug"),
     ("/regions", regions_repo, "list_all"),
     ("/regions/vice-city", regions_repo, "get_by_slug"),
     ("/locations", regions_repo, "list_all"),

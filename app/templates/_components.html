@@ -44,23 +44,39 @@
   {% endif %}
 {%- endmacro %}
 
-{# Explains a record's classification, with its source. #}
+{# One quiet line that says where a record comes from. #}
 {% macro source_box(item) -%}
-  {% if item.content_status == 'official' %}
-    <div class="source-box"><strong>Official.</strong> {% if item.source_url %}Source: <a href="{{ item.source_url }}" target="_blank" rel="noopener noreferrer">{{ item.source_url | replace('https://', '') }}</a>.{% endif %}{% if item.source_note %} {{ item.source_note }}{% endif %}</div>
-  {% elif item.content_status == 'fan' %}
-    <div class="source-box"><strong>Fan interpretation.</strong> Not confirmed by Rockstar.{% if item.source_note %} {{ item.source_note }}{% endif %}</div>
-  {% else %}
-    <div class="source-box source-box--demo"><strong>Fictional demo record.</strong> Invented by Team Valkyrie to demonstrate the database. It is not part of the game.</div>
-  {% endif %}
+  <p class="provenance">
+    {{ badge(item.content_status) }}
+    {% if item.content_status == 'official' %}
+      <span>{% if item.source_url %}Source: <a href="{{ item.source_url }}" target="_blank" rel="noopener noreferrer">{{ item.source_url | replace('https://www.', '') | replace('https://', '') }}</a>.{% endif %}{% if item.source_note %} {{ item.source_note }}{% endif %}</span>
+    {% elif item.content_status == 'fan' %}
+      <span>A fan interpretation, not confirmed by Rockstar.{% if item.source_note %} {{ item.source_note }}{% endif %}</span>
+    {% else %}
+      <span>Created by Team Valkyrie for this project. Not part of the game.</span>
+    {% endif %}
+  </p>
 {%- endmacro %}
 
-{# Filter form field helpers. `selected` compares against the validated filter value. #}
+{# Filter form field helper. `selected` compares against the validated filter value. #}
 {% macro option(value, label, selected) -%}
   <option value="{{ value }}"{% if selected == value %} selected{% endif %}>{{ label }}</option>
 {%- endmacro %}
 
-{# Short banner at the top of every catalogue and detail page. #}
+{# A vehicle with its official image. #}
+{% macro vehicle_tile(v, feature=false, sizes='(min-width: 900px) 33vw, 100vw', cls='', delay=0) -%}
+  <a class="tile{% if feature %} tile--feature{% endif %} {{ cls }}"{% if delay %} data-delay="{{ delay }}"{% endif %} href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}">
+    {{ picture(v.cover, fallback=v.manufacturer or v.name, sizes=sizes, alt='') }}
+    <span class="tile__shade" aria-hidden="true"></span>
+    <span class="tile__body">
+      <span class="tile__cat">{{ v.category_name }}</span>
+      <span class="tile__name display">{{ v.name }}</span>
+      <span class="tile__make">{{ v.manufacturer or 'Manufacturer not stated' }}</span>
+    </span>
+  </a>
+{%- endmacro %}
+
+{# Banner at the top of every catalogue and detail page. #}
 {% macro page_hero(eyebrow, title, lede='', cover=none, tall=false) -%}
   <section class="page-hero{% if tall %} page-hero--tall{% endif %}">
     {% if cover %}{{ picture(cover, alt='', sizes='100vw', cls='page-hero__bg', eager=true) }}{% else %}<div class="media page-hero__bg"><span class="media__fallback" aria-hidden="true"></span></div>{% endif %}

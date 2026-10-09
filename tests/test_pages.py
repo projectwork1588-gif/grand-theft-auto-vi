@@ -22,22 +22,23 @@ def test_homepage_identity_sections_and_disclaimer(client):
     assert "<title>Grand Theft Auto VI | Team Valkyrie</title>" in page
     assert "Grand Theft Auto" in page and 'class="hero__vi"' in page
     for heading in ("The people of Leonida", "Six regions, one state", "Wheels, hulls and handlebars",
-                    "Follow the links", "See it for yourself", "The archive in numbers"):
+                    "Where it all connects", "See it for yourself", "Step into Leonida"):
         assert heading in page, heading
     assert "An unofficial educational fan project by Team Valkyrie. Not affiliated with, endorsed by" in page
-    assert "Coming November 19, 2026" in page
+    assert "Coming<strong>November 19, 2026</strong>" in page
+    assert "as stated on" not in page and "official site</span>" not in page  # the line the team asked to remove
 
 
 def test_homepage_content_comes_from_mysql(client):
     page = html(client, "/")
     for expected in ("Jason Duval", "Lucia Caminos", "Brian Heder", "Real Dimez",           # characters
                      "Vice City", "Leonida Keys", "Mount Kalaga",                           # regions
-                     "Corvina GT", "Bruiser V8", "Meridian Sedan", "Ridgeback 4x4",         # one vehicle per category
+                     "Grotti Cheetah", "Shitzu Squalo", "Vapid Stanier", "Vapid Ganado Retro Build",   # official garage
                      "Ledger of Favours", "Ridge Run", "Last Call at Smokestack Row",         # the three newest stories
                      "Brian Heder</a>"):                                                    # official relationship
         assert expected in page, expected
     assert 'data-video="https://www.rockstargames.com/videoplayer?id=' in page
-    assert "Fictional demo" in page and "Official" in page
+    assert "Concept" in page and "Official" in page and "Fictional demo" not in page
 
 
 def test_homepage_official_images_load_remotely_and_lazily(client):
@@ -98,7 +99,7 @@ def test_character_detail_official_profile(client):
 
 def test_character_detail_demo_profile_with_related_content(client):
     page = html(client, "/characters/delia-marsh")
-    assert "badge--demo" in page and "Fictional demo record" in page
+    assert "badge--demo" in page and "Concept" in page and "Created by Team Valkyrie for this project. Not part of the game." in page
     assert 'href="/missions/harbour-lights"' in page and 'href="/locations/bayfront-studio-lot"' in page
     assert "Seen alongside" in page and "Nico Brandt" in page and "3 shared missions" in page
     assert "Official images" not in page  # no official media for fictional characters
@@ -110,24 +111,48 @@ def test_character_detail_handles_missing_information(client):
 
 
 # ------------------------------------------------------------------ vehicles
-def test_garage_listing_filters_and_labels(client):
+def test_garage_shows_only_official_vehicles_with_official_images(client):
     page = html(client, "/vehicles")
-    assert "Fictional demo vehicles" in page and "badge--demo" in page
-    assert len(names(page, "bay-row__name")) == 8
-    boats = html(client, "/vehicles?category=boat")
-    assert sorted(names(boats, "bay-row__name")) == ["Swampfox Airboat", "Tidewalker Skiff"]
-    assert 'aria-current="true"' in boats
-    assert names(html(client, "/vehicles?q=zephyr"), "bay-row__name") == ["Zephyr 250"]
-    assert names(html(client, "/vehicles?sort=name_desc&per_page=2"), "bay-row__name") == ["Zephyr 250", "Tidewalker Skiff"]
-    assert 'aria-label="Pagination"' in html(client, "/vehicles?per_page=3")
+    assert names(page, "tile__name display") == ["&#39;95 Grotti Cheetah", "&#39;67 Vapid Dominator Buggy", "Shitzu Squalo",
+                                                  "Vapid Stanier", "Vapid Ganado Retro Build"]
+    for concept in ("Corvina GT", "Bruiser V8", "Meridian Sedan", "Swampfox Airboat", "Tidewalker Skiff", "Zephyr 250"):
+        assert concept not in page, concept            # concept vehicles are not in the public garage
+    assert "badge--demo" not in page and "Fictional demo" not in page and "vehicles.svg" not in page
+    assert page.count("rockstargames.com/VI/_next/static/media/") >= 5 and "ULTIMATE_EDITION_GROTTI_CHEETAH" in page
+    assert "Rockstar has not published specifications" in page
 
 
-def test_vehicle_detail_page(client):
-    page = html(client, "/vehicles/swampfox-airboat")
-    assert "<h1>Swampfox Airboat</h1>" in page and "Fictional demo vehicle" in page
-    assert 'href="/missions/quiet-water"' in page and 'href="/locations/heron-reach-dock"' in page
-    assert 'href="/vehicles/tidewalker-skiff"' in page and "vehicles.svg#boat" in page
-    assert "no performance figures" in page
+def test_garage_filters_search_sorting_and_pagination(client):
+    tiles = lambda path: names(html(client, path), "tile__name display")
+    assert tiles("/vehicles?category=boat") == ["Shitzu Squalo"]
+    assert tiles("/vehicles?category=motorcycle") == []                      # empty categories give an empty state, not an error
+    assert "No vehicles found" in html(client, "/vehicles?category=motorcycle")
+    assert tiles("/vehicles?q=stanier") == ["Vapid Stanier"]
+    assert tiles("/vehicles?q=vapid&sort=name_desc") == ["Vapid Stanier", "Vapid Ganado Retro Build", "&#39;67 Vapid Dominator Buggy"]
+    assert tiles("/vehicles?status=demo") == tiles("/vehicles")             # the public garage ignores attempts to list concept vehicles
+    two = html(client, "/vehicles?per_page=2&page=2")
+    assert 'aria-label="Pagination"' in two and 'rel="prev"' in two and "Showing 3&ndash;4 of 5" in two
+    page = html(client, "/vehicles")
+    for chip in ("Sports", "Off-road", "Boats", "Sedans", "Muscle"):
+        assert f">{chip} <small>1</small>" in page, chip
+    assert "Motorcycles" not in page                                         # no official motorcycle, so no empty chip
+
+
+def test_official_vehicle_detail_page(client):
+    page = html(client, "/vehicles/shitzu-squalo")
+    assert "<h1>Shitzu Squalo</h1>" in page and "badge--official" in page
+    assert "https://www.rockstargames.com/VI/editions" in page                # source link
+    assert "Not published by Rockstar" in page and "Official images" in page and page.count("data-lightbox") == 4
+    assert "More from the garage" in page and 'href="/vehicles/vapid-stanier"' in page
+    assert "ULTIMATE_EDITION_SQUALO_01" in page and "Fictional" not in page
+
+
+def test_concept_vehicles_have_no_public_page(client):
+    for slug in ("corvina-gt", "swampfox-airboat", "bruiser-v8"):
+        response = client.get(f"/vehicles/{slug}")
+        assert response.status_code == 404, slug
+        assert "not part of the public garage" in response.get_data(as_text=True)
+        assert client.get(f"/api/v1/vehicles/{slug}").status_code == 200       # the API still serves the full database
 
 
 # ------------------------------------------------------------------ regions and locations
@@ -153,12 +178,13 @@ def test_locations_listing_filters(client):
     assert len(names(html(client, "/locations?region=vice-city"), "index-row__name")) == 3
     assert len(names(html(client, "/locations?type=waterfront"), "index-row__name")) == 3
     assert names(html(client, "/locations?sort=name_desc&per_page=2"), "index-row__name") == ["Sunset Pier Boardwalk", "Smokestack Row"]
-    assert "fictional demo records" in html(client, "/locations")
+    assert "original concepts by Team Valkyrie" in html(client, "/locations")
 
 
 def test_location_detail_page_labels_region_artwork_honestly(client):
     page = html(client, "/locations/pelican-quay-terminal")
-    assert "Fictional demo location" in page and "official artwork of Port Gellhorn, not of this place" in page
+    assert "badge--demo" in page and "Created by Team Valkyrie for this project. Not part of the game." in page
+    assert "official artwork of Port Gellhorn, not of this place" in page
     assert 'href="/regions/port-gellhorn"' in page and 'href="/missions/harbour-lights"' in page
     assert 'href="/characters/nico-brandt"' in page
 
@@ -166,17 +192,20 @@ def test_location_detail_page_labels_region_artwork_honestly(client):
 # ------------------------------------------------------------------ missions
 def test_missions_listing_and_type_filter(client):
     page = html(client, "/missions")
-    assert "Fictional demo stories" in page and len(names(page, "dossier__title")) == 5
-    assert names(html(client, "/missions?type=heist"), "dossier__title") == ["Last Call at Smokestack Row"]
-    assert names(html(client, "/missions?sort=title_desc&per_page=2"), "dossier__title") == ["Ridge Run", "Quiet Water"]
+    assert "Original concept stories by Team Valkyrie" in page and len(names(page, "story__title")) == 5
+    assert names(html(client, "/missions?type=heist"), "story__title") == ["Last Call at Smokestack Row"]
+    assert names(html(client, "/missions?sort=title_desc&per_page=2"), "story__title") == ["Ridge Run", "Quiet Water"]
     assert "3 characters &middot; 1 vehicles &middot; 2 locations" in page
 
 
 def test_mission_detail_page(client):
     page = html(client, "/missions/harbour-lights")
-    assert "<h1>Harbour Lights</h1>" in page and "Fictional demo story" in page
+    assert "<h1>Harbour Lights</h1>" in page and "badge--demo" in page and "Fictional demo" not in page
+    assert "Created by Team Valkyrie for this project. Not part of the game." in page
+    assert "official artwork of Port Gellhorn, not of this story" in page             # captioned region backdrop
     assert 'href="/characters/delia-marsh"' in page and "Arranges the shipment" in page
-    assert 'href="/vehicles/bruiser-v8"' in page and 'href="/locations/pelican-quay-terminal"' in page
+    assert "Bruiser V8" in page and 'href="/vehicles/bruiser-v8"' not in page         # concept vehicles are named, not linked
+    assert 'href="/locations/pelican-quay-terminal"' in page
     assert "Related stories" in page and "2 shared links" in page and "main setting" in page
 
 
@@ -227,3 +256,69 @@ def test_pager_window_helper():
     assert page_window(1, 5) == [1, 2, 3, None, 5]
     assert page_window(5, 10) == [1, None, 3, 4, 5, 6, 7, None, 10]
     assert page_window(10, 10) == [1, None, 8, 9, 10]
+
+
+# ------------------------------------------------------------------ design refinement (Team Valkyrie feedback)
+def test_hero_is_calm_and_keeps_the_required_identity(client):
+    page = html(client, "/")
+    hero = page.split('class="hero"')[1].split("</section>")[0]
+    assert "Welcome, gamers" in hero and "Team Valkyrie presents" in hero
+    assert 'class="hero__gta">Grand Theft Auto</span>' in hero and 'class="hero__vi"' in hero
+    assert "as stated on Rockstar" not in page
+    assert "Watch the trailer" in hero and "Explore Leonida" in hero
+    assert "hero__sun" not in page                      # the extra glow layer was removed
+
+
+def test_brand_lockup_is_in_the_header_and_footer(client):
+    page = html(client, "/characters")
+    assert page.count('class="brand__mark"') == 2 and page.count("Team Valkyrie &middot; Fan guide") == 2
+    assert 'class="nav-cta"' in page and "/#media" in page
+
+
+def test_labels_are_calm_and_blunt_wording_is_gone_everywhere(client):
+    for path in ("/", "/characters", "/characters/delia-marsh", "/vehicles", "/missions", "/missions/harbour-lights",
+                 "/locations", "/locations/pelican-quay-terminal", "/regions", "/regions/vice-city"):
+        page = html(client, path)
+        assert "Fictional demo" not in page and "fictional demo" not in page, path
+        assert "notice--demo" not in page and "invented by Team Valkyrie to demonstrate" not in page.lower(), path
+    page = html(client, "/characters")
+    assert page.count("badge--demo") == 3 and ">Concept<" in page and ">Official<" in page
+
+
+def test_homepage_garage_uses_official_images_not_silhouettes(client):
+    page = html(client, "/")
+    garage = page.split('id="garage"')[1].split("</section>")[0]
+    assert len(re.findall(r'<a class="tile[ "]', garage)) == 5 and "tile--feature" in garage
+    assert "<svg" not in garage and "ULTIMATE_EDITION" in garage
+    assert "Corvina" not in garage
+
+
+def test_media_reel_uses_official_posters_and_clip_cards(client):
+    page = html(client, "/")
+    media = page.split('id="media"')[1].split("</section>")[0]
+    assert media.count('class="video-card"') == 3 and "GTAVI_Trailer2_poster" in media
+    assert media.count('class="clip-card"') == 8 and "Jason_Duval_Video_Clip" in media
+    assert media.count('href="https://www.rockstargames.com/VI/media/videos"') >= 9      # 8 clip cards + the "All videos" button
+    assert "<video" not in page                       # no heavy autoplay video: only Rockstar's player, on demand
+
+
+def test_closing_band_replaces_the_plain_statistics_block(client):
+    page = html(client, "/")
+    band = page.split('aria-labelledby="closing-title"')[1]
+    assert "Step into Leonida" in band and 'class="stat-row"' in band and "The archive in numbers" not in page
+    for label in ("Characters", "Regions", "Vehicles", "Official media"):
+        assert f"<dt>{label}</dt>" in band, label
+    assert re.search(r"Vehicles</dt>\s*<dd>5</dd>", band)       # the garage count is the official garage
+
+
+def test_character_profile_links_to_the_official_clip(client):
+    page = html(client, "/characters/brian-heder")
+    assert "Official clip" in page and 'class="clip-feature"' in page and "Plays on rockstargames.com" in page
+    assert "https://www.rockstargames.com/VI/media/videos" in page
+    assert "Official clip" not in html(client, "/characters/delia-marsh")      # concept characters have no clip
+
+
+def test_catalogue_pages_have_cinematic_official_backdrops(client):
+    for path, fragment in (("/characters", "Jason_and_Lucia_Motel"), ("/vehicles", "GROTTI_CHEETAH_02"), ("/regions", "Vice_City_04"),
+                           ("/locations", "Port_Gellhorn_02"), ("/missions", "Vice_City_02")):
+        assert fragment in html(client, path), path

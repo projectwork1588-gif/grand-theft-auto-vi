@@ -1,61 +1,60 @@
 {% extends "base.html" %}
-{% from "_components.html" import badge, type_badge, page_hero, source_box %}
+{% from "_components.html" import badge, picture, page_hero, source_box, attribution, vehicle_tile %}
 {% block title %}{{ vehicle.name }}{% endblock %}
 {% block description %}{{ vehicle.summary }}{% endblock %}
 {% block content %}
-{% call page_hero('Garage · ' ~ vehicle.category_name, vehicle.name, vehicle.summary, tall=true) %}
-  <p class="hero-badges">{{ badge(vehicle.content_status) }} <span class="badge badge--type">{{ vehicle.category_name }}</span></p>
-  <svg class="hero-art" viewBox="0 0 240 100" aria-hidden="true"><use href="{{ url_for('static', filename='img/vehicles.svg') }}#{{ vehicle.category_slug }}"></use></svg>
+{% call page_hero('Garage · ' ~ vehicle.category_name, vehicle.name, vehicle.summary, cover=vehicle.cover, tall=true) %}
+  <p class="hero-badges">{{ badge(vehicle.content_status) }} <span class="badge badge--type">{{ vehicle.category_name }}</span>{% if vehicle.manufacturer %} <span class="badge badge--type">{{ vehicle.manufacturer }}</span>{% endif %}</p>
 {% endcall %}
 
 <section class="section section--tight">
   <div class="container detail">
     <div class="detail__main stack">
-      {% if vehicle.content_status == 'demo' %}
-      <div class="notice notice--demo"><strong>Fictional demo vehicle</strong><p>Invented by Team Valkyrie. It is not a GTA VI vehicle, and we show no performance figures because none are confirmed.</p></div>
-      {% endif %}
       <h2 class="panel-title">About</h2>
       <p class="lede">{{ vehicle.description }}</p>
-      {{ source_box(vehicle) }}
       <dl class="kv">
         <div><dt>Manufacturer</dt><dd>{{ vehicle.manufacturer or 'Not stated' }}</dd></div>
         <div><dt>Category</dt><dd><a href="{{ url_for('pages.vehicles', category=vehicle.category_slug) }}">{{ vehicle.category_name }}</a></dd></div>
-        <div><dt>Category note</dt><dd>{{ vehicle.category_description }}</dd></div>
+        <div><dt>Specifications</dt><dd>Not published by Rockstar</dd></div>
       </dl>
+      {{ source_box(vehicle) }}
+      {{ attribution(vehicle.cover) }}
 
-      {% if vehicle.same_category %}
-      <h2 class="panel-title">More {{ vehicle.category_name | lower }}</h2>
-      <ul class="link-list">
-        {% for o in vehicle.same_category %}
-        <li><a href="{{ url_for('pages.vehicle_detail', slug=o.slug) }}"><span><span class="name">{{ o.name }}</span><br><span class="meta">{{ o.manufacturer or 'Manufacturer not stated' }}</span></span>{{ badge(o.content_status) }}</a></li>
-        {% endfor %}
+      {% if vehicle.gallery | length > 1 %}
+      <h2 class="panel-title">Official images</h2>
+      <ul class="gallery">
+        {% for m in vehicle.gallery %}{% if image_src(m.embed_url, 1920) %}
+        <li><a href="{{ image_src(m.embed_url, 1920) }}" data-lightbox data-caption="{{ m.title }}">{{ picture(m, sizes='(min-width: 900px) 30vw, 50vw') }}</a></li>
+        {% endif %}{% endfor %}
       </ul>
       {% endif %}
     </div>
 
     <aside class="detail__side stack">
+      {% if vehicle.missions or vehicle.locations %}
       <section aria-labelledby="vm-title">
-        <h2 class="panel-title" id="vm-title">Used in missions</h2>
-        {% if vehicle.missions %}
+        <h2 class="panel-title" id="vm-title">Appears in</h2>
         <ul class="link-list">
-          {% for m in vehicle.missions %}
-          <li><a href="{{ url_for('pages.mission_detail', slug=m.slug) }}"><span><span class="name">{{ m.title }}</span><br><span class="meta">{{ m.usage_note }}</span></span>{{ type_badge(m.mission_type) }}</a></li>
-          {% endfor %}
+          {% for m in vehicle.missions %}<li><a href="{{ url_for('pages.mission_detail', slug=m.slug) }}"><span class="name">{{ m.title }}</span>{{ badge(m.content_status) }}</a></li>{% endfor %}
+          {% for l in vehicle.locations %}<li><a href="{{ url_for('pages.location_detail', slug=l.slug) }}"><span class="name">{{ l.name }}</span><span class="meta">{{ l.region_name }}</span></a></li>{% endfor %}
         </ul>
-        {% else %}<p class="muted">Not used in any stored mission.</p>{% endif %}
       </section>
-      <section aria-labelledby="vl-title">
-        <h2 class="panel-title" id="vl-title">Seen at</h2>
-        {% if vehicle.locations %}
-        <ul class="link-list">
-          {% for l in vehicle.locations %}
-          <li><a href="{{ url_for('pages.location_detail', slug=l.slug) }}"><span><span class="name">{{ l.name }}</span><br><span class="meta">{{ l.region_name }}</span></span>{{ badge(l.content_status) }}</a></li>
-          {% endfor %}
-        </ul>
-        {% else %}<p class="muted">No connected locations.</p>{% endif %}
+      {% endif %}
+      <section aria-labelledby="where-title">
+        <h2 class="panel-title" id="where-title">Where Rockstar shows it</h2>
+        <p class="muted">In its own official screenshots. See them all on <a href="https://www.rockstargames.com/VI/media/screenshots" target="_blank" rel="noopener noreferrer">rockstargames.com</a>.</p>
       </section>
     </aside>
   </div>
-  <div class="container"><p class="section-more"><a class="link-arrow" href="{{ url_for('pages.vehicles') }}">Back to the garage</a></p></div>
+
+  {% if vehicle.more %}
+  <div class="container">
+    <h2 class="panel-title other-title">More from the garage</h2>
+    <div class="garage-grid garage-grid--list">
+      {% for o in vehicle.more[:3] %}{{ vehicle_tile(o, sizes='(min-width: 1000px) 33vw, 100vw') }}{% endfor %}
+    </div>
+    <p class="section-more"><a class="link-arrow" href="{{ url_for('pages.vehicles') }}">Back to the garage</a></p>
+  </div>
+  {% endif %}
 </section>
 {% endblock %}

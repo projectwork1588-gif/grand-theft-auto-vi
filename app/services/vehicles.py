@@ -26,11 +26,15 @@ def list_vehicles(args):
     }
 
 
-def list_categories():
-    return {"data": repo.categories_with_counts()}
+def list_categories(args=None):
+    problems = {}
+    status = v.clean_choice(args or {}, "status", v.CONTENT_STATUSES, problems)
+    v.raise_if_problems(problems)
+    return {"data": repo.categories_with_counts(status)}
 
 
-def get_vehicle(slug):
+def get_vehicle_with_id(slug):
+    """The public payload plus the internal id (kept server-side, used to attach media)."""
     v.require_slug(slug)
     vehicle = repo.get_by_slug(slug)
     if vehicle is None:
@@ -40,4 +44,8 @@ def get_vehicle(slug):
     vehicle["missions"] = repo.missions_for(vehicle_id)
     vehicle["locations"] = repo.locations_for(vehicle_id)
     vehicle["same_category"] = repo.same_category(category_id, vehicle_id)
-    return vehicle
+    return vehicle, vehicle_id
+
+
+def get_vehicle(slug):
+    return get_vehicle_with_id(slug)[0]

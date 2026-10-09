@@ -17,6 +17,7 @@ ENTITY_TABLES = {
     "character": ("media_characters", "character_id"),
     "region": ("media_regions", "region_id"),
     "location": ("media_locations", "location_id"),
+    "vehicle": ("media_vehicles", "vehicle_id"),
 }
 _COLUMNS = "m.media_id, m.slug, m.title, m.media_type, m.source_url, m.embed_url, m.attribution"
 _VISIBLE = "m.approval_status = 'approved' AND m.embed_url IS NOT NULL"
@@ -87,7 +88,21 @@ def by_slugs(slugs):
 
 @_tolerate_missing_tables(list)
 def videos():
+    """Videos that play in Rockstar's own player (not the poster-and-link clip cards)."""
     return query_all(
         f"""SELECT {_COLUMNS} FROM media_assets m
-            WHERE m.media_type IN ('trailer', 'video') AND {_VISIBLE}
+            WHERE m.media_type IN ('trailer', 'video') AND m.usage_status = 'embed_permitted' AND {_VISIBLE}
             ORDER BY m.media_id""")
+
+
+@_tolerate_missing_tables(list)
+def character_clips():
+    """One poster-and-link card per character clip. embed_url holds the poster image, source_url the clip page."""
+    return query_all(
+        f"""SELECT {_COLUMNS}, c.slug AS character_slug, c.full_name AS character_name
+            FROM media_assets m
+            JOIN media_characters mc ON mc.media_id = m.media_id
+            JOIN characters c ON c.character_id = mc.character_id
+            WHERE m.media_type = 'video' AND m.usage_status = 'link_only' AND {_VISIBLE}
+            ORDER BY c.character_id"""
+    )

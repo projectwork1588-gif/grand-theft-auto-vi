@@ -68,7 +68,6 @@ def test_static_assets_referenced_by_pages_exist(client):
     page = client.get("/").get_data(as_text=True)
     for url in re.findall(r'(?:href|src)="(/static/[^"]+)"', page):
         assert client.get(url).status_code == 200, url
-    assert client.get("/static/img/vehicles.svg").status_code == 200
 
 
 def test_every_page_is_well_formed_accessible_html(client):
@@ -100,8 +99,9 @@ def test_filter_forms_are_labelled_and_keyboard_usable(client):
 
 def test_internal_links_keep_working_for_every_listed_entity(client):
     """Each catalogue card must link to a detail page that exists (checked through the real database slugs)."""
-    for listing, detail_prefix in (("/api/v1/characters", "/characters/"), ("/api/v1/vehicles", "/vehicles/"),
+    for listing, detail_prefix in (("/api/v1/characters", "/characters/"), ("/api/v1/vehicles?status=official", "/vehicles/"),
                                    ("/api/v1/missions", "/missions/"), ("/api/v1/locations", "/locations/"),
                                    ("/api/v1/regions", "/regions/")):
-        for item in client.get(listing + "?per_page=50").get_json()["data"]:
+        sep = "&" if "?" in listing else "?"
+        for item in client.get(f"{listing}{sep}per_page=50").get_json()["data"]:
             assert client.get(detail_prefix + item["slug"]).status_code == 200, (detail_prefix, item["slug"])

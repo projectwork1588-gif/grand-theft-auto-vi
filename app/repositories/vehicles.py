@@ -6,6 +6,7 @@ SORT_ORDERS = {
     "name_desc": "v.name DESC, v.vehicle_id ASC",
     "category": "vc.name ASC, v.name ASC",
     "newest": "v.created_at DESC, v.vehicle_id DESC",
+    "featured": "v.vehicle_id ASC",  # editorial order: the order the records were added
 }
 
 _FROM = " FROM vehicles v JOIN vehicle_categories vc ON vc.category_id = v.category_id "
@@ -37,13 +38,15 @@ def search(q_like, category, status, sort, limit, offset):
     return rows, total
 
 
-def categories_with_counts():
+def categories_with_counts(status=None):
+    """Categories with their vehicle counts (LEFT JOIN keeps empty ones). Optionally count one status only."""
+    on_status, params = (" AND v.content_status = %s", [status]) if status else ("", [])
     return query_all(
-        """SELECT vc.slug, vc.name, vc.description, COUNT(v.vehicle_id) AS vehicle_count
-           FROM vehicle_categories vc
-           LEFT JOIN vehicles v ON v.category_id = vc.category_id
-           GROUP BY vc.category_id, vc.slug, vc.name, vc.description
-           ORDER BY vc.name""")
+        f"""SELECT vc.slug, vc.name, vc.description, COUNT(v.vehicle_id) AS vehicle_count
+            FROM vehicle_categories vc
+            LEFT JOIN vehicles v ON v.category_id = vc.category_id{on_status}
+            GROUP BY vc.category_id, vc.slug, vc.name, vc.description
+            ORDER BY vc.name""", params)
 
 
 def get_by_slug(slug):
@@ -94,3 +97,13 @@ def featured(limit=4):
            WHERE v.vehicle_id IN (SELECT MIN(vehicle_id) FROM vehicles GROUP BY category_id)
            ORDER BY vc.category_id LIMIT %s""",
         (limit,))
+
+
+def ids_by_slug(slugs):
+    """{slug: vehicle_id}, used to attach media."""
+    slugs = list(slugs)
+    if not slugs:
+        return {}
+    marks = ", ".join(["%s"] * len(slugs))
+    rows = query_all(f"SELECT slug, vehicle_id FROM vehicles WHERE slug IN ({marks})", slugs)
+    return {row["slug"]: row["vehicle_id"] for row in rows}

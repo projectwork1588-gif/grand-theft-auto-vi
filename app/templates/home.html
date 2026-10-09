@@ -1,7 +1,8 @@
 {% extends "base.html" %}
-{% from "_components.html" import badge, type_badge, picture, initials %}
+{% from "_components.html" import badge, type_badge, picture, initials, vehicle_tile %}
 {% block header_class %}{% endblock %}
 {% block content %}
+{% set featured_video = videos[0] if videos else none %}
 
 {# ============================== HERO ============================== #}
 <section class="hero" aria-labelledby="hero-title">
@@ -15,7 +16,6 @@
         {% endif %}
       </div>
     {% endfor %}
-    <div class="hero__sun"></div>
     <div class="hero__shade"></div>
   </div>
 
@@ -23,34 +23,41 @@
     <p class="hero__welcome">Welcome, gamers</p>
     <p class="hero__presents">Team Valkyrie presents</p>
     <h1 id="hero-title" class="hero__title">
-      <span class="hero__line">Grand Theft Auto</span>
+      <span class="hero__gta">Grand Theft Auto</span>
       <span class="hero__vi" aria-label="Six">VI</span>
     </h1>
-    <p class="hero__lede">Step into the state of Leonida. Meet the cast, drive the garage, explore six regions and follow the stories, all pulled live from our database.</p>
+    <p class="hero__lede">The people, places and stories of Leonida, brought together in one guide.</p>
     <div class="hero__actions">
       <a class="btn" href="#leonida">Explore Leonida</a>
-      {% if videos %}
-      <button class="btn btn--ghost" type="button" data-video="{{ player_src(videos[1].embed_url if videos | length > 1 else videos[0].embed_url, true) }}"
-              data-title="{{ (videos[1] if videos | length > 1 else videos[0]).title }}">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> Watch trailer
+      {% if featured_video %}
+      <button class="play-btn" type="button" data-video="{{ player_src(featured_video.embed_url, true) }}" data-title="{{ featured_video.title }}">
+        <span class="play-btn__disc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></span>
+        Watch the trailer
       </button>
       {% else %}
-      <a class="btn btn--ghost" href="{{ links.site }}" target="_blank" rel="noopener noreferrer">Watch on rockstargames.com</a>
+      <a class="play-btn" href="{{ links.site }}" target="_blank" rel="noopener noreferrer">
+        <span class="play-btn__disc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></span>
+        Watch on rockstargames.com
+      </a>
       {% endif %}
     </div>
   </div>
 
-  <p class="hero__release"><strong>{{ release_note }}</strong><span>as stated on Rockstar's official site</span></p>
-  <a class="hero__cue" href="#cast" aria-label="Scroll to the cast"><span></span></a>
+  <div class="hero__foot">
+    <div class="container">
+      <a class="hero__cue" href="#cast" aria-label="Scroll to the cast"><i></i>Scroll</a>
+      <p class="hero__release">Coming<strong>{{ release_note }}</strong></p>
+    </div>
+  </div>
 </section>
 
 {# ============================== CAST ============================== #}
 <section class="section" id="cast" aria-labelledby="cast-title">
   <div class="container">
     <div class="section-head reveal">
-      <p class="eyebrow">01 &middot; The cast</p>
+      <p class="eyebrow">The cast</p>
       <h2 id="cast-title">The people of Leonida</h2>
-      <p>The eight named characters on Rockstar's official character page. Open a profile to see everything our database connects to them.</p>
+      <p>The eight characters on Rockstar's official character page. Open a profile to see everything the archive connects to them.</p>
     </div>
 
     {% set leads = characters[:2] %}
@@ -64,7 +71,6 @@
           <span class="lead__role">{{ c.role_title }}</span>
           <span class="lead__name display">{{ c.full_name }}</span>
           <span class="lead__summary">{{ c.summary }}</span>
-          {{ badge(c.content_status) }}
         </span>
       </a>
       {% endfor %}
@@ -91,26 +97,26 @@
 </section>
 
 {# ============================== LEONIDA ============================== #}
-<section class="section section--surface" id="leonida" aria-labelledby="leonida-title">
+<section class="section" id="leonida" aria-labelledby="leonida-title">
   <div class="container">
     <div class="section-head reveal">
-      <p class="eyebrow">02 &middot; Explore Leonida</p>
+      <p class="eyebrow">Explore Leonida</p>
       <h2 id="leonida-title">Six regions, one state</h2>
-      <p>From the neon of Vice City to the national park at Mount Kalaga. Each region is a real record in MySQL with its own locations and connections.</p>
+      <p>From the neon of Vice City to the national park at Mount Kalaga. Each region carries its own locations, people and stories.</p>
     </div>
   </div>
-  <div class="container container--wide">
+  <div class="container--wide">
     <ol class="region-rail">
       {% for r in regions %}
       <li class="region-panel reveal" data-delay="{{ (loop.index0 % 3) + 1 }}">
         <a href="{{ url_for('pages.region_detail', slug=r.slug) }}">
-          {{ picture(r.cover, fallback=r.name, sizes='(min-width: 900px) 40vw, 100vw', alt='') }}
+          {{ picture(r.cover, fallback=r.name, sizes='(min-width: 1000px) 40vw, 50vw', alt='') }}
           <span class="region-panel__shade" aria-hidden="true"></span>
           <span class="region-panel__body">
             <span class="region-panel__num">{{ '%02d' | format(loop.index) }}</span>
             <span class="region-panel__name display">{{ r.name }}</span>
             <span class="region-panel__summary">{{ r.summary }}</span>
-            <span class="region-panel__meta">{{ r.location_count }} location{{ '' if r.location_count == 1 else 's' }} in the database</span>
+            <span class="region-panel__meta">{{ r.location_count }} location{{ '' if r.location_count == 1 else 's' }} in the archive</span>
           </span>
         </a>
       </li>
@@ -120,52 +126,49 @@
 </section>
 
 {# ============================== GARAGE ============================== #}
+{% if vehicles %}
 <section class="section" id="garage" aria-labelledby="garage-title">
   <div class="container">
     <div class="section-head reveal">
-      <p class="eyebrow">03 &middot; The garage</p>
+      <p class="eyebrow">The garage</p>
       <h2 id="garage-title">Wheels, hulls and handlebars</h2>
-      <p>One vehicle from each of the first four categories. These are fictional demo records we invented to show how the database works. None is a confirmed GTA VI vehicle.</p>
+      <p>Vehicles Rockstar has named and shown in its own screenshots. Rockstar has not published specifications, so we show none.</p>
     </div>
-    <ul class="bays">
-      {% for v in vehicles %}
-      <li class="reveal" data-delay="{{ loop.index0 % 3 + 1 }}">
-        <a class="bay" href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}">
-          <svg class="bay__art" viewBox="0 0 240 100" aria-hidden="true"><use href="{{ url_for('static', filename='img/vehicles.svg') }}#{{ v.category_slug }}"></use></svg>
-          <span class="bay__cat">{{ v.category_name }}</span>
-          <span class="bay__name display">{{ v.name }}</span>
-          <span class="bay__make">{{ v.manufacturer or 'Manufacturer not stated' }}</span>
-          {{ badge(v.content_status) }}
-        </a>
-      </li>
+    <div class="garage-grid">
+      {% for v in vehicles[:5] %}
+      {{ vehicle_tile(v, feature=loop.first, sizes='(min-width: 1000px) 40vw, 100vw', cls='reveal', delay=loop.index0 % 3 + 1) }}
       {% endfor %}
-    </ul>
+    </div>
     <p class="section-more"><a class="link-arrow" href="{{ url_for('pages.vehicles') }}">Open the garage</a></p>
   </div>
 </section>
+{% endif %}
 
 {# ============================== STORIES ============================== #}
-<section class="section section--surface" id="stories" aria-labelledby="stories-title">
+{% set stories_bg = backdrops.get('shot-vice-city-03') %}
+<section class="section band" id="stories" aria-labelledby="stories-title">
+  <div class="band__bg" aria-hidden="true">{{ picture(stories_bg, alt='', sizes='100vw') }}</div>
+  <div class="band__shade" aria-hidden="true"></div>
   <div class="container">
     <div class="section-head reveal">
-      <p class="eyebrow">04 &middot; Stories and connections</p>
-      <h2 id="stories-title">Follow the links</h2>
-      <p>Every record connects to others. Official connections come from Rockstar's own words. The story archive is fictional demo material.</p>
+      <p class="eyebrow">Stories and connections</p>
+      <h2 id="stories-title">Where it all connects</h2>
+      <p>Rockstar's own links between its characters, and original concept stories by Team Valkyrie that show how the archive joins people, places and vehicles together.</p>
     </div>
     <div class="split">
       <div>
-        <h3 class="panel-title">Demo story archive</h3>
-        <ol class="dossiers">
+        <h3 class="panel-title">Concept stories</h3>
+        <ol class="story-list">
           {% for m in missions %}
           <li class="reveal" data-delay="{{ loop.index }}">
-            <a class="dossier" href="{{ url_for('pages.mission_detail', slug=m.slug) }}">
-              <span class="dossier__num display">{{ '%02d' | format(loop.index) }}</span>
-              <span class="dossier__main">
-                <span class="dossier__title">{{ m.title }}</span>
-                <span class="dossier__summary">{{ m.summary }}</span>
-                <span class="dossier__counts">{{ m.cast_count }} characters &middot; {{ m.vehicle_count }} vehicles &middot; {{ m.location_count }} locations</span>
+            <a class="story" href="{{ url_for('pages.mission_detail', slug=m.slug) }}">
+              <span class="story__num">{{ '%02d' | format(loop.index) }}</span>
+              <span class="story__main">
+                <span class="story__title">{{ m.title }}</span>
+                <span class="story__summary">{{ m.summary }}</span>
+                <span class="story__counts">{{ m.cast_count }} characters &middot; {{ m.vehicle_count }} vehicles &middot; {{ m.location_count }} locations</span>
               </span>
-              <span class="dossier__tags">{{ type_badge(m.mission_type) }} {{ badge(m.content_status) }}</span>
+              <span class="story__tags">{{ type_badge(m.mission_type) }} {{ badge(m.content_status) }}</span>
             </a>
           </li>
           {% endfor %}
@@ -188,11 +191,10 @@
         {% else %}
         <p class="muted">No official connections are stored yet.</p>
         {% endif %}
-        <h3 class="panel-title legend-title">How to read the labels</h3>
+        <h3 class="panel-title legend-title">Reading the labels</h3>
         <ul class="legend">
           <li>{{ badge('official') }}<span>Stated on Rockstar's own website, with a source link.</span></li>
-          <li>{{ badge('fan') }}<span>Community or team interpretation, not confirmed.</span></li>
-          <li>{{ badge('demo') }}<span>Invented by Team Valkyrie for this course project.</span></li>
+          <li>{{ badge('demo') }}<span>Created by Team Valkyrie. Not part of the game.</span></li>
         </ul>
       </aside>
     </div>
@@ -203,32 +205,44 @@
 <section class="section" id="media" aria-labelledby="media-title">
   <div class="container">
     <div class="section-head reveal">
-      <p class="eyebrow">05 &middot; Official media</p>
+      <p class="eyebrow">Official media</p>
       <h2 id="media-title">See it for yourself</h2>
-      <p>Trailers and images come straight from Rockstar. Videos play in Rockstar's own player only when you press play. Images load from Rockstar's servers. Nothing is copied into this project.</p>
+      <p>Trailers play in Rockstar's own player when you press play. Every image and poster is loaded from Rockstar's servers. Nothing is copied into this project.</p>
     </div>
 
     {% if videos %}
-    <ul class="videos">
+    <ul class="reel">
       {% for m in videos %}
-      {% set poster = video_posters[loop.index0] if video_posters | length > loop.index0 else none %}
+      {% set poster = video_posters.get(['poster-trailer-2', 'poster-trailer-1', 'poster-extended-look'][loop.index0]) %}
       <li class="reveal" data-delay="{{ loop.index }}">
         <button class="video-card" type="button" data-video="{{ player_src(m.embed_url, true) }}" data-title="{{ m.title }}">
-          {{ picture(poster, fallback='VI', sizes='(min-width: 900px) 33vw, 100vw', alt='') }}
+          {{ picture(poster, fallback='VI', sizes='(min-width: 900px) 55vw, 100vw', alt='') }}
           <span class="video-card__shade" aria-hidden="true"></span>
           <span class="video-card__play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
-          <span class="video-card__title">{{ m.title }}</span>
+          <span class="video-card__title"><b>{{ m.title | replace('Grand Theft Auto VI', '') | replace(':', '') | trim or m.title }}</b><small>Official video &middot; Rockstar Games</small></span>
         </button>
       </li>
       {% endfor %}
     </ul>
     {% else %}
-    <div class="notice notice--official reveal">
-      <strong>Trailers on Rockstar's site</strong>
-      <p>Watch <a href="https://www.rockstargames.com/VI/trailer-1" target="_blank" rel="noopener noreferrer">Trailer 1</a>,
-        <a href="https://www.rockstargames.com/VI/trailer-2" target="_blank" rel="noopener noreferrer">Trailer 2</a> and
-        <a href="https://www.rockstargames.com/VI/an-extended-look" target="_blank" rel="noopener noreferrer">An Extended Look</a> on rockstargames.com.</p>
-    </div>
+    <p class="muted reveal">Watch <a href="https://www.rockstargames.com/VI/trailer-1" target="_blank" rel="noopener noreferrer">Trailer 1</a>,
+      <a href="https://www.rockstargames.com/VI/trailer-2" target="_blank" rel="noopener noreferrer">Trailer 2</a> and
+      <a href="https://www.rockstargames.com/VI/an-extended-look" target="_blank" rel="noopener noreferrer">An Extended Look</a> on rockstargames.com. Trailers on Rockstar's site.</p>
+    {% endif %}
+
+    {% if clips %}
+    <h3 class="panel-title clips-title">Official character clips</h3>
+    <ul class="clip-rail" aria-label="Official character clips on Rockstar's site">
+      {% for c in clips %}
+      <li>
+        <a class="clip-card" href="{{ c.source_url }}" target="_blank" rel="noopener noreferrer">
+          {{ picture(c, fallback=initials(c.character_name), sizes='(min-width: 900px) 20vw, 60vw', alt='') }}
+          <span class="clip-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+          <span class="clip-card__label"><b>{{ c.character_name }}</b><small>Watch on rockstargames.com</small></span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
     {% endif %}
 
     {% if screenshots %}
@@ -252,19 +266,27 @@
   </div>
 </section>
 
-{# ============================== NUMBERS ============================== #}
-<section class="section section--tight section--surface" aria-labelledby="numbers-title">
+{# ============================== CLOSING BAND ============================== #}
+{% set closing_bg = backdrops.get('art-jason-lucia-robbery') %}
+<section class="section band closing" aria-labelledby="closing-title">
+  <div class="band__bg" aria-hidden="true">{{ picture(closing_bg, alt='', sizes='100vw') }}</div>
+  <div class="band__shade" aria-hidden="true"></div>
   <div class="container">
-    <h2 class="panel-title" id="numbers-title">The archive in numbers</h2>
-    <p class="muted">Counted from MySQL every time this page loads.</p>
-    <dl class="stat-grid">
-      {% for name, count in stats.items() %}
+    <p class="eyebrow">The archive</p>
+    <h2 id="closing-title">Step into Leonida</h2>
+    <dl class="stat-row">
+      {% for s in stats %}
       <div class="stat">
-        <dt>{{ name | replace('_', ' ') | title }}</dt>
-        <dd>{{ count }}</dd>
+        <dt>{{ s.label }}</dt>
+        <dd>{{ s.count }}</dd>
       </div>
       {% endfor %}
     </dl>
+    <div class="closing__actions">
+      <a class="btn" href="{{ url_for('pages.characters') }}">Meet the cast</a>
+      <a class="btn btn--ghost" href="{{ url_for('pages.regions') }}">Explore the regions</a>
+    </div>
+    <p class="closing__note">Counted from the database every time this page loads.</p>
   </div>
 </section>
 {% endblock %}

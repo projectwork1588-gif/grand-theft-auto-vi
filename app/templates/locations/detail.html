@@ -11,9 +11,6 @@
 <section class="section section--tight">
   <div class="container detail">
     <div class="detail__main stack">
-      {% if location.content_status == 'demo' %}
-      <div class="notice notice--demo"><strong>Fictional demo location</strong><p>Invented by Team Valkyrie. It does not exist in the game. The region it sits in, {{ location.region_name }}, is real.</p></div>
-      {% endif %}
       <h2 class="panel-title">About</h2>
       <p class="lede">{{ location.description }}</p>
       {{ source_box(location) }}

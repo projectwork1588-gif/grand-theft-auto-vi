@@ -15,6 +15,17 @@
       {{ source_box(character) }}
       {{ attribution(character.cover) }}
 
+      {% if character.clip and image_src(character.clip.embed_url, 1280) %}
+      <h2 class="panel-title">Official clip</h2>
+      <a class="clip-feature" href="{{ character.clip.source_url }}" target="_blank" rel="noopener noreferrer">
+        {{ picture(character.clip, fallback=initials(character.full_name), sizes='(min-width: 900px) 40vw, 100vw', alt='') }}
+        <span class="clip-feature__label">
+          <span class="play-btn__disc" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+          <b>Watch the official clip<small>Plays on rockstargames.com</small></b>
+        </span>
+      </a>
+      {% endif %}
+
       <dl class="kv">
         <div><dt>Role</dt><dd>{{ character.role_title }}</dd></div>
         <div><dt>Alias</dt><dd>{{ character.alias or 'None stated' }}</dd></div>

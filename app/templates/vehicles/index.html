@@ -1,17 +1,12 @@
 {% extends "base.html" %}
-{% from "_components.html" import badge, pager, page_hero, results_line, option %}
+{% from "_components.html" import badge, pager, page_hero, results_line, option, vehicle_tile %}
 {% block title %}Garage{% endblock %}
-{% block description %}Browse the Team Valkyrie demo garage: fictional vehicles that show how the GTA VI fan database handles categories, search and sorting.{% endblock %}
+{% block description %}The vehicles Rockstar has named and shown in its own GTA VI screenshots, with category filters and search.{% endblock %}
 {% block content %}
-{{ page_hero('The garage', 'Garage', 'Cars, boats and bikes, sorted by category.') }}
+{{ page_hero('The garage', 'Garage', 'Vehicles Rockstar has named and shown in its own screenshots. Rockstar has not published specifications, so none are listed.', cover=hero_cover) }}
 
 <section class="section section--tight">
   <div class="container">
-    <div class="notice notice--demo">
-      <strong>Fictional demo vehicles</strong>
-      <p>Every vehicle here was invented by Team Valkyrie to demonstrate the database. None is a confirmed GTA VI vehicle, and no performance statistics are shown because none are officially confirmed.</p>
-    </div>
-
     <nav class="chips chips--spaced" aria-label="Vehicle categories">
       <a class="chip" href="{{ url_for('pages.vehicles') }}"{% if not filters.category %} aria-current="true"{% endif %}>All</a>
       {% for c in categories %}
@@ -31,10 +26,10 @@
       </label>
       <label>Sort by
         <select name="sort">
+          {{ option('featured', 'Featured', filters.sort) }}
           {{ option('name_asc', 'Name A to Z', filters.sort) }}
           {{ option('name_desc', 'Name Z to A', filters.sort) }}
           {{ option('category', 'Category', filters.sort) }}
-          {{ option('newest', 'Newest records', filters.sort) }}
         </select>
       </label>
       <div class="filters__actions">
@@ -46,25 +41,16 @@
     <p class="results-meta" role="status">{{ results_line(pagination) }}</p>
 
     {% if data %}
-    <ul class="bay-list">
+    <div class="garage-grid garage-grid--list">
       {% for v in data %}
-      <li class="reveal">
-        <a class="bay-row" href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}">
-          <svg class="bay-row__art" viewBox="0 0 240 100" aria-hidden="true"><use href="{{ url_for('static', filename='img/vehicles.svg') }}#{{ v.category_slug }}"></use></svg>
-          <span class="bay-row__main">
-            <span class="bay-row__cat">{{ v.category_name }}</span>
-            <span class="bay-row__name display">{{ v.name }}</span>
-            <span class="bay-row__sum">{{ v.manufacturer or 'Manufacturer not stated' }} &middot; {{ v.summary }}</span>
-          </span>
-          <span class="bay-row__end">{{ badge(v.content_status) }}</span>
-        </a>
-      </li>
+      {{ vehicle_tile(v, feature=false, sizes='(min-width: 1000px) 33vw, 100vw', cls='reveal', delay=loop.index0 % 3 + 1) }}
       {% endfor %}
-    </ul>
+    </div>
     {% else %}
     <div class="empty"><h2>No vehicles found</h2><p>Nothing matches those filters. <a href="{{ url_for('pages.vehicles') }}">Reset the filters</a>.</p></div>
     {% endif %}
     {{ pager(pagination) }}
+    <p class="attribution">Vehicle images &copy; Rockstar Games / Take-Two Interactive, shown from <a href="https://www.rockstargames.com/VI/media/screenshots" target="_blank" rel="noopener noreferrer">Rockstar's own site</a>.</p>
   </div>
 </section>
 {% endblock %}

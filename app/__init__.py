@@ -16,10 +16,11 @@ CONTENT_SECURITY_POLICY = (
     "base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
 )
 
+# Shown on every card and page. The database values stay official / fan / demo.
 STATUS_LABELS = {
     "official": "Official",
-    "fan": "Fan interpretation",
-    "demo": "Fictional demo",
+    "fan": "Fan view",
+    "demo": "Concept",
 }
 
 

@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% from "_components.html" import badge, picture, initials, pager, page_hero, results_line, option %}
 {% block title %}Characters{% endblock %}
-{% block description %}Every named character from Grand Theft Auto VI's official line-up, plus fictional demo characters, with search, filters and profiles.{% endblock %}
+{% block description %}Every named character from Grand Theft Auto VI's official line-up, plus original concept characters from Team Valkyrie, with search, filters and profiles.{% endblock %}
 {% block content %}
-{{ page_hero('The cast', 'Characters', 'Official characters from Rockstar\'s own line-up, and fictional demo characters we invented to test the database. Every card says which is which.') }}
+{{ page_hero('The cast', 'Characters', 'The characters named on Rockstar\'s official page, alongside original concept characters from Team Valkyrie. Every card is labelled.', cover=hero_cover) }}
 
 <section class="section section--tight">
   <div class="container">
@@ -15,8 +15,8 @@
         <select name="status">
           {{ option('', 'All sources', filters.status or '') }}
           {{ option('official', 'Official', filters.status) }}
-          {{ option('fan', 'Fan interpretation', filters.status) }}
-          {{ option('demo', 'Fictional demo', filters.status) }}
+          {{ option('fan', 'Fan view', filters.status) }}
+          {{ option('demo', 'Concept', filters.status) }}
         </select>
       </label>
       <label>Region

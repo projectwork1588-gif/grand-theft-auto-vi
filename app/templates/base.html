@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Grand Theft Auto VI{% endblock %} | Team Valkyrie</title>
   <meta name="description" content="{% block description %}An unofficial educational fan project by Team Valkyrie exploring the characters, regions, vehicles and stories of Grand Theft Auto VI.{% endblock %}">
-  <meta name="theme-color" content="#0c0713">
+  <meta name="theme-color" content="#0a0710">
   <script src="{{ url_for('static', filename='js/boot.js') }}"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages.css') }}">
@@ -19,8 +19,12 @@
 
   <header class="site-header {% block header_class %}site-header--solid{% endblock %}" data-header>
     <div class="container header-inner">
-      <a class="brand" href="{{ url_for('main.index') }}" aria-label="Grand Theft Auto VI fan project, home">
-        <span class="brand__small">Grand Theft Auto</span><span class="brand__vi" aria-hidden="true">VI</span>
+      <a class="brand" href="{{ url_for('main.index') }}" aria-label="Grand Theft Auto VI, a Team Valkyrie fan guide: home">
+        <span class="brand__mark" aria-hidden="true"><span>VI</span></span>
+        <span class="brand__text">
+          <span class="brand__title">Grand Theft Auto</span>
+          <span class="brand__sub">Team Valkyrie &middot; Fan guide</span>
+        </span>
       </a>
       <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" data-nav-toggle>
         <span></span><span></span><span></span><span class="visually-hidden">Menu</span>
@@ -31,6 +35,7 @@
           <li><a href="{{ url_for(endpoints[0]) }}"{% if request.endpoint in endpoints %} aria-current="page"{% endif %}>{{ label }}</a></li>
           {% endfor %}
         </ul>
+        <a class="nav-cta" href="{{ url_for('main.index') }}#media"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> Trailers</a>
       </nav>
     </div>
   </header>
@@ -44,9 +49,10 @@
       <div class="footer-grid">
         <div class="footer-brand">
           <a class="brand" href="{{ url_for('main.index') }}">
-            <span class="brand__small">Grand Theft Auto</span><span class="brand__vi" aria-hidden="true">VI</span>
+            <span class="brand__mark" aria-hidden="true"><span>VI</span></span>
+            <span class="brand__text"><span class="brand__title">Grand Theft Auto</span><span class="brand__sub">Team Valkyrie &middot; Fan guide</span></span>
           </a>
-          <p>Welcome, gamers. Team Valkyrie presents a database-driven fan guide to the state of Leonida, built for a Web Technologies and DBMS course.</p>
+          <p>Welcome, gamers. A database-driven guide to the state of Leonida, built by Team Valkyrie for a Web Technologies and DBMS course.</p>
         </div>
         <div class="footer-col">
           <h2>Explore</h2>
@@ -73,7 +79,7 @@
       </div>
       <div class="footer-base">
         <p class="disclaimer">{{ disclaimer }}</p>
-        <small>Grand Theft Auto VI, its characters and its official images and videos are the property of Rockstar Games and Take-Two Interactive. They are shown here by reference to Rockstar's own pages and are never copied into this project. Vehicles, missions and locations marked "Fictional demo" were invented by Team Valkyrie. Site code &copy; Team Valkyrie, MIT licence.</small>
+        <small>Grand Theft Auto VI, its characters and its official images and videos belong to Rockstar Games and Take-Two Interactive. They are shown by reference to Rockstar's own pages and are never copied into this project. Records labelled Concept were created by Team Valkyrie and are not part of the game. Site code &copy; Team Valkyrie, MIT licence.</small>
       </div>
     </div>
   </footer>
