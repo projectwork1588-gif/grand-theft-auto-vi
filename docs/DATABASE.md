@@ -30,6 +30,8 @@ erDiagram
     CHARACTERS ||--o{ MEDIA_CHARACTERS : "shown in"
     MEDIA_ASSETS ||--o{ MEDIA_LOCATIONS : "shows"
     LOCATIONS ||--o{ MEDIA_LOCATIONS : "shown in"
+    MEDIA_ASSETS ||--o{ MEDIA_REGIONS : "shows"
+    REGIONS ||--o{ MEDIA_REGIONS : "shown in"
 
     USERS { int user_id PK
             varchar username UK
@@ -95,9 +97,11 @@ erDiagram
                        int character_id PK_FK }
     MEDIA_LOCATIONS { int media_id PK_FK
                       int location_id PK_FK }
+    MEDIA_REGIONS { int media_id PK_FK
+                    smallint region_id PK_FK }
 ```
 
-## Tables and why each exists (18)
+## Tables and why each exists (19)
 
 | # | Table | Why it exists | Key points |
 |---|-------|---------------|-----------|
@@ -116,6 +120,7 @@ erDiagram
 | 16 | `media_assets` | Database half of the media inventory. Records where an asset lives and its permission state. Never contains copied Rockstar media. | `usage_status`, `approval_status`, `CHECK` that some location (link/embed/local path) exists. |
 | 17 | `media_characters` | Many-to-many media <-> character. | Composite PK. |
 | 18 | `media_locations` | Many-to-many media <-> location. | Composite PK. |
+| 19 | `media_regions` | **Added in Phase 2.** Many-to-many media <-> region. Official region imagery belongs to regions. Linking it to the fictional demo locations would be misleading. | Composite PK, both FKs ON DELETE CASCADE. Created by `database/migrations/001_phase2_media.sql` and also part of `schema.sql`. |
 
 ### Decision: four favourite tables instead of one "polymorphic" table
 A single `favourites(user_id, entity_type, entity_id)` table cannot have a real foreign key, so MySQL could not stop a
@@ -131,7 +136,7 @@ enforces, not just a convention.
 
 * **One-to-many:** regions -> locations, vehicle_categories -> vehicles, locations -> characters (home).
 * **Many-to-many:** characters <-> characters, missions <-> characters / vehicles / locations, users <-> each entity (favourites), media <-> characters / locations.
-* **Composite primary keys:** 10 tables (`character_relationships`, 3 mission junctions, 4 favourites, 2 media junctions).
+* **Composite primary keys:** 11 tables (`character_relationships`, 3 mission junctions, 4 favourites, 3 media junctions).
 * **Cascade rules:** deleting a character removes its junction rows (CASCADE) but only blanks `home_location_id` on
   characters when a location is deleted (SET NULL). Deleting a region or category that is still in use is **blocked** (RESTRICT).
 
@@ -163,11 +168,22 @@ Search currently uses `LIKE '%text%'`, which cannot use a normal index. That is 
 | Regions | Vice City, Leonida Keys, Grassrivers, Port Gellhorn, Ambrosia, Mount Kalaga (6) | `official`: all six are listed on the same Rockstar page. We store only what it states |
 | Locations, vehicles, missions | all | `demo` |
 | Relationships | Jason-Lucia, Brian-Jason, Cal-Jason, Boobie Ike-Dre'Quan | `official` (stated on that page). The other three are `demo` |
-| Media | 3 link-only rows pointing at the official `/VI/trailer-1`, `/VI/trailer-2`, `/VI/media` pages | `pending_review` (no embed or licence terms confirmed) |
+| Media | 57 rows: 3 official videos (Rockstar's own player), 1 link to the official Media page, 53 official images (artwork, region postcards, screenshots). 46 character links and 20 region links. See `docs/MEDIA_INVENTORY.md` | Remote references only. `approved` for display by the Phase 2 media brief. Rockstar states no licence terms, so human review is recommended. Fictional records get no official media |
 
 **Correction history:** the first Phase 1 seed marked five regions as `fan` and omitted Real Dimez because only secondary sources had been reachable. A direct check of Rockstar's Leonida page confirmed them, so they were reclassified.
 
 Demo missions deliberately contain **only demo characters**, so the project never invents story for real GTA VI characters.
+
+## Phase 2 migration (non-destructive)
+
+Phase 1 databases (including the owner's) lack `media_regions` and the official media rows. `database/migrations/001_phase2_media.sql`:
+
+* `CREATE TABLE IF NOT EXISTS media_regions` (no drop),
+* upserts `media_assets` rows with fixed ids (`INSERT ... AS new ON DUPLICATE KEY UPDATE`),
+* adds links with `INSERT IGNORE`.
+
+It contains no `DROP`, `DELETE` or `TRUNCATE`, and `scripts.migrate_db` refuses to run a file that does. Run `python -m scripts.migrate_db --plan` first (read-only). Tests prove it is idempotent, that it changes no content table, and that an upgraded database equals a freshly seeded one.
+Until it is applied the website still works: media lookups tolerate the missing table and pages show original fallbacks.
 
 ## Accounts and privileges
 

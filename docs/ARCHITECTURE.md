@@ -1,4 +1,4 @@
-# Architecture (Phase 1)
+# Architecture
 
 ## The big picture in plain English
 
@@ -17,8 +17,9 @@ Repository(app/repositories/)    "Ask the database."    the ONLY place SQL is wr
 app/db.py -> connection pool -> MySQL (InnoDB)
 ```
 
-Why three layers? You can explain each in a viva in one sentence, tests can target each layer, and a SQL
-mistake can only live in one folder.
+Why three layers? You can explain each in a viva in one sentence, tests can target each layer, and a SQL mistake can only live in one folder.
+
+Phase 2 added `services/site.py`, which builds the **page view-models**: it calls the same services as the API, then adds related content and media. A page and its API endpoint therefore read the same data.
 
 ## Key decisions
 
@@ -26,23 +27,62 @@ mistake can only live in one folder.
 |-------|----------|--------|
 | App creation | Application factory `create_app()` | Tests build their own app pointed at the test database. |
 | Config | Environment variables via `.env` (`python-dotenv`) | No secrets in Git. |
-| DB driver | `mysql-connector-python`, pure-Python mode, connection pool created lazily | Required stack. Pure mode avoids binary-wheel surprises. Lazy pool lets the app start and report a clear 503 when MySQL is down. |
-| SQL safety | Values are always bound parameters. User input never becomes SQL text. Sorting uses a whitelist dictionary (`SORT_ORDERS`). LIKE wildcards are escaped. | Prevents SQL injection (tested). |
-| Errors | JSON errors for `/api/*`, HTML for pages. Database errors become a generic 503 that never leaks SQL or credentials. | Safe and consistent. |
+| DB driver | `mysql-connector-python`, pure-Python mode, lazily created connection pool | Required stack. The app can start and show a clear 503 when MySQL is down. |
+| SQL safety | Values are always bound parameters. User input never becomes SQL text. Sorting uses whitelist dictionaries. LIKE wildcards are escaped. IN lists are built from a count of `%s` marks. | Prevents SQL injection (tested). |
+| Slugs | Pages and API require lowercase `a-z0-9-` slugs and return 404 otherwise, before touching the database | MySQL's collation ignores case, so `Jason-Duval` would otherwise be a second URL for the same record. |
+| Errors | JSON for `/api/*`, a styled page otherwise. Database errors become a generic 503. | No SQL or credentials leak (tested). |
 | Test safety | Config refuses to run tests on a database not ending in `_test`. | A test can never wipe real data. |
-| MySQL account | App uses a dedicated non-root user with rights on only the project databases. | Least privilege. |
-| IDs in URLs/JSON | Public slugs (`/characters/lucia-caminos`), internal numeric IDs are not exposed | Cleaner URLs, less enumeration. |
+| Accounts | Website account is DML-only. A separate migration account does schema work. | Least privilege. |
+| IDs in URLs/JSON | Public slugs. Internal numeric IDs are not exposed. | Cleaner URLs, less enumeration. |
 
-## Folder structure
+## Frontend (Phase 2)
 
-See the tree in the README. Phase 1 contains no authentication, so there are no sessions, CSRF tokens or admin routes yet.
-`SECRET_KEY` is read now so Phase 3 can use it.
+**Stack:** HTML5, CSS3, vanilla JavaScript, Jinja2. No framework and no library. Two small scripts: `boot.js` (one line, marks that JavaScript works) and `site.js` (about 120 lines). Every page works without JavaScript. The script only adds the mobile menu, scroll reveals, the trailer and image dialogs, and image-failure fallbacks.
 
-## Issues found while reviewing the brief
+**Design system.** A late-afternoon Florida palette (aubergine night, hot pink, sunset orange, Gulf teal) with a condensed poster display face (Anton) and Inter for text. The sunset gradient appears only as a brand device: the hero sky, fallbacks and the wordmark. Tokens live in `static/css/site.css`, reusable pieces in `components.css`, page layouts in `pages.css`. The three Jinja files `_components.html` (badges, image frame, pager, source box, page hero), `base.html` and the page templates form the component layer.
 
-1. **MySQL version:** the machine has 8.0.46, the brief says 8.4 LTS. Not run on 8.4 (see `DATABASE.md`).
-2. **MySQL rule discovered by running the schema:** a `CHECK` cannot use a column whose foreign key has `ON UPDATE CASCADE` (error 3823). Fixed on `character_relationships`.
-3. **Official data (corrected after verification):** the first pass could only reach the homepage and wrongly classed five regions as `fan`. Reading https://www.rockstargames.com/VI/only-in-leonida confirmed all six regions and eight characters (including Real Dimez). They are now `official`. See `docs/VERIFICATION.md`.
-4. **Privilege separation (done):** the website account is DML-only. A separate `valkyrie_migrator` account holds the DDL rights needed by the setup scripts.
-5. **CSRF (Phase 3):** no extra library is planned. A per-session token checked on every POST is small enough to hand-write and explain. Decision to confirm with the reviewer.
-6. **Password hashing (Phase 3):** Werkzeug's `generate_password_hash` (scrypt, already installed with Flask), so no new dependency.
+**Distinct layouts, not one card grid repeated:**
+
+| Section | Layout |
+|---------|--------|
+| Cast | Two large lead panels, then a horizontally scrolling poster rail; the catalogue is a poster wall with some double-width posters |
+| Regions | Expanding panels (homepage), alternating full-bleed features (regions page) |
+| Garage | Horizontal rows with a category silhouette, not cards |
+| Stories | Numbered case-file rows |
+| Locations | Numbered index list |
+
+**Content labels.** Every record shows an *Official*, *Fan interpretation* or *Fictional demo* badge whose meaning is in its text, never colour alone. Detail pages explain the classification and link the source.
+
+**Accessibility.** Skip link, semantic landmarks, one `h1` per page, labelled search forms, visible focus rings, `aria-current` in the navigation, `role="status"` result counts, keyboard-operable dialogs, 44px minimum targets, and full support for `prefers-reduced-motion` (a still hero, no slideshow, no reveal animation).
+
+**Performance.** Responsive `srcset` images at 640, 1280 and 1920 pixels, lazy loading except the hero, no render-blocking JavaScript, no video until a visitor presses play, and system-font fallbacks so text shows before the web font arrives.
+
+## Security headers
+
+Every response carries a Content-Security-Policy: scripts and styles only from this site (plus Google Fonts for CSS and font files), images and frames only from `www.rockstargames.com`, no objects, no framing by other sites. There are no inline scripts, inline styles or event-handler attributes (tested on every page). All dynamic text is escaped by Jinja (tested with hostile database values). External links use `rel="noopener noreferrer"`.
+
+## Media architecture
+
+See `docs/MEDIA_INVENTORY.md`. In short: official images and Rockstar's own video player are referenced remotely and only from exact allow-listed prefixes (`app/media_urls.py`). Original fallbacks sit under every image. Missing media never breaks a page.
+
+## Phase 1 review items
+
+1. **Destructive SQL:** `schema.sql` still starts with `DROP TABLE IF EXISTS` for the project's own tables, but no script runs it on a populated database without `--reset` plus a typed confirmation. Phase 2 changes go through a non-destructive migration.
+2. **Test isolation:** unchanged. Tests run only against the `*_test` database, and the suite refuses any other name.
+3. **Secrets:** `.env` is generated with random values by `scripts.make_env` and is Git-ignored. For production, set `SECRET_KEY` and the database passwords through the host's environment, serve over HTTPS, run behind a production WSGI server (not `flask run`), and add `Strict-Transport-Security`.
+4. **Verification record:** `docs/VERIFICATION.md` now records the owner's successful local verification.
+5. **Classifications:** unchanged and enforced by a database CHECK (an `official` row must have a `source_url`).
+
+## Issues found while building Phase 2
+
+1. **Migration did not commit.** `migrate_db` ran its INSERTs but never committed, so they were rolled back on close while its own "after" check, run in the same session, looked fine. A test that compares an upgraded database with a freshly seeded one caught it. It now commits and verifies on a new connection.
+2. **Reduced motion hid the hero.** A blanket "shorten all animations" rule made the slideshow jump to its final, invisible frame. Reduced-motion visitors now get a still first image.
+3. **Imported Jinja macros cannot see context values**, so the pager's helpers had to be template globals.
+4. **Case-insensitive slugs** (see Key decisions).
+5. **An early image check marked a loading image as broken** because `srcset` had not resolved yet. The check now runs after the page load event.
+
+## Remaining decisions for the owner
+
+* CSRF approach for Phase 3 (a small hand-written session token is planned).
+* Whether the use of Rockstar's published media is acceptable without stated licence terms.
+* Whether to add `media_vehicles` so official vehicle imagery can be shown without misleading demo records.

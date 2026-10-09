@@ -1,8 +1,78 @@
-# Phase 1 verification report (post-review)
+# Verification reports
+
+## Phase 1: verified on the owner's computer (2026-10-09)
+
+The owner ran the Phase 1 verification steps on their own Windows machine against the **locally installed MySQL 8.0.46 service** and reported:
+
+| Check | Result |
+|-------|--------|
+| MySQL database setup (`scripts.setup_db`) | Completed successfully |
+| Automated tests | **106 passed** |
+| Flask homepage, JSON APIs and health check | Worked in the browser |
+
+This closes the items that the historical report below lists as pending the owner's run (its tasks 1 and 6). MySQL 8.4 LTS is still untested.
+
+## Phase 2: cinematic public website (2026-10-09)
+
+### Test results (real MySQL 8.0.46 service, `gta6_vi_test` database only)
+
+```
+python -m pytest -q
+244 passed in 92.39s
+```
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `test_pages.py` | 45 | Homepage, every list and detail page, search, filters, sorting, pagination, labels, 400 and 404 pages, malformed input |
+| `test_api_phase2.py` | 15 | Vehicles, categories, missions, locations, related-content joins, Phase 1 response shapes unchanged |
+| `test_media.py` | 9 | URL allow-listing, cover selection, hostile URLs, missing media tables, error handling |
+| `test_security_and_failures.py` | 53 | CSP and headers, no inline script or style, escaping of hostile data, safe 503 and 500 pages |
+| `test_site_integrity.py` | 5 | Crawl of every internal link, static assets, HTML balance, one `h1`, alt text, labelled forms |
+| `test_migration.py` | 7 | Migration is non-destructive, idempotent, equals a fresh seed, and works on a Phase 1-shaped database |
+| Phase 1 files | 110 | Connectivity, integrity, seed, privileges, setup safety, APIs, SQL runner (updated for 19 tables and 57 media rows) |
+
+The suite grew from 106 to 244 tests. No Phase 1 test was removed or weakened. Counts and media expectations were updated where the schema and seed legitimately changed.
+
+### Browser verification (built-in browser, 2026-10-09)
+
+| Check | Result |
+|-------|--------|
+| Homepage hero with official Jason and Lucia artwork, identity text and entrance animation | Verified by screenshot |
+| Cast posters, region panels, garage rows, official connections, media mosaic, profile page | Verified by screenshot |
+| Trailer dialog: opens Rockstar's player (`autoplay=true`), caption shows attribution, Escape removes the iframe and returns focus | Verified by script |
+| Phone width (375px): no horizontal overflow on the homepage, characters, regions, vehicle, mission and locations pages | Verified by script |
+| Mobile menu: opens, marks the current page, closes on Escape with focus returned | Verified by script |
+| Official page links (7) and all 57 media URLs | HTTP 200 |
+| Console | No errors (one warning, fixed) |
+
+Screenshots were viewed during development but are **not committed**: they contain Rockstar's artwork, which must not enter the repository.
+
+### Defects found and fixed during Phase 2
+
+| # | Defect | Found by | Fix |
+|---|--------|----------|-----|
+| 1 | The migration runner never committed its INSERTs | `test_seed_and_migration_agree` | Explicit commit, rollback on error, verification on a new connection |
+| 2 | Reduced-motion rule hid the hero slideshow completely | Browser check | Still first image for reduced-motion visitors |
+| 3 | Pager helpers undefined inside imported macros | Page tests | Registered as template globals |
+| 4 | `/characters/Jason-Duval` resolved because MySQL's collation ignores case | `test_unknown_routes_and_slugs...` | Strict lowercase slug validation before any query |
+| 5 | A load-time check marked a still-loading hero image as broken | Browser check | Check runs after the load event |
+| 6 | Redundant `allowfullscreen` console warning | Browser console | Removed |
+| 7 | Regions listed alphabetically instead of in Rockstar's order | Visual review | Pages use Rockstar's order, the API stays alphabetical |
+
+### Not yet done
+
+* `python -m scripts.migrate_db` has **not** been run against the owner's development database `gta6_vi`. Their approval is requested. Until then that database lacks the official images and trailers, and pages show fallbacks. The test database does have everything.
+* MySQL 8.4 LTS untested.
+* Official image URLs are build-hashed and may change.
+* Rockstar states no licence terms for its media: human review recommended.
+
+---
+
+## Phase 1 post-review verification (historical record)
 
 Date: 2026-10-09. Scope: the eight verification tasks requested after ChatGPT's review. Phase 2 has **not** been started and the homepage was **not** redesigned.
 
-## Status at a glance
+### Status at a glance (as of that report)
 
 | # | Task | Status |
 |---|------|--------|
