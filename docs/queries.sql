@@ -105,3 +105,13 @@ JOIN media_regions mr ON mr.region_id = r.region_id
 JOIN media_assets m ON m.media_id = mr.media_id AND m.approval_status = 'approved'
 GROUP BY r.region_id, r.name
 ORDER BY r.name;
+
+-- 14. Official vehicles and how many official images each has (media_vehicles junction, LEFT JOIN + HAVING)
+SELECT v.name, vc.name AS category, COUNT(mv.media_id) AS images
+FROM vehicles v
+JOIN vehicle_categories vc ON vc.category_id = v.category_id
+LEFT JOIN media_vehicles mv ON mv.vehicle_id = v.vehicle_id
+WHERE v.content_status = 'official'
+GROUP BY v.vehicle_id, v.name, vc.name
+HAVING COUNT(mv.media_id) >= 1
+ORDER BY images DESC, v.name;

@@ -6,7 +6,7 @@ from scripts.init_db import init_database
 
 TABLES = ("regions", "locations", "characters", "character_relationships", "vehicle_categories",
           "vehicles", "missions", "mission_characters", "mission_vehicles", "mission_locations",
-          "media_assets", "media_characters", "media_regions")
+          "media_assets", "media_characters", "media_regions", "media_vehicles")
 
 
 def count(cur, table):
@@ -16,9 +16,9 @@ def count(cur, table):
 
 def test_exact_row_counts(cur):
     expected = {"regions": 6, "locations": 8, "characters": 11, "character_relationships": 7,
-                "vehicle_categories": 6, "vehicles": 8, "missions": 5, "mission_characters": 10,
-                "mission_vehicles": 8, "mission_locations": 8, "media_assets": 57,
-                "media_characters": 46, "media_regions": 20, "media_locations": 0, "users": 0}
+                "vehicle_categories": 6, "vehicles": 13, "missions": 5, "mission_characters": 10,
+                "mission_vehicles": 8, "mission_locations": 8, "media_assets": 85,
+                "media_characters": 54, "media_regions": 20, "media_vehicles": 17, "media_locations": 0, "users": 0}
     for table, n in expected.items():
         assert count(cur, table) == n, table
 
@@ -46,10 +46,36 @@ def test_official_sources_point_at_rockstar(cur):
             assert row["source_url"].startswith("https://www.rockstargames.com/VI"), (table, row)
 
 
-def test_vehicles_and_missions_are_all_demo(cur):
-    for table in ("vehicles", "missions", "locations"):
+def test_missions_and_locations_are_all_concept_records(cur):
+    for table in ("missions", "locations"):
         cur.execute(f"SELECT COUNT(*) AS n FROM {table} WHERE content_status <> 'demo'")
         assert cur.fetchone()["n"] == 0, table
+
+
+def test_official_vehicles_are_exactly_the_five_rockstar_shows(cur):
+    cur.execute("SELECT slug, source_url FROM vehicles WHERE content_status = 'official' ORDER BY vehicle_id")
+    rows = cur.fetchall()
+    assert [r["slug"] for r in rows] == ["grotti-cheetah", "vapid-dominator-buggy", "shitzu-squalo", "vapid-stanier", "vapid-ganado"]
+    assert all(r["source_url"].startswith("https://www.rockstargames.com/VI/") for r in rows)
+    cur.execute("SELECT COUNT(*) AS n FROM vehicles WHERE content_status = 'demo'")
+    assert cur.fetchone()["n"] == 8
+
+
+def test_every_official_vehicle_has_official_images_and_concept_vehicles_have_none(cur):
+    cur.execute("SELECT v.slug, COUNT(mv.media_id) AS n FROM vehicles v LEFT JOIN media_vehicles mv ON mv.vehicle_id = v.vehicle_id "
+                "WHERE v.content_status = 'official' GROUP BY v.vehicle_id, v.slug")
+    counts = {r["slug"]: r["n"] for r in cur.fetchall()}
+    assert counts == {"grotti-cheetah": 4, "vapid-dominator-buggy": 4, "shitzu-squalo": 4, "vapid-stanier": 4, "vapid-ganado": 1}
+    cur.execute("SELECT COUNT(*) AS n FROM media_vehicles mv JOIN vehicles v ON v.vehicle_id = mv.vehicle_id WHERE v.content_status <> 'official'")
+    assert cur.fetchone()["n"] == 0
+
+
+def test_no_made_up_vehicle_names(cur):
+    """Names Rockstar's own page treats as stores or services must never become vehicles."""
+    cur.execute("SELECT name FROM vehicles WHERE content_status = 'official'")
+    names = " ".join(r["name"] for r in cur.fetchall())
+    for not_a_vehicle in ("Stock 305", "Electric Fang", "Rideout", "One-Eyed Willie", "Sara"):
+        assert not_a_vehicle not in names
 
 
 def test_no_demo_mission_features_an_official_character(cur):
@@ -91,11 +117,18 @@ def test_media_is_remote_official_only_and_nothing_is_copied_locally(cur):
 
 def test_video_embeds_are_official_players_and_documented(cur):
     cur.execute("SELECT slug, usage_status, approval_status, embed_url FROM media_assets "
-                "WHERE media_type IN ('trailer', 'video') ORDER BY media_id")
+                "WHERE media_type IN ('trailer', 'video') AND usage_status = 'embed_permitted' ORDER BY media_id")
     rows = cur.fetchall()
     assert [r["slug"] for r in rows] == ["official-trailer-1", "official-trailer-2", "official-an-extended-look"]
     for r in rows:
-        assert r["usage_status"] == "embed_permitted" and "videoplayer?id=" in r["embed_url"]
+        assert "videoplayer?id=" in r["embed_url"]
+    # One poster-and-link clip card per named character. The clip files themselves are never hosted or played here.
+    cur.execute("SELECT m.slug, m.source_url, m.embed_url, c.slug AS character_slug FROM media_assets m "
+                "JOIN media_characters mc ON mc.media_id = m.media_id JOIN characters c ON c.character_id = mc.character_id "
+                "WHERE m.media_type = 'video' AND m.usage_status = 'link_only' ORDER BY m.media_id")
+    clips = cur.fetchall()
+    assert len(clips) == 8 and len({c["character_slug"] for c in clips}) == 8
+    assert all(c["source_url"] == "https://www.rockstargames.com/VI/media/videos" and c["embed_url"].endswith(".jpg") for c in clips)
 
 
 def test_every_official_character_and_region_has_official_media(cur):

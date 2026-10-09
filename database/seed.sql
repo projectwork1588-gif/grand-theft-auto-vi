@@ -43,37 +43,37 @@ INSERT INTO regions (region_id, slug, name, summary, description, content_status
 -- All locations are fictional demo places invented by Team Valkyrie.
 INSERT INTO locations (location_id, region_id, slug, name, location_type, summary, description, content_status, source_note) VALUES
 (1, 1, 'sunset-pier-boardwalk', 'Sunset Pier Boardwalk', 'landmark',
- 'Fictional demo boardwalk used to demonstrate location records.',
- 'Fictional demo location invented by Team Valkyrie. It does not exist in the game.',
- 'demo', 'Invented for database demonstration.'),
+ 'A sun-bleached boardwalk of arcades and neon.',
+ 'A long wooden promenade of arcades, snack bars and neon signs that glows at dusk.',
+ 'demo', 'Created by Team Valkyrie for this project.'),
 (2, 1, 'neon-row-district', 'Neon Row District', 'district',
- 'Fictional demo nightlife district.',
- 'Fictional demo location invented by Team Valkyrie. It does not exist in the game.',
- 'demo', 'Invented for database demonstration.'),
+ 'A nightlife district of clubs and late-night diners.',
+ 'A few blocks where the clubs never close and every doorway has a story.',
+ 'demo', 'Created by Team Valkyrie for this project.'),
 (3, 1, 'bayfront-studio-lot', 'Bayfront Studio Lot', 'venue',
- 'Fictional demo recording studio venue.',
- 'Fictional demo location invented by Team Valkyrie. It does not exist in the game.',
- 'demo', 'Invented for database demonstration.'),
+ 'A recording studio lot on the bay.',
+ 'A converted warehouse studio where deals are made as often as records.',
+ 'demo', 'Created by Team Valkyrie for this project.'),
 (4, 2, 'coral-hook-marina', 'Coral Hook Marina', 'waterfront',
- 'Fictional demo marina on an island road.',
- 'Fictional demo location invented by Team Valkyrie. It does not exist in the game.',
- 'demo', 'Invented for database demonstration.'),
+ 'A marina at the end of an island road.',
+ 'A marina where charter boats and quiet cargo share the same piers.',
+ 'demo', 'Created by Team Valkyrie for this project.'),
 (5, 3, 'heron-reach-dock', 'Heron Reach Airboat Dock', 'waterfront',
- 'Fictional demo dock at the edge of a wetland.',
- 'Fictional demo location invented by Team Valkyrie. It does not exist in the game.',
- 'demo', 'Invented for database demonstration.'),
+ 'An airboat dock at the edge of the wetlands.',
+ 'Airboats set out across the reeds from here at first light.',
+ 'demo', 'Created by Team Valkyrie for this project.'),
 (6, 4, 'pelican-quay-terminal', 'Pelican Quay Terminal', 'waterfront',
- 'Fictional demo cargo terminal.',
- 'Fictional demo location invented by Team Valkyrie. It does not exist in the game.',
- 'demo', 'Invented for database demonstration.'),
+ 'A cargo terminal on the waterfront.',
+ 'Cranes, containers and floodlights, busiest after dark.',
+ 'demo', 'Created by Team Valkyrie for this project.'),
 (7, 5, 'smokestack-row', 'Smokestack Row', 'district',
- 'Fictional demo industrial strip.',
- 'Fictional demo location invented by Team Valkyrie. It does not exist in the game.',
- 'demo', 'Invented for database demonstration.'),
+ 'An industrial strip of chimneys and loading yards.',
+ 'The chimneys never stop smoking, and the loading yards are quiet at last call.',
+ 'demo', 'Created by Team Valkyrie for this project.'),
 (8, 6, 'kalaga-ridge-lookout', 'Kalaga Ridge Lookout', 'wilderness',
- 'Fictional demo hilltop viewpoint.',
- 'Fictional demo location invented by Team Valkyrie. It does not exist in the game.',
- 'demo', 'Invented for database demonstration.');
+ 'A hilltop viewpoint above the national park.',
+ 'A lookout with a view across the treeline, popular at sunset.',
+ 'demo', 'Created by Team Valkyrie for this project.');
 
 -- ----------------------------- characters ----------------------------
 -- Official records are verified against rockstargames.com/VI/only-in-leonida. IDs 8-10 are demo.
@@ -112,17 +112,17 @@ INSERT INTO characters (character_id, slug, full_name, alias, role_title, summar
  NULL, 'official', 'https://www.rockstargames.com/VI/only-in-leonida', 'Verified on Rockstar''s official site on 2026-10-09.'),
 -- Demo records: fictional characters invented by Team Valkyrie.
 (8, 'delia-marsh', 'Delia Marsh', 'The Broker', 'Fixer',
- 'Fictional demo fixer who arranges deals along the waterfront.',
- 'Fictional demo character invented by Team Valkyrie to demonstrate character records, relationships and missions. Not part of the game.',
- 3, 'demo', NULL, 'Invented for database demonstration.'),
+ 'Fixer who arranges deals along the waterfront.',
+ 'Delia Marsh makes a living out of knowing everyone and owing no one. From a back office at Bayfront Studio Lot she brokers favours between dock crews, nightclub owners and anyone who needs something moved quietly.',
+ 3, 'demo', NULL, 'Created by Team Valkyrie for this project.'),
 (9, 'tomas-reyes-hall', 'Tomas Reyes-Hall', 'Gator', 'Airboat guide',
- 'Fictional demo guide who knows every channel of the wetlands.',
- 'Fictional demo character invented by Team Valkyrie to demonstrate character records, relationships and missions. Not part of the game.',
- 5, 'demo', NULL, 'Invented for database demonstration.'),
+ 'Wetland guide who knows every channel by heart.',
+ 'Tomas has spent twenty years on the water around Heron Reach and can find a route through the reeds with his eyes closed. He takes passengers anywhere, as long as they ask no questions.',
+ 5, 'demo', NULL, 'Created by Team Valkyrie for this project.'),
 (10, 'nico-brandt', 'Nico Brandt', NULL, 'Dock foreman',
- 'Fictional demo foreman who runs a busy cargo terminal.',
- 'Fictional demo character invented by Team Valkyrie to demonstrate character records, relationships and missions. Not part of the game.',
- 6, 'demo', NULL, 'Invented for database demonstration.');
+ 'Foreman who keeps a busy cargo terminal running.',
+ 'Nico Brandt runs the night shift at Pelican Quay Terminal. Nothing leaves the gates without his say-so, and nothing stays secret for long.',
+ 6, 'demo', NULL, 'Created by Team Valkyrie for this project.');
 
 -- Relationships marked official are stated on the official Leonida page. The rest are demo.
 INSERT INTO character_relationships (from_character_id, to_character_id, relationship_type, description, content_status, source_url) VALUES
@@ -130,9 +130,9 @@ INSERT INTO character_relationships (from_character_id, to_character_id, relatio
 (7, 1, 'employer', 'Brian gives Jason housing in return for his help.', 'official', 'https://www.rockstargames.com/VI/only-in-leonida'),
 (3, 1, 'ally', 'Cal is described as Jason''s friend.', 'official', 'https://www.rockstargames.com/VI/only-in-leonida'),
 (4, 5, 'associate', 'Described as partners in the Only Raw Records venture.', 'official', 'https://www.rockstargames.com/VI/only-in-leonida'),
-(8, 10, 'associate', 'Demo: Delia brokers shipping favours with Nico.', 'demo', NULL),
-(8, 9,  'ally',      'Demo: Delia trusts Tomas to move quiet cargo through the wetlands.', 'demo', NULL),
-(9, 10, 'rival',     'Demo: Tomas and Nico disagree over who controls the river route.', 'demo', NULL);
+(8, 10, 'associate', 'Delia brokers shipping favours with Nico.', 'demo', NULL),
+(8, 9,  'ally',      'Delia trusts Tomas to move quiet cargo through the wetlands.', 'demo', NULL),
+(9, 10, 'rival',     'Tomas and Nico disagree over who controls the river route.', 'demo', NULL);
 
 -- ------------------------ vehicle categories / vehicles -----------------------
 INSERT INTO vehicle_categories (category_id, slug, name, description) VALUES
@@ -145,23 +145,23 @@ INSERT INTO vehicle_categories (category_id, slug, name, description) VALUES
 
 -- All vehicles are fictional demo records. No performance statistics are stored.
 INSERT INTO vehicles (vehicle_id, category_id, slug, name, manufacturer, summary, description, content_status, source_note) VALUES
-(1, 1, 'corvina-gt',      'Corvina GT',      'Veloce Motors',    'Fictional demo sports coupe.',     'Fictional demo vehicle invented by Team Valkyrie. It is not a confirmed GTA VI vehicle.', 'demo', 'Invented for database demonstration.'),
-(2, 1, 'strada-lumen',    'Strada Lumen',    'Veloce Motors',    'Fictional demo sports roadster.',  'Fictional demo vehicle invented by Team Valkyrie. It is not a confirmed GTA VI vehicle.', 'demo', 'Invented for database demonstration.'),
-(3, 2, 'bruiser-v8',      'Bruiser V8',      'Halcyon Works',    'Fictional demo muscle coupe.',     'Fictional demo vehicle invented by Team Valkyrie. It is not a confirmed GTA VI vehicle.', 'demo', 'Invented for database demonstration.'),
-(4, 3, 'meridian-sedan',  'Meridian Sedan',  'Halcyon Works',    'Fictional demo family sedan.',     'Fictional demo vehicle invented by Team Valkyrie. It is not a confirmed GTA VI vehicle.', 'demo', 'Invented for database demonstration.'),
-(5, 4, 'ridgeback-4x4',   'Ridgeback 4x4',   'Ironwood Trucks',  'Fictional demo pickup truck.',     'Fictional demo vehicle invented by Team Valkyrie. It is not a confirmed GTA VI vehicle.', 'demo', 'Invented for database demonstration.'),
-(6, 5, 'tidewalker-skiff','Tidewalker Skiff','Seabright Marine', 'Fictional demo shallow boat.',     'Fictional demo vehicle invented by Team Valkyrie. It is not a confirmed GTA VI vehicle.', 'demo', 'Invented for database demonstration.'),
-(7, 5, 'swampfox-airboat','Swampfox Airboat','Seabright Marine', 'Fictional demo wetland airboat.',  'Fictional demo vehicle invented by Team Valkyrie. It is not a confirmed GTA VI vehicle.', 'demo', 'Invented for database demonstration.'),
-(8, 6, 'zephyr-250',      'Zephyr 250',      'Aerolite Cycles',  'Fictional demo street bike.',      'Fictional demo vehicle invented by Team Valkyrie. It is not a confirmed GTA VI vehicle.', 'demo', 'Invented for database demonstration.');
+(1, 1, 'corvina-gt', 'Corvina GT', 'Veloce Motors', 'A concept sports coupe.', 'A Team Valkyrie concept vehicle used in the story archive.', 'demo', 'Created by Team Valkyrie for this project.'),
+(2, 1, 'strada-lumen', 'Strada Lumen', 'Veloce Motors', 'A concept sports roadster.', 'A Team Valkyrie concept vehicle used in the story archive.', 'demo', 'Created by Team Valkyrie for this project.'),
+(3, 2, 'bruiser-v8', 'Bruiser V8', 'Halcyon Works', 'A concept muscle coupe.', 'A Team Valkyrie concept vehicle used in the story archive.', 'demo', 'Created by Team Valkyrie for this project.'),
+(4, 3, 'meridian-sedan', 'Meridian Sedan', 'Halcyon Works', 'A concept family sedan.', 'A Team Valkyrie concept vehicle used in the story archive.', 'demo', 'Created by Team Valkyrie for this project.'),
+(5, 4, 'ridgeback-4x4', 'Ridgeback 4x4', 'Ironwood Trucks', 'A concept pickup truck.', 'A Team Valkyrie concept vehicle used in the story archive.', 'demo', 'Created by Team Valkyrie for this project.'),
+(6, 5, 'tidewalker-skiff', 'Tidewalker Skiff', 'Seabright Marine', 'A concept shallow-water boat.', 'A Team Valkyrie concept vehicle used in the story archive.', 'demo', 'Created by Team Valkyrie for this project.'),
+(7, 5, 'swampfox-airboat', 'Swampfox Airboat', 'Seabright Marine', 'A concept wetland airboat.', 'A Team Valkyrie concept vehicle used in the story archive.', 'demo', 'Created by Team Valkyrie for this project.'),
+(8, 6, 'zephyr-250', 'Zephyr 250', 'Aerolite Cycles', 'A concept street bike.', 'A Team Valkyrie concept vehicle used in the story archive.', 'demo', 'Created by Team Valkyrie for this project.');
 
 -- ------------------------------- missions ------------------------------
 -- All missions are fictional demo records.
 INSERT INTO missions (mission_id, slug, title, mission_type, summary, synopsis, content_status, source_note) VALUES
-(1, 'harbour-lights',          'Harbour Lights',          'story',    'Demo mission: a quiet shipment arrives after dark.',        'Fictional demo mission invented by Team Valkyrie. It is not part of the game.', 'demo', 'Invented for database demonstration.'),
-(2, 'quiet-water',             'Quiet Water',             'side',     'Demo mission: a guided run through the wetlands.',          'Fictional demo mission invented by Team Valkyrie. It is not part of the game.', 'demo', 'Invented for database demonstration.'),
-(3, 'last-call-smokestack-row','Last Call at Smokestack Row','heist', 'Demo mission: a planned job on an industrial strip.',        'Fictional demo mission invented by Team Valkyrie. It is not part of the game.', 'demo', 'Invented for database demonstration.'),
-(4, 'ridge-run',               'Ridge Run',               'activity', 'Demo activity: a timed drive to a hilltop lookout.',        'Fictional demo mission invented by Team Valkyrie. It is not part of the game.', 'demo', 'Invented for database demonstration.'),
-(5, 'ledger-of-favours',       'Ledger of Favours',       'story',    'Demo mission: a fixer calls in several debts.',             'Fictional demo mission invented by Team Valkyrie. It is not part of the game.', 'demo', 'Invented for database demonstration.');
+(1, 'harbour-lights', 'Harbour Lights', 'story', 'A quiet shipment arrives after dark.', 'A shipment is due at Pelican Quay before dawn, and the people waiting for it would rather no one asked what is inside. Delia lines up the buyers, Nico controls the gates, and the tide waits for nobody.', 'demo', 'Created by Team Valkyrie for this project.'),
+(2, 'quiet-water', 'Quiet Water', 'side', 'A guided run through the wetlands.', 'A client needs to cross the Grassrivers unseen. Tomas knows a way, but the water is lower than usual and the reeds have ears.', 'demo', 'Created by Team Valkyrie for this project.'),
+(3, 'last-call-smokestack-row', 'Last Call at Smokestack Row', 'heist', 'A planned job on an industrial strip.', 'Smokestack Row empties out at last call. For a few minutes the loading yards are unwatched, and Delia has a plan that needs exactly that.', 'demo', 'Created by Team Valkyrie for this project.'),
+(4, 'ridge-run', 'Ridge Run', 'activity', 'A timed drive up to a hilltop lookout.', 'Race the sunset up the switchbacks to Kalaga Ridge Lookout. Tomas marks the finish, and the view is the prize.', 'demo', 'Created by Team Valkyrie for this project.'),
+(5, 'ledger-of-favours', 'Ledger of Favours', 'story', 'A fixer calls in several debts.', 'Delia keeps a ledger of every favour she has ever done. Tonight she opens it and starts collecting, from the studio lot to the marina.', 'demo', 'Created by Team Valkyrie for this project.');
 
 INSERT INTO mission_characters (mission_id, character_id, role_in_mission) VALUES
 (1, 8,  'Arranges the shipment'),
@@ -326,3 +326,72 @@ INSERT INTO media_regions (media_id, region_id) VALUES
 (55, 5),
 (56, 6),
 (57, 6);
+
+-- ===== Phase 2 refinement: official garage and clips =====
+-- Five vehicles Rockstar names and shows in its own screenshots, with those screenshots, plus official video
+-- posters and one clip card per character. Mirrors database/migrations/002_phase2_garage.sql.
+INSERT INTO vehicles (vehicle_id, category_id, slug, name, manufacturer, summary, description, content_status, source_url, source_note) VALUES
+(9, 1, 'grotti-cheetah', '''95 Grotti Cheetah', 'Grotti', 'A sports coupe from Rockstar''s Ultimate Edition screenshots.', 'Named on Rockstar''s editions page as the ''95 Grotti Cheetah and shown in four official Ultimate Edition screenshots. Rockstar has not published specifications, so none are listed here.', 'official', 'https://www.rockstargames.com/VI/editions', 'Name from the editions page. Body style judged from Rockstar''s own screenshots.'),
+(10, 4, 'vapid-dominator-buggy', '''67 Vapid Dominator Buggy', 'Vapid', 'A Dominator built as an off-road buggy.', 'Named on Rockstar''s editions page as the ''67 Vapid Dominator Buggy and shown in four official Ultimate Edition screenshots, on a muddy trail and in close-up. Rockstar has not published specifications.', 'official', 'https://www.rockstargames.com/VI/editions', 'Name from the editions page. The word buggy is part of Rockstar''s own name.'),
+(11, 5, 'shitzu-squalo', 'Shitzu Squalo', 'Shitzu', 'A speedboat from Rockstar''s Ultimate Edition screenshots.', 'Named on Rockstar''s editions page as the Shitzu Squalo and shown in four official screenshots on the water around Vice City. Rockstar has not published specifications.', 'official', 'https://www.rockstargames.com/VI/editions', 'Name from the editions page, which does not state the type. Judged to be a boat from Rockstar''s own screenshots.'),
+(12, 3, 'vapid-stanier', 'Vapid Stanier', 'Vapid', 'A classic sedan from the Vintage Vice City Pack.', 'Named in Rockstar''s Vintage Vice City Pack screenshot set, which shows it in four official images. Rockstar has not published specifications.', 'official', 'https://www.rockstargames.com/VI/media/screenshots', 'Named in Rockstar''s Vintage Vice City Pack screenshots. Body style judged from the images.'),
+(13, 2, 'vapid-ganado', 'Vapid Ganado Retro Build', 'Vapid', 'A retro muscle pickup from the Ultimate Edition screenshots.', 'Rockstar''s screenshot set is titled Vapid Ganado Retro Build and shows it in one official image. Rockstar has not published specifications.', 'official', 'https://www.rockstargames.com/VI/media/screenshots', 'Rockstar''s own screenshot set names this vehicle. Type judged from the images. No specifications are published.');
+
+INSERT INTO media_assets (media_id, slug, title, media_type, intended_use, source_url, embed_url, local_path, attribution, usage_status, approval_status, notes) VALUES
+(58, 'poster-trailer-1', 'Grand Theft Auto VI Trailer 1 poster (official)', 'artwork', 'Poster for the matching video card.', 'https://www.rockstargames.com/VI/media/videos', 'https://www.rockstargames.com/VI/_next/static/media/GTAVI_Trailer1_poster.12x2gvspcm_3m.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'embed_permitted', 'approved', 'Official poster image published by Rockstar for this video. Not copied into this repository. Approved for display by the Team Valkyrie Phase 2 media brief (2026-10-09). Rockstar states no licence terms, so a human should re-confirm. File names are build-hashed and may change, so the site falls back to original artwork if an image stops loading.'),
+(59, 'poster-trailer-2', 'Grand Theft Auto VI Trailer 2 poster (official)', 'artwork', 'Poster for the matching video card.', 'https://www.rockstargames.com/VI/media/videos', 'https://www.rockstargames.com/VI/_next/static/media/GTAVI_Trailer2_poster.0cosv-uzbpt91.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'embed_permitted', 'approved', 'Official poster image published by Rockstar for this video. Not copied into this repository. Approved for display by the Team Valkyrie Phase 2 media brief (2026-10-09). Rockstar states no licence terms, so a human should re-confirm. File names are build-hashed and may change, so the site falls back to original artwork if an image stops loading.'),
+(60, 'poster-extended-look', 'Grand Theft Auto VI: An Extended Look poster (official)', 'artwork', 'Poster for the matching video card.', 'https://www.rockstargames.com/VI/media/videos', 'https://www.rockstargames.com/VI/_next/static/media/GTAVI_An_Extended_Look_poster.0ijbsha5fo1te.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'embed_permitted', 'approved', 'Official poster image published by Rockstar for this video. Not copied into this repository. Approved for display by the Team Valkyrie Phase 2 media brief (2026-10-09). Rockstar states no licence terms, so a human should re-confirm. File names are build-hashed and may change, so the site falls back to original artwork if an image stops loading.'),
+(61, 'clip-jason-duval', 'Jason Duval: official video clip', 'video', 'Character page: poster card linking to Rockstar''s official clip.', 'https://www.rockstargames.com/VI/media/videos', 'https://www.rockstargames.com/VI/_next/static/media/Jason_Duval_Video_Clip.024oe-y640yxp.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'link_only', 'approved', 'Rockstar publishes this short clip on its Videos page. The clip file is not hosted or played here: the poster image is a remote reference and the card links to Rockstar''s page. embed_url holds the poster image.'),
+(62, 'clip-lucia-caminos', 'Lucia Caminos: official video clip', 'video', 'Character page: poster card linking to Rockstar''s official clip.', 'https://www.rockstargames.com/VI/media/videos', 'https://www.rockstargames.com/VI/_next/static/media/Lucia_Caminos_Video_Clip.0uqwkm_u_fu_9.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'link_only', 'approved', 'Rockstar publishes this short clip on its Videos page. The clip file is not hosted or played here: the poster image is a remote reference and the card links to Rockstar''s page. embed_url holds the poster image.'),
+(63, 'clip-cal-hampton', 'Cal Hampton: official video clip', 'video', 'Character page: poster card linking to Rockstar''s official clip.', 'https://www.rockstargames.com/VI/media/videos', 'https://www.rockstargames.com/VI/_next/static/media/Cal_Hampton_Video_Clip.127phn-5fdl9r.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'link_only', 'approved', 'Rockstar publishes this short clip on its Videos page. The clip file is not hosted or played here: the poster image is a remote reference and the card links to Rockstar''s page. embed_url holds the poster image.'),
+(64, 'clip-boobie-ike', 'Boobie Ike: official video clip', 'video', 'Character page: poster card linking to Rockstar''s official clip.', 'https://www.rockstargames.com/VI/media/videos', 'https://www.rockstargames.com/VI/_next/static/media/Boobie_Ike_Video_Clip.06_gu6y13hufm.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'link_only', 'approved', 'Rockstar publishes this short clip on its Videos page. The clip file is not hosted or played here: the poster image is a remote reference and the card links to Rockstar''s page. embed_url holds the poster image.'),
+(65, 'clip-dequan-priest', 'Dre''Quan Priest: official video clip', 'video', 'Character page: poster card linking to Rockstar''s official clip.', 'https://www.rockstargames.com/VI/media/videos', 'https://www.rockstargames.com/VI/_next/static/media/DreQuan_Priest_Video_Clip.0p5nv9luhe2va.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'link_only', 'approved', 'Rockstar publishes this short clip on its Videos page. The clip file is not hosted or played here: the poster image is a remote reference and the card links to Rockstar''s page. embed_url holds the poster image.'),
+(66, 'clip-real-dimez', 'Real Dimez: official video clip', 'video', 'Character page: poster card linking to Rockstar''s official clip.', 'https://www.rockstargames.com/VI/media/videos', 'https://www.rockstargames.com/VI/_next/static/media/Real_Dimez_Video_Clip.05f8p4_2sk82a.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'link_only', 'approved', 'Rockstar publishes this short clip on its Videos page. The clip file is not hosted or played here: the poster image is a remote reference and the card links to Rockstar''s page. embed_url holds the poster image.'),
+(67, 'clip-raul-bautista', 'Raul Bautista: official video clip', 'video', 'Character page: poster card linking to Rockstar''s official clip.', 'https://www.rockstargames.com/VI/media/videos', 'https://www.rockstargames.com/VI/_next/static/media/Raul_Bautista_Video_Clip.07g3eeo2bgg2k.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'link_only', 'approved', 'Rockstar publishes this short clip on its Videos page. The clip file is not hosted or played here: the poster image is a remote reference and the card links to Rockstar''s page. embed_url holds the poster image.'),
+(68, 'clip-brian-heder', 'Brian Heder: official video clip', 'video', 'Character page: poster card linking to Rockstar''s official clip.', 'https://www.rockstargames.com/VI/media/videos', 'https://www.rockstargames.com/VI/_next/static/media/Brian_Heder_Video_Clip.0wbjj2r2i_2~c.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'link_only', 'approved', 'Rockstar publishes this short clip on its Videos page. The clip file is not hosted or played here: the poster image is a remote reference and the card links to Rockstar''s page. embed_url holds the poster image.'),
+(69, 'vehicle-grotti-cheetah-01', '''95 Grotti Cheetah, official screenshot 1', 'screenshot', 'Garage cover, vehicle page and gallery.', 'https://www.rockstargames.com/VI/media/screenshots', 'https://www.rockstargames.com/VI/_next/static/media/ULTIMATE_EDITION_GROTTI_CHEETAH_01.0a.wy3s_ogjey.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'embed_permitted', 'approved', 'Remote reference to Rockstar''s own published image (their Media page invites visitors to download and share). Not copied into this repository. Approved for display by the Team Valkyrie Phase 2 media brief (2026-10-09). Rockstar states no licence terms, so a human should re-confirm. File names are build-hashed and may change, so the site falls back to original artwork if an image stops loading.'),
+(70, 'vehicle-grotti-cheetah-02', '''95 Grotti Cheetah, official screenshot 2', 'screenshot', 'Garage cover, vehicle page and gallery.', 'https://www.rockstargames.com/VI/media/screenshots', 'https://www.rockstargames.com/VI/_next/static/media/ULTIMATE_EDITION_GROTTI_CHEETAH_02.0rkrlsu_dg~ww.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'embed_permitted', 'approved', 'Remote reference to Rockstar''s own published image (their Media page invites visitors to download and share). Not copied into this repository. Approved for display by the Team Valkyrie Phase 2 media brief (2026-10-09). Rockstar states no licence terms, so a human should re-confirm. File names are build-hashed and may change, so the site falls back to original artwork if an image stops loading.'),
+(71, 'vehicle-grotti-cheetah-03', '''95 Grotti Cheetah, official screenshot 3', 'screenshot', 'Garage cover, vehicle page and gallery.', 'https://www.rockstargames.com/VI/media/screenshots', 'https://www.rockstargames.com/VI/_next/static/media/ULTIMATE_EDITION_GROTTI_CHEETAH_03.0v3_dryhtjarc.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'embed_permitted', 'approved', 'Remote reference to Rockstar''s own published image (their Media page invites visitors to download and share). Not copied into this repository. Approved for display by the Team Valkyrie Phase 2 media brief (2026-10-09). Rockstar states no licence terms, so a human should re-confirm. File names are build-hashed and may change, so the site falls back to original artwork if an image stops loading.'),
+(72, 'vehicle-grotti-cheetah-04', '''95 Grotti Cheetah, official screenshot 4', 'screenshot', 'Garage cover, vehicle page and gallery.', 'https://www.rockstargames.com/VI/media/screenshots', 'https://www.rockstargames.com/VI/_next/static/media/ULTIMATE_EDITION_GROTTI_CHEETAH_04.0caq_y0_f1rvt.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'embed_permitted', 'approved', 'Remote reference to Rockstar''s own published image (their Media page invites visitors to download and share). Not copied into this repository. Approved for display by the Team Valkyrie Phase 2 media brief (2026-10-09). Rockstar states no licence terms, so a human should re-confirm. File names are build-hashed and may change, so the site falls back to original artwork if an image stops loading.'),
+(73, 'vehicle-vapid-dominator-buggy-01', '''67 Vapid Dominator Buggy, official screenshot 1', 'screenshot', 'Garage cover, vehicle page and gallery.', 'https://www.rockstargames.com/VI/media/screenshots', 'https://www.rockstargames.com/VI/_next/static/media/ULTIMATE_EDITION_VAPID_BUGGY_01.0jxfiql~371ik.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'embed_permitted', 'approved', 'Remote reference to Rockstar''s own published image (their Media page invites visitors to download and share). Not copied into this repository. Approved for display by the Team Valkyrie Phase 2 media brief (2026-10-09). Rockstar states no licence terms, so a human should re-confirm. File names are build-hashed and may change, so the site falls back to original artwork if an image stops loading.'),
+(74, 'vehicle-vapid-dominator-buggy-02', '''67 Vapid Dominator Buggy, official screenshot 2', 'screenshot', 'Garage cover, vehicle page and gallery.', 'https://www.rockstargames.com/VI/media/screenshots', 'https://www.rockstargames.com/VI/_next/static/media/ULTIMATE_EDITION_VAPID_BUGGY_04.0_29d.bgfvon7.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'embed_permitted', 'approved', 'Remote reference to Rockstar''s own published image (their Media page invites visitors to download and share). Not copied into this repository. Approved for display by the Team Valkyrie Phase 2 media brief (2026-10-09). Rockstar states no licence terms, so a human should re-confirm. File names are build-hashed and may change, so the site falls back to original artwork if an image stops loading.'),
+(75, 'vehicle-vapid-dominator-buggy-03', '''67 Vapid Dominator Buggy, official screenshot 3', 'screenshot', 'Garage cover, vehicle page and gallery.', 'https://www.rockstargames.com/VI/media/screenshots', 'https://www.rockstargames.com/VI/_next/static/media/ULTIMATE_EDITION_VAPID_BUGGY_02.0tf15jp~61bkj.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'embed_permitted', 'approved', 'Remote reference to Rockstar''s own published image (their Media page invites visitors to download and share). Not copied into this repository. Approved for display by the Team Valkyrie Phase 2 media brief (2026-10-09). Rockstar states no licence terms, so a human should re-confirm. File names are build-hashed and may change, so the site falls back to original artwork if an image stops loading.'),
+(76, 'vehicle-vapid-dominator-buggy-04', '''67 Vapid Dominator Buggy, official screenshot 4', 'screenshot', 'Garage cover, vehicle page and gallery.', 'https://www.rockstargames.com/VI/media/screenshots', 'https://www.rockstargames.com/VI/_next/static/media/ULTIMATE_EDITION_VAPID_BUGGY_03.0s2rbkg98-0ac.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'embed_permitted', 'approved', 'Remote reference to Rockstar''s own published image (their Media page invites visitors to download and share). Not copied into this repository. Approved for display by the Team Valkyrie Phase 2 media brief (2026-10-09). Rockstar states no licence terms, so a human should re-confirm. File names are build-hashed and may change, so the site falls back to original artwork if an image stops loading.'),
+(77, 'vehicle-shitzu-squalo-01', 'Shitzu Squalo, official screenshot 1', 'screenshot', 'Garage cover, vehicle page and gallery.', 'https://www.rockstargames.com/VI/media/screenshots', 'https://www.rockstargames.com/VI/_next/static/media/ULTIMATE_EDITION_SQUALO_01.0cim7hj58ypb1.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'embed_permitted', 'approved', 'Remote reference to Rockstar''s own published image (their Media page invites visitors to download and share). Not copied into this repository. Approved for display by the Team Valkyrie Phase 2 media brief (2026-10-09). Rockstar states no licence terms, so a human should re-confirm. File names are build-hashed and may change, so the site falls back to original artwork if an image stops loading.'),
+(78, 'vehicle-shitzu-squalo-02', 'Shitzu Squalo, official screenshot 2', 'screenshot', 'Garage cover, vehicle page and gallery.', 'https://www.rockstargames.com/VI/media/screenshots', 'https://www.rockstargames.com/VI/_next/static/media/ULTIMATE_EDITION_SQUALO_04.00vlesedwtiuy.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'embed_permitted', 'approved', 'Remote reference to Rockstar''s own published image (their Media page invites visitors to download and share). Not copied into this repository. Approved for display by the Team Valkyrie Phase 2 media brief (2026-10-09). Rockstar states no licence terms, so a human should re-confirm. File names are build-hashed and may change, so the site falls back to original artwork if an image stops loading.'),
+(79, 'vehicle-shitzu-squalo-03', 'Shitzu Squalo, official screenshot 3', 'screenshot', 'Garage cover, vehicle page and gallery.', 'https://www.rockstargames.com/VI/media/screenshots', 'https://www.rockstargames.com/VI/_next/static/media/ULTIMATE_EDITION_SQUALO_02.09qplkj.rjnk7.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'embed_permitted', 'approved', 'Remote reference to Rockstar''s own published image (their Media page invites visitors to download and share). Not copied into this repository. Approved for display by the Team Valkyrie Phase 2 media brief (2026-10-09). Rockstar states no licence terms, so a human should re-confirm. File names are build-hashed and may change, so the site falls back to original artwork if an image stops loading.'),
+(80, 'vehicle-shitzu-squalo-04', 'Shitzu Squalo, official screenshot 4', 'screenshot', 'Garage cover, vehicle page and gallery.', 'https://www.rockstargames.com/VI/media/screenshots', 'https://www.rockstargames.com/VI/_next/static/media/ULTIMATE_EDITION_SQUALO_03.0quncwrsw97j1.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'embed_permitted', 'approved', 'Remote reference to Rockstar''s own published image (their Media page invites visitors to download and share). Not copied into this repository. Approved for display by the Team Valkyrie Phase 2 media brief (2026-10-09). Rockstar states no licence terms, so a human should re-confirm. File names are build-hashed and may change, so the site falls back to original artwork if an image stops loading.'),
+(81, 'vehicle-vapid-stanier-01', 'Vapid Stanier, official screenshot 1', 'screenshot', 'Garage cover, vehicle page and gallery.', 'https://www.rockstargames.com/VI/media/screenshots', 'https://www.rockstargames.com/VI/_next/static/media/VINTAGE_VICE_CITY_PACK_VAPID_STANIER_01.004m_8d1~qngy.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'embed_permitted', 'approved', 'Remote reference to Rockstar''s own published image (their Media page invites visitors to download and share). Not copied into this repository. Approved for display by the Team Valkyrie Phase 2 media brief (2026-10-09). Rockstar states no licence terms, so a human should re-confirm. File names are build-hashed and may change, so the site falls back to original artwork if an image stops loading.'),
+(82, 'vehicle-vapid-stanier-02', 'Vapid Stanier, official screenshot 2', 'screenshot', 'Garage cover, vehicle page and gallery.', 'https://www.rockstargames.com/VI/media/screenshots', 'https://www.rockstargames.com/VI/_next/static/media/VINTAGE_VICE_CITY_PACK_VAPID_STANIER_02.0s2wun4_vzld2.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'embed_permitted', 'approved', 'Remote reference to Rockstar''s own published image (their Media page invites visitors to download and share). Not copied into this repository. Approved for display by the Team Valkyrie Phase 2 media brief (2026-10-09). Rockstar states no licence terms, so a human should re-confirm. File names are build-hashed and may change, so the site falls back to original artwork if an image stops loading.'),
+(83, 'vehicle-vapid-stanier-03', 'Vapid Stanier, official screenshot 3', 'screenshot', 'Garage cover, vehicle page and gallery.', 'https://www.rockstargames.com/VI/media/screenshots', 'https://www.rockstargames.com/VI/_next/static/media/VINTAGE_VICE_CITY_PACK_VAPID_STANIER_03.0dzlk-r0ehlu4.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'embed_permitted', 'approved', 'Remote reference to Rockstar''s own published image (their Media page invites visitors to download and share). Not copied into this repository. Approved for display by the Team Valkyrie Phase 2 media brief (2026-10-09). Rockstar states no licence terms, so a human should re-confirm. File names are build-hashed and may change, so the site falls back to original artwork if an image stops loading.'),
+(84, 'vehicle-vapid-stanier-04', 'Vapid Stanier, official screenshot 4', 'screenshot', 'Garage cover, vehicle page and gallery.', 'https://www.rockstargames.com/VI/media/screenshots', 'https://www.rockstargames.com/VI/_next/static/media/VINTAGE_VICE_CITY_PACK_VAPID_STANIER_04.0n002i9p87b~q.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'embed_permitted', 'approved', 'Remote reference to Rockstar''s own published image (their Media page invites visitors to download and share). Not copied into this repository. Approved for display by the Team Valkyrie Phase 2 media brief (2026-10-09). Rockstar states no licence terms, so a human should re-confirm. File names are build-hashed and may change, so the site falls back to original artwork if an image stops loading.'),
+(85, 'vehicle-vapid-ganado-01', 'Vapid Ganado Retro Build, official screenshot 1', 'screenshot', 'Garage cover, vehicle page and gallery.', 'https://www.rockstargames.com/VI/media/screenshots', 'https://www.rockstargames.com/VI/_next/static/media/ULTIMATE_EDITION_VAPID_GANADO_RETRO_BUILD_01.062dgvkwdynw5.jpg', NULL, 'Copyright Rockstar Games / Take-Two Interactive.', 'embed_permitted', 'approved', 'Remote reference to Rockstar''s own published image (their Media page invites visitors to download and share). Not copied into this repository. Approved for display by the Team Valkyrie Phase 2 media brief (2026-10-09). Rockstar states no licence terms, so a human should re-confirm. File names are build-hashed and may change, so the site falls back to original artwork if an image stops loading.');
+
+INSERT INTO media_characters (media_id, character_id) VALUES
+(61, 1),
+(62, 2),
+(63, 3),
+(64, 4),
+(65, 5),
+(66, 11),
+(67, 6),
+(68, 7);
+
+INSERT INTO media_vehicles (media_id, vehicle_id) VALUES
+(69, 9),
+(70, 9),
+(71, 9),
+(72, 9),
+(73, 10),
+(74, 10),
+(75, 10),
+(76, 10),
+(77, 11),
+(78, 11),
+(79, 11),
+(80, 11),
+(81, 12),
+(82, 12),
+(83, 12),
+(84, 12),
+(85, 13);

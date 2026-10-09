@@ -15,6 +15,7 @@
 
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS media_vehicles;
 DROP TABLE IF EXISTS media_regions;
 DROP TABLE IF EXISTS media_locations;
 DROP TABLE IF EXISTS media_characters;
@@ -357,4 +358,17 @@ CREATE TABLE media_regions (
         REFERENCES media_assets (media_id) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_medr_region FOREIGN KEY (region_id)
         REFERENCES regions (region_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Added in the Phase 2 refinement (see database/migrations/002_phase2_garage.sql): official vehicle screenshots
+-- belong to the vehicles Rockstar names, never to the fictional demo vehicles.
+CREATE TABLE media_vehicles (
+    media_id    INT UNSIGNED NOT NULL,
+    vehicle_id  INT UNSIGNED NOT NULL,
+    PRIMARY KEY (media_id, vehicle_id),
+    KEY ix_media_vehicles_vehicle (vehicle_id),
+    CONSTRAINT fk_medv_media FOREIGN KEY (media_id)
+        REFERENCES media_assets (media_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_medv_vehicle FOREIGN KEY (vehicle_id)
+        REFERENCES vehicles (vehicle_id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
