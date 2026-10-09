@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ status }} {{ title }}{% endblock %}
+{% block content %}
+<section class="hero">
+  <p class="eyebrow">Error {{ status }}</p>
+  <h1>{{ title }}</h1>
+  <p class="status-note">{{ message }}</p>
+  <p><a href="{{ url_for('main.index') }}">Back to the homepage</a></p>
+</section>
+{% endblock %}

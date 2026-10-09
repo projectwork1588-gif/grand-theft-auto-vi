@@ -1,0 +1,28 @@
+# Secrets and local configuration
+.env
+*.local
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# Database dumps and local data (never commit private data)
+*.sql.bak
+*.dump
+*.sqlite3
+
+# Large or unlicensed media must never be committed (see docs/MEDIA_INVENTORY.md)
+media/*
+!media/.gitkeep
+!media/README.md

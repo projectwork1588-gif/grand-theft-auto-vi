@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Grand Theft Auto VI{% endblock %} | Team Valkyrie</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <main id="main">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="site-footer">
+    <p class="disclaimer">{{ disclaimer }}</p>
+  </footer>
+</body>
+</html>
