@@ -17,6 +17,7 @@ import shutil
 import subprocess
 import sys
 
+from app.media_slots import CAST_ORDER
 from scripts.fetch_clips import CHARACTER_CLIPS, SOURCE_DIR
 from scripts.schema_info import ROOT
 
@@ -31,6 +32,9 @@ SLUGS = {
     "Raul_Bautista_Video_Clip": ("raul-bautista", "Raul Bautista"),
     "Brian_Heder_Video_Clip": ("brian-heder", "Brian Heder"),
 }
+# One explicit sequence: the reel is cut in app.media_slots.CAST_ORDER, the same order the homepage lists the cast in.
+STEM_BY_SLUG = {slug: stem for stem, (slug, _name) in SLUGS.items()}
+SEQUENCE = [STEM_BY_SLUG[slug] for slug in CAST_ORDER]
 ENCODE = ["-an", "-c:v", "libx264", "-preset", "slow", "-crf", "27", "-pix_fmt", "yuv420p", "-r", "30", "-movflags", "+faststart"]
 
 
@@ -60,13 +64,14 @@ def duration(ffmpeg, path):
 
 def main():
     ffmpeg = ffmpeg_exe()
-    missing = [n for n in CHARACTER_CLIPS if not (SOURCE_DIR / f"{n}.mp4").exists()]
+    assert sorted(SEQUENCE) == sorted(CHARACTER_CLIPS), "CAST_ORDER must name every character clip exactly once"
+    missing = [n for n in SEQUENCE if not (SOURCE_DIR / f"{n}.mp4").exists()]
     if missing:
         sys.exit("Missing source clips. Run: python -m scripts.fetch_clips")
     CLIPS_DIR.mkdir(parents=True, exist_ok=True)
 
     manifest, segments, cursor = [], [], 0.0
-    for stem in CHARACTER_CLIPS:
+    for stem in SEQUENCE:
         slug, name = SLUGS[stem]
         src = SOURCE_DIR / f"{stem}.mp4"
         length = duration(ffmpeg, src)

@@ -3,6 +3,8 @@
 Images and players are REMOTE references to Rockstar's own published media. Only the exact official
 prefixes below are ever rendered. Anything else returns None and the template shows an original fallback.
 """
+import re
+
 IMAGE_PREFIX = "https://www.rockstargames.com/VI/_next/static/media/"
 PLAYER_PREFIX = "https://www.rockstargames.com/videoplayer?"
 IMAGE_WIDTHS = (640, 1280, 1920)
@@ -23,6 +25,11 @@ def image_srcset(url, widths=IMAGE_WIDTHS):
     if not is_official_image(url):
         return None
     return ", ".join(f"{image_src(url, w)} {w}w" for w in widths)
+
+
+def youtube_id(value):
+    """A well-formed YouTube video id (11 letters, digits, - or _), or None. Only ids set in code reach a page."""
+    return value if isinstance(value, str) and re.fullmatch(r"[A-Za-z0-9_-]{11}", value) else None
 
 
 def player_src(url, autoplay=False):

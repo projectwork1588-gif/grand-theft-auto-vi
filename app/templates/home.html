@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "_components.html" import badge, type_badge, picture, initials, vehicle_slide %}
 {% block header_class %}{% endblock %}
-{% block description %}Meet the people, explore the six regions and see the vehicles of Grand Theft Auto VI in a fan-made guide by Team Valkyrie.{% endblock %}
+{% block description %}Meet Jason and Lucia, explore the six regions and see the vehicles of Grand Theft Auto VI in a fan-made guide by Team Valkyrie.{% endblock %}
 {% block content %}
 {% set featured_video = videos[0] if videos else none %}
 
@@ -54,7 +54,7 @@
     <div class="section-head reveal">
       <p class="eyebrow">Jason and Lucia</p>
       <h2 id="leads-title">Two leads, one story</h2>
-      <p class="serif">Rockstar's first two playable protagonists, together against the odds.</p>
+      <p class="subtitle">Jason Duval and Lucia Caminos are the two leads of Grand Theft Auto VI.</p>
     </div>
     <div class="duo">
       {% for c in leads %}
@@ -74,13 +74,40 @@
 </section>
 {% endif %}
 
+{# ============================== THE SIGNATURE MOMENT ============================== #}
+{# Nine seconds of Rockstar's own Trailer 1 in YouTube's embedded player. No heading: the footage is the point.
+   The player is created by the script only when the section is near the screen. #}
+{% if moment %}
+<section class="moment chapter" id="moment" data-chapter="The footage" aria-label="{{ moment.title }}"
+         data-moment data-youtube="{{ moment.youtube_id }}" data-start="{{ moment.start }}" data-end="{{ moment.end }}">
+  <div class="moment__frame">
+    {{ picture(moment.poster, fallback='', sizes='100vw', alt='', cls='moment__poster') }}
+    <div class="moment__player" data-moment-player aria-hidden="true"></div>
+    <div class="moment__dip" aria-hidden="true"></div>
+    <div class="moment__shade" aria-hidden="true"></div>
+  </div>
+  <div class="moment__bar">
+    <div class="container moment__inner">
+      <p class="moment__credit">{{ moment.title }} <span aria-hidden="true">&middot;</span> &copy; Rockstar Games</p>
+      <div class="moment__controls">
+        <button class="moment__btn" type="button" data-moment-toggle hidden>Pause</button>
+        <button class="moment__btn" type="button" data-moment-sound aria-pressed="false" hidden>Sound on</button>
+        {% if moment.trailer %}
+        <button class="moment__btn moment__btn--accent" type="button" data-video="{{ player_src(moment.trailer.embed_url, true) }}" data-title="{{ moment.trailer.title }}">Watch the full trailer</button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
 {# ============================== CAST STAGE ============================== #}
 <section class="section section--stage chapter" id="cast" aria-labelledby="cast-title" data-chapter="The cast">
   <div class="container">
     <div class="section-head reveal">
       <p class="eyebrow">The cast</p>
       <h2 id="cast-title">Eight faces of Leonida</h2>
-      <p class="serif">{% if reel %}Rockstar's own short clips, cut into one reel. Pick a name to hold on that moment.{% else %}Pick a name to meet them.{% endif %}</p>
+      <p class="subtitle">{% if reel %}Rockstar's own short clips, cut into one reel. Pick a name to hold on that moment.{% else %}Pick a name to meet them.{% endif %}</p>
     </div>
 
     {% set first = cast[0] if cast else none %}
@@ -102,9 +129,10 @@
           {% if first %}<a class="link-arrow" data-link href="{{ url_for('pages.character_detail', slug=first.slug) }}">Read the profile</a>{% endif %}
         </div>
         {% if reel %}
-        <div class="cast__controls">
-          <button class="cast__btn" type="button" data-toggle aria-pressed="false">Pause</button>
-          <button class="cast__btn" type="button" data-play-reel hidden>Play the whole reel</button>
+        {# Both controls are in the markup from the start and never hidden: the script only changes their state. #}
+        <div class="cast__controls" role="group" aria-label="Reel controls">
+          <button class="cast__btn" type="button" data-toggle>Pause</button>
+          <button class="cast__btn cast__btn--reel is-active" type="button" data-play-reel aria-pressed="true">Play whole reel</button>
         </div>
         {% endif %}
       </div>
@@ -135,7 +163,7 @@
     <div class="section-head reveal">
       <p class="eyebrow">Explore Leonida</p>
       <h2 id="leonida-title">Six regions, one state</h2>
-      <p class="serif">Hover a region to preview it, or choose one to step inside.</p>
+      <p class="subtitle">Hover a region to preview it, or choose one to step inside.</p>
     </div>
   </div>
   <div class="container--wide">
@@ -175,7 +203,7 @@
     <div class="section-head reveal">
       <p class="eyebrow">The garage</p>
       <h2 id="garage-title">Machines of the coast</h2>
-      <p class="serif">Five vehicles Rockstar has shown so far, from muddy trails to open water.</p>
+      <p class="subtitle">Five vehicles Rockstar has shown so far, from muddy trails to open water.</p>
     </div>
     <div class="showroom__controls" aria-label="Browse vehicles">
       <button class="icon-btn" type="button" data-showroom-prev aria-label="Previous vehicle"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -198,36 +226,45 @@
 
 {# ============================== STORIES ============================== #}
 {% set stories_bg = backdrops.get('shot-vice-city-11') %}
-<section class="section band chapter" id="stories" aria-labelledby="stories-title" data-chapter="Stories">
+<section class="section band stories chapter" id="stories" aria-labelledby="stories-title" data-chapter="Stories">
   <div class="band__bg" aria-hidden="true">{{ picture(stories_bg, alt='', sizes='100vw') }}</div>
   <div class="band__shade" aria-hidden="true"></div>
   <div class="container">
-    <div class="split">
-      <div>
+    <div class="stories__grid">
+      <div class="stories__main">
         <div class="section-head reveal">
           <p class="eyebrow">Stories</p>
           <h2 id="stories-title">Tales from the waterfront</h2>
-          <p class="serif">Original stories by Team Valkyrie that follow fixers, guides and dock foremen through the regions.</p>
+          <p class="subtitle">Original stories by Team Valkyrie, set in the real regions of Leonida and written by us.</p>
         </div>
-        <ol class="story-list">
-          {% for m in missions %}
+        {% if missions %}
+        {% set lead = missions[0] %}
+        <article class="story-lead reveal">
+          <p class="story-lead__kicker">{{ lead.mission_type | capitalize }} <span aria-hidden="true">&middot;</span> Team Valkyrie original</p>
+          <h3 class="story-lead__title"><a href="{{ url_for('pages.mission_detail', slug=lead.slug) }}">{{ lead.title }}</a></h3>
+          <p class="story-lead__sum">{{ lead.summary }}</p>
+          <a class="link-arrow" href="{{ url_for('pages.mission_detail', slug=lead.slug) }}">Read the story</a>
+        </article>
+        <ul class="story-more">
+          {% for m in missions[1:] %}
           <li class="reveal" data-delay="{{ loop.index }}">
-            <a class="story" href="{{ url_for('pages.mission_detail', slug=m.slug) }}">
-              <span class="story__num">{{ '%02d' | format(loop.index) }}</span>
-              <span class="story__main">
-                <span class="story__title">{{ m.title }}</span>
-                <span class="story__summary">{{ m.summary }}</span>
-              </span>
-              <span class="story__tags">{{ type_badge(m.mission_type) }}</span>
+            <a class="story-row" href="{{ url_for('pages.mission_detail', slug=m.slug) }}">
+              <span class="story-row__title">{{ m.title }}</span>
+              <span class="story-row__sum">{{ m.summary }}</span>
+              <span class="story-row__meta">{{ m.mission_type | capitalize }} <span aria-hidden="true">&middot;</span> Team Valkyrie original</span>
             </a>
           </li>
           {% endfor %}
-        </ol>
+        </ul>
+        {% endif %}
         <p class="section-more"><a class="link-arrow" href="{{ url_for('pages.missions') }}">Read all stories</a></p>
       </div>
+
       {% if official_links %}
-      <aside class="reveal" aria-labelledby="links-title">
-        <h3 class="panel-title" id="links-title">Who knows whom</h3>
+      <aside class="connections reveal" aria-labelledby="links-title">
+        <p class="connections__tag">{{ badge('official') }}</p>
+        <h3 class="connections__title" id="links-title">Who knows whom</h3>
+        <p class="connections__note">Connections between Rockstar's own characters.</p>
         <ul class="ties">
           {% for l in official_links %}
           <li>
@@ -242,29 +279,29 @@
   </div>
 </section>
 
-{# ============================== WATCH ============================== #}
-<section class="section chapter" id="media" aria-labelledby="media-title" data-chapter="Watch">
+{# ============================== TRAILERS AND SCREENSHOTS ============================== #}
+<section class="section chapter" id="media" aria-labelledby="media-title" data-chapter="Trailers">
   <div class="container">
     <div class="section-head reveal">
       <p class="eyebrow">Watch</p>
       <h2 id="media-title">The official trailers</h2>
-      <p class="serif">Straight from Rockstar. Press play to open the video.</p>
+      <p class="subtitle">Straight from Rockstar. Press play and the video opens in Rockstar's own player.</p>
     </div>
 
     {% if videos %}
-    <ul class="watch">
+    <div class="theatre">
       {% for m in videos %}
       {% set poster = video_posters.get(['poster-trailer-2', 'poster-trailer-1', 'poster-extended-look'][loop.index0]) %}
-      <li class="reveal" data-delay="{{ loop.index }}">
+      <div class="theatre__item{% if loop.first %} theatre__item--lead{% endif %} reveal" data-delay="{{ loop.index }}">
         <button class="video-card" type="button" data-video="{{ player_src(m.embed_url, true) }}" data-title="{{ m.title }}">
-          {{ picture(poster, fallback='VI', sizes='(min-width: 900px) 55vw, 100vw', alt='') }}
+          {{ picture(poster, fallback='VI', sizes='(min-width: 900px) ' ~ ('62vw' if loop.first else '30vw') ~ ', 100vw', alt='') }}
           <span class="video-card__shade" aria-hidden="true"></span>
           <span class="video-card__play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
           <span class="video-card__title"><b>{{ m.title | replace('Grand Theft Auto VI', '') | replace(':', '') | trim or m.title }}</b><small>Official video</small></span>
         </button>
-      </li>
+      </div>
       {% endfor %}
-    </ul>
+    </div>
     {% else %}
     <p class="muted reveal">Watch <a href="https://www.rockstargames.com/VI/trailer-1" target="_blank" rel="noopener noreferrer">Trailer 1</a>,
       <a href="https://www.rockstargames.com/VI/trailer-2" target="_blank" rel="noopener noreferrer">Trailer 2</a> and
@@ -272,13 +309,19 @@
     {% endif %}
 
     {% if screenshots %}
-    <ul class="mosaic" aria-label="Official screenshots">
-      {% for m in screenshots %}
-      <li class="reveal" data-delay="{{ loop.index0 % 3 + 1 }}">
-        <a href="{{ image_src(m.embed_url, 1920) }}" data-lightbox data-caption="{{ m.title }}">{{ picture(m, sizes='(min-width: 900px) 40vw, 50vw') }}</a>
-      </li>
-      {% endfor %}
-    </ul>
+    <div class="gallery-block">
+      <div class="gallery-block__head reveal">
+        <h3 class="subhead gallery-block__title" id="shots-title">Screenshots</h3>
+        <p class="muted">Official screenshots from Rockstar. Select one to view it larger.</p>
+      </div>
+      <ul class="bento" data-gallery aria-labelledby="shots-title">
+        {% for m in screenshots %}
+        <li class="bento__item{% if loop.first or loop.last %} bento__item--wide{% endif %} reveal" data-delay="{{ loop.index0 % 3 + 1 }}">
+          <a href="{{ image_src(m.embed_url, 1920) }}" data-lightbox data-caption="{{ m.title }}">{{ picture(m, sizes='(min-width: 900px) 34vw, 50vw') }}</a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
     {% endif %}
 
     <p class="elsewhere reveal">More on Rockstar's own site:
@@ -304,10 +347,12 @@
 {% endblock %}
 
 {% block waypoint %}
+{# Names the current section and says what it does, so nobody has to guess what a dial means. #}
 <div class="waypoint" data-waypoint hidden>
-  <button class="waypoint__dial" type="button" aria-expanded="false" aria-controls="waypoint-list" data-wp-toggle>
-    <span class="waypoint__index" data-wp-index>01</span>
-    <span class="visually-hidden">Jump to a chapter</span>
+  <button class="waypoint__btn" type="button" aria-expanded="false" aria-controls="waypoint-list" data-wp-toggle>
+    <span class="waypoint__icon" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="waypoint__label">Jump to</span>
+    <span class="waypoint__now"><b data-wp-index>01</b><span data-wp-name>Welcome</span></span>
   </button>
   <ol class="waypoint__list" id="waypoint-list" data-wp-list hidden></ol>
 </div>

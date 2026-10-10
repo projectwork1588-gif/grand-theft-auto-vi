@@ -29,3 +29,6 @@ media/*
 
 # Local tool configuration
 .claude/
+
+# Local review screenshots (they contain Rockstar artwork)
+review/

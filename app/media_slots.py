@@ -11,9 +11,29 @@ SCREENSHOT_SLUGS = (
     "shot-lucia-caminos-03", "shot-mount-kalaga-04", "shot-port-gellhorn-06",
 )
 # Full-bleed backdrops for bands.
-BACKDROP_SLUGS = ("shot-vice-city-11", "art-jason-lucia-robbery")
+BACKDROP_SLUGS = ("shot-vice-city-11", "art-jason-lucia-robbery", "shot-grassrivers-05")
 BACKDROP_STORIES = "shot-vice-city-11"
 BACKDROP_CLOSING = "art-jason-lucia-robbery"
+
+# One explicit playlist order for the cast. The homepage name list, the reel's segments and the loop builder
+# (scripts/make_loops.py) all read this tuple, never the database's row order.
+CAST_ORDER = (
+    "jason-duval", "lucia-caminos", "cal-hampton", "boobie-ike",
+    "dre-quan-priest", "real-dimez", "raul-bautista", "brian-heder",
+)
+
+# The signature moment shown between the leads and the cast. It is nine seconds of Rockstar's own Trailer 1,
+# played through YouTube's embedded player from Rockstar's official upload (there is no downloadable file and no
+# stated licence for the trailers, so nothing is copied or hosted here). Start and end are seconds into the video.
+# Chosen by stepping through Trailer 1, Trailer 2 and the other official footage: see docs/MEDIA_INVENTORY.md.
+SIGNATURE_MOMENT = {
+    "title": "Grand Theft Auto VI Trailer 1, official footage",
+    "youtube_id": "QdBZY2fkU-0",
+    "start": 18.5,
+    "end": 27.3,
+    "poster": "shot-grassrivers-05",
+    "trailer": "official-trailer-1",
+}
 
 # The two leads are presented as a matched pair: Jason by day on a motorcycle, Lucia at night on hers.
 CHARACTER_COVERS = {

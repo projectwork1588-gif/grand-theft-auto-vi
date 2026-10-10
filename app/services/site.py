@@ -20,6 +20,12 @@ def _in_rockstar_order(rows):
     return sorted(rows, key=lambda r: (order.get(r["slug"], len(order)), r["name"]))
 
 
+def _in_cast_order(rows):
+    """The cast in the one explicit playlist order. Anyone not listed goes last, alphabetically."""
+    order = {slug: i for i, slug in enumerate(media_slots.CAST_ORDER)}
+    return sorted(rows, key=lambda r: (order.get(r["slug"], len(order)), r["full_name"]))
+
+
 def _page_cover(page):
     """Official backdrop image for the top of a catalogue page, or None (the page then uses its fallback)."""
     slug = media_slots.PAGE_HERO_SLUGS.get(page)
@@ -182,7 +188,7 @@ def home():
         c["clip_poster"] = _local_poster(c["slug"])
 
     leads = [c for c in official if c["slug"] in ("jason-duval", "lucia-caminos")]
-    cast = official
+    cast = _in_cast_order(official)
 
     reel = None
     manifest = local_media.manifest()
@@ -211,8 +217,20 @@ def home():
         media_slots.HERO_SLUGS + media_slots.VIDEO_SLUGS + media_slots.VIDEO_POSTER_SLUGS
         + media_slots.SCREENSHOT_SLUGS + media_slots.BACKDROP_SLUGS)
     pick = lambda slugs: [featured[s] for s in slugs if s in featured]  # noqa: E731
+    featured_all = featured
+
+    moment = None
+    spec = media_slots.SIGNATURE_MOMENT
+    if media_urls.youtube_id(spec.get("youtube_id")) and spec["end"] > spec["start"]:
+        videos = [m for m in pick(media_slots.VIDEO_SLUGS) if media_urls.player_src(m["embed_url"])]
+        moment = {
+            **spec,
+            "poster": featured_all.get(spec["poster"]),
+            "trailer": next((m for m in videos if m["slug"] == spec["trailer"]), None),
+        }
 
     return {
+        "moment": moment,
         "leads": leads,
         "cast": cast,
         "reel": reel,

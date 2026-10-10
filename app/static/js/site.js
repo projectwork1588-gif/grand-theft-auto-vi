@@ -93,7 +93,7 @@
     }, { passive: true });
   }
 
-  // ---- Waypoint: a radar-style dial that lists the chapters of the page -------------------------
+  // ---- Section navigator: a labelled control that names where you are and lists the sections ----
   (function waypoint() {
     var wp = document.querySelector("[data-waypoint]");
     if (!wp) { return; }
@@ -102,6 +102,7 @@
     var list = wp.querySelector("[data-wp-list]");
     var dial = wp.querySelector("[data-wp-toggle]");
     var indexEl = wp.querySelector("[data-wp-index]");
+    var nameEl = wp.querySelector("[data-wp-name]");
     var links = chapters.map(function (chapter, i) {
       var li = document.createElement("li");
       var a = document.createElement("a");
@@ -131,6 +132,7 @@
         if (n === i) { a.setAttribute("aria-current", "true"); } else { a.removeAttribute("aria-current"); }
       });
       indexEl.textContent = ("0" + (i + 1)).slice(-2);
+      if (nameEl) { nameEl.textContent = chapters[i].getAttribute("data-chapter"); }
     };
     setActive(0);
 
@@ -165,7 +167,9 @@
     window.addEventListener("scroll", showWhenScrolled, { passive: true });
   })();
 
-  // ---- Cast stage: one frame, eight people. A short reel plays through; a name holds on a person ---
+  // ---- Cast stage: one frame, eight people. The reel plays through; a name holds on that person ----
+  // Both controls exist in the markup from the first paint. The script only changes their state, never
+  // their visibility, so "Play whole reel" is available on load and after every selection.
   (function castStage() {
     var root = document.querySelector("[data-cast]");
     if (!root) { return; }
@@ -179,17 +183,27 @@
     var summaryEl = caption.querySelector("[data-summary]");
     var linkEl = caption.querySelector("[data-link]");
     var pauseBtn = root.querySelector("[data-toggle]");
-    var wholeBtn = root.querySelector("[data-play-reel]");
+    var reelBtn = root.querySelector("[data-play-reel]");
     var reelSrc = root.getAttribute("data-reel");
     var segments = items.map(function (it) {
       return it.hasAttribute("data-start") ? { start: parseFloat(it.getAttribute("data-start")), end: parseFloat(it.getAttribute("data-end")) } : null;
     });
 
-    var state = { index: 0, whole: !!reelSrc, motion: !calm, visible: false, current: "" };
+    // mode: "reel" plays every clip in order, "clip" loops the chosen person. motion: playback is wanted.
+    var state = { index: 0, mode: reelSrc ? "reel" : "clip", motion: !calm, visible: false, current: "" };
     var timer = null;
     var raf = 0;
 
     if (still) { still.addEventListener("error", function () { still.hidden = true; }); }
+
+    function render() {
+      if (pauseBtn) { pauseBtn.textContent = state.motion ? "Pause" : "Play"; }
+      if (reelBtn) {
+        var on = state.mode === "reel";
+        reelBtn.classList.toggle("is-active", on);
+        reelBtn.setAttribute("aria-pressed", String(on));
+      }
+    }
 
     function showItem(i) {
       state.index = i;
@@ -229,30 +243,39 @@
       video.load();
     }
 
-    function useReel() {
-      state.whole = true;
-      if (wholeBtn) { wholeBtn.hidden = true; }
-      if (!video || !reelSrc) { return; }
-      load(reelSrc);
-      var begin = function () { video.currentTime = 0; apply(); };
-      if (video.readyState >= 1) { begin(); } else { video.addEventListener("loadedmetadata", begin, { once: true }); }
+    // Rewind to the start of whatever is loaded and play it (when it is wanted and visible).
+    function playFromStart() {
+      if (!video) { return; }
+      var go = function () {
+        try { video.currentTime = 0; } catch (e) { /* not seekable yet */ }
+        apply();
+      };
+      if (video.readyState >= 1) { go(); } else { video.addEventListener("loadedmetadata", go, { once: true }); }
     }
 
-    function useClip(i) {
-      state.whole = false;
-      if (wholeBtn && reelSrc) { wholeBtn.hidden = false; }
+    function startReel() {
+      state.mode = "reel";
+      if (video && reelSrc) { load(reelSrc); }
+      showItem(0);
+      render();
+      playFromStart();
+    }
+
+    function startClip(i) {
       var clip = items[i].getAttribute("data-clip");
-      if (video && clip) { load(clip); apply(); }
+      state.mode = "clip";
+      showItem(i);
+      if (video && clip) { load(clip); render(); playFromStart(); } else { if (video) { video.pause(); } render(); }
     }
 
     // Whole-reel mode: keep the name list and caption in step with the picture.
     function follow() {
       raf = 0;
-      if (!state.whole || !video || video.paused) { return; }
+      if (state.mode !== "reel" || !video || video.paused) { return; }
       var t = video.currentTime;
       for (var n = 0; n < segments.length; n++) {
-        var s = segments[n];
-        if (s && t >= s.start && t < s.end) {
+        var seg = segments[n];
+        if (seg && t >= seg.start && t < seg.end) {
           if (n !== state.index) { showItem(n); }
           break;
         }
@@ -265,46 +288,42 @@
       var play = state.motion && state.visible && !document.hidden;
       if (play) {
         safePlay(video);
-        if (!raf && state.whole) { raf = window.requestAnimationFrame(follow); }
+        if (!raf && state.mode === "reel") { raf = window.requestAnimationFrame(follow); }
       } else {
         video.pause();
       }
-      if (pauseBtn) {
-        pauseBtn.textContent = state.motion ? "Pause" : "Play";
-        pauseBtn.setAttribute("aria-pressed", String(!state.motion));
-      }
+      render();
     }
 
     if (video) {
       video.addEventListener("playing", function () {
         video.classList.add("is-ready");
-        if (state.whole && !raf) { raf = window.requestAnimationFrame(follow); }
+        if (state.mode === "reel" && !raf) { raf = window.requestAnimationFrame(follow); }
       });
       video.addEventListener("error", function () { video.classList.remove("is-ready"); });
     }
 
+    // Choosing a person is an explicit request for motion, even when autoplay is off.
     items.forEach(function (it, i) {
       it.addEventListener("click", function () {
-        showItem(i);
-        if (it.hasAttribute("data-clip") && video) {
-          useClip(i);
-        } else if (video) {
-          video.pause();
-        }
-        // Touch screens and keyboards: a second press on the same name opens the profile.
+        state.motion = true;
+        startClip(i);
       });
     });
     if (pauseBtn) {
       pauseBtn.addEventListener("click", function () {
         state.motion = !state.motion;
-        if (state.motion && video && !state.current) { reelSrc ? useReel() : useClip(state.index); }
-        apply();
+        if (state.motion && video && !state.current) {
+          if (state.mode === "reel" && reelSrc) { startReel(); } else { startClip(state.index); }
+        } else {
+          apply();
+        }
       });
     }
-    if (wholeBtn) {
-      wholeBtn.addEventListener("click", function () {
+    if (reelBtn) {
+      reelBtn.addEventListener("click", function () {
         state.motion = true;
-        useReel();
+        startReel();
       });
     }
 
@@ -313,16 +332,166 @@
         entries.forEach(function (entry) {
           state.visible = entry.isIntersecting;
           if (state.visible && state.motion && !state.current) {
-            if (reelSrc) { useReel(); } else { useClip(state.index); }
+            if (state.mode === "reel" && reelSrc) { startReel(); } else { startClip(state.index); }
+          } else {
+            apply();
           }
-          apply();
         });
       }, { threshold: 0.35 });
       watch.observe(root.querySelector(".cast__stage"));
     }
     document.addEventListener("visibilitychange", apply);
-    // Only start fetching video once the person has seen the stage (preload is "none").
-    if (calm) { apply(); }
+    render();
+  })();
+
+  // ---- The signature moment: nine seconds of Rockstar's Trailer 1 in YouTube's embedded player --------
+  // Nothing is downloaded or hosted. The player (YouTube's own IFrame API, privacy-enhanced domain) is only
+  // created when the section is close to the screen, plays muted, pauses when scrolled away, and is never
+  // started automatically for visitors who prefer reduced motion or have data saver on.
+  (function signatureMoment() {
+    var root = document.querySelector("[data-moment]");
+    if (!root) { return; }
+    var mount = root.querySelector("[data-moment-player]");
+    var toggleBtn = root.querySelector("[data-moment-toggle]");
+    var soundBtn = root.querySelector("[data-moment-sound]");
+    var videoId = root.getAttribute("data-youtube");
+    var start = parseFloat(root.getAttribute("data-start"));
+    var end = parseFloat(root.getAttribute("data-end"));
+    if (!/^[A-Za-z0-9_-]{11}$/.test(videoId || "") || !(end > start)) { return; }
+
+    var player = null;
+    var phase = "idle"; // idle, loading, ready, failed
+    var state = { motion: !calm, visible: false, muted: true };
+    var poll = 0;
+
+    function setButtons() {
+      if (toggleBtn) {
+        toggleBtn.hidden = phase === "failed";
+        toggleBtn.textContent = state.motion ? "Pause" : "Play the footage";
+      }
+      if (soundBtn) {
+        soundBtn.hidden = phase !== "ready";
+        soundBtn.textContent = state.muted ? "Sound on" : "Sound off";
+        soundBtn.setAttribute("aria-pressed", String(!state.muted));
+      }
+    }
+
+    function loadApi(done) {
+      if (window.YT && window.YT.Player) { done(); return; }
+      var previous = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = function () {
+        if (typeof previous === "function") { previous(); }
+        done();
+      };
+      var tag = document.createElement("script");
+      tag.src = "https://www.youtube.com/iframe_api";
+      tag.async = true;
+      tag.onerror = function () { phase = "failed"; setButtons(); };
+      document.head.appendChild(tag);
+    }
+
+    function wrap() {
+      root.classList.add("is-dip");
+      try { player.seekTo(start, true); } catch (e) { /* player not ready */ }
+      window.setTimeout(function () { root.classList.remove("is-dip"); }, 420);
+    }
+
+    function tick() {
+      if (!player || typeof player.getCurrentTime !== "function") { return; }
+      if (player.getPlayerState() !== 1) { return; } // only while it is really playing
+      var t = player.getCurrentTime();
+      if (t >= end - 0.1 || t < start - 1.5) { wrap(); return; }
+      if (t >= end - 0.45) { root.classList.add("is-dip"); }
+      // Show the player only once it is inside the chosen nine seconds, never the frames before them.
+      if (!root.classList.contains("is-live") && t >= start - 0.05) { root.classList.add("is-live"); }
+    }
+
+    function wanted() { return state.motion && state.visible && !document.hidden; }
+
+    function apply() {
+      if (!player || phase !== "ready") { return; }
+      try {
+        if (wanted()) { player.playVideo(); } else { player.pauseVideo(); }
+      } catch (e) { /* ignore */ }
+      setButtons();
+    }
+
+    function create() {
+      if (phase !== "idle") { return; }
+      phase = "loading";
+      loadApi(function () {
+        var holder = document.createElement("div");
+        mount.appendChild(holder);
+        player = new window.YT.Player(holder, {
+          host: "https://www.youtube-nocookie.com",
+          videoId: videoId,
+          playerVars: {
+            autoplay: 0, controls: 0, disablekb: 1, fs: 0, iv_load_policy: 3, modestbranding: 1,
+            playsinline: 1, rel: 0, cc_load_policy: 0, origin: window.location.origin
+          },
+          events: {
+            onReady: function () {
+              phase = "ready";
+              var frame = player.getIframe();
+              if (frame) {
+                frame.setAttribute("tabindex", "-1");
+                frame.setAttribute("title", root.getAttribute("aria-label") || "Official footage");
+              }
+              player.mute();
+              poll = window.setInterval(tick, 120);
+              // Cue at the exact start (fractional seconds), then play when it is wanted and visible.
+              if (wanted()) {
+                player.loadVideoById({ videoId: videoId, startSeconds: start });
+              } else {
+                player.cueVideoById({ videoId: videoId, startSeconds: start });
+              }
+              setButtons();
+            },
+            onStateChange: function (e) {
+              if (e.data === 0) { wrap(); try { player.playVideo(); } catch (err) { /* ignore */ } }
+              if (e.data === 5) { apply(); } // cued: play now if it is wanted
+            },
+            onError: function () {
+              phase = "failed";
+              root.classList.remove("is-live");
+              window.clearInterval(poll);
+              setButtons();
+            }
+          }
+        });
+      });
+    }
+
+    if (toggleBtn) {
+      toggleBtn.addEventListener("click", function () {
+        state.motion = !state.motion;
+        if (state.motion && phase === "idle") { create(); }
+        apply();
+        setButtons();
+      });
+    }
+    if (soundBtn) {
+      soundBtn.addEventListener("click", function () {
+        state.muted = !state.muted;
+        try {
+          if (state.muted) { player.mute(); } else { player.unMute(); player.setVolume(70); }
+        } catch (e) { /* ignore */ }
+        setButtons();
+      });
+    }
+
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting && state.motion) { create(); } // arrives early so it is ready when seen
+        });
+      }, { rootMargin: "120% 0px 120% 0px" }).observe(root);
+      new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) { state.visible = entry.isIntersecting; apply(); });
+      }, { threshold: 0.25 }).observe(root);
+    }
+    document.addEventListener("visibilitychange", apply);
+    setButtons();
   })();
 
   // ---- Region explorer: hover, focus or tap a region to preview it; choose to step inside -------
@@ -480,7 +649,7 @@
         frame.allow = "autoplay; fullscreen; picture-in-picture";
         playerBox.textContent = "";
         playerBox.appendChild(frame);
-        videoCaption.textContent = (trigger.getAttribute("data-title") || "") + " | Official video from Rockstar Games.";
+        videoCaption.textContent = (trigger.getAttribute("data-title") || "") + " · official video, © Rockstar Games";
         videoDialog.showModal();
       });
     });
@@ -490,14 +659,38 @@
     closeOnBackdrop(imageDialog);
     var bigImage = imageDialog.querySelector("[data-image]");
     var imageCaption = imageDialog.querySelector("[data-caption]");
+    var imageCount = imageDialog.querySelector("[data-count]");
+    var prevBtn = imageDialog.querySelector("[data-lb-prev]");
+    var nextBtn = imageDialog.querySelector("[data-lb-next]");
+    var group = [];
+    var at = 0;
+
+    var showImage = function (n) {
+      at = (n + group.length) % group.length;
+      var link = group[at];
+      var text = link.getAttribute("data-caption") || "";
+      bigImage.src = link.href;
+      bigImage.alt = text;
+      imageCaption.textContent = text + " · © Rockstar Games";
+      imageCount.textContent = group.length > 1 ? (at + 1) + " / " + group.length : "";
+      prevBtn.hidden = nextBtn.hidden = group.length < 2;
+    };
+
     document.querySelectorAll("a[data-lightbox]").forEach(function (link) {
       link.addEventListener("click", function (e) {
         e.preventDefault();
-        bigImage.src = link.href;
-        bigImage.alt = link.getAttribute("data-caption") || "";
-        imageCaption.textContent = (link.getAttribute("data-caption") || "") + " | Official image from Rockstar Games.";
+        var holder = link.closest("[data-gallery]");
+        group = holder ? [].slice.call(holder.querySelectorAll("a[data-lightbox]")) : [link];
+        showImage(group.indexOf(link));
         imageDialog.showModal();
       });
+    });
+    prevBtn.addEventListener("click", function () { showImage(at - 1); });
+    nextBtn.addEventListener("click", function () { showImage(at + 1); });
+    imageDialog.addEventListener("keydown", function (e) {
+      if (group.length < 2) { return; }
+      if (e.key === "ArrowLeft") { e.preventDefault(); showImage(at - 1); }
+      if (e.key === "ArrowRight") { e.preventDefault(); showImage(at + 1); }
     });
     imageDialog.addEventListener("close", function () { bigImage.removeAttribute("src"); });
   }
