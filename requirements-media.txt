@@ -1,0 +1,3 @@
+# Optional: only for building the short local video loops (python -m scripts.make_loops).
+# The site itself does not need this. It bundles a private ffmpeg binary, so nothing else has to be installed.
+imageio-ffmpeg==0.6.0
