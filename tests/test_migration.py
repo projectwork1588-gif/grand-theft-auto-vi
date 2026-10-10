@@ -75,7 +75,7 @@ def test_destructive_statement_detector():
 
 def test_shipped_migrations_contain_nothing_destructive():
     files = migrate_db.migration_files()
-    assert [f.name for f in files] == ["001_phase2_media.sql", "002_phase2_garage.sql", "003_concept_copy.sql"]
+    assert [f.name for f in files] == ["001_phase2_media.sql", "002_phase2_garage.sql", "003_concept_copy.sql", "004_leonida_in_motion.sql"]
     for path in files:
         migrate_db.check_non_destructive(path)  # raises if it finds DROP, DELETE or TRUNCATE
 
@@ -129,7 +129,7 @@ def test_pages_work_on_a_phase1_shaped_database_and_the_migration_adds_the_visua
             response = client.get(path)
             assert response.status_code == 200, path
             assert "rockstargames.com/VI/_next/static/media" not in response.get_data(as_text=True), path
-        assert "Trailers on Rockstar's site" in client.get("/").get_data(as_text=True)
+        assert "rockstargames.com/VI/trailer-1" in client.get("/").get_data(as_text=True)
 
         assert migrate_db.main(["--test", "--yes"]) == 0
         page = client.get("/regions/vice-city").get_data(as_text=True)

@@ -175,7 +175,7 @@ Search currently uses `LIKE '%text%'`, which cannot use a normal index. That is 
 | Relationships | Jason-Lucia, Brian-Jason, Cal-Jason, Boobie Ike-Dre'Quan | `official` (stated on that page). The other three are `demo` |
 | Vehicles | '95 Grotti Cheetah, '67 Vapid Dominator Buggy, Shitzu Squalo, Vapid Stanier, Vapid Ganado Retro Build (5), each with Rockstar's own screenshots | `official` (names from rockstargames.com/VI/editions and the screenshots page). No specifications are stored because Rockstar has published none |
 | Vehicles | 8 concept vehicles used by the story archive | `demo` (shown as Concept, no public page) |
-| Media | 85 rows: 3 official videos (Rockstar's own player), 1 link to the official Media page, 3 trailer posters, 8 character clip cards, 70 official images (artwork, region postcards, screenshots, vehicle screenshots). 54 character, 20 region and 17 vehicle links. See `docs/MEDIA_INVENTORY.md` | Remote references only. `approved` for display by the Phase 2 media brief. Rockstar states no licence terms, so human review is recommended. Fictional records get no official media |
+| Media | 107 rows: 3 official videos (Rockstar's own player), 1 link to the official Media page, 3 trailer posters, 8 character clip rows (each with a poster and, once built, a local loop path), 91 official images (artwork, region postcards, screenshots, vehicle screenshots) and 1 local reel row. 59 character, 36 region and 17 vehicle links. See `docs/MEDIA_INVENTORY.md` | Remote references only. `approved` for display by the Phase 2 media brief. Rockstar states no licence terms, so human review is recommended. Fictional records get no official media |
 
 **Correction history:** the first Phase 1 seed marked five regions as `fan` and omitted Real Dimez because only secondary sources had been reachable. A direct check of Rockstar's Leonida page confirmed them, so they were reclassified.
 
@@ -195,6 +195,8 @@ Until it is applied the website still works: media lookups tolerate the missing 
 **Migration 002 (`002_phase2_garage.sql`)** creates `media_vehicles`, upserts the five official vehicles (ids 9 to 13, source-linked to Rockstar's pages), and adds 28 media rows: three trailer posters, eight character clip cards (poster image plus a link to Rockstar's Videos page) and 17 vehicle screenshots.
 
 **Migration 003 (`003_concept_copy.sql`)** contains only `UPDATE` statements that rewrite the text of concept characters, locations, stories, vehicles and relationships so it reads naturally, with a `WHERE content_status = 'demo'` guard on every statement. A test restores the old wording, applies the migration and proves that no official row changed and that the result equals a fresh seed.
+
+**Migration 004 (`004_leonida_in_motion.sql`)** adds 21 official screenshots (ids 86 to 106) and their region and character links, sets `local_path` on the eight clip rows (`clips/<slug>.mp4`, a relative path into the Git-ignored `media/` folder), adds the reel row (id 107, `permission_required` / `pending_review`) and rewrites the editorial text of the official characters, regions and vehicles. It never changes a name, slug, label or source link. Every statement is an upsert or an `UPDATE`; there is no `DROP`, `DELETE` or `TRUNCATE`.
 
 The public Garage lists only `content_status = 'official'` vehicles. The eight concept vehicles remain in the database because the story archive links them to missions (many-to-many), but they have no public page, and the JSON API still serves the whole table.
 

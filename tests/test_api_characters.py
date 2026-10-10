@@ -79,7 +79,7 @@ def test_relationships_show_both_directions(client):
     body = client.get(BASE + "/lucia-caminos").get_json()
     assert body["relationships"] == [{
         "direction": "incoming", "relationship_type": "partner",
-        "description": "Presented on the official site as the two leads of the story.",
+        "description": "The two leads of the story.",
         "content_status": "official", "slug": "jason-duval", "full_name": "Jason Duval"}]
 
 

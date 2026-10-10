@@ -1,5 +1,6 @@
 """The seed must be deterministic, honest about its sources, and free of copied media."""
 import hashlib
+import re
 
 from app.config import TestingConfig
 from scripts.init_db import init_database
@@ -17,8 +18,8 @@ def count(cur, table):
 def test_exact_row_counts(cur):
     expected = {"regions": 6, "locations": 8, "characters": 11, "character_relationships": 7,
                 "vehicle_categories": 6, "vehicles": 13, "missions": 5, "mission_characters": 10,
-                "mission_vehicles": 8, "mission_locations": 8, "media_assets": 85,
-                "media_characters": 54, "media_regions": 20, "media_vehicles": 17, "media_locations": 0, "users": 0}
+                "mission_vehicles": 8, "mission_locations": 8, "media_assets": 107,
+                "media_characters": 59, "media_regions": 36, "media_vehicles": 17, "media_locations": 0, "users": 0}
     for table, n in expected.items():
         assert count(cur, table) == n, table
 
@@ -105,10 +106,16 @@ def test_media_sources_are_official_rockstar_pages(cur):
         assert row["source_url"].startswith("https://www.rockstargames.com/VI"), row["slug"]
 
 
-def test_media_is_remote_official_only_and_nothing_is_copied_locally(cur):
-    """Images and players are remote references to Rockstar. No file is stored in this project."""
-    cur.execute("SELECT COUNT(*) AS n FROM media_assets WHERE local_path IS NOT NULL")
-    assert cur.fetchone()["n"] == 0
+def test_media_is_remote_official_and_local_paths_are_only_the_built_loops(cur):
+    """Images and players are remote references to Rockstar. The only local paths are the short loops the
+    clip scripts build into the Git-ignored media/clips folder; no media file is stored in this project."""
+    cur.execute("SELECT slug, local_path, usage_status, approval_status FROM media_assets WHERE local_path IS NOT NULL")
+    rows = cur.fetchall()
+    assert len(rows) == 9
+    for row in rows:
+        assert re.fullmatch(r"clips/[a-z0-9-]+\.mp4", row["local_path"]), row["slug"]
+    reel = next(r for r in rows if r["slug"] == "reel-leonida")
+    assert (reel["usage_status"], reel["approval_status"]) == ("permission_required", "pending_review")
     cur.execute("SELECT slug, embed_url FROM media_assets WHERE embed_url IS NOT NULL")
     for row in cur.fetchall():
         assert (row["embed_url"].startswith("https://www.rockstargames.com/VI/_next/static/media/")

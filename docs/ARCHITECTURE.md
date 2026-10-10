@@ -35,31 +35,39 @@ Phase 2 added `services/site.py`, which builds the **page view-models**: it call
 | Accounts | Website account is DML-only. A separate migration account does schema work. | Least privilege. |
 | IDs in URLs/JSON | Public slugs. Internal numeric IDs are not exposed. | Cleaner URLs, less enumeration. |
 
-## Frontend (Phase 2)
+## Frontend (Phase 2, refinement round 2)
 
-**Stack:** HTML5, CSS3, vanilla JavaScript, Jinja2. No framework and no library. Two small scripts: `boot.js` (one line, marks that JavaScript works) and `site.js` (about 120 lines). Every page works without JavaScript. The script only adds the mobile menu, scroll reveals, the trailer and image dialogs, and image-failure fallbacks.
+**Stack:** HTML5, CSS3, vanilla JavaScript, Jinja2. No framework and no library. Two scripts: `boot.js` (one line, marks that JavaScript works) and `site.js` (progressive enhancement only). Every page works without JavaScript.
 
-**Design system.** A late-afternoon Florida palette (deep aubergine, soft pink, sunset orange, a touch of Gulf teal). Type is Barlow Condensed for display and Inter for reading, with system fallbacks. The sunset gradient appears only as a brand device: the hero sky, image fallbacks and the numerals. Tokens live in `static/css/site.css` (with the header and footer), reusable pieces in `components.css`, page layouts in `pages.css`. The Jinja files `_components.html` (labels, image frame, vehicle tile, pager, provenance line, page hero), `base.html` and the page templates form the component layer.
+**What `site.js` adds:** the mobile menu, scroll reveals, a hero that drifts slower than the page, the chapter waypoint (a small dial that lists the sections of the homepage), the cast stage, the region explorer, the garage showroom controls, scroll-aware muted loops on profiles, the trailer and image dialogs, and image-failure fallbacks.
+
+**Design system.** A late-afternoon Florida palette (near-black aubergine, hot pink, sunset orange, gold, a touch of Gulf teal). Type is Manrope for text and headings, Barlow Condensed for the VI mark and numerals, and Newsreader italic for one-line ledes. Fonts are bundled in `static/fonts/` (SIL OFL), so no request leaves the site for type. Headings are sentence case and tight, not all-caps. Tokens live in `static/css/site.css` (with header, footer and waypoint), reusable pieces in `components.css`, page layouts in `pages.css`. The Jinja files `_components.html` (labels, image frame, showroom slide, pager, provenance line, page hero), `base.html` and the page templates form the component layer.
 
 **Distinct layouts, not one card grid repeated:**
 
 | Section | Layout |
 |---------|--------|
-| Cast | Two large lead panels, then a horizontally scrolling poster rail; the catalogue is a poster wall with some double-width posters |
-| Regions | Expanding panels (homepage), alternating full-bleed features (regions page) |
-| Garage | A photo mosaic: one large feature tile and four smaller ones, all official screenshots |
-| Stories | Numbered case-file rows |
-| Locations | Numbered index list |
+| Leads | Two matched 4:5 panels, same crop logic, same type |
+| Cast | One stage with a numbered name list. A 9-second muted reel plays through and the list follows it; choosing a name holds on that person's loop |
+| Regions | A full-width explorer: one large view at a time, six tabs underneath. Hover, focus or tap to preview, choose to enter. On the regions page, six alternating full-viewport features |
+| Garage | A scroll-snapping showroom of wide slides (home) and alternating image and text rows (garage page) |
+| Stories | Numbered rows over a blurred city backdrop, with a "who knows whom" column |
+| Watch | One large trailer card and two smaller ones, then an asymmetric screenshot mosaic |
+| Places | Numbered index list |
 
-**Content labels.** Every record shows a quiet *Official*, *Fan view* or *Concept* label whose meaning is in its text, never colour alone. Detail pages end with a single provenance line (the source link for official records, or "Created by Team Valkyrie for this project. Not part of the game." for concept ones). The large "fictional demo" notice boxes of the first Phase 2 pass were removed, and the stored copy for concept records was rewritten so it reads naturally.
+**Content labels.** Every record shows a quiet *Official*, *Fan view* or *Concept* label whose meaning is in its text, never colour alone. Detail pages end with a single provenance line (the source link for official records, "A Team Valkyrie original." for concept ones, with a link to the label guide on the About page). Lists no longer repeat a label on every row when the whole page is concept content: the page lede says it once.
 
-**Accessibility.** Skip link, semantic landmarks, one `h1` per page, labelled search forms, visible focus rings, `aria-current` in the navigation, `role="status"` result counts, keyboard-operable dialogs, 44px minimum targets, and full support for `prefers-reduced-motion` (a still hero, no slideshow, no reveal animation).
+**Accessibility.** Skip link, semantic landmarks, one `h1` per page, labelled search forms, visible focus rings, `aria-current` in the navigation, `role="status"` result counts, keyboard-operable dialogs, a keyboard-operable showroom and region explorer, 44px minimum targets, and `prefers-reduced-motion` support (a still hero, no slideshow, no reveal animation, **no autoplaying video**: the stage shows a still and a Play button).
 
-**Performance.** Responsive `srcset` images at 640, 1280 and 1920 pixels, lazy loading except the hero, no render-blocking JavaScript, no video until a visitor presses play, and system-font fallbacks so text shows before the web font arrives.
+**Performance.** Responsive `srcset` images at 640, 1280 and 1920 pixels, lazy loading except the hero, no render-blocking JavaScript, no video until a visitor presses play or scrolls the stage into view (and not at all with reduced motion or data saver), one preloaded font file, and a total of about 6 MB of local loops loaded on demand.
+
+## Local video
+
+`scripts/fetch_clips.py` reads Rockstar's published character clips (1 to 1.5 seconds each, 4K) out of its downloads archive with HTTP range requests, so only the eight clips are transferred. `scripts/make_loops.py` turns them into muted 1280 by 720 loops (forward then backward, so they repeat without a jump), a poster for each and one 9-second reel with a `manifest.json` of segment times. `app/local_media.py` serves only `clips/<safe-name>.mp4` or `.jpg` that exist on disk. The folder is Git-ignored. Without the files, every page falls back to official stills.
 
 ## Security headers
 
-Every response carries a Content-Security-Policy: scripts and styles only from this site (plus Google Fonts for CSS and font files), images and frames only from `www.rockstargames.com`, no objects, no framing by other sites. There are no inline scripts, inline styles or event-handler attributes (tested on every page). All dynamic text is escaped by Jinja (tested with hostile database values). External links use `rel="noopener noreferrer"`.
+Every response carries a Content-Security-Policy: scripts, styles, fonts and video only from this site, images and frames only from `www.rockstargames.com`, no objects, no framing by other sites. There are no inline scripts, inline styles or event-handler attributes (tested on every page; the scripts set styles through the CSSOM, which the policy allows). All dynamic text is escaped by Jinja (tested with hostile database values). External links use `rel="noopener noreferrer"`.
 
 ## Media architecture
 
@@ -99,3 +107,23 @@ See `docs/MEDIA_INVENTORY.md`. In short: official images and Rockstar's own vide
 | Typography | Anton replaced by Barlow Condensed at lighter weights, smaller section titles, more generous spacing and a stronger type scale. |
 | Official clips and video | Official trailer posters, the on-demand Rockstar player, and one poster-and-link clip card per character. No autoplay background video, for performance reasons (see the media inventory). |
 | Responsiveness | Reviewed at phone, tablet and desktop widths. Tablet layouts are explicit: two-column regions, a wide feature plus a 2 by 2 garage grid, and stacked trailers. |
+
+## Round 2 refinement (the 3 out of 10 review)
+
+| Feedback | What changed |
+|----------|--------------|
+| Awkward Lucia crop, unbalanced leads | Two matched panels. Lucia now uses the official `lucia-caminos-03` still (face and jacket, the LIQUOR sign behind her) and Jason `jason-duval-01`, both at 4:5 and checked side by side at phone, tablet and desktop widths. A "top" focus hint keeps her head in the wide page banner. |
+| Six cramped region columns | Replaced by a single wide explorer with tabs, and on the regions page six full-width alternating features. |
+| Garage looked like product cards | A showroom: wide slides you swipe, drag or step through, a progress bar, and alternating image-and-text rows on the garage page. |
+| Static posters only | A local 9-second muted reel and per-character loops built from Rockstar's own clips, with scroll-aware pause and resume, reduced-motion and data-saver handling, poster and still fallbacks, and a Pause control. Trailers stay on Rockstar's player. |
+| Small repeated clip thumbnails | Removed. The cast stage shows the clip large, and each profile has an "In motion" player. |
+| Footer pitched the database and linked the API | A short footer: brand, section links, About and Credits, and one line of non-affiliation. The technical note moved to the About page. |
+| Robotic and defensive copy | Every page rewritten: no database explanations, no test terminology, no repeated provenance. Editorial copy for characters, regions and vehicles in migration 004. |
+| All-caps headings and endless card grids | Sentence-case headings, lists with numbers and rhythm, and a different layout per section. |
+| Interactions | Reel stage, region explorer, showroom, chapter waypoint and a hero that drifts. |
+
+## Known limits
+
+* The character clips are only 1 to 1.5 seconds long, so the "reel" is a quick sequence and each loop repeats. Rockstar's trailers cannot be background video: its player has no mute or loop control and the files are 4K and over a gigabyte.
+* The loops are Rockstar's content and Rockstar states no licence terms for them. They are never committed and the reel row is marked `permission_required` / `pending_review` in the media table.
+* Rockstar's player rendered blank inside the preview browser used for review, so trailer playback was not confirmed there. The iframe is created with the official player address.

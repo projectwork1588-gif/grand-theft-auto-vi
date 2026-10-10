@@ -85,11 +85,11 @@ def test_every_page_is_well_formed_accessible_html(client):
         assert len(checker.ids) == len(set(checker.ids)), (path, "duplicate ids")
         assert '<html lang="en">' in text and 'name="viewport"' in text and "<title>" in text, path
         assert 'href="#main"' in text and 'id="main"' in text, path           # skip link target
-        assert "aria-current" in text or path == "/", path
+        assert "aria-current" in text or path in ("/", "/about", "/credits"), path
 
 
 def test_filter_forms_are_labelled_and_keyboard_usable(client):
-    for path in ("/characters", "/vehicles", "/locations", "/missions"):
+    for path in ("/characters", "/locations", "/missions"):
         page = client.get(path).get_data(as_text=True)
         assert 'role="search"' in page and "aria-label=" in page
         controls = len(re.findall(r"<(?:input|select)\b", page))

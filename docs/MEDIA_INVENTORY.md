@@ -1,8 +1,8 @@
 # Media inventory
 
-**Policy.** Nothing from Rockstar is downloaded or committed. Official images and videos are **remote references to Rockstar's own published media**, shown with attribution and a link back to the source page. Watermarks and copyright notices are never removed. Concept records (some characters, all locations and missions, and the concept vehicles) never receive official images. Everything the project owns is original: the CSS fallbacks and the brand mark.
+**Policy.** Nothing from Rockstar is committed. The only files that are downloaded are the eight character clips that `scripts/fetch_clips.py` reads, and the loops built from them, which stay in the Git-ignored `media/` folder on your own machine. Official images and videos are **remote references to Rockstar's own published media**, shown with attribution and a link back to the source page. Watermarks and copyright notices are never removed. Concept records (some characters, all locations and missions, and the concept vehicles) never receive official images. Everything the project owns is original: the CSS fallbacks and the brand mark.
 
-The database table `media_assets` holds exactly the rows below, linked to characters, regions and vehicles through `media_characters`, `media_regions` and `media_vehicles`. Rows 1-57 come from migration 001 and rows 58-85 from migration 002. Both are generated from manifests, and a test (`test_seed_and_migration_agree`) proves that a fresh seed and an upgraded Phase 1 database end up identical.
+The database table `media_assets` holds exactly the rows below, linked to characters, regions and vehicles through `media_characters`, `media_regions` and `media_vehicles`. Rows 1-57 come from migration 001, rows 58-85 from migration 002 and rows 86-107 from migration 004 (rows 61-68 also gain a `local_path` there). All are generated from manifests, and a test (`test_seed_and_migration_agree`) proves that a fresh seed and an upgraded Phase 1 database end up identical.
 
 ## Where the media came from (checked 2026-10-09 and 2026-10-10)
 
@@ -22,10 +22,19 @@ All 85 referenced URLs were requested before they were recorded and returned HTT
 * **Posters.** Each trailer card uses the official poster Rockstar publishes for that video.
 * **Character clips.** Rockstar publishes one short clip per named character. The clip files are **not** hosted or played here. Each character gets a poster-and-link card that opens Rockstar's Videos page. The poster image is stored in `embed_url`, and the clip page in `source_url`.
 
+## What changed in refinement round 2
+
+* **Local motion.** Rockstar's downloads archive (`GTAVI_Videos.zip`, linked from its Videos page) holds the eight character clips at 1 to 1.5 seconds and 4K. `scripts/fetch_clips.py` reads only those eight out of the archive with HTTP range requests (about 40 MB, CRC checked). `scripts/make_loops.py` builds a muted 1280 by 720 loop and a poster for each (about 0.3 to 1 MB each) and one 9-second reel (2.2 MB). Total about 6 MB.
+* **Why these and not the trailers.** The trailers are 4K files over a gigabyte and Rockstar's player has no mute, loop or background control. Only the short clips are a sensible size for an ambient loop.
+* **Not committed.** `media/` is Git-ignored apart from its README. A fresh clone has no loops and every page falls back to official stills and posters.
+* **Rights.** Rockstar states no licence terms for these files. Rows 61 to 68 carry the loop's path; row 107 (the reel) is marked `permission_required` / `pending_review`. The owner should decide before publishing the site publicly.
+* **New images.** 21 further official screenshots (rows 86 to 106) give each region a wider selection and Jason and Lucia more choice of crop. Each URL was requested before it was recorded.
+
 ## Integration approach
 
 * **Videos:** a poster card opens a native `<dialog>`. Only then does JavaScript create the iframe that points at Rockstar's player, so nothing loads until a visitor presses play. Closing the dialog removes the iframe, which stops playback.
-* **Why no autoplay background video:** the only video files Rockstar publishes are 4K and large (Trailer 2 is about 1.2 GB and the cover-art animation is 37 MB). Streaming that as an ambient loop would harm performance and bandwidth for every visitor, so the site uses official stills and the on-demand player instead.
+* **Why trailers are not background video:** the trailer files are 4K and large (Trailer 2 is about 1.2 GB) and the player offers no mute or loop control. The trailers stay on Rockstar's player, on demand. Ambient motion comes only from the short local loops.
+* **Local loops:** `<video muted loop playsinline preload="none">` with no `autoplay` attribute. The script starts a loop only when it is on screen, pauses it when it leaves, never starts it for visitors who prefer reduced motion or have data saver on, and always offers Pause and Play.
 * **Images:** ordinary `<img>` elements with `srcset`, `loading="lazy"` (the hero image uses `fetchpriority="high"`) and `referrerpolicy="no-referrer"`, over an original fallback layer. If an image fails, the fallback shows.
 * **Safety:** templates only render a URL that starts with Rockstar's exact image prefix or player prefix (`app/media_urls.py`). The Content-Security-Policy allows images and frames only from `www.rockstargames.com`. A hostile database value is ignored (tested).
 * **Reduced motion:** visitors who ask for reduced motion get a still first hero image and no slideshow.
@@ -38,9 +47,9 @@ All 85 referenced URLs were requested before they were recorded and returned HTT
 | Image file names are **build-hashed** (for example `Cal_Hampton_landscape.17k7bnt3myg.2.jpg`) | They may change when Rockstar redeploys. The site then falls back to original artwork. Re-run the URL check and refresh the migrations. |
 | Vehicle specifications | Rockstar publishes none, so none are shown. |
 | Vehicle categories | Judged from Rockstar's own screenshots where its page does not state a type (for example the Shitzu Squalo). Each such record says so in its source note. |
-| Character clip files and the 4K videos | **Not used or downloaded.** The site links to Rockstar's own pages. |
+| Character clip files | **Used locally**, as short muted loops, and never committed (see above). The 4K trailers are not downloaded. |
 
-## Inventory (85 rows)
+## Inventory (107 rows)
 
 | ID | Slug | Type | Source page | Remote reference | Linked to | Usage | Approval |
 |----|------|------|-------------|------------------|-----------|-------|----------|
@@ -104,14 +113,14 @@ All 85 referenced URLs were requested before they were recorded and returned HTT
 | 58 | `poster-trailer-1` | artwork | /VI/media/videos | `…/media/GTAVI_Trailer1_poster.12x2gvspcm_3m.jpg` | none | embed_permitted | approved |
 | 59 | `poster-trailer-2` | artwork | /VI/media/videos | `…/media/GTAVI_Trailer2_poster.0cosv-uzbpt91.jpg` | none | embed_permitted | approved |
 | 60 | `poster-extended-look` | artwork | /VI/media/videos | `…/media/GTAVI_An_Extended_Look_poster.0ijbsha5fo1te.jpg` | none | embed_permitted | approved |
-| 61 | `clip-jason-duval` | video | /VI/media/videos | `…/media/Jason_Duval_Video_Clip.024oe-y640yxp.jpg` | Jason Duval | link_only | approved |
-| 62 | `clip-lucia-caminos` | video | /VI/media/videos | `…/media/Lucia_Caminos_Video_Clip.0uqwkm_u_fu_9.jpg` | Lucia Caminos | link_only | approved |
-| 63 | `clip-cal-hampton` | video | /VI/media/videos | `…/media/Cal_Hampton_Video_Clip.127phn-5fdl9r.jpg` | Cal Hampton | link_only | approved |
-| 64 | `clip-boobie-ike` | video | /VI/media/videos | `…/media/Boobie_Ike_Video_Clip.06_gu6y13hufm.jpg` | Boobie Ike | link_only | approved |
-| 65 | `clip-dequan-priest` | video | /VI/media/videos | `…/media/DreQuan_Priest_Video_Clip.0p5nv9luhe2va.jpg` | Dre'Quan Priest | link_only | approved |
-| 66 | `clip-real-dimez` | video | /VI/media/videos | `…/media/Real_Dimez_Video_Clip.05f8p4_2sk82a.jpg` | Real Dimez | link_only | approved |
-| 67 | `clip-raul-bautista` | video | /VI/media/videos | `…/media/Raul_Bautista_Video_Clip.07g3eeo2bgg2k.jpg` | Raul Bautista | link_only | approved |
-| 68 | `clip-brian-heder` | video | /VI/media/videos | `…/media/Brian_Heder_Video_Clip.0wbjj2r2i_2~c.jpg` | Brian Heder | link_only | approved |
+| 61 | `clip-jason-duval` | video | /VI/media/videos | `…/media/Jason_Duval_Video_Clip.024oe-y640yxp.jpg` + local loop `media/clips/jason-duval.mp4` | Jason Duval | link_only | approved |
+| 62 | `clip-lucia-caminos` | video | /VI/media/videos | `…/media/Lucia_Caminos_Video_Clip.0uqwkm_u_fu_9.jpg` + local loop `media/clips/lucia-caminos.mp4` | Lucia Caminos | link_only | approved |
+| 63 | `clip-cal-hampton` | video | /VI/media/videos | `…/media/Cal_Hampton_Video_Clip.127phn-5fdl9r.jpg` + local loop `media/clips/cal-hampton.mp4` | Cal Hampton | link_only | approved |
+| 64 | `clip-boobie-ike` | video | /VI/media/videos | `…/media/Boobie_Ike_Video_Clip.06_gu6y13hufm.jpg` + local loop `media/clips/boobie-ike.mp4` | Boobie Ike | link_only | approved |
+| 65 | `clip-dequan-priest` | video | /VI/media/videos | `…/media/DreQuan_Priest_Video_Clip.0p5nv9luhe2va.jpg` + local loop `media/clips/dre-quan-priest.mp4` | Dre'Quan Priest | link_only | approved |
+| 66 | `clip-real-dimez` | video | /VI/media/videos | `…/media/Real_Dimez_Video_Clip.05f8p4_2sk82a.jpg` + local loop `media/clips/real-dimez.mp4` | Real Dimez | link_only | approved |
+| 67 | `clip-raul-bautista` | video | /VI/media/videos | `…/media/Raul_Bautista_Video_Clip.07g3eeo2bgg2k.jpg` + local loop `media/clips/raul-bautista.mp4` | Raul Bautista | link_only | approved |
+| 68 | `clip-brian-heder` | video | /VI/media/videos | `…/media/Brian_Heder_Video_Clip.0wbjj2r2i_2~c.jpg` + local loop `media/clips/brian-heder.mp4` | Brian Heder | link_only | approved |
 | 69 | `vehicle-grotti-cheetah-01` | screenshot | /VI/media/screenshots | `…/media/ULTIMATE_EDITION_GROTTI_CHEETAH_01.0a.wy3s_ogjey.jpg` | '95 Grotti Cheetah | embed_permitted | approved |
 | 70 | `vehicle-grotti-cheetah-02` | screenshot | /VI/media/screenshots | `…/media/ULTIMATE_EDITION_GROTTI_CHEETAH_02.0rkrlsu_dg~ww.jpg` | '95 Grotti Cheetah | embed_permitted | approved |
 | 71 | `vehicle-grotti-cheetah-03` | screenshot | /VI/media/screenshots | `…/media/ULTIMATE_EDITION_GROTTI_CHEETAH_03.0v3_dryhtjarc.jpg` | '95 Grotti Cheetah | embed_permitted | approved |
@@ -129,6 +138,28 @@ All 85 referenced URLs were requested before they were recorded and returned HTT
 | 83 | `vehicle-vapid-stanier-03` | screenshot | /VI/media/screenshots | `…/media/VINTAGE_VICE_CITY_PACK_VAPID_STANIER_03.0dzlk-r0ehlu4.jpg` | Vapid Stanier | embed_permitted | approved |
 | 84 | `vehicle-vapid-stanier-04` | screenshot | /VI/media/screenshots | `…/media/VINTAGE_VICE_CITY_PACK_VAPID_STANIER_04.0n002i9p87b~q.jpg` | Vapid Stanier | embed_permitted | approved |
 | 85 | `vehicle-vapid-ganado-01` | screenshot | /VI/media/screenshots | `…/media/ULTIMATE_EDITION_VAPID_GANADO_RETRO_BUILD_01.062dgvkwdynw5.jpg` | Vapid Ganado Retro Build | embed_permitted | approved |
+| 86 | `shot-lucia-caminos-08` | screenshot | /VI/media/screenshots | `…/media/Lucia_Caminos_08.08wo73uyjkhlk.jpg` | Lucia Caminos | embed_permitted | approved |
+| 87 | `shot-lucia-caminos-09` | screenshot | /VI/media/screenshots | `…/media/Lucia_Caminos_09.0pd.ppokmi8-n.jpg` | Lucia Caminos | embed_permitted | approved |
+| 88 | `shot-lucia-caminos-10` | screenshot | /VI/media/screenshots | `…/media/Lucia_Caminos_10.0s770xrip~yb..jpg` | Lucia Caminos | embed_permitted | approved |
+| 89 | `shot-jason-duval-04` | screenshot | /VI/media/screenshots | `…/media/Jason_Duval_04.16d-z2wa2s~bk.jpg` | Jason Duval | embed_permitted | approved |
+| 90 | `shot-jason-duval-06` | screenshot | /VI/media/screenshots | `…/media/Jason_Duval_06.086o72llg6~1p.jpg` | Jason Duval | embed_permitted | approved |
+| 91 | `shot-vice-city-08` | screenshot | /VI/media/screenshots | `…/media/Vice_City_08.0bbg_xp4hqdvz.jpg` | Vice City | embed_permitted | approved |
+| 92 | `shot-vice-city-09` | screenshot | /VI/media/screenshots | `…/media/Vice_City_09.0~ng.c8ack3fp.jpg` | Vice City | embed_permitted | approved |
+| 93 | `shot-vice-city-10` | screenshot | /VI/media/screenshots | `…/media/Vice_City_10.0f1q-xa_4q8r2.jpg` | Vice City | embed_permitted | approved |
+| 94 | `shot-vice-city-11` | screenshot | /VI/media/screenshots | `…/media/Vice_City_11.09paum3g942sc.jpg` | Vice City | embed_permitted | approved |
+| 95 | `shot-leonida-keys-03` | screenshot | /VI/media/screenshots | `…/media/Leonida_Keys_03.0v_3~-9ceyixc.jpg` | Leonida Keys | embed_permitted | approved |
+| 96 | `shot-leonida-keys-05` | screenshot | /VI/media/screenshots | `…/media/Leonida_Keys_05.0yerhvjhto-h..jpg` | Leonida Keys | embed_permitted | approved |
+| 97 | `shot-leonida-keys-06` | screenshot | /VI/media/screenshots | `…/media/Leonida_Keys_06.0eapr3hbeyewx.jpg` | Leonida Keys | embed_permitted | approved |
+| 98 | `shot-grassrivers-03` | screenshot | /VI/media/screenshots | `…/media/Grassrivers_03.14cuv-vg9orw4.jpg` | Grassrivers | embed_permitted | approved |
+| 99 | `shot-grassrivers-04` | screenshot | /VI/media/screenshots | `…/media/Grassrivers_04.01ckpqbhxyz76.jpg` | Grassrivers | embed_permitted | approved |
+| 100 | `shot-grassrivers-05` | screenshot | /VI/media/screenshots | `…/media/Grassrivers_05.0.dx9~67tljry.jpg` | Grassrivers | embed_permitted | approved |
+| 101 | `shot-port-gellhorn-06` | screenshot | /VI/media/screenshots | `…/media/Port_Gellhorn_06.13ghhmb440r6e.jpg` | Port Gellhorn | embed_permitted | approved |
+| 102 | `shot-ambrosia-04` | screenshot | /VI/media/screenshots | `…/media/Ambrosia_04.0.2cefoguu-tt.jpg` | Ambrosia | embed_permitted | approved |
+| 103 | `shot-mount-kalaga-03` | screenshot | /VI/media/screenshots | `…/media/Mount_Kalaga_National_Park_03.037k2s87rwuxc.jpg` | Mount Kalaga | embed_permitted | approved |
+| 104 | `shot-mount-kalaga-04` | screenshot | /VI/media/screenshots | `…/media/Mount_Kalaga_National_Park_04.0e1sxnp1mln2u.jpg` | Mount Kalaga | embed_permitted | approved |
+| 105 | `shot-mount-kalaga-05` | screenshot | /VI/media/screenshots | `…/media/Mount_Kalaga_National_Park_05.0_~vto-o2zxok.jpg` | Mount Kalaga | embed_permitted | approved |
+| 106 | `shot-mount-kalaga-06` | screenshot | /VI/media/screenshots | `…/media/Mount_Kalaga_National_Park_06.166ouq5pjd7h0.jpg` | Mount Kalaga | embed_permitted | approved |
+| 107 | `reel-leonida` | video | /VI/media/videos | `local: media/clips/leonida-reel.mp4` (Git-ignored) | none | permission_required | pending_review |
 
 Attribution for every row: *Copyright Rockstar Games / Take-Two Interactive.*
 

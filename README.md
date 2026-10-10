@@ -3,21 +3,22 @@
 > An unofficial educational fan project by Team Valkyrie. Not affiliated with, endorsed by, or sponsored by Rockstar Games or Take-Two Interactive.
 
 A cinematic, database-driven GTA VI fan guide built for a Web Technologies and DBMS college project.
-**Status: Phase 2 of 6 (cinematic public website).** Accounts, favourites, the admin area, the interactive atlas, the Intelligence Network and the full media theatre come in later phases.
+**Status: Phase 2 of 6 (cinematic public website), refinement round 2.** Accounts, favourites, the admin area, the interactive atlas, the Intelligence Network and the full media theatre come in later phases.
 
 ## What you can do today
 
 | Page | Address | What it shows |
 |------|---------|---------------|
-| Homepage | `/` | Cinematic hero (Welcome, Gamers / Team Valkyrie presents / Grand Theft Auto VI), the cast, six regions, garage highlights, story connections, official media preview. |
-| Characters | `/characters`, `/characters/<slug>` | Poster wall with search, source and region filters, sorting and pagination. Profiles with biography, connections, missions, places and official images. |
-| Garage | `/vehicles`, `/vehicles/<slug>` | Five vehicles Rockstar names and shows in its own screenshots, as a photo mosaic with category chips, search and sorting. Each page has an official image gallery. |
-| Leonida | `/regions`, `/regions/<slug>` | The six regions on Rockstar's official page, each with its locations, people, stories and gallery. |
-| Locations | `/locations`, `/locations/<slug>` | Searchable index filtered by region and type. |
-| Stories | `/missions`, `/missions/<slug>` | Case-file archive with type filters. Cast, vehicles, places and related stories. |
+| Homepage | `/` | Cinematic hero, the two leads side by side, a cast stage that plays a short muted reel and holds on a person when you pick a name, a six-region explorer, a garage showroom, stories, official trailers and screenshots. |
+| Characters | `/characters`, `/characters/<slug>` | Leads, crew and original characters laid out as portraits and a list, with search and filters. Profiles with biography, a short muted loop of Rockstar's own clip, connections, stories, places and a gallery. |
+| Garage | `/vehicles`, `/vehicles/<slug>` | The five vehicles Rockstar has shown, as large alternating image and text rows. Each page has a gallery. |
+| Leonida | `/regions`, `/regions/<slug>` | Six full-width region features, then a page per region with its places, people, stories and gallery. |
+| Places | `/locations`, `/locations/<slug>` | Searchable list filtered by region and type. |
+| Stories | `/missions`, `/missions/<slug>` | Original stories with type filters. People, vehicles, places and related stories. |
+| About, Credits | `/about`, `/credits` | What the project is, what the labels mean, who owns what. |
 | JSON API | `/api/v1/...` | Characters and regions (Phase 1, unchanged) plus vehicles, vehicle categories, missions and locations. |
 
-Every page reads MySQL. Nothing about a character, vehicle, region, location or mission is written into HTML or JavaScript.
+Every page reads MySQL. Nothing about a character, vehicle, region, place or story is written into HTML or JavaScript.
 
 ## Content honesty
 
@@ -34,10 +35,22 @@ Every record carries a `content_status`, shown as a quiet label on every card an
 Images and trailers are **remote references to Rockstar's own published media**:
 
 * Trailer 1, Trailer 2 and "An Extended Look" play in **Rockstar's own embeddable player**, loaded only when a visitor presses play. Each card uses the official poster Rockstar publishes for that video.
-* Each named character has a poster-and-link card for Rockstar's official clip. The clip itself plays on rockstargames.com.
+* Each named character's official clip links to rockstargames.com. The clip is 1 to 1.5 seconds at 4K, so the site can also show a short muted loop of it from a local file (see below).
 * Character artwork, region postcards, vehicle screenshots and posters load from Rockstar's servers. They are never downloaded or committed.
-* There is deliberately **no autoplay background video**: Rockstar publishes only very large 4K files, and streaming one to every visitor would hurt performance.
+* There is deliberately **no autoplaying trailer**: Rockstar publishes only very large 4K files, and its player has no mute or loop control.
 * Every image has a built-in original fallback, so the site still looks right if Rockstar moves a file or you are offline.
+
+### Optional: local motion
+
+The cast stage and the character profiles can play short muted loops cut from Rockstar's published character clips. They are not in the repository. To build them on your own machine:
+
+```powershell
+pip install -r requirements-media.txt
+python -m scripts.fetch_clips      # about 40 MB, read straight from Rockstar's published archive
+python -m scripts.make_loops       # about 6 MB of 720p loops into media/clips/ (Git-ignored)
+```
+
+When the files are not there the pages fall back to Rockstar's own still images. The loops pause when scrolled out of view and do not autoplay when the visitor prefers reduced motion or has data saver on.
 
 See [docs/MEDIA_INVENTORY.md](docs/MEDIA_INVENTORY.md) for every asset, its source and its permission status. **Rockstar states no licence terms on its Media page**, so the owner should confirm the use is acceptable.
 
@@ -77,7 +90,7 @@ Open <http://127.0.0.1:5000/>.
 
 ### Upgrading a database you already set up in Phase 1
 
-Phase 2 adds the official media records, two small link tables (`media_regions`, `media_vehicles`), five official vehicles and natural-sounding copy for the concept records, in three migrations. **Your existing data is never dropped.** The migrations only create those tables if missing, insert or refresh the new rows, and update the text of concept rows. They never touch what Rockstar states.
+Phase 2 adds the official media records, two small link tables (`media_regions`, `media_vehicles`), five official vehicles, natural-sounding copy and the local-loop references, in four migrations. **Your existing data is never dropped.** The migrations only create those tables if missing, insert or refresh the new rows, and update the text of concept rows. They never touch what Rockstar states.
 
 ```powershell
 python -m scripts.migrate_db --plan     # READ-ONLY: shows what exists now and what would run
@@ -133,18 +146,19 @@ GTA 6/
 │   ├── db.py                  connection pool, query helpers, transaction()
 │   ├── errors.py              JSON / HTML error handling
 │   ├── media_urls.py          only Rockstar's official image and player URLs are ever rendered
-│   ├── media_slots.py         which stored media rows the homepage features
+│   ├── media_slots.py         which stored media rows the pages feature
+│   ├── local_media.py         serves only the locally built loops in media/clips/
 │   ├── blueprints/            routes: main.py (home), pages.py (HTML), api.py (JSON)
 │   ├── services/              validation, business rules, page view-models (site.py)
 │   ├── repositories/          ALL SQL lives here
 │   ├── templates/             Jinja2: base, _components, home, characters/, vehicles/, regions/, locations/, missions/
-│   └── static/                css/ (site, components, pages), js/ (boot, site)
-├── database/                  schema.sql, seed.sql, migrations/001 to 003
-├── scripts/                   setup_db.py, init_db.py, migrate_db.py, make_env.py, schema_info.py, sqlfile.py
+│   └── static/                css/ (site, components, pages), js/ (boot, site), fonts/ (bundled, OFL)
+├── database/                  schema.sql, seed.sql, migrations/001 to 004
+├── scripts/                   setup_db.py, init_db.py, migrate_db.py, make_env.py, schema_info.py, sqlfile.py, fetch_clips.py, make_loops.py
 ├── docs/                      ARCHITECTURE, DATABASE (+ER diagram), ROUTES, MEDIA_INVENTORY, VERIFICATION, queries.sql
-├── media/                     reserved for original/licensed assets only (empty)
+├── media/                     Git-ignored: locally built loops only (see media/README.md)
 ├── tests/                     pytest suite
-├── .env.example  .gitignore  LICENSE  pytest.ini  requirements*.txt  wsgi.py
+├── .env.example  .gitignore  LICENSE  pytest.ini  requirements*.txt (dev, media)  wsgi.py
 ```
 
 ## Documentation
@@ -167,4 +181,4 @@ GTA 6/
 
 ## Licence and rights
 
-Original source code: MIT, see [LICENSE](LICENSE). Grand Theft Auto VI, its names, characters, logos, images and videos belong to Rockstar Games / Take-Two Interactive and are **not** covered by that licence. This repository contains no Rockstar media: official images and videos are referenced from Rockstar's own servers. See [docs/MEDIA_INVENTORY.md](docs/MEDIA_INVENTORY.md).
+Original source code: MIT, see [LICENSE](LICENSE). Grand Theft Auto VI, its names, characters, logos, images and videos belong to Rockstar Games / Take-Two Interactive and are **not** covered by that licence. This repository contains no Rockstar media: official images and videos are referenced from Rockstar's own servers, and any locally built loops stay in a Git-ignored folder. See [docs/MEDIA_INVENTORY.md](docs/MEDIA_INVENTORY.md).

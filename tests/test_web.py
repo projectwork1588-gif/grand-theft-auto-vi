@@ -1,5 +1,5 @@
 """Homepage, health check and error pages."""
-import re
+from markupsafe import escape
 
 from app.blueprints.main import DISCLAIMER
 
@@ -14,12 +14,13 @@ def test_homepage_renders_identity_and_disclaimer(client):
     assert DISCLAIMER in html
 
 
-def test_homepage_counts_come_from_the_database(client, cur):
+def test_homepage_names_come_from_the_database(client, cur):
     html = client.get("/").get_data(as_text=True)
-    cur.execute("SELECT COUNT(*) AS n FROM characters")
-    expected = cur.fetchone()["n"]
-    match = re.search(r"Characters</dt>\s*<dd>(\d+)</dd>", html)
-    assert match and int(match.group(1)) == expected
+    cur.execute("SELECT full_name FROM characters WHERE content_status = 'official'")
+    names = [r["full_name"] for r in cur.fetchall()]
+    assert len(names) == 8 and all(escape(name) in html for name in names)
+    cur.execute("SELECT name FROM regions")
+    assert all(r["name"] in html for r in cur.fetchall())
 
 
 def test_health_reports_database_connection(client):

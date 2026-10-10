@@ -6,18 +6,21 @@
 
 | Path | Page |
 |------|------|
-| `/` | Cinematic homepage: hero, cast, six regions, garage highlights, stories and official connections, media preview, live statistics |
-| `/characters` | Poster wall. Query: `q`, `status`, `region`, `sort` (name_asc, name_desc, newest), `page`, `per_page` |
-| `/characters/<slug>` | Profile: biography, source, connections, missions, places, co-stars, official images |
-| `/vehicles` | Garage: **official vehicles only**. Query: `q`, `category`, `sort` (featured, name_asc, name_desc, category), `page`, `per_page` |
+| `/` | Cinematic homepage: hero, the two leads, cast stage, region explorer, garage showroom, stories and official connections, trailers and screenshots |
+| `/characters` | Leads, crew and original characters (portraits and a list). Query: `q`, `status`, `region`, `sort` (name_asc, name_desc, newest), `page`, `per_page` |
+| `/characters/<slug>` | Profile: biography, short muted loop (when built), connections, stories, places, seen alongside, gallery |
+| `/vehicles` | Garage rows: **official vehicles only**. Query: `q`, `category`, `sort` (featured, name_asc, name_desc, category), `page`, `per_page` |
 | `/vehicles/<slug>` | Detail with an official image gallery. Concept vehicles return a styled 404 here (they have no public page) |
-| `/regions` | The six regions in Rockstar's order |
+| `/regions` | Six full-width features in Rockstar's order |
 | `/regions/<slug>` | Detail: locations, people based there, stories, gallery, other regions |
 | `/locations` | Index. Query: `q`, `region`, `type`, `status`, `sort` (region, name_asc, name_desc, newest), `page`, `per_page` |
 | `/locations/<slug>` | Detail: missions, residents, passers-by, neighbours |
-| `/missions` | Archive. Query: `q`, `type`, `status`, `sort` (title_asc, title_desc, type, newest), `page`, `per_page` |
-| `/missions/<slug>` | Case file: synopsis, cast, vehicles, locations, related stories |
-| `/health` | JSON health check (200, or 503 when MySQL is down) |
+| `/missions` | Stories. Query: `q`, `type`, `status`, `sort` (title_asc, title_desc, type, newest), `page`, `per_page` |
+| `/missions/<slug>` | Story: synopsis, people, vehicles, places, more stories |
+| `/about` | What the project is, what the labels mean, how it was made |
+| `/credits` | Attribution, non-affiliation, fonts and licence |
+| `/media/clips/<name>.mp4` or `.jpg` | Locally built loops only. A safe-name pattern and an existing file are required; anything else is a 404 |
+| `/health` | JSON health check (200, or 503 when MySQL is down). Not linked from the site |
 
 ### JSON API (`/api/v1`)
 

@@ -128,6 +128,66 @@ Screenshots were viewed during development and are **not** committed: they conta
 
 ---
 
+## Phase 2 refinement, round 2 (2026-10-10)
+
+The previous review rated the site 3 out of 10. This pass rebuilt the front end (layouts, copy, motion, media) and kept the Flask and MySQL design, routes, relationships and API unchanged.
+
+### Test results (real MySQL 8.0.46 service, `gta6_vi_test` database only)
+
+```
+python -m pytest -q
+272 passed in 230s
+```
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `test_pages.py` | 68 | Every page, filters, search, sorting, pagination, labels, 400/404 pages; the editorial characters page, region explorer, showroom and leads markup; About and Credits; footer content; the local-loop route and its path rules; reel and loop markup with and without local files; a copy audit (no database or test terminology on any public page); no inline script, style or event handler |
+| `test_media.py`, `test_migration.py`, `test_seed_data.py` | 32 | Four migrations, upgrade equals a fresh seed, 107 media rows, local paths limited to `clips/<slug>.mp4` and the reel marked pending review |
+| `test_security_and_failures.py`, `test_site_integrity.py`, `test_web.py` | 63 | CSP, escaping, safe 503s, link crawl including About and Credits, one `h1`, alt text |
+| Earlier files | 109 | API, connectivity, integrity, privileges, setup safety, SQL runner, example queries |
+
+The suite grew from 259 to 272. Tests were rewritten only where the feedback deliberately changed behaviour (markup, wording, removed statistics, the footer, new routes). Local clips are never required: the test app points `MEDIA_ROOT` at an empty folder and a fixture builds stand-in files when a test needs them.
+
+### Browser verification (built-in browser, test database, port 5057)
+
+| Check | Result |
+|-------|--------|
+| Desktop 1280: hero, two leads, cast stage, region explorer (hover to switch), garage showroom, stories band, trailers and mosaic, closing band, footer | Looked at in screenshots |
+| Desktop: characters page, Lucia profile (hero crop and clip loop), garage rows, regions features, story page, About | Looked at in screenshots |
+| **Video:** the 9-second reel started, advanced through all eight people and the name list followed it; a character loop started from its Play button and ran | Verified by script and screenshot |
+| **Reduced motion:** the preview browser itself had `prefers-reduced-motion` on, so the stage showed a still and a Play button, and the hero showed a still | Verified (this is the accessibility path) |
+| Tablet 768: hero, no horizontal overflow on home, characters, profile, garage, vehicle, regions, region, places, story and About | Hero looked at; overflow verified by script |
+| Phone 375: leads, cast stage, region explorer, garage, menu, no overflow | Looked at in screenshots; overflow verified by script |
+| Intermediate 1024: regions features | Looked at in a screenshot |
+| Trailer dialog | The dialog opens and the iframe is created with Rockstar's player address. **Rockstar's player rendered blank in the preview browser**, so playback was not confirmed there |
+
+Screenshots were viewed during development and are **not** committed: they contain Rockstar's artwork.
+
+### Problems found and fixed in this pass
+
+| # | What failed | Cause and fix | How verified |
+|---|-------------|---------------|--------------|
+| 1 | Inline `style` attributes in a new template would be blocked by the CSP | Replaced with classes | A test now rejects any ` style="` attribute on every public page |
+| 2 | Cast stage overflowed its column (stage 1057 px in a 726 px column) | A 16:9 box in a stretched grid row took its width from the row height. Set `width: 100%` and centred the list | Measured by script |
+| 3 | Hero showed an empty gradient for the first second | First slide began at opacity 0. Gave it a negative animation delay | Screenshot |
+| 4 | Title lockup sat on Lucia's face | Widened and left-anchored the picture so the pair sit right of the title; stronger bottom shade on narrow screens | Screenshots at 1280, 768, 375 |
+| 5 | Lucia's head cut off in the wide profile banner | Added a "top" focus hint for that image | Screenshot |
+| 6 | Waypoint dial covered the footer links | Hides while the footer is on screen | Screenshot |
+| 7 | Trailer dialog could exceed short viewports | Frame width limited by viewport height | Script |
+| 8 | Story page eyebrow read "Story · Story" | Type-aware eyebrow | Screenshot |
+| 9 | A truncated `conftest.py` (null bytes) from a heredoc | Re-written as plain ASCII; test collection re-run | pytest |
+
+### Not verified or still open
+
+* **Trailer playback inside Rockstar's player** was not confirmed in the preview browser (blank player). Open the homepage in a normal browser and press play.
+* **Real autoplay behaviour** of the cast reel was exercised only through the Play button, because the preview browser asks for reduced motion.
+* **Other browsers and real phones** are untested. Widths were emulated.
+* **The owner's development database has not been migrated.** `python -m scripts.migrate_db --plan`, then `python -m scripts.migrate_db`, applies migration 004. Until then that site shows the previous imagery and copy.
+* **Rights:** Rockstar states no licence terms for its media. The local loops are never committed, but the owner should decide before the site is public. MySQL 8.4 LTS is untested. Image file names are build-hashed and may change.
+* **Not pushed.** The sandbox cannot authenticate to GitHub. Run `git push -u origin main` from your machine.
+
+---
+
 ## Phase 1 post-review verification (historical record)
 
 Date: 2026-10-09. Scope: the eight verification tasks requested after ChatGPT's review. Phase 2 has **not** been started and the homepage was **not** redesigned.

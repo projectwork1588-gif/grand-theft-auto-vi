@@ -73,7 +73,7 @@ def _broken(*args, **kwargs):
 
 
 @pytest.mark.parametrize("path,module,function", [
-    ("/", system_repo, "table_counts"),
+    ("/", characters_repo, "featured_official"),
     ("/characters", characters_repo, "search"),
     ("/characters/jason-duval", characters_repo, "get_by_slug"),
     ("/vehicles", vehicles_repo, "search"),

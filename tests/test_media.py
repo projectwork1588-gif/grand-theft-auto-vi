@@ -45,7 +45,9 @@ def test_region_covers_and_galleries(app_context):
     assert covers[ids["vice-city"]]["slug"] == "postcard-vice-city"
     assert covers[ids["mount-kalaga"]]["slug"] == "postcard-mount-kalaga"
     gallery = media.for_entity("region", ids["vice-city"])
-    assert [m["slug"] for m in gallery] == ["postcard-vice-city"] + [f"shot-vice-city-0{i}" for i in (1, 2, 3, 4)]
+    slugs = [m["slug"] for m in gallery]
+    assert slugs[:5] == ["postcard-vice-city"] + [f"shot-vice-city-0{i}" for i in (1, 2, 3, 4)]
+    assert len(slugs) > 5  # the later official shots follow the original five
     assert all(m["embed_url"].startswith(media_urls.IMAGE_PREFIX) for m in gallery)
 
 
@@ -89,7 +91,7 @@ def test_missing_media_tables_do_not_break_pages(client, monkeypatch):
         assert response.status_code == 200, path
         assert "rockstargames.com/VI/_next/static/media" not in page, path  # no remote images without media rows
     home = client.get("/").get_data(as_text=True)
-    assert "Trailers on Rockstar's site" in home                       # link-only fallback for videos
+    assert "rockstargames.com/VI/trailer-1" in home                    # link-only fallback for videos
     assert "Jason Duval" in home and "Vice City" in home               # content from the main tables still shows
 
 
