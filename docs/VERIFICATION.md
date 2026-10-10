@@ -188,6 +188,64 @@ Screenshots were viewed during development and are **not** committed: they conta
 
 ---
 
+## Phase 2 refinement, round 3 (2026-10-11)
+
+### Test results (real MySQL 8.0.46 service, `gta6_vi_test` database only)
+
+```
+python -m pytest -q
+(see the final run recorded below)
+```
+
+New regression checks, all in `tests/test_pages.py`:
+
+| Check | What it guards |
+|-------|----------------|
+| `test_cast_controls_are_in_the_first_paint_and_never_hidden` | The reel and pause buttons are in the first HTML, not `hidden`, and the reel button starts pressed and active. |
+| `test_cast_script_never_hides_the_reel_or_pause_controls` | The cast script never toggles `.hidden` on them (the original bug) and exposes state through `aria-pressed`. |
+| `test_cast_playlist_uses_one_explicit_order_not_database_order` | The name list equals `CAST_ORDER`, and reel segment start times ascend in the same order. |
+| `test_cast_order_is_stable_when_the_database_returns_rows_differently` | Feeds the page the database rows reversed and expects the same order. |
+| `test_loop_builder_cuts_the_reel_in_the_same_order` | `scripts/make_loops.py` uses the same sequence. |
+| `test_no_serif_or_italic_type_anywhere`, `test_no_text_is_set_below_the_readable_floor` | No serif face, no italic, nothing under 0.7rem. |
+| `test_signature_moment_*` | The section sits between the leads and the cast, has no heading, validates its video id, is allowed by the policy without widening it beyond YouTube, and is a window of 8 to 12 seconds. |
+| `test_trailers_and_screenshots_are_two_distinct_blocks` | One lead trailer, three cards, six screenshots with the first and last wide (no empty cells). |
+| `test_stories_section_separates_team_stories_from_official_connections` | "Team Valkyrie original" on the stories, an Official badge on the connections, no numbered list. |
+
+### Browser verification (built-in browser, test database, port 5057)
+
+| Check | Result |
+|-------|--------|
+| Hero, leads heading and copy, cast stage (first load, after a switch), stories, trailers, screenshots, viewer, navigator list at 1280 | Looked at in screenshots |
+| Phone 375: moment, cast stage and controls, stories, trailers, screenshots | Looked at in screenshots; no horizontal overflow (script) |
+| Tablet 768: stories, trailers and the screenshot grid | Looked at in screenshots; no overflow (script) |
+| Anchored headings: 6 sections plus the footage, at 1280 and 375 | Measured by script: headings 64 to 66 px below the header, footage flush with the top |
+| Viewer: opened the second image, arrow key to the third, counter and caption updated, Escape closed it | Verified by script |
+| **Footage:** the player was created, started from 18.5 s, reported "playing" and moved through the sequence; the full-bleed beach and night-highway shots were seen | Verified while the browser pane was visible |
+| Footage, hidden pane | While the pane or tab is not visible the page deliberately does not start playback (document is hidden), which was observed and is the intended behaviour |
+
+Before and after screenshots were saved to a Git-ignored `review/round3/` folder. They contain Rockstar's artwork and are not committed.
+
+### Problems found and fixed in this pass
+
+| # | What failed | Cause and fix | How verified |
+|---|-------------|---------------|--------------|
+| 1 | YouTube showed "Video player configuration error 153" when the player was opened directly | It requires a referring page. It is created only inside the site, which keeps `strict-origin-when-cross-origin` | Played in a page |
+| 2 | The player showed the video's own thumbnail and play button instead of the footage | The page treated a cued player (clock at 18.5) as playing. The player is now shown only when its state is really "playing" | Scripted state check and screenshot |
+| 3 | First play call after load was ignored | Called too early. The video is now cued at the exact start and played from the cued event | Scripted state check |
+| 4 | Anchored sections landed 86 px below the top with 150 px of padding above the heading | The scroll offset was positive. Now negative, so the heading is 66 px below the header | Measured |
+| 5 | An old test expected the mosaic markup, and a 0.68rem label broke the new readable-floor test | Test updated; label raised to 0.72rem | pytest |
+
+### Not verified or still open
+
+* **The footage is not a local file and not under a licence.** It plays from Rockstar's own YouTube upload through YouTube's embedded player. Rockstar offers no download of the trailers, so a local clip would be an unauthorised copy. YouTube's interface (a pause mark when paused) cannot be fully hidden, and the sequence is a stretch of Rockstar's own edit rather than one unbroken take.
+* **An Extended Look could not be used or reviewed:** YouTube marks it age-restricted, which blocks embedding.
+* **Resolution** of the stream is chosen by YouTube for the screen and connection. It reported 720p at the 1280-wide test window; the source quality was not independently measured.
+* Autoplay with a real, visible window on a phone was not exercised; the reduced-motion path (a still and a button) was.
+* **The owner's development database is unchanged** and needs no migration for this round.
+* **Not pushed:** the sandbox cannot authenticate to GitHub.
+
+---
+
 ## Phase 1 post-review verification (historical record)
 
 Date: 2026-10-09. Scope: the eight verification tasks requested after ChatGPT's review. Phase 2 has **not** been started and the homepage was **not** redesigned.

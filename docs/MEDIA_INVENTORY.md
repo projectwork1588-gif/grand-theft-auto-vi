@@ -30,6 +30,48 @@ All 85 referenced URLs were requested before they were recorded and returned HTT
 * **Rights.** Rockstar states no licence terms for these files. Rows 61 to 68 carry the loop's path; row 107 (the reel) is marked `permission_required` / `pending_review`. The owner should decide before publishing the site publicly.
 * **New images.** 21 further official screenshots (rows 86 to 106) give each region a wider selection and Jason and Lucia more choice of crop. Each URL was requested before it was recorded.
 
+## The signature moment (refinement round 3)
+
+The homepage has one full-screen sequence between the two leads and the cast. This section records how it was chosen, what the usage position is, and what the limits are.
+
+### Rights position
+
+| Question | Finding |
+|----------|---------|
+| Does Rockstar offer the trailers for download? | **No.** Its Videos page (rockstargames.com/VI/media/videos) offers one zip (`GTAVI_Videos.zip`) holding nine clips: the cover-art animation and the eight character clips. The trailers and "An Extended Look" are offered only through Rockstar's embedded player and its YouTube channel. |
+| Is there a licence for reuse? | **None stated** on the media pages. Rockstar's "Policy on posting copyrighted Rockstar Games material" tolerates non-commercial fan content and keeps the right to remove it, but it is written for in-game footage and does not address trailers or marketing video. |
+| Therefore | The trailers are **not downloaded, cut, re-encoded or hosted** by this project. A local clip of a trailer would be an unauthorised copy. The sequence is played from Rockstar's own upload through YouTube's embedded player, unaltered, with the player's own branding intact. |
+| Embedding | `oEmbed` returns 200 for Trailer 1 (`QdBZY2fkU-0`) and Trailer 2 (`VQRLujxTm3c`), uploaded by "Rockstar Games", so embedding is enabled by the owner. The privacy-enhanced `youtube-nocookie.com` host is used. |
+| An Extended Look | Rockstar's page links `tJbzMqJGH4k`, which YouTube marks **age-restricted**, and age-restricted videos cannot be embedded on other sites. It is excluded from the moment. It still plays in Rockstar's own player in the trailer dialog. |
+
+### Candidates reviewed
+
+Each official video was stepped through frame by frame (once per second, and per half second around cuts) in the embedded player. The trailers are fast-cut montages, so a single unbroken eight-to-twelve-second take does not exist; the choice is the best continuous stretch of Rockstar's own edit.
+
+| # | Where | Length | What it shows | Verdict |
+|---|-------|--------|---------------|---------|
+| 1 | Trailer 1, 18.5 s to 27.3 s | 8.8 s | Skyscraper tilt-up, golden marsh dawn, flamingo flock, beach, harbour speedboat, neon highway at night. No title card, dialogue or social-media overlay. Moves from dawn to neon, which is the site's own palette. | **Chosen** |
+| 2 | Trailer 1, 31.4 s to 37.9 s | 6.5 s | Night aerial of the city, neon boulevard, club crowd, causeway and seaplane. Strong, but short, and ends on a suggestive pool close-up. | Rejected: too short |
+| 3 | Trailer 1, about 39.3 s to 41.3 s | 2 s | The sunset VICE sign. Iconic, but two seconds, followed by phone-video overlays. | Rejected: too short |
+| 4 | Trailer 2, 35.5 s to 39.5 s | 4 s | First-person highway drive with road signs. Good camera movement but a single short beat. | Rejected: too short |
+| 5 | Trailer 2, 6.5 s to 10 s | 3.5 s | Coastal aerial and a stilt house, then dialogue scenes. | Rejected: too short, then talking heads |
+| 6 | An Extended Look | n/a | Could not be reviewed or embedded: age-restricted. | Excluded |
+
+### How it is played
+
+* The page loads YouTube's IFrame API and creates the player only when the section is within about one screen of the viewport, muted, with controls and keyboard off.
+* The section shows an official Rockstar still (a Grassrivers screenshot, a wetland scene that matches the sequence) until the player is really playing inside the chosen window, so the frames before it (a "Rockstar Games presents" card at 18.2 s) are never seen.
+* It loops through a short dip to black, pauses when scrolled away or when the tab is hidden, and is **not started automatically** for visitors who prefer reduced motion or have data saver on (they get the still and a "Play the footage" button).
+* A Sound button unmutes on request. The caption credits Rockstar, and "Watch the full trailer" opens the same video in Rockstar's own player.
+* Cost: about 30 KB of YouTube's loader script, then YouTube's player and a video stream that adapts to the screen. Nothing is loaded before the section is near.
+
+### Limits to know about
+
+* YouTube's embed cannot hide all of its own interface. The player is shown without controls and without pointer input, but if it is paused its own pause mark appears, and the title bar appears if the pointer is allowed onto it. Branding is not cropped or covered.
+* Autoplay needs the page to be visible. A background tab or a hidden window will not start it, by design.
+* The window start and end (18.5 and 27.3) are the trailer's own cuts as measured. If Rockstar re-uploads the trailer, re-check them.
+* Playback was verified in the preview browser only when the pane was visible. See the verification record.
+
 ## Integration approach
 
 * **Videos:** a poster card opens a native `<dialog>`. Only then does JavaScript create the iframe that points at Rockstar's player, so nothing loads until a visitor presses play. Closing the dialog removes the iframe, which stops playback.

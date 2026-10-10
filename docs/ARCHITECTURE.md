@@ -67,7 +67,7 @@ Phase 2 added `services/site.py`, which builds the **page view-models**: it call
 
 ## Security headers
 
-Every response carries a Content-Security-Policy: scripts, styles, fonts and video only from this site, images and frames only from `www.rockstargames.com`, no objects, no framing by other sites. There are no inline scripts, inline styles or event-handler attributes (tested on every page; the scripts set styles through the CSSOM, which the policy allows). All dynamic text is escaped by Jinja (tested with hostile database values). External links use `rel="noopener noreferrer"`.
+Every response carries a Content-Security-Policy: styles, fonts and video only from this site, images only from `www.rockstargames.com`, frames only from `www.rockstargames.com` and `www.youtube-nocookie.com` (the signature moment), scripts from this site plus `www.youtube.com` (YouTube's IFrame API loader), no objects, no framing by other sites. `Referrer-Policy` stays `strict-origin-when-cross-origin`, which YouTube's embed needs (a missing referrer gives player error 153). There are no inline scripts, inline styles or event-handler attributes (tested on every page; the scripts set styles through the CSSOM, which the policy allows). All dynamic text is escaped by Jinja (tested with hostile database values). External links use `rel="noopener noreferrer"`.
 
 ## Media architecture
 
@@ -127,3 +127,16 @@ See `docs/MEDIA_INVENTORY.md`. In short: official images and Rockstar's own vide
 * The character clips are only 1 to 1.5 seconds long, so the "reel" is a quick sequence and each loop repeats. Rockstar's trailers cannot be background video: its player has no mute or loop control and the files are 4K and over a gigabyte.
 * The loops are Rockstar's content and Rockstar states no licence terms for them. They are never committed and the reel row is marked `permission_required` / `pending_review` in the media table.
 * Rockstar's player rendered blank inside the preview browser used for review, so trailer playback was not confirmed there. The iframe is created with the official player address.
+
+## Round 3 refinement (owner review of round 2)
+
+| Feedback | What changed |
+|----------|--------------|
+| Cursive, italic serif subtitles | Newsreader and every italic removed (the font file too, 146 KB). Manrope throughout: 800 for headings, 400 to 500 for text, a `subtitle` class for second lines, no text under 0.7rem, secondary text at 6:1 or better on the night background. |
+| A signature cinematic moment | A full-screen, no-heading section between the leads and the cast. Nine seconds of Trailer 1 played from Rockstar's own upload in YouTube's embedded player (the trailers have no download and no stated licence, so nothing is copied). Candidate comparison and the rights position are in `docs/MEDIA_INVENTORY.md`. |
+| "Play whole reel" showed only after switching | Both cast controls are in the markup from the first paint and are never hidden. The script changes their state (`aria-pressed`, label) only. Choosing a person, pressing "Play whole reel" or replaying the same person all start from the beginning, even when autoplay is off. |
+| Playlist order depended on the database | `media_slots.CAST_ORDER` is the single order for the name list, the reel's segments and `scripts/make_loops.py`. Tests shuffle the database rows and check all three. |
+| Awkward trailers and screenshots | A `theatre` (one lead trailer, two side cards that match its height) and a `bento` of six screenshots in four-column rows (2+1+1 and 1+1+2) that cannot leave a gap. The viewer has previous, next, a counter, arrow keys and Escape. |
+| Stories read like a database result | A lead story with larger type, two more as plain rows, every one labelled "Team Valkyrie original", and a separate "Official" panel for Rockstar's character connections. The background image sits under a 93 percent shade. |
+| Navigation and hidden headings | The corner dial is now a labelled control ("Jump to | 03 The cast") with the section names in its list. Anchored sections land with the heading 66 px below the header, and the full-bleed footage lands flush with the top. It steps aside for the footer. |
+| "Rockstar's first two playable protagonists" | "Jason Duval and Lucia Caminos are the two leads of Grand Theft Auto VI." |

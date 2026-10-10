@@ -3,13 +3,13 @@
 > An unofficial educational fan project by Team Valkyrie. Not affiliated with, endorsed by, or sponsored by Rockstar Games or Take-Two Interactive.
 
 A cinematic, database-driven GTA VI fan guide built for a Web Technologies and DBMS college project.
-**Status: Phase 2 of 6 (cinematic public website), refinement round 2.** Accounts, favourites, the admin area, the interactive atlas, the Intelligence Network and the full media theatre come in later phases.
+**Status: Phase 2 of 6 (cinematic public website), refinement round 3.** Accounts, favourites, the admin area, the interactive atlas, the Intelligence Network and the full media theatre come in later phases.
 
 ## What you can do today
 
 | Page | Address | What it shows |
 |------|---------|---------------|
-| Homepage | `/` | Cinematic hero, the two leads side by side, a cast stage that plays a short muted reel and holds on a person when you pick a name, a six-region explorer, a garage showroom, stories, official trailers and screenshots. |
+| Homepage | `/` | Cinematic hero, the two leads side by side, a full-screen moment of official Trailer 1 footage, a cast stage that plays a short muted reel and holds on a person when you pick a name, a six-region explorer, a garage showroom, stories, official trailers and a screenshot gallery with a viewer. |
 | Characters | `/characters`, `/characters/<slug>` | Leads, crew and original characters laid out as portraits and a list, with search and filters. Profiles with biography, a short muted loop of Rockstar's own clip, connections, stories, places and a gallery. |
 | Garage | `/vehicles`, `/vehicles/<slug>` | The five vehicles Rockstar has shown, as large alternating image and text rows. Each page has a gallery. |
 | Leonida | `/regions`, `/regions/<slug>` | Six full-width region features, then a page per region with its places, people, stories and gallery. |
@@ -37,7 +37,7 @@ Images and trailers are **remote references to Rockstar's own published media**:
 * Trailer 1, Trailer 2 and "An Extended Look" play in **Rockstar's own embeddable player**, loaded only when a visitor presses play. Each card uses the official poster Rockstar publishes for that video.
 * Each named character's official clip links to rockstargames.com. The clip is 1 to 1.5 seconds at 4K, so the site can also show a short muted loop of it from a local file (see below).
 * Character artwork, region postcards, vehicle screenshots and posters load from Rockstar's servers. They are never downloaded or committed.
-* There is deliberately **no autoplaying trailer**: Rockstar publishes only very large 4K files, and its player has no mute or loop control.
+* The trailers are never downloaded. The one full-screen sequence on the homepage is nine seconds of Trailer 1 played from Rockstar's own YouTube upload in YouTube's embedded player, muted, only when the section is near the screen and never for visitors who prefer reduced motion. See the signature-moment section of [docs/MEDIA_INVENTORY.md](docs/MEDIA_INVENTORY.md) for the rights reasoning.
 * Every image has a built-in original fallback, so the site still looks right if Rockstar moves a file or you are offline.
 
 ### Optional: local motion
@@ -145,7 +145,7 @@ GTA 6/
 │   ├── config.py              settings from environment variables
 │   ├── db.py                  connection pool, query helpers, transaction()
 │   ├── errors.py              JSON / HTML error handling
-│   ├── media_urls.py          only Rockstar's official image and player URLs are ever rendered
+│   ├── media_urls.py          only Rockstar's official image and player URLs, and a validated YouTube id, are ever rendered
 │   ├── media_slots.py         which stored media rows the pages feature
 │   ├── local_media.py         serves only the locally built loops in media/clips/
 │   ├── blueprints/            routes: main.py (home), pages.py (HTML), api.py (JSON)
