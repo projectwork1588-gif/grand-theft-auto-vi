@@ -1,56 +1,42 @@
 {% extends "base.html" %}
-{% from "_components.html" import badge, pager, page_hero, results_line, option, vehicle_tile %}
+{% from "_components.html" import picture, pager, page_hero %}
 {% block title %}Garage{% endblock %}
-{% block description %}The vehicles Rockstar has named and shown in its own GTA VI screenshots, with category filters and search.{% endblock %}
+{% block description %}The vehicles Rockstar has shown from Grand Theft Auto VI so far: trail bikes, boats and off-road machines of Leonida.{% endblock %}
 {% block content %}
-{{ page_hero('The garage', 'Garage', 'Vehicles Rockstar has named and shown in its own screenshots. Rockstar has not published specifications, so none are listed.', cover=hero_cover) }}
+{{ page_hero('The garage', 'Machines of Leonida', 'The vehicles Rockstar has shown so far, from muddy trails to open water.', cover=hero_cover) }}
 
 <section class="section section--tight">
   <div class="container">
+    {% if categories | length > 1 %}
     <nav class="chips chips--spaced" aria-label="Vehicle categories">
       <a class="chip" href="{{ url_for('pages.vehicles') }}"{% if not filters.category %} aria-current="true"{% endif %}>All</a>
       {% for c in categories %}
       <a class="chip" href="{{ url_for('pages.vehicles', category=c.slug) }}"{% if filters.category == c.slug %} aria-current="true"{% endif %}>{{ c.name }} <small>{{ c.vehicle_count }}</small></a>
       {% endfor %}
     </nav>
-
-    <form class="filters" method="get" action="{{ url_for('pages.vehicles') }}" role="search" aria-label="Search and filter vehicles">
-      <label>Search
-        <input type="search" name="q" value="{{ filters.q or '' }}" maxlength="80" placeholder="Name or manufacturer">
-      </label>
-      <label>Category
-        <select name="category">
-          {{ option('', 'All categories', filters.category or '') }}
-          {% for c in categories %}{{ option(c.slug, c.name, filters.category) }}{% endfor %}
-        </select>
-      </label>
-      <label>Sort by
-        <select name="sort">
-          {{ option('featured', 'Featured', filters.sort) }}
-          {{ option('name_asc', 'Name A to Z', filters.sort) }}
-          {{ option('name_desc', 'Name Z to A', filters.sort) }}
-          {{ option('category', 'Category', filters.sort) }}
-        </select>
-      </label>
-      <div class="filters__actions">
-        <button class="btn" type="submit">Apply</button>
-        <a class="link-arrow" href="{{ url_for('pages.vehicles') }}">Reset</a>
-      </div>
-    </form>
-
-    <p class="results-meta" role="status">{{ results_line(pagination) }}</p>
+    {% endif %}
 
     {% if data %}
-    <div class="garage-grid garage-grid--list">
+    <div class="garage-rows">
       {% for v in data %}
-      {{ vehicle_tile(v, feature=false, sizes='(min-width: 1000px) 33vw, 100vw', cls='reveal', delay=loop.index0 % 3 + 1) }}
+      <article class="garage-row reveal">
+        <a class="garage-row__media" href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}" tabindex="-1" aria-hidden="true">
+          {{ picture(v.cover, fallback=v.manufacturer or v.name, sizes='(min-width: 900px) 58vw, 100vw', alt='') }}
+        </a>
+        <div class="garage-row__text">
+          <p class="garage-row__cat">{{ v.category_name }}</p>
+          <h2 class="garage-row__name"><a href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}">{{ v.name }}</a></h2>
+          {% if v.manufacturer %}<p class="garage-row__make">{{ v.manufacturer }}</p>{% endif %}
+          <p class="garage-row__sum">{{ v.summary }}</p>
+          <a class="link-arrow" href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}">See the {{ v.name }}</a>
+        </div>
+      </article>
       {% endfor %}
     </div>
-    {% else %}
-    <div class="empty"><h2>No vehicles found</h2><p>Nothing matches those filters. <a href="{{ url_for('pages.vehicles') }}">Reset the filters</a>.</p></div>
-    {% endif %}
     {{ pager(pagination) }}
-    <p class="attribution">Vehicle images &copy; Rockstar Games / Take-Two Interactive, shown from <a href="https://www.rockstargames.com/VI/media/screenshots" target="_blank" rel="noopener noreferrer">Rockstar's own site</a>.</p>
+    {% else %}
+    <div class="empty"><h2>Nothing in this category yet</h2><p><a href="{{ url_for('pages.vehicles') }}">Back to the whole garage</a>.</p></div>
+    {% endif %}
   </div>
 </section>
 {% endblock %}

@@ -1,28 +1,27 @@
 {% extends "base.html" %}
-{% from "_components.html" import badge, picture, page_hero %}
+{% from "_components.html" import picture, page_hero %}
 {% block title %}Leonida{% endblock %}
-{% block description %}Explore the six regions of Leonida named on Rockstar's official site, with the locations, characters and stories our database connects to each.{% endblock %}
+{% block description %}The six regions of Leonida in Grand Theft Auto VI, from Leonida Keys to Ambrosia, with the places, people and stories of each.{% endblock %}
 {% block content %}
-{{ page_hero('The state of Leonida', 'Leonida', 'Six regions named on Rockstar\'s official site. Open one to see its locations, the people based there and the stories that pass through.', cover=hero_cover) }}
+{{ page_hero('The state of Leonida', 'Six regions, one state', 'Open a region to see its places, the people who live there and the stories that pass through.', cover=hero_cover) }}
 
 <section class="region-features" aria-label="Regions of Leonida">
   {% for r in data %}
   <article class="region-feature{% if loop.index is even %} region-feature--flip{% endif %}">
-    {{ picture(r.cover, fallback=r.name, sizes='(min-width: 900px) 60vw, 100vw', alt='', cls='region-feature__img') }}
+    {{ picture(r.cover, fallback=r.name, sizes='100vw', alt='', cls='region-feature__img') }}
     <div class="region-feature__shade" aria-hidden="true"></div>
     <div class="container region-feature__inner">
       <div class="region-feature__text reveal">
-        <p class="eyebrow">{{ '%02d' | format(loop.index) }} &middot; Region</p>
+        <p class="eyebrow">{{ '%02d' | format(loop.index) }}</p>
         <h2>{{ r.name }}</h2>
-        <p>{{ r.summary }}</p>
-        <p class="region-feature__meta">{{ badge(r.content_status) }} <span>{{ r.location_count }} location{{ '' if r.location_count == 1 else 's' }} in the database</span></p>
+        <p class="region-feature__sum">{{ r.summary }}</p>
+        {% if r.location_count %}<p class="region-feature__meta">{{ r.location_count }} place{{ '' if r.location_count == 1 else 's' }} to explore</p>{% endif %}
         <a class="btn" href="{{ url_for('pages.region_detail', slug=r.slug) }}">Explore {{ r.name }}</a>
       </div>
     </div>
   </article>
   {% else %}
-  <div class="container"><div class="empty"><h2>No regions found</h2></div></div>
+  <div class="container"><div class="empty"><h2>No regions yet</h2></div></div>
   {% endfor %}
 </section>
-<div class="container"><p class="attribution region-credit">Region artwork &copy; Rockstar Games / Take-Two Interactive, shown from <a href="https://www.rockstargames.com/VI/media/artwork-wallpapers" target="_blank" rel="noopener noreferrer">Rockstar's own site</a>.</p></div>
 {% endblock %}

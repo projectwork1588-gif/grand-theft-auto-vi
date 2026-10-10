@@ -1,65 +1,66 @@
 {% extends "base.html" %}
-{% from "_components.html" import badge, type_badge, page_hero, source_box, attribution %}
+{% from "_components.html" import badge, type_badge, page_hero, provenance %}
 {% block title %}{{ location.name }}{% endblock %}
 {% block description %}{{ location.summary }}{% endblock %}
 {% block content %}
 {% call page_hero(location.region_name ~ ' · ' ~ (location.location_type | capitalize), location.name, location.summary, cover=location.region_cover, tall=true) %}
-  <p class="hero-badges">{{ badge(location.content_status) }} {{ type_badge(location.location_type) }}</p>
-  {% if location.region_cover %}<p class="hero-caption">Background: official artwork of {{ location.region_name }}, not of this place.</p>{% endif %}
+  {% if location.region_cover %}<p class="hero-caption">Backdrop: Rockstar artwork of {{ location.region_name }}, not of this exact place.</p>{% endif %}
 {% endcall %}
 
 <section class="section section--tight">
-  <div class="container detail">
-    <div class="detail__main stack">
-      <h2 class="panel-title">About</h2>
-      <p class="lede">{{ location.description }}</p>
-      {{ source_box(location) }}
-      {{ attribution(location.region_cover) }}
-      <dl class="kv">
+  <div class="container profile">
+    <div class="profile__main stack">
+      <div>
+        <h2 class="panel-title">About</h2>
+        <p class="lede">{{ location.description }}</p>
+      </div>
+      <dl class="facts">
         <div><dt>Region</dt><dd><a href="{{ url_for('pages.region_detail', slug=location.region_slug) }}">{{ location.region_name }}</a></dd></div>
         <div><dt>Type</dt><dd>{{ location.location_type | capitalize }}</dd></div>
-        <div><dt>Missions here</dt><dd>{{ location.missions | length }}</dd></div>
       </dl>
+      {{ provenance(location) }}
 
       {% if location.neighbours %}
-      <h2 class="panel-title">Also in {{ location.region_name }}</h2>
-      <ul class="link-list">
-        {% for n in location.neighbours %}
-        <li><a href="{{ url_for('pages.location_detail', slug=n.slug) }}"><span class="name">{{ n.name }}</span><span>{{ type_badge(n.location_type) }} {{ badge(n.content_status) }}</span></a></li>
-        {% endfor %}
-      </ul>
+      <div>
+        <h2 class="panel-title">Also in {{ location.region_name }}</h2>
+        <ul class="link-list">
+          {% for n in location.neighbours %}
+          <li><a href="{{ url_for('pages.location_detail', slug=n.slug) }}"><span class="name">{{ n.name }}</span>{{ type_badge(n.location_type) }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
       {% endif %}
     </div>
 
-    <aside class="detail__side stack">
+    <aside class="profile__side stack">
+      {% if location.missions %}
       <section aria-labelledby="lm-title">
-        <h2 class="panel-title" id="lm-title">Missions here</h2>
-        {% if location.missions %}
+        <h2 class="panel-title" id="lm-title">Stories set here</h2>
         <ul class="link-list">
           {% for m in location.missions %}
           <li><a href="{{ url_for('pages.mission_detail', slug=m.slug) }}"><span><span class="name">{{ m.title }}</span>{% if m.is_primary %}<br><span class="meta">Main setting</span>{% endif %}</span>{{ type_badge(m.mission_type) }}</a></li>
           {% endfor %}
         </ul>
-        {% else %}<p class="muted">No mission is set here.</p>{% endif %}
       </section>
+      {% endif %}
+      {% if location.residents %}
       <section aria-labelledby="lr-title">
         <h2 class="panel-title" id="lr-title">Based here</h2>
-        {% if location.residents %}
         <ul class="link-list">
-          {% for c in location.residents %}<li><a href="{{ url_for('pages.character_detail', slug=c.slug) }}"><span><span class="name">{{ c.full_name }}</span><br><span class="meta">{{ c.role_title }}</span></span>{{ badge(c.content_status) }}</a></li>{% endfor %}
+          {% for c in location.residents %}<li><a href="{{ url_for('pages.character_detail', slug=c.slug) }}"><span><span class="name">{{ c.full_name }}</span><br><span class="meta">{{ c.role_title }}</span></span></a></li>{% endfor %}
         </ul>
-        {% else %}<p class="muted">Nobody is based here.</p>{% endif %}
       </section>
+      {% endif %}
       {% if location.characters_in_missions %}
       <section aria-labelledby="lc-title">
         <h2 class="panel-title" id="lc-title">Passing through</h2>
         <ul class="link-list">
-          {% for c in location.characters_in_missions %}<li><a href="{{ url_for('pages.character_detail', slug=c.slug) }}"><span class="name">{{ c.full_name }}</span>{{ badge(c.content_status) }}</a></li>{% endfor %}
+          {% for c in location.characters_in_missions %}<li><a href="{{ url_for('pages.character_detail', slug=c.slug) }}"><span class="name">{{ c.full_name }}</span></a></li>{% endfor %}
         </ul>
       </section>
       {% endif %}
     </aside>
   </div>
-  <div class="container"><p class="section-more"><a class="link-arrow" href="{{ url_for('pages.locations') }}">All locations</a></p></div>
+  <div class="container"><p class="section-more"><a class="link-arrow" href="{{ url_for('pages.locations') }}">All places</a></p></div>
 </section>
 {% endblock %}

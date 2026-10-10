@@ -1,4 +1,6 @@
 """Shared fixtures. Tests run against a REAL MySQL database named *_test (never the dev data)."""
+import json
+
 import mysql.connector
 import pytest
 
@@ -7,11 +9,38 @@ from app.config import TestingConfig
 from scripts.init_db import init_database
 
 
+CLIP_SLUGS = ("jason-duval", "lucia-caminos", "cal-hampton", "boobie-ike",
+              "dre-quan-priest", "real-dimez", "raul-bautista", "brian-heder")
+
+
 @pytest.fixture(scope="session")
-def app():
+def app(tmp_path_factory):
     assert TestingConfig.DB_NAME.endswith("_test"), "tests must never run against the real database"
     init_database(TestingConfig, seed=True, reset=True)  # migration account; fresh, deterministic schema + seed
-    return create_app("testing")
+    application = create_app("testing")
+    # Tests never depend on clips someone happened to build locally: the default is an empty media folder.
+    application.config["MEDIA_ROOT"] = str(tmp_path_factory.mktemp("no-media"))
+    return application
+
+
+@pytest.fixture()
+def local_clips(app, tmp_path):
+    """A media folder with tiny stand-in loops, a reel and its manifest, for the pages that show local video."""
+    clips = tmp_path / "clips"
+    clips.mkdir()
+    segments, cursor = [], 0.0
+    for slug in CLIP_SLUGS:
+        (clips / f"{slug}.mp4").write_bytes(b"ftypmp42")
+        (clips / f"{slug}.jpg").write_bytes(b"JFIF")
+        segments.append({"slug": slug, "name": slug, "start": round(cursor, 2), "end": round(cursor + 1.2, 2)})
+        cursor += 1.2
+    (clips / "leonida-reel.mp4").write_bytes(b"ftypmp42")
+    (clips / "leonida-reel.jpg").write_bytes(b"JFIF")
+    (clips / "manifest.json").write_text(json.dumps({"duration": round(cursor, 2), "segments": segments}), encoding="utf-8")
+    previous = app.config["MEDIA_ROOT"]
+    app.config["MEDIA_ROOT"] = str(tmp_path)
+    yield tmp_path
+    app.config["MEDIA_ROOT"] = previous
 
 
 @pytest.fixture()

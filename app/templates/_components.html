@@ -8,10 +8,11 @@
   <span class="badge badge--type">{{ text }}</span>
 {%- endmacro %}
 
-{# An official image (remote, from Rockstar) over an original fallback. Safe against bad database values. #}
+{# An official image (remote, from Rockstar) over an original fallback. Safe against bad database values.
+   `focus` is a framing hint: where the subject sits in the picture. #}
 {% macro picture(m, fallback='', sizes='(min-width: 900px) 33vw, 100vw', alt=none, cls='', eager=false) -%}
   {% set src = image_src(m.embed_url, 1280) if m else none %}
-  <div class="media {{ cls }}">
+  <div class="media {{ cls }}" data-focus="{{ focus_for(m.slug) if m else 'center' }}">
     <span class="media__fallback" aria-hidden="true">{{ fallback }}</span>
     {% if src %}
       <img class="media__img" src="{{ src }}" srcset="{{ image_srcset(m.embed_url) }}" sizes="{{ sizes }}"
@@ -23,10 +24,6 @@
 
 {% macro initials(name) -%}
   {{ (name.split()[:2] | map('first') | join('')) | upper }}
-{%- endmacro %}
-
-{% macro attribution(m) -%}
-  {% if m %}<p class="attribution">{{ m.attribution }} <a href="{{ m.source_url }}" target="_blank" rel="noopener noreferrer">Source</a></p>{% endif %}
 {%- endmacro %}
 
 {# Pagination. `p` is the pagination dict from the services. #}
@@ -44,16 +41,14 @@
   {% endif %}
 {%- endmacro %}
 
-{# One quiet line that says where a record comes from. #}
-{% macro source_box(item) -%}
+{# One short line: the label, plus a source link for official records or a pointer to the label guide for concepts. #}
+{% macro provenance(item) -%}
   <p class="provenance">
     {{ badge(item.content_status) }}
-    {% if item.content_status == 'official' %}
-      <span>{% if item.source_url %}Source: <a href="{{ item.source_url }}" target="_blank" rel="noopener noreferrer">{{ item.source_url | replace('https://www.', '') | replace('https://', '') }}</a>.{% endif %}{% if item.source_note %} {{ item.source_note }}{% endif %}</span>
-    {% elif item.content_status == 'fan' %}
-      <span>A fan interpretation, not confirmed by Rockstar.{% if item.source_note %} {{ item.source_note }}{% endif %}</span>
-    {% else %}
-      <span>Created by Team Valkyrie for this project. Not part of the game.</span>
+    {% if item.content_status == 'official' and item.source_url %}
+      <a href="{{ item.source_url }}" target="_blank" rel="noopener noreferrer">Source on rockstargames.com</a>
+    {% elif item.content_status == 'demo' %}
+      <span>A Team Valkyrie original.</span> <a href="{{ url_for('main.about') }}#labels">What does that mean?</a>
     {% endif %}
   </p>
 {%- endmacro %}
@@ -61,19 +56,6 @@
 {# Filter form field helper. `selected` compares against the validated filter value. #}
 {% macro option(value, label, selected) -%}
   <option value="{{ value }}"{% if selected == value %} selected{% endif %}>{{ label }}</option>
-{%- endmacro %}
-
-{# A vehicle with its official image. #}
-{% macro vehicle_tile(v, feature=false, sizes='(min-width: 900px) 33vw, 100vw', cls='', delay=0) -%}
-  <a class="tile{% if feature %} tile--feature{% endif %} {{ cls }}"{% if delay %} data-delay="{{ delay }}"{% endif %} href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}">
-    {{ picture(v.cover, fallback=v.manufacturer or v.name, sizes=sizes, alt='') }}
-    <span class="tile__shade" aria-hidden="true"></span>
-    <span class="tile__body">
-      <span class="tile__cat">{{ v.category_name }}</span>
-      <span class="tile__name display">{{ v.name }}</span>
-      <span class="tile__make">{{ v.manufacturer or 'Manufacturer not stated' }}</span>
-    </span>
-  </a>
 {%- endmacro %}
 
 {# Banner at the top of every catalogue and detail page. #}
@@ -92,5 +74,19 @@
 
 {% macro results_line(p) -%}
   {% if p.total == 0 %}No matches
-  {% else %}Showing {{ (p.page - 1) * p.per_page + 1 }}&ndash;{{ [p.page * p.per_page, p.total] | min }} of {{ p.total }}{% endif %}
+  {% else %}{{ (p.page - 1) * p.per_page + 1 }}&ndash;{{ [p.page * p.per_page, p.total] | min }} of {{ p.total }}{% endif %}
+{%- endmacro %}
+
+{# A showroom slide / garage row image block with the vehicle text. #}
+{% macro vehicle_slide(v, index, sizes='(min-width: 900px) 70vw, 100vw') -%}
+  <a class="slide" href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}">
+    {{ picture(v.cover, fallback=v.manufacturer or v.name, sizes=sizes, alt='') }}
+    <span class="slide__shade" aria-hidden="true"></span>
+    <span class="slide__body">
+      <span class="slide__index" aria-hidden="true">{{ '%02d' | format(index) }}</span>
+      <span class="slide__cat">{{ v.category_name }}</span>
+      <span class="slide__name">{{ v.name }}</span>
+      <span class="slide__make">{{ v.manufacturer or 'Manufacturer not stated' }}</span>
+    </span>
+  </a>
 {%- endmacro %}

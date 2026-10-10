@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% from "_components.html" import badge, type_badge, pager, page_hero, results_line, option %}
-{% block title %}Locations{% endblock %}
-{% block description %}A searchable index of locations across the regions of Leonida, with the missions and characters connected to each.{% endblock %}
+{% block title %}Places{% endblock %}
+{% block description %}Places across the six regions of Leonida, with the stories and characters connected to each.{% endblock %}
 {% block content %}
-{{ page_hero('Places', 'Locations', 'Rockstar has not published a place-by-place list, so these locations are original concepts by Team Valkyrie, set inside the real regions.', cover=hero_cover) }}
+{{ page_hero('Places', 'Places of Leonida', 'Rockstar has not published a place-by-place guide, so these are Team Valkyrie\'s own places, set inside the real regions.', cover=hero_cover) }}
 
 <section class="section section--tight">
   <div class="container">
-    <form class="filters" method="get" action="{{ url_for('pages.locations') }}" role="search" aria-label="Search and filter locations">
+    <form class="filters" method="get" action="{{ url_for('pages.locations') }}" role="search" aria-label="Search and filter places">
       <label>Search
         <input type="search" name="q" value="{{ filters.q or '' }}" maxlength="80" placeholder="Name or description">
       </label>
@@ -28,7 +28,7 @@
           {{ option('region', 'Region', filters.sort) }}
           {{ option('name_asc', 'Name A to Z', filters.sort) }}
           {{ option('name_desc', 'Name Z to A', filters.sort) }}
-          {{ option('newest', 'Newest records', filters.sort) }}
+          {{ option('newest', 'Newest first', filters.sort) }}
         </select>
       </label>
       <div class="filters__actions">
@@ -40,23 +40,23 @@
     <p class="results-meta" role="status">{{ results_line(pagination) }}</p>
 
     {% if data %}
-    <ol class="index-list" start="{{ (pagination.page - 1) * pagination.per_page + 1 }}">
+    <ol class="places" start="{{ (pagination.page - 1) * pagination.per_page + 1 }}">
       {% for l in data %}
       <li class="reveal">
-        <a class="index-row" href="{{ url_for('pages.location_detail', slug=l.slug) }}">
-          <span class="index-row__num display" aria-hidden="true">{{ '%02d' | format((pagination.page - 1) * pagination.per_page + loop.index) }}</span>
-          <span class="index-row__main">
-            <span class="index-row__name display">{{ l.name }}</span>
-            <span class="index-row__sum">{{ l.summary }}</span>
+        <a class="place" href="{{ url_for('pages.location_detail', slug=l.slug) }}">
+          <span class="place__num" aria-hidden="true">{{ '%02d' | format((pagination.page - 1) * pagination.per_page + loop.index) }}</span>
+          <span class="place__main">
+            <span class="place__name">{{ l.name }}</span>
+            <span class="place__sum">{{ l.summary }}</span>
           </span>
-          <span class="index-row__where">{{ l.region_name }}<small>{{ l.mission_count }} mission{{ '' if l.mission_count == 1 else 's' }}</small></span>
-          <span class="index-row__tags">{{ type_badge(l.location_type) }} {{ badge(l.content_status) }}</span>
+          <span class="place__where">{{ l.region_name }}</span>
+          <span class="place__tags">{{ type_badge(l.location_type) }}{% if l.content_status != 'demo' %} {{ badge(l.content_status) }}{% endif %}</span>
         </a>
       </li>
       {% endfor %}
     </ol>
     {% else %}
-    <div class="empty"><h2>No locations found</h2><p>Nothing matches those filters. <a href="{{ url_for('pages.locations') }}">Reset the filters</a>.</p></div>
+    <div class="empty"><h2>No places found</h2><p>Nothing matches those filters. <a href="{{ url_for('pages.locations') }}">Reset the filters</a>.</p></div>
     {% endif %}
     {{ pager(pagination) }}
   </div>

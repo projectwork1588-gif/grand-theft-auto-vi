@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% from "_components.html" import badge, type_badge, pager, page_hero, results_line, option %}
 {% block title %}Stories{% endblock %}
-{% block description %}Original concept stories by Team Valkyrie, linking characters, vehicles and places across Leonida.{% endblock %}
+{% block description %}Original stories from Team Valkyrie that follow fixers, guides and dock foremen through the regions of Leonida.{% endblock %}
 {% block content %}
-{{ page_hero('The archive', 'Stories', 'Original concept stories by Team Valkyrie. They link characters, vehicles and places to show how the archive connects, and they never use Rockstar\'s real cast.', cover=hero_cover) }}
+{{ page_hero('Stories', 'Tales from Leonida', 'Original stories from Team Valkyrie. Each one brings together people, vehicles and places from across the state.', cover=hero_cover) }}
 
 <section class="section section--tight">
   <div class="container">
-    <nav class="chips chips--spaced" aria-label="Mission types">
-      <a class="chip" href="{{ url_for('pages.missions') }}"{% if not filters.type %} aria-current="true"{% endif %}>All types</a>
+    <nav class="chips chips--spaced" aria-label="Story types">
+      <a class="chip" href="{{ url_for('pages.missions') }}"{% if not filters.type %} aria-current="true"{% endif %}>All</a>
       {% for t in mission_types %}
       <a class="chip" href="{{ url_for('pages.missions', type=t) }}"{% if filters.type == t %} aria-current="true"{% endif %}>{{ t | capitalize }}</a>
       {% endfor %}
@@ -29,7 +29,7 @@
           {{ option('title_asc', 'Title A to Z', filters.sort) }}
           {{ option('title_desc', 'Title Z to A', filters.sort) }}
           {{ option('type', 'Type', filters.sort) }}
-          {{ option('newest', 'Newest records', filters.sort) }}
+          {{ option('newest', 'Newest first', filters.sort) }}
         </select>
       </label>
       <div class="filters__actions">
@@ -49,9 +49,9 @@
           <span class="story__main">
             <span class="story__title">{{ m.title }}</span>
             <span class="story__summary">{{ m.summary }}</span>
-            <span class="story__counts">{{ m.cast_count }} characters &middot; {{ m.vehicle_count }} vehicles &middot; {{ m.location_count }} locations</span>
+            <span class="story__counts">{{ m.cast_count }} character{{ '' if m.cast_count == 1 else 's' }} &middot; {{ m.vehicle_count }} vehicle{{ '' if m.vehicle_count == 1 else 's' }} &middot; {{ m.location_count }} place{{ '' if m.location_count == 1 else 's' }}</span>
           </span>
-          <span class="story__tags">{{ type_badge(m.mission_type) }} {{ badge(m.content_status) }}</span>
+          <span class="story__tags">{{ type_badge(m.mission_type) }}{% if m.content_status != 'demo' %} {{ badge(m.content_status) }}{% endif %}</span>
         </a>
       </li>
       {% endfor %}

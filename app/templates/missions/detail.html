@@ -1,66 +1,71 @@
 {% extends "base.html" %}
-{% from "_components.html" import badge, type_badge, page_hero, source_box %}
+{% from "_components.html" import badge, type_badge, page_hero, provenance %}
 {% block title %}{{ mission.title }}{% endblock %}
 {% block description %}{{ mission.summary }}{% endblock %}
 {% block content %}
-{% call page_hero('Case file · ' ~ (mission.mission_type | capitalize), mission.title, mission.summary, cover=mission.backdrop, tall=true) %}
-  <p class="hero-badges">{{ badge(mission.content_status) }} {{ type_badge(mission.mission_type) }}</p>
-  {% if mission.backdrop %}<p class="hero-caption">Background: official artwork of {{ mission.backdrop_region }}, not of this story.</p>{% endif %}
+{% call page_hero('Story' if mission.mission_type == 'story' else 'Story · ' ~ (mission.mission_type | capitalize), mission.title, mission.summary, cover=mission.backdrop, tall=true) %}
+  {% if mission.backdrop %}<p class="hero-caption">Backdrop: Rockstar artwork of {{ mission.backdrop_region }}, not of this story.</p>{% endif %}
 {% endcall %}
 
 <section class="section section--tight">
-  <div class="container detail">
-    <div class="detail__main stack">
-      <h2 class="panel-title">Synopsis</h2>
-      <p class="lede">{{ mission.synopsis }}</p>
-      {{ source_box(mission) }}
+  <div class="container profile">
+    <div class="profile__main stack">
+      <div>
+        <h2 class="panel-title">The story</h2>
+        <p class="lede">{{ mission.synopsis }}</p>
+      </div>
+      {{ provenance(mission) }}
 
-      <h2 class="panel-title">Cast</h2>
       {% if mission.characters %}
-      <ul class="link-list">
-        {% for c in mission.characters %}
-        <li><a href="{{ url_for('pages.character_detail', slug=c.slug) }}"><span><span class="name">{{ c.full_name }}</span>{% if c.alias %} <span class="meta">&ldquo;{{ c.alias }}&rdquo;</span>{% endif %}<br><span class="meta">{{ c.role_in_mission }}</span></span>{{ badge(c.content_status) }}</a></li>
-        {% endfor %}
-      </ul>
-      {% else %}<p class="muted">No characters are attached to this story.</p>{% endif %}
+      <div>
+        <h2 class="panel-title">Who is in it</h2>
+        <ul class="link-list">
+          {% for c in mission.characters %}
+          <li><a href="{{ url_for('pages.character_detail', slug=c.slug) }}"><span><span class="name">{{ c.full_name }}</span>{% if c.alias %} <span class="meta">&ldquo;{{ c.alias }}&rdquo;</span>{% endif %}<br><span class="meta">{{ c.role_in_mission }}</span></span></a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
 
-      <h2 class="panel-title">Vehicles</h2>
       {% if mission.vehicles %}
-      <ul class="link-list">
-        {% for v in mission.vehicles %}
-        {% if v.content_status == 'official' %}
-        <li><a href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}"><span><span class="name">{{ v.name }}</span><br><span class="meta">{{ v.usage_note }} &middot; {{ v.category_name }}</span></span>{{ badge(v.content_status) }}</a></li>
-        {% else %}
-        <li><div class="row"><span><span class="name">{{ v.name }}</span><br><span class="meta">{{ v.usage_note }} &middot; {{ v.category_name }}</span></span>{{ badge(v.content_status) }}</div></li>
-        {% endif %}
-        {% endfor %}
-      </ul>
-      {% else %}<p class="muted">No vehicles are attached to this story.</p>{% endif %}
+      <div>
+        <h2 class="panel-title">What they drive</h2>
+        <ul class="link-list">
+          {% for v in mission.vehicles %}
+          {% if v.content_status == 'official' %}
+          <li><a href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}"><span><span class="name">{{ v.name }}</span><br><span class="meta">{{ v.usage_note }}</span></span><span class="meta">{{ v.category_name }}</span></a></li>
+          {% else %}
+          <li><div class="row"><span><span class="name">{{ v.name }}</span><br><span class="meta">{{ v.usage_note }}</span></span><span class="meta">{{ v.category_name }}</span></div></li>
+          {% endif %}
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
     </div>
 
-    <aside class="detail__side stack">
+    <aside class="profile__side stack">
+      {% if mission.locations %}
       <section aria-labelledby="ml-title">
         <h2 class="panel-title" id="ml-title">Where it happens</h2>
-        {% if mission.locations %}
         <ul class="link-list">
           {% for l in mission.locations %}
-          <li><a href="{{ url_for('pages.location_detail', slug=l.slug) }}"><span><span class="name">{{ l.name }}</span><br><span class="meta">{{ l.region_name }}{% if l.is_primary %} &middot; main setting{% endif %}</span></span>{{ badge(l.content_status) }}</a></li>
+          <li><a href="{{ url_for('pages.location_detail', slug=l.slug) }}"><span><span class="name">{{ l.name }}</span><br><span class="meta">{{ l.region_name }}{% if l.is_primary %} &middot; main setting{% endif %}</span></span></a></li>
           {% endfor %}
         </ul>
-        {% else %}<p class="muted">No location is attached.</p>{% endif %}
       </section>
+      {% endif %}
+      {% if mission.related %}
       <section aria-labelledby="mr-title">
-        <h2 class="panel-title" id="mr-title">Related stories</h2>
-        {% if mission.related %}
+        <h2 class="panel-title" id="mr-title">More stories</h2>
         <ul class="link-list">
           {% for m in mission.related %}
-          <li><a href="{{ url_for('pages.mission_detail', slug=m.slug) }}"><span><span class="name">{{ m.title }}</span><br><span class="meta">{{ m.shared }} shared link{{ '' if m.shared == 1 else 's' }}</span></span>{{ type_badge(m.mission_type) }}</a></li>
+          <li><a href="{{ url_for('pages.mission_detail', slug=m.slug) }}"><span class="name">{{ m.title }}</span>{{ type_badge(m.mission_type) }}</a></li>
           {% endfor %}
         </ul>
-        {% else %}<p class="muted">No other story shares a character, vehicle or place with this one.</p>{% endif %}
       </section>
+      {% endif %}
     </aside>
   </div>
-  <div class="container"><p class="section-more"><a class="link-arrow" href="{{ url_for('pages.missions') }}">Back to the archive</a></p></div>
+  <div class="container"><p class="section-more"><a class="link-arrow" href="{{ url_for('pages.missions') }}">All stories</a></p></div>
 </section>
 {% endblock %}

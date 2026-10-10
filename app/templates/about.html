@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "_components.html" import badge %}
+{% block title %}About the project{% endblock %}
+{% block description %}Grand Theft Auto VI: a fan-made guide to Leonida, built by Team Valkyrie as a college project.{% endblock %}
+{% block content %}
+<section class="page-hero">
+  <div class="media page-hero__bg"><span class="media__fallback" aria-hidden="true"></span></div>
+  <div class="page-hero__shade" aria-hidden="true"></div>
+  <div class="container page-hero__inner">
+    <p class="eyebrow">About</p>
+    <h1>A fan guide to Leonida</h1>
+    <p class="page-hero__lede">Made by Team Valkyrie, out of curiosity about a game that is not out yet.</p>
+  </div>
+</section>
+
+<section class="section section--tight">
+  <div class="container">
+    <div class="prose">
+      <p class="lede">This site follows Grand Theft Auto VI the way a fan would: who the characters are, where the six regions sit on the map and which vehicles Rockstar has shown so far.</p>
+
+      <h2>What you will find</h2>
+      <ul>
+        <li><a href="{{ url_for('pages.characters') }}">Characters</a>: Jason, Lucia and the crew around them, with a short profile for each.</li>
+        <li><a href="{{ url_for('pages.regions') }}">Leonida</a>: the six regions, and the places and stories set in each.</li>
+        <li><a href="{{ url_for('pages.vehicles') }}">The garage</a>: the vehicles Rockstar has shown in its own screenshots.</li>
+        <li><a href="{{ url_for('pages.missions') }}">Stories</a>: short original stories that tie people, places and vehicles together.</li>
+      </ul>
+
+      <h2 id="labels">What the labels mean</h2>
+      <p>Everything here is marked so you can tell what comes from Rockstar and what we wrote ourselves.</p>
+      <ul class="label-guide">
+        <li>{{ badge('official') }}<span>Named or shown by Rockstar on its own site. The page links to where.</span></li>
+        <li>{{ badge('fan') }}<span>Our reading of Rockstar's material, such as how two characters might connect.</span></li>
+        <li>{{ badge('demo') }}<span>Invented by Team Valkyrie. Concepts are never presented as part of the game.</span></li>
+      </ul>
+      <p>Release dates, specifications and story details that Rockstar has not announced are not guessed at.</p>
+
+      <h2>How it was made</h2>
+      <p>The site is a college project for Web Technologies and Database Management Systems. It is written in Python with Flask, stores its content in MySQL and uses plain HTML, CSS and JavaScript on the front end, with no framework. The source is on <a href="https://github.com/projectwork1588-gif/grand-theft-auto-vi" target="_blank" rel="noopener noreferrer">GitHub</a>.</p>
+
+      <h2>Who we are</h2>
+      <p>Team Valkyrie is a small group of students. This is an unofficial fan project and has no connection to Rockstar Games or Take-Two Interactive. More on that, and on the sources, is on the <a href="{{ url_for('main.credits') }}">credits page</a>.</p>
+    </div>
+  </div>
+</section>
+{% endblock %}

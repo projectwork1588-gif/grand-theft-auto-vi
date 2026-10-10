@@ -1,17 +1,18 @@
 """Application factory: builds and configures the Flask app."""
 from flask import Flask
 
-from . import db, media_urls
+from . import db, media_slots, media_urls
 from .config import get_config
 from .errors import register_error_handlers
 
-# Only our own files, Rockstar's official image/player host, and Google Fonts. No inline scripts or styles.
+# Only our own files and Rockstar's official image and player host. Fonts are bundled. No inline scripts or styles.
 CONTENT_SECURITY_POLICY = (
     "default-src 'self'; "
     "img-src 'self' https://www.rockstargames.com data:; "
+    "media-src 'self'; "
     "frame-src https://www.rockstargames.com; "
-    "style-src 'self' https://fonts.googleapis.com; "
-    "font-src https://fonts.gstatic.com; "
+    "style-src 'self'; "
+    "font-src 'self'; "
     "script-src 'self'; connect-src 'self'; object-src 'none'; "
     "base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
 )
@@ -39,6 +40,7 @@ def create_app(config_name=None):
         image_srcset=media_urls.image_srcset,
         player_src=media_urls.player_src,
         status_labels=STATUS_LABELS,
+        focus_for=lambda slug: media_slots.FOCUS.get(slug, "center"),
     )
 
     @app.after_request
@@ -50,11 +52,11 @@ def create_app(config_name=None):
         return response
 
     from .blueprints.api import api_bp
-    from .blueprints.main import main_bp, page_url, page_window
+    from .blueprints.main import main_bp, media_file_url, page_url, page_window
     from .blueprints.pages import pages_bp
 
     # Globals (not context values) so imported macros such as the pager can use them.
-    app.jinja_env.globals.update(page_url=page_url, page_window=page_window)
+    app.jinja_env.globals.update(page_url=page_url, page_window=page_window, media_file_url=media_file_url)
 
     app.register_blueprint(main_bp)
     app.register_blueprint(pages_bp)

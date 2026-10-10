@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% from "_components.html" import badge, picture, initials, pager, page_hero, results_line, option %}
 {% block title %}Characters{% endblock %}
-{% block description %}Every named character from Grand Theft Auto VI's official line-up, plus original concept characters from Team Valkyrie, with search, filters and profiles.{% endblock %}
+{% block description %}Jason, Lucia and the rest of the cast of Grand Theft Auto VI, with original characters from Team Valkyrie alongside.{% endblock %}
 {% block content %}
-{{ page_hero('The cast', 'Characters', 'The characters named on Rockstar\'s official page, alongside original concept characters from Team Valkyrie. Every card is labelled.', cover=hero_cover) }}
+{{ page_hero('The cast', 'The people of Leonida', 'Jason and Lucia, the crew around them, and a few original characters of our own.', cover=hero_cover) }}
 
 <section class="section section--tight">
   <div class="container">
@@ -11,12 +11,12 @@
       <label>Search
         <input type="search" name="q" value="{{ filters.q or '' }}" maxlength="80" placeholder="Name, alias or role">
       </label>
-      <label>Source
+      <label>Show
         <select name="status">
-          {{ option('', 'All sources', filters.status or '') }}
-          {{ option('official', 'Official', filters.status) }}
+          {{ option('', 'Everyone', filters.status or '') }}
+          {{ option('official', 'From Rockstar', filters.status) }}
           {{ option('fan', 'Fan view', filters.status) }}
-          {{ option('demo', 'Concept', filters.status) }}
+          {{ option('demo', 'Original concepts', filters.status) }}
         </select>
       </label>
       <label>Region
@@ -29,7 +29,7 @@
         <select name="sort">
           {{ option('name_asc', 'Name A to Z', filters.sort) }}
           {{ option('name_desc', 'Name Z to A', filters.sort) }}
-          {{ option('newest', 'Newest records', filters.sort) }}
+          {{ option('newest', 'Newest first', filters.sort) }}
         </select>
       </label>
       <div class="filters__actions">
@@ -37,32 +37,106 @@
         <a class="link-arrow" href="{{ url_for('pages.characters') }}">Reset</a>
       </div>
     </form>
+  </div>
+</section>
 
+{% if data and editorial %}
+  {% if leads %}
+  <section class="section section--tight" aria-labelledby="leads-title">
+    <div class="container">
+      <h2 class="subhead subhead--first" id="leads-title">The leads</h2>
+      <div class="duo">
+        {% for c in leads %}
+        <a class="duo__panel reveal" data-delay="{{ loop.index }}" href="{{ url_for('pages.character_detail', slug=c.slug) }}">
+          {{ picture(c.cover, fallback=initials(c.full_name), sizes='(min-width: 900px) 46vw, 100vw', alt='', cls='duo__media') }}
+          <span class="duo__shade" aria-hidden="true"></span>
+          <span class="duo__body">
+            <span class="duo__role">{{ c.role_title }}</span>
+            <span class="duo__name">{{ c.full_name }}</span>
+            <span class="duo__summary">{{ c.summary }}</span>
+            <span class="duo__more">Read the profile</span>
+          </span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if supporting %}
+  <section class="section section--tight" aria-labelledby="crew-title">
+    <div class="container">
+      <h2 class="subhead subhead--first" id="crew-title">Around them</h2>
+      <ul class="portraits">
+        {% for c in supporting %}
+        <li class="reveal" data-delay="{{ loop.index0 % 3 + 1 }}">
+          <a class="portrait" href="{{ url_for('pages.character_detail', slug=c.slug) }}">
+            {{ picture(c.cover, fallback=initials(c.full_name), sizes='(min-width: 900px) 30vw, 50vw', alt='') }}
+            <span class="portrait__shade" aria-hidden="true"></span>
+            <span class="portrait__body">
+              <span class="portrait__role">{{ c.role_title }}</span>
+              <span class="portrait__name">{{ c.full_name }}</span>
+              <span class="portrait__sum">{{ c.summary }}</span>
+            </span>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if concepts %}
+  <section class="section section--tight" aria-labelledby="orig-title">
+    <div class="container">
+      <h2 class="subhead subhead--first" id="orig-title">Original characters</h2>
+      <p class="muted note">Team Valkyrie's own invented people. They sit beside the cast to show how stories, places and vehicles connect, and they are not part of Rockstar's game.</p>
+      <ul class="originals">
+        {% for c in concepts %}
+        <li class="reveal">
+          <a class="original" href="{{ url_for('pages.character_detail', slug=c.slug) }}">
+            <span class="original__name">{{ c.full_name }}<small class="original__role">{{ c.role_title }}</small></span>
+            <span class="original__sum">{{ c.summary }}</span>
+            {{ badge(c.content_status) }}
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </section>
+  {% endif %}
+{% elif data %}
+<section class="section section--tight">
+  <div class="container">
     <p class="results-meta" role="status">{{ results_line(pagination) }}</p>
-
-    {% if data %}
-    <ul class="wall">
+    <ul class="portraits">
       {% for c in data %}
       <li class="reveal" data-delay="{{ loop.index0 % 3 + 1 }}">
-        <a class="poster poster--wall" href="{{ url_for('pages.character_detail', slug=c.slug) }}">
-          {{ picture(c.cover, fallback=initials(c.full_name), sizes='(min-width: 900px) 25vw, 50vw', alt='') }}
-          <span class="poster__body">
-            <span class="poster__badges">{{ badge(c.content_status) }}</span>
-            <span class="poster__role">{{ c.role_title }}{% if c.alias %} &middot; &ldquo;{{ c.alias }}&rdquo;{% endif %}</span>
-            <span class="poster__name display">{{ c.full_name }}</span>
-            {% if c.region_name %}<span class="poster__where">{{ c.region_name }}</span>{% endif %}
+        <a class="portrait" href="{{ url_for('pages.character_detail', slug=c.slug) }}">
+          {{ picture(c.cover, fallback=initials(c.full_name), sizes='(min-width: 900px) 30vw, 50vw', alt='') }}
+          <span class="portrait__shade" aria-hidden="true"></span>
+          <span class="portrait__body">
+            <span class="portrait__role">{{ c.role_title }}</span>
+            <span class="portrait__name">{{ c.full_name }}</span>
+            <span class="portrait__sum">{{ c.summary }}</span>
+            <span>{{ badge(c.content_status) }}</span>
           </span>
         </a>
       </li>
       {% endfor %}
     </ul>
-    {% else %}
-    <div class="empty">
-      <h2>No characters found</h2>
-      <p>Nothing matches those filters. Try a shorter search, or <a href="{{ url_for('pages.characters') }}">reset the filters</a>.</p>
-    </div>
-    {% endif %}
     {{ pager(pagination) }}
   </div>
 </section>
+{% else %}
+<section class="section section--tight">
+  <div class="container">
+    <p class="results-meta" role="status">{{ results_line(pagination) }}</p>
+    <div class="empty">
+      <h2>No one by that name</h2>
+      <p>Try a shorter search, or <a href="{{ url_for('pages.characters') }}">see everyone</a>.</p>
+    </div>
+  </div>
+</section>
+{% endif %}
 {% endblock %}
