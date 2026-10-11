@@ -5,9 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Grand Theft Auto VI{% endblock %} | Team Valkyrie</title>
   <meta name="description" content="{% block description %}A fan-made guide to the people, places and vehicles of Grand Theft Auto VI, from Team Valkyrie.{% endblock %}">
-  <meta name="theme-color" content="#0a0710">
+  <meta name="theme-color" content="#12102a">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}">
   <script src="{{ url_for('static', filename='js/boot.js') }}"></script>
   <link rel="preload" href="{{ url_for('static', filename='fonts/manrope-normal-300-800.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages.css') }}">
@@ -16,27 +18,48 @@
   <a class="skip-link" href="#main">Skip to content</a>
 
   <header class="site-header {% block header_class %}site-header--solid{% endblock %}" data-header>
-    <div class="container header-inner">
-      <a class="brand" href="{{ url_for('main.index') }}" aria-label="Grand Theft Auto VI, a Team Valkyrie fan guide: home">
-        <span class="brand__mark" aria-hidden="true"><span>VI</span></span>
-        <span class="brand__text">
-          <span class="brand__title">Grand Theft Auto</span>
-          <span class="brand__sub">Fan guide by Team Valkyrie</span>
-        </span>
-      </a>
-      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" data-nav-toggle>
-        <span></span><span></span><span></span><span class="visually-hidden">Menu</span>
-      </button>
-      <nav class="primary-nav" id="primary-nav" aria-label="Primary" data-nav>
-        <ul>
-          {% for endpoints, label in nav_items %}
-          <li><a href="{{ url_for(endpoints[0]) }}"{% if request.endpoint in endpoints %} aria-current="page"{% endif %}>{{ label }}</a></li>
-          {% endfor %}
-        </ul>
-        <a class="nav-cta" href="{{ url_for('main.index') }}#media"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> Watch</a>
-      </nav>
+    <div class="container--wide header-inner">
+      {% macro lockup() -%}
+      <img class="brand__emblem" src="{{ url_for('static', filename='img/emblem.svg') }}" alt="" width="52" height="35">
+      <span class="brand__text">
+        <span class="brand__title">Team Valkyrie</span>
+        <span class="brand__sub"><span class="brand__sub-long">Grand Theft Auto VI fan guide</span><span class="brand__sub-short">Grand Theft Auto VI</span></span>
+      </span>
+      {%- endmacro %}
+      <a class="brand" href="{{ url_for('main.index') }}" aria-label="Team Valkyrie, a Grand Theft Auto VI fan guide: home">{{ lockup() }}</a>
+      <div class="header-actions">
+        <a class="header-pill" href="{{ url_for('main.index') }}#media"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> Trailers</a>
+        <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-menu" data-nav-toggle>
+          <span class="menu-btn__label" data-nav-label>Menu</span>
+          <span class="menu-btn__bars" aria-hidden="true"><i></i><i></i></span>
+        </button>
+      </div>
     </div>
   </header>
+
+  <nav class="site-menu" id="site-menu" aria-label="Primary" data-nav>
+    <div class="container--wide site-menu__inner">
+      <div>
+        <p class="site-menu__label">Explore</p>
+        <ul class="site-menu__main">
+          {% for endpoints, label in nav_items %}
+          <li><a href="{{ url_for(endpoints[0]) }}"{% if request.endpoint in endpoints %} aria-current="page"{% endif %}><span>{{ '%02d' % loop.index }}</span>{{ label }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="site-menu__side">
+        <a class="site-menu__watch" href="{{ url_for('main.index') }}#media"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> Watch the trailers</a>
+        <div>
+          <p class="site-menu__label">The project</p>
+          <ul class="site-menu__links">
+            <li><a href="{{ url_for('main.about') }}"{% if request.endpoint == 'main.about' %} aria-current="page"{% endif %}>About the project</a></li>
+            <li><a href="{{ url_for('main.credits') }}"{% if request.endpoint == 'main.credits' %} aria-current="page"{% endif %}>Credits and legal</a></li>
+          </ul>
+        </div>
+        <p class="site-menu__note">{{ disclaimer }}</p>
+      </div>
+    </div>
+  </nav>
 
   <main id="main">
     {% block content %}{% endblock %}
@@ -47,10 +70,7 @@
   <footer class="site-footer">
     <div class="container footer-main">
       <div class="footer-brand">
-        <a class="brand" href="{{ url_for('main.index') }}">
-          <span class="brand__mark" aria-hidden="true"><span>VI</span></span>
-          <span class="brand__text"><span class="brand__title">Grand Theft Auto</span><span class="brand__sub">Fan guide by Team Valkyrie</span></span>
-        </a>
+        <a class="brand" href="{{ url_for('main.index') }}" aria-label="Team Valkyrie, a Grand Theft Auto VI fan guide: home">{{ lockup() }}</a>
       </div>
       <nav class="footer-nav" aria-label="Footer">
         <ul>

@@ -425,8 +425,26 @@ def test_hero_is_calm_and_keeps_the_required_identity(client):
 
 def test_brand_lockup_is_in_the_header_and_footer(client):
     page = html(client, "/characters")
-    assert page.count('class="brand__mark"') == 2 and page.count("Fan guide by Team Valkyrie") == 2
-    assert 'class="nav-cta"' in page and "/#media" in page
+    # Design reset, Gate 1: the emblem plus a two-line lockup, in the header and again in the footer.
+    assert page.count('class="brand__emblem"') == 2 and page.count("Grand Theft Auto VI fan guide") >= 2
+    assert page.count('class="brand__title">Team Valkyrie<') == 2
+    assert 'class="header-pill"' in page and "/#media" in page
+
+
+def test_menu_lists_every_section_and_the_project_pages(client):
+    page = html(client, "/characters")
+    menu = page.split('id="site-menu"')[1].split("</nav>")[0]
+    for label in ("Characters", "Garage", "Leonida", "Locations", "Stories", "About the project", "Credits and legal", "Watch the trailers"):
+        assert label in menu, label
+    assert 'aria-current="page"' in menu and "Not affiliated with" in menu
+    assert 'aria-controls="site-menu"' in page and 'aria-expanded="false"' in page
+    assert "/static/img/emblem.svg" in page and "/static/img/favicon.svg" in page and "css/tokens.css" in page
+
+
+def test_emblem_and_favicon_are_served(client):
+    for name in ("emblem.svg", "favicon.svg"):
+        response = client.get(f"/static/img/{name}")
+        assert response.status_code == 200 and "svg" in response.headers["Content-Type"]
 
 
 def test_labels_are_calm_and_blunt_wording_is_gone_everywhere(client):

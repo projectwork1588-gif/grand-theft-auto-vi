@@ -25,16 +25,28 @@
   var toggle = document.querySelector("[data-nav-toggle]");
   var nav = document.querySelector("[data-nav]");
   if (toggle && nav) {
+    var navLabel = toggle.querySelector("[data-nav-label]");
     var setOpen = function (open) {
       toggle.setAttribute("aria-expanded", String(open));
       nav.classList.toggle("is-open", open);
+      document.documentElement.classList.toggle("menu-open", open);
+      if (navLabel) { navLabel.textContent = open ? "Close" : "Menu"; }
       if (header) { header.classList.toggle("is-solid", open || window.scrollY > 40); }
     };
     toggle.addEventListener("click", function () { setOpen(toggle.getAttribute("aria-expanded") !== "true"); });
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape" && toggle.getAttribute("aria-expanded") === "true") { setOpen(false); toggle.focus(); }
     });
+    // A link to a section of the page we are already on closes the menu; a link to another page simply leaves.
     nav.addEventListener("click", function (e) { if (e.target.closest("a")) { setOpen(false); } });
+    // Tab stays inside the open menu and its button.
+    nav.addEventListener("keydown", function (e) {
+      if (e.key !== "Tab" || toggle.getAttribute("aria-expanded") !== "true") { return; }
+      var links = nav.querySelectorAll("a[href]");
+      var first = links[0], last = links[links.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); toggle.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); toggle.focus(); }
+    });
   }
 
   // ---- Scroll reveal ---------------------------------------------------------------------------

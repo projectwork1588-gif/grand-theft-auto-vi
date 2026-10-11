@@ -1,0 +1,84 @@
+/* =====================================================================
+   Team Valkyrie | Grand Theft Auto VI fan guide | design tokens (Design Reset, Gate 1)
+   The single source of colour, type, space, shape and motion. Components use these names and nothing else.
+   See docs/DESIGN_RESET.md section 5. tests/test_design_tokens.py fails on a font size, radius or
+   letter-spacing that is not one of these.
+   ===================================================================== */
+@font-face { font-family: "Manrope"; font-style: normal; font-weight: 300 800; font-display: swap;
+  src: url("../fonts/manrope-normal-300-800.woff2") format("woff2"); }
+@font-face { font-family: "Barlow Condensed"; font-style: normal; font-weight: 600; font-display: swap;
+  src: url("../fonts/barlow-condensed-normal-600.woff2") format("woff2"); }
+@font-face { font-family: "Barlow Condensed"; font-style: normal; font-weight: 700; font-display: swap;
+  src: url("../fonts/barlow-condensed-normal-700.woff2") format("woff2"); }
+
+:root {
+  /* ---- Colour: one ground, one action colour, one label colour ---- */
+  --ground: #12102a;            /* page */
+  --ground-2: #1a1740;          /* raised areas, the solid header, the menu */
+  --card: #1d1a45;              /* behind art, panels */
+  --text: #f6f1ea;              /* headings and body */
+  --text-2: #cfc8dc;            /* secondary text, about 9:1 on ground */
+  --text-3: #9a93b3;            /* captions and meta, about 6:1 on ground */
+  --action: #ff5f96;            /* the only action colour: buttons, hover, the active item */
+  --on-action: #12102a;         /* text on the action colour: 6.5:1 (white on it would be 2.9:1) */
+  --action-hover: #ff7fab;
+  --label: #ffd47c;             /* the only label colour: eyebrows and chapter numbers */
+  --official: #3de0c8;          /* status only: the Official badge and official relationship lines */
+  --line: rgba(255, 255, 255, .12);
+  --line-strong: rgba(255, 255, 255, .26);
+  --scrim: rgba(13, 11, 32, .82);   /* the one art scrim, always left-weighted */
+  --sunset-text: linear-gradient(104deg, #ff5f96 4%, #ff9b52 58%, #ffd47c 100%);   /* the VI numeral and the emblem only */
+  --sunset: linear-gradient(180deg, #221135 0%, #5a1f55 42%, #d84d86 78%, #ff9b52 100%);   /* image fallback only */
+
+  /* ---- Type: Barlow Condensed (display, caps) and Manrope (everything read). Scale ratio 1.25. ---- */
+  --font-text: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --t-micro: .75rem;                                           /* 12  eyebrows, badges: never smaller */
+  --t-small: .875rem;                                          /* 14  meta, captions, UI text */
+  --t-body: 1.0625rem;                                         /* 17  reading text */
+  --t-lead: 1.3125rem;                                         /* 21  one-line summaries on art */
+  --t-h4: 1.625rem;                                            /* 26 */
+  --t-h3: 2.0625rem;                                           /* 33  card titles */
+  --t-h2: clamp(2.5625rem, 1.9rem + 2.3vw, 4.0625rem);         /* 41 to 65  section titles */
+  --t-h1: clamp(3.25rem, 2rem + 4.2vw, 6.5rem);                /* 52 to 104 page titles */
+  --t-display: clamp(4rem, 2.2rem + 6.2vw, 8.75rem);           /* 64 to 140 hero only */
+  --track-tight: -.02em;      /* large Manrope headings */
+  --track-caps: .01em;        /* condensed display caps */
+  --track-ui: .04em;          /* buttons, nav, chips */
+  --track-label: .18em;       /* eyebrows and small caps labels */
+  --track-brand: .12em;       /* the Team Valkyrie wordmark */
+
+  /* ---- Space: an 8-point scale. Section rhythm is --section-y. ---- */
+  --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s5: 48px; --s6: 72px; --s7: 112px;
+  --section-y: clamp(72px, 9vw, 112px);
+  --gutter: clamp(20px, 4vw, 56px);
+  --max: 1200px;
+  --max-wide: 1480px;
+  --header-h: 72px;
+
+  /* ---- Shape: two radii and the pill ---- */
+  --r-card: 24px;
+  --r-tile: 12px;
+  --r-pill: 999px;
+
+  /* ---- Motion: three durations, one easing ---- */
+  --dur-1: 160ms; --dur-2: 320ms; --dur-3: 640ms;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+
+  /* ---- Names the pages already use, mapped onto the tokens above (retired as each page is rebuilt) ---- */
+  --night: var(--ground);
+  --ink: var(--ground-2);
+  --surface: var(--card);
+  --surface-2: var(--card);
+  --muted: var(--text-2);
+  --soft: var(--text-3);
+  --pink: var(--action);
+  --orange: var(--label);
+  --gold: var(--label);
+  --teal: var(--official);
+  --violet: var(--text-2);
+  --font-body: var(--font-text);
+  --font-mark: var(--font-display);
+  --radius: var(--r-card);
+  --ease-out: var(--ease);
+}
