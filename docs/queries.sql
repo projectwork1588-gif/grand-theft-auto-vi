@@ -115,3 +115,39 @@ WHERE v.content_status = 'official'
 GROUP BY v.vehicle_id, v.name, vc.name
 HAVING COUNT(mv.media_id) >= 1
 ORDER BY images DESC, v.name;
+
+-- 15. Gate 3A: where Rockstar's own text places each official character (character_regions junction, three tables)
+SELECT c.full_name, r.name AS region, cg.note
+FROM character_regions cg
+JOIN characters c ON c.character_id = cg.character_id
+JOIN regions r ON r.region_id = cg.region_id
+WHERE c.content_status = 'official'
+ORDER BY r.name, c.full_name;
+
+-- 16. Gate 3A: the connections shown on the relationship network, both names resolved (self-join through the junction)
+SELECT a.full_name AS from_person, cr.relationship_type, b.full_name AS to_person, cr.description
+FROM character_relationships cr
+JOIN characters a ON a.character_id = cr.from_character_id
+JOIN characters b ON b.character_id = cr.to_character_id
+WHERE cr.content_status = 'official'
+ORDER BY a.character_id, b.character_id;
+
+-- 17. Gate 3A: how many official connections each person has (UNION ALL of both directions, GROUP BY, LEFT JOIN)
+SELECT c.full_name, COUNT(t.other_id) AS connections
+FROM characters c
+LEFT JOIN (
+    SELECT from_character_id AS me, to_character_id AS other_id FROM character_relationships WHERE content_status = 'official'
+    UNION ALL
+    SELECT to_character_id AS me, from_character_id AS other_id FROM character_relationships WHERE content_status = 'official'
+) t ON t.me = c.character_id
+WHERE c.content_status = 'official'
+GROUP BY c.character_id, c.full_name
+ORDER BY connections DESC, c.full_name;
+
+-- 18. Gate 3A: the original (demo) characters stay in the database and in the stories (what ?include=original returns)
+SELECT c.full_name, c.content_status, COUNT(mc.mission_id) AS stories
+FROM characters c
+LEFT JOIN mission_characters mc ON mc.character_id = c.character_id
+WHERE c.content_status = 'demo'
+GROUP BY c.character_id, c.full_name, c.content_status
+ORDER BY c.full_name;

@@ -1,5 +1,11 @@
 """All SQL for regions."""
+import logging
+
+from mysql.connector import errors
+
 from ..db import query_all, query_one
+
+log = logging.getLogger(__name__)
 
 
 def list_all(status=None):
@@ -33,14 +39,22 @@ def locations_in(region_id):
 
 
 def characters_based_in(region_id):
-    return query_all(
-        """SELECT c.slug, c.full_name, c.role_title, c.content_status, l.name AS home_location_name
-           FROM characters c
-           JOIN locations l ON l.location_id = c.home_location_id
-           WHERE l.region_id = %s
-           ORDER BY c.full_name""",
-        (region_id,),
-    )
+    """Official characters Rockstar's own text places in this region (character_regions), with what the source says.
+    Original characters are not listed on a region page."""
+    try:
+        return query_all(
+            """SELECT c.slug, c.full_name, c.role_title, c.content_status, cg.note AS home_location_name
+               FROM character_regions cg
+               JOIN characters c ON c.character_id = cg.character_id
+               WHERE cg.region_id = %s AND c.content_status = 'official'
+               ORDER BY c.full_name""",
+            (region_id,),
+        )
+    except errors.ProgrammingError as exc:
+        if exc.errno != 1146:   # table missing: a database that has not had migration 005 applied yet
+            raise
+        log.warning("Region characters skipped (%s). Has migration 005 been applied?", exc)
+        return []
 
 
 def ids_by_slug(slugs):

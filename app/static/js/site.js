@@ -918,6 +918,139 @@
     track.addEventListener("click", function (e) { if (moved) { e.preventDefault(); moved = false; } }, true);
   })();
 
+  // ---- Characters page: the jump bar follows the reader, and the relationship network answers the pointer -------
+  (function castNavigation() {
+    var nav = document.querySelector("[data-cast-nav]");
+    if (nav) {
+      var links = [].slice.call(nav.querySelectorAll("a[href^='#']")).filter(function (a) {
+        return a.getAttribute("href").length > 1 && !a.hasAttribute("data-open-explore");
+      });
+      var targets = links.map(function (a) { return document.getElementById(a.getAttribute("href").slice(1)); });
+      var list = nav.querySelector("ol");
+      var setCurrent = function (id) {
+        links.forEach(function (a) {
+          var on = a.getAttribute("href") === "#" + id;
+          if (on) { a.setAttribute("aria-current", "true"); } else { a.removeAttribute("aria-current"); }
+          if (on && list && list.scrollWidth > list.clientWidth) {
+            list.scrollTo({ left: a.offsetLeft - (list.clientWidth - a.offsetWidth) / 2, behavior: reduceMotion ? "auto" : "smooth" });
+          }
+        });
+      };
+      if ("IntersectionObserver" in window && targets.some(Boolean)) {
+        var seen = {};
+        var watch = new IntersectionObserver(function (entries) {
+          entries.forEach(function (e) { seen[e.target.id] = e.isIntersecting ? e.intersectionRatio : 0; });
+          var best = null;
+          Object.keys(seen).forEach(function (id) { if (seen[id] > 0 && (best === null || seen[id] > seen[best])) { best = id; } });
+          setCurrent(best || "");                         // nothing in the middle of the screen: nothing is marked
+        }, { rootMargin: "-30% 0px -35% 0px", threshold: [0, 0.1, 0.25, 0.5, 0.75, 1] });
+        targets.forEach(function (t) { if (t) { watch.observe(t); } });
+      }
+      var open = nav.querySelector("[data-open-explore]");
+      if (open) {
+        open.addEventListener("click", function () {
+          var panel = document.getElementById("explore");
+          if (panel && panel.tagName === "DETAILS") { panel.open = true; }
+        });
+      }
+    }
+    var web = document.querySelector("[data-network]");
+    if (web) {
+      var edges = [].slice.call(web.querySelectorAll(".edge"));
+      var light = function (slug) {
+        var any = false;
+        edges.forEach(function (edge) {
+          var on = !!slug && (edge.getAttribute("data-from") === slug || edge.getAttribute("data-to") === slug);
+          edge.classList.toggle("is-on", on);
+          any = any || on;
+        });
+        web.classList.toggle("is-focus", any);
+      };
+      [].forEach.call(web.querySelectorAll(".node"), function (node) {
+        var slug = node.getAttribute("data-slug");
+        ["mouseenter", "focus"].forEach(function (n) { node.addEventListener(n, function () { light(slug); }); });
+        ["mouseleave", "blur"].forEach(function (n) { node.addEventListener(n, function () { light(""); }); });
+      });
+    }
+  })();
+
+  // ---- Motion portraits: each person's clip plays once when it is in view, then rests on the artwork --------------
+  // Rockstar's clips are one to one and a half seconds, so they are never looped. One plays at a time (the most visible),
+  // only when the visitor allows motion and nothing else is playing; leaving the view re-arms it for the next visit.
+  (function portraits() {
+    var tiles = [].slice.call(document.querySelectorAll("[data-portrait]"));
+    if (!tiles.length) { return; }
+    window.tvMedia = window.tvMedia || { cast: false, cinema: false, modal: false };
+    var players = tiles.map(function (el) {
+      var video = el.querySelector("[data-portrait-video]");
+      return { el: el, video: video, src: video && video.getAttribute("data-src"), ratio: 0, loaded: false, done: false };
+    }).filter(function (p) { return p.video && p.src; });
+    if (!players.length) { return; }
+
+    function eligible() {
+      return motionAllowed() && !document.hidden && !window.tvMedia.cinema && !window.tvMedia.cast && !window.tvMedia.modal;
+    }
+    function load(p) {
+      if (p.loaded) { return; }
+      p.loaded = true;
+      p.video.preload = "auto";
+      p.video.src = p.src;
+      p.video.load();
+    }
+    function start(p) {
+      if (!p.video.paused || p.done) { return; }
+      load(p);
+      var promise = p.video.play();
+      if (promise && typeof promise.catch === "function") { promise.catch(function () { /* the poster stays */ }); }
+    }
+    function anyPlaying() { return players.some(function (q) { return !q.video.paused; }); }
+    function reconcile() {
+      var best = null;
+      players.forEach(function (p) { if (eligible() && p.ratio >= 0.5 && !p.done && (!best || p.ratio > best.ratio)) { best = p; } });
+      players.forEach(function (p) {
+        if (p === best) { start(p); } else if (!p.video.paused) { p.video.pause(); }
+      });
+      window.tvMedia.portrait = anyPlaying();
+    }
+    players.forEach(function (p) {
+      p.video.muted = true;
+      p.video.addEventListener("playing", function () { p.el.classList.add("is-live"); window.tvMedia.portrait = true; });
+      p.video.addEventListener("pause", function () { window.tvMedia.portrait = anyPlaying(); });
+      p.video.addEventListener("ended", function () {
+        p.done = true;                                   // it rests on its last frame, the held artwork
+        p.el.classList.add("is-rest");
+        window.tvMedia.portrait = anyPlaying();
+      });
+    });
+    if ("IntersectionObserver" in window) {
+      var near = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          var p = players.filter(function (q) { return q.el === entry.target; })[0];
+          if (p && entry.isIntersecting && motionAllowed()) { load(p); }
+        });
+      }, { rootMargin: "60% 0px 60% 0px" });
+      var see = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          var p = players.filter(function (q) { return q.el === entry.target; })[0];
+          if (!p) { return; }
+          p.ratio = entry.isIntersecting ? entry.intersectionRatio : 0;
+          if (p.ratio === 0 && p.done) {                 // out of sight: arm it for the next time it is seen
+            p.done = false;
+            p.el.classList.remove("is-rest");
+            try { p.video.currentTime = 0; } catch (e) { /* not ready */ }
+          }
+        });
+        reconcile();
+      }, { threshold: [0, 0.25, 0.5, 0.75, 1] });
+      players.forEach(function (p) { near.observe(p.el); see.observe(p.el); });
+    }
+    document.addEventListener("visibilitychange", reconcile);
+    document.addEventListener("tv:motion", reconcile);
+    document.addEventListener("tv:state", reconcile);
+    window.setInterval(function () { if (!document.hidden) { reconcile(); } }, 1000);
+    reconcile();
+  })();
+
   // ---- Short muted loops on detail pages: play in view, pause out of view -----------------------
   (function loops() {
     var videos = [].slice.call(document.querySelectorAll("video[data-loop]"));

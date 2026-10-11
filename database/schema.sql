@@ -30,6 +30,7 @@ DROP TABLE IF EXISTS mission_characters;
 DROP TABLE IF EXISTS missions;
 DROP TABLE IF EXISTS vehicles;
 DROP TABLE IF EXISTS vehicle_categories;
+DROP TABLE IF EXISTS character_regions;
 DROP TABLE IF EXISTS character_relationships;
 DROP TABLE IF EXISTS characters;
 DROP TABLE IF EXISTS locations;
@@ -146,6 +147,24 @@ CREATE TABLE character_relationships (
     CONSTRAINT ck_char_rel_not_self CHECK (from_character_id <> to_character_id),
     CONSTRAINT ck_char_rel_official_source
         CHECK (content_status <> 'official' OR source_url IS NOT NULL)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- ---------------------------------------------------------------------
+-- character_regions: character (M) <-> (N) region. Where an OFFICIAL character is placed by Rockstar's own words
+-- (for example "working for local drug runners in the Keys"). It is separate from home_location_id, which points at a
+-- place and, so far, only the Team Valkyrie original characters have. note says what the source states.
+-- ---------------------------------------------------------------------
+CREATE TABLE character_regions (
+    character_id  INT UNSIGNED NOT NULL,
+    region_id     SMALLINT UNSIGNED NOT NULL,
+    note          VARCHAR(255) NOT NULL,
+    source_url    VARCHAR(500) NOT NULL,
+    PRIMARY KEY (character_id, region_id),
+    KEY ix_char_regions_region (region_id),
+    CONSTRAINT fk_char_regions_character FOREIGN KEY (character_id)
+        REFERENCES characters (character_id) ON DELETE CASCADE,
+    CONSTRAINT fk_char_regions_region FOREIGN KEY (region_id)
+        REFERENCES regions (region_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ---------------------------------------------------------------------

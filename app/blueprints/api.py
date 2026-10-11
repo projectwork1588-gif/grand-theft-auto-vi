@@ -8,12 +8,12 @@ api_bp = Blueprint("api", __name__)
 
 @api_bp.route("/characters")
 def list_characters():
-    return jsonify(characters.list_characters(request.args))
+    return jsonify(characters.list_characters(request.args, characters.wants_original(request.args)))
 
 
 @api_bp.route("/characters/<slug>")
 def character_detail(slug):
-    return jsonify(characters.get_character(slug))
+    return jsonify(characters.get_character(slug, characters.wants_original(request.args)))
 
 
 @api_bp.route("/regions")

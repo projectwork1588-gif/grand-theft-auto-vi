@@ -16,8 +16,13 @@ def names(text, cls):
 
 
 def people(text):
-    """Character names on the characters page in page order: leads, then the crew, then original characters."""
-    return names(text, "duo__name") + names(text, "portrait__name") + names(text, "original__name")
+    """Names on the editorial Characters page in page order: the two leads, then the six around them."""
+    return re.findall(r'<h[34] class="(?:spread|person)__name"><a href="[^"]+">([^<]+)</a>', text)
+
+
+def results(text):
+    """Names in the Explore results list, in order."""
+    return re.findall(r'class="result__name">([^<]+)<', text)
 
 
 def garage_names(text):
@@ -155,57 +160,124 @@ def test_catalogue_pages_render(client, path, heading):
 
 
 # ------------------------------------------------------------------ characters
+EIGHT = ["Jason Duval", "Lucia Caminos", "Cal Hampton", "Brian Heder", "Boobie Ike", "Dre&#39;Quan Priest", "Real Dimez",
+         "Raul Bautista"]
+ORIGINALS = ("Delia Marsh", "Nico Brandt", "Tomas Reyes-Hall")
+
+
 def test_characters_page_is_editorial_when_unfiltered(client):
     page = html(client, "/characters")
-    assert names(page, "duo__name") == ["Jason Duval", "Lucia Caminos"]
-    assert names(page, "portrait__name") == ["Boobie Ike", "Brian Heder", "Cal Hampton", "Dre&#39;Quan Priest",
-                                             "Raul Bautista", "Real Dimez"]
-    assert names(page, "original__name") == ["Delia Marsh", "Nico Brandt", "Tomas Reyes-Hall"]
-    assert "Original characters" in page and "not part of Rockstar's game" in page
+    assert sorted(people(page)) == sorted(EIGHT)
+    assert people(page)[:2] == ["Jason Duval", "Lucia Caminos"]               # the leads come first
+    assert 'class="cast-open"' in page and 'class="tier"' in page and 'class="web"' in page
+    assert page.index('class="cast-open"') < page.index('class="cast-nav"') < page.index('id="leads-title"') < page.index('id="crew-title"') < page.index('id="web-title"')
+    assert 'class="results"' not in page                                       # the Explore results are a separate mode
+    for name in ORIGINALS:                                                    # original characters are not part of the cast
+        assert name not in page, name
+    assert "/characters/delia-marsh" not in page and "Original characters" not in page
+
+
+def test_jump_navigation_reaches_all_eight_people(client):
+    page = html(client, "/characters")
+    nav = page.split('data-cast-nav')[1].split("</nav>")[0]
+    for slug in ("jason-duval", "lucia-caminos", "cal-hampton", "brian-heder", "boobie-ike", "dre-quan-priest", "real-dimez", "raul-bautista"):
+        assert f'href="#{slug}"' in nav, slug
+        assert f'id="{slug}"' in page, slug
+    assert 'aria-label="Jump to a character"' in page and "data-open-explore" in nav
+
+
+def test_explore_panel_is_secondary_and_closed_on_the_landing(client):
+    page = html(client, "/characters")
+    panel = page.split('<details class="explore"')[1].split("</details>")[0]
+    assert not panel.startswith(' id="explore" open') and 'role="search"' in panel
+    assert 'name="q"' in panel and 'name="region"' in panel and 'name="sort"' in panel and 'name="status"' not in panel
+    for option in ("Name A to Z", "Name Z to A", "Newest first", "Vice City", "Leonida Keys"):
+        assert option in panel, option
 
 
 def test_characters_search_filter_sort_pagination(client):
-    assert len(people(html(client, "/characters"))) == 11
-    assert names(html(client, "/characters?q=lucia"), "portrait__name") == ["Lucia Caminos"]
-    assert names(html(client, "/characters?q=gator"), "portrait__name") == ["Tomas Reyes-Hall"]
-    demo = html(client, "/characters?status=demo")
-    assert sorted(names(demo, "portrait__name")) == ["Delia Marsh", "Nico Brandt", "Tomas Reyes-Hall"]
-    assert "badge--demo" in demo and ">Concept<" in demo
-    assert names(html(client, "/characters?region=vice-city"), "portrait__name") == ["Delia Marsh"]
-    assert names(html(client, "/characters?sort=name_desc&per_page=2"), "portrait__name") == ["Tomas Reyes-Hall", "Real Dimez"]
-    page2 = html(client, "/characters?per_page=4&page=2&status=official")
+    assert results(html(client, "/characters?q=lucia")) == ["Lucia Caminos"]
+    assert results(html(client, "/characters?q=gator")) == []                       # an original character's alias finds nothing
+    assert results(html(client, "/characters?region=vice-city")) == ["Boobie Ike"]
+    assert results(html(client, "/characters?region=leonida-keys")) == ["Brian Heder", "Jason Duval"]
+    assert results(html(client, "/characters?sort=name_desc&per_page=2")) == ["Real Dimez", "Raul Bautista"]
+    everyone = results(html(client, "/characters?sort=name_asc&per_page=50"))
+    assert len(everyone) == 8 and everyone[0] == "Boobie Ike"
+    page2 = html(client, "/characters?per_page=3&page=3&sort=name_asc")
     assert 'aria-label="Pagination"' in page2 and 'rel="prev"' in page2 and 'rel="next"' not in page2
-    assert "status=official" in page2  # filters survive in the pager links
-    assert "5&ndash;8 of 8" in page2
-    assert ">Official<" in html(client, "/characters?status=official")
+    assert "sort=name_asc" in page2                                           # filters survive in the pager links
+    assert "7&ndash;8 of 8" in page2
+
+
+def test_a_status_in_the_query_never_exposes_original_characters(client):
+    for qs in ("?status=demo", "?status=official", "?include=original", "?q=delia", "?q=nico&status=demo"):
+        page = html(client, "/characters" + qs)
+        for name in ORIGINALS:
+            assert name not in page, (qs, name)
+        assert "/characters/delia-marsh" not in page and "/characters/tomas-reyes-hall" not in page, qs
 
 
 def test_characters_filters_are_reflected_in_the_form(client):
-    page = html(client, "/characters?q=lucia&status=official&sort=name_desc")
+    page = html(client, "/characters?q=lucia&region=vice-city&sort=name_desc")
     assert 'value="lucia"' in page
-    assert '<option value="official" selected>' in page and '<option value="name_desc" selected>' in page
+    assert '<option value="vice-city" selected>' in page and '<option value="name_desc" selected>' in page
 
 
 def test_characters_empty_state_and_page_beyond_end(client):
     assert "No one by that name" in html(client, "/characters?q=zzzzzz")
-    assert "No one by that name" in html(client, "/characters?page=99")
+    assert "No one by that name" in html(client, "/characters?q=lucia&page=99")
+    page = html(client, "/characters?region=grassrivers")
+    assert "Nobody is tied to that region yet" in page and "Jason and Brian in the Keys, Boobie in Vice City" in page
 
 
 def test_character_detail_official_profile(client):
     page = html(client, "/characters/jason-duval")
-    assert "<h1>Jason Duval</h1>" in page and "badge--official" in page
+    assert "<h1>Jason Duval</h1>" in page and "01 / 08" in page
     assert "https://www.rockstargames.com/VI/only-in-leonida" in page            # source link
-    assert 'href="/characters/brian-heder"' in page and 'href="/characters/lucia-caminos"' in page
-    assert "Gallery" in page and "data-lightbox" in page
+    connections = page.split('class="p-connections"')[1].split("</section>")[0]
+    assert 'href="/characters/brian-heder"' in connections and 'href="/characters/lucia-caminos"' in connections
+    assert 'href="/characters/cal-hampton"' in connections
+    assert 'href="/regions/leonida-keys"' in page                               # where Rockstar places him
+    assert "From the footage and artwork" in page and "data-lightbox" in page
     assert "We do not invent" not in page and "No missions stored" not in page      # empty sections are simply left out
+    nav = page.split('aria-label="All eight characters"')[1].split("</nav>")[0]
+    assert nav.count('<li><a href="/characters/') == 8 and 'aria-current="page"' in nav
 
 
-def test_character_detail_demo_profile_with_related_content(client):
-    page = html(client, "/characters/delia-marsh")
-    assert "badge--demo" in page and "Concept" in page and "A Team Valkyrie original." in page
-    assert 'href="/missions/harbour-lights"' in page and 'href="/locations/bayfront-studio-lot"' in page
-    assert "Seen alongside" in page and "Nico Brandt" in page and "3 shared stories" in page
-    assert "Gallery" not in page  # no official media for original characters
+def test_every_official_profile_renders_with_its_connections_and_navigation(client):
+    for number, slug in enumerate(("jason-duval", "lucia-caminos", "cal-hampton", "boobie-ike", "dre-quan-priest",
+                                   "real-dimez", "raul-bautista", "brian-heder"), start=1):
+        page = html(client, f"/characters/{slug}")
+        assert f"{number:02d} / 08" in page, slug
+        assert 'class="p-hero' in page and 'class="p-story"' in page and 'class="p-next"' in page, slug
+        assert 'rel="prev"' in page and 'rel="next"' in page, slug
+        assert 'class="p-conn' in page or "has not stated any connections" in page, slug
+
+
+def test_dre_quan_and_real_dimez_are_connected_on_both_profiles(client):
+    dre = html(client, "/characters/dre-quan-priest").split('class="p-connections"')[1].split("</section>")[0]
+    dimez = html(client, "/characters/real-dimez").split('class="p-connections"')[1].split("</section>")[0]
+    assert 'href="/characters/real-dimez"' in dre and 'href="/characters/dre-quan-priest"' in dimez
+    assert "Only Raw Records" in dre and "Only Raw Records" in dimez
+
+
+def test_the_network_is_drawn_from_the_relationship_table(client, app_context):
+    from app.repositories import characters as repo
+    page = html(client, "/characters")
+    svg = page.split('data-network')[1].split("</svg>")[0]
+    rows = repo.official_relationships(limit=50)
+    assert len(rows) == 5 and page.count('<g class="edge"') == 5
+    for row in rows:
+        assert f'data-from="{row["from_slug"]}" data-to="{row["to_slug"]}"' in svg, row
+    assert len(re.findall(r'<a class="node[ "]', svg)) == 8 and "node--alone" in svg                   # Raul has no stated connection yet
+    assert "Raul Bautista has no stated connection yet" in page
+
+
+def test_original_character_profiles_are_not_public(client):
+    for slug in ("delia-marsh", "nico-brandt", "tomas-reyes-hall"):
+        response = client.get(f"/characters/{slug}")
+        assert response.status_code == 404 and "text/html" in response.content_type, slug
+        assert "Not Found" in response.get_data(as_text=True)
 
 
 def test_character_detail_leaves_out_what_is_not_known(client):
@@ -215,16 +287,24 @@ def test_character_detail_leaves_out_what_is_not_known(client):
 
 def test_character_profile_links_to_the_official_clip_without_local_files(client):
     page = html(client, "/characters/brian-heder")
-    assert "In motion" in page and 'class="clip-link"' in page and "<video" not in page
+    assert 'class="p-clip-link"' in page and "<video" not in page
     assert "https://www.rockstargames.com/VI/media/videos" in page
-    assert "In motion" not in html(client, "/characters/delia-marsh")      # concept characters have no clip
+    assert "Watch Brian Heder" in page
 
 
-def test_character_profile_plays_the_local_loop_when_it_exists(client, local_clips):
+def test_character_profile_plays_the_local_portrait_once_when_it_exists(client, local_clips):
     page = html(client, "/characters/brian-heder")
-    assert 'data-src="/media/clips/brian-heder.mp4"' in page and "data-loop" in page and "muted" in page
-    assert 'poster="/media/clips/brian-heder.jpg"' in page and "data-loop-toggle" in page
-    assert "<source" not in page and ' src="/media/clips/' not in page      # nothing loads until the script asks
+    assert 'data-portrait-video data-src="/media/clips/brian-heder.mp4"' in page and "muted" in page
+    assert 'poster="/media/clips/brian-heder.jpg"' in page and "data-motion-optin" in page
+    assert " loop" not in page.split("data-portrait-video")[1].split("</video>")[0]        # Rockstar's clips are never looped
+    assert "<source" not in page and ' src="/media/clips/' not in page                 # nothing loads until the script asks
+    assert "p-clip-link" not in page
+
+
+def test_landing_portraits_are_wired_for_the_motion_policy(client, local_clips):
+    page = html(client, "/characters")
+    assert page.count("data-portrait-video") == 8 and page.count("data-motion-optin") == 8
+    assert 'preload="none"' in page and ' autoplay' not in page
 
 
 # ------------------------------------------------------------------ vehicles
@@ -285,7 +365,8 @@ def test_regions_page_lists_all_six_official_regions(client):
 def test_region_detail_page(client):
     page = html(client, "/regions/vice-city")
     assert "<h1>Vice City</h1>" in page and "https://www.rockstargames.com/VI/only-in-leonida" in page
-    assert 'href="/locations/sunset-pier-boardwalk"' in page and 'href="/characters/delia-marsh"' in page
+    assert 'href="/locations/sunset-pier-boardwalk"' in page and 'href="/characters/boobie-ike"' in page
+    assert 'href="/characters/delia-marsh"' not in page                                # original characters are not placed here
     assert 'href="/missions/ledger-of-favours"' in page and "Elsewhere in Leonida" in page
     assert 'href="/regions/ambrosia"' in page and "Gallery" in page
 
@@ -304,7 +385,8 @@ def test_location_detail_page_labels_region_artwork_honestly(client):
     assert "badge--demo" in page and "A Team Valkyrie original." in page
     assert "Rockstar artwork of Port Gellhorn, not of this exact place" in page
     assert 'href="/regions/port-gellhorn"' in page and 'href="/missions/harbour-lights"' in page
-    assert 'href="/characters/nico-brandt"' in page
+    assert 'href="/characters/nico-brandt"' not in page                                # an original character is named, not linked
+    assert "Nico Brandt" in page and "Original character" in page
 
 
 # ------------------------------------------------------------------ missions
@@ -321,7 +403,8 @@ def test_mission_detail_page(client):
     assert "<h1>Harbour Lights</h1>" in page and "badge--demo" in page and "Fictional demo" not in page
     assert "A Team Valkyrie original." in page
     assert "Rockstar artwork of Port Gellhorn, not of this story" in page             # captioned region backdrop
-    assert 'href="/characters/delia-marsh"' in page and "Arranges the shipment" in page
+    assert 'href="/characters/delia-marsh"' not in page and "Delia Marsh" in page and "Arranges the shipment" in page
+    assert "Original character" in page                                               # named, clearly identified, not linked
     assert "Bruiser V8" in page and 'href="/vehicles/bruiser-v8"' not in page         # concept vehicles are named, not linked
     assert 'href="/locations/pelican-quay-terminal"' in page
     assert "More stories" in page and "main setting" in page
@@ -358,7 +441,7 @@ def test_footer_is_short_and_has_no_developer_links(client):
 
 # ------------------------------------------------------------------ invalid input and routes
 @pytest.mark.parametrize("path", [
-    "/characters?status=bogus", "/characters?sort=password", "/characters?page=0", "/characters?q=" + "x" * 81,
+    "/characters?sort=password", "/characters?region=NOT-A-SLUG", "/characters?page=0", "/characters?q=" + "x" * 81,
     "/vehicles?sort=price", "/vehicles?category=Bad Slug", "/missions?type=raid", "/locations?type=castle",
     "/locations?region=NOT-A-SLUG", "/regions?status=maybe",
 ])
@@ -384,7 +467,7 @@ def test_malformed_search_text_is_safe(client):
         for path in ("/characters", "/vehicles", "/missions", "/locations"):
             response = client.get(path, query_string={"q": payload})
             assert response.status_code in (200, 400), (path, payload)
-    assert len(people(html(client, "/characters"))) == 11  # nothing was damaged
+    assert len(people(html(client, "/characters"))) == 8   # nothing was damaged
 
 
 def test_regions_follow_rockstars_order_on_pages_but_the_api_stays_alphabetical(client):
@@ -406,7 +489,7 @@ def test_pager_window_helper():
 
 
 # ------------------------------------------------------------------ design refinement (Team Valkyrie feedback)
-PUBLIC_PAGES = ("/", "/characters", "/characters/jason-duval", "/characters/delia-marsh", "/vehicles", "/vehicles/shitzu-squalo",
+PUBLIC_PAGES = ("/", "/characters", "/characters/jason-duval", "/characters/cal-hampton", "/vehicles", "/vehicles/shitzu-squalo",
                 "/regions", "/regions/vice-city", "/locations", "/locations/pelican-quay-terminal", "/missions",
                 "/missions/harbour-lights", "/about", "/credits")
 
@@ -522,7 +605,7 @@ def test_closing_band_replaces_the_plain_statistics_block(client):
 
 
 def test_catalogue_pages_have_cinematic_official_backdrops(client):
-    for path, fragment in (("/characters", "Jason_and_Lucia_Motel"), ("/vehicles", "GROTTI_CHEETAH_02"), ("/regions", "Vice_City_10"),
+    for path, fragment in (("/characters", "Jason_and_Lucia_Beach_landscape"), ("/vehicles", "GROTTI_CHEETAH_02"), ("/regions", "Vice_City_10"),
                            ("/locations", "Port_Gellhorn_06"), ("/missions", "Vice_City_11")):
         assert fragment in html(client, path), path
 
@@ -774,7 +857,7 @@ def test_images_ask_for_what_the_layout_needs(client):
 def test_detail_galleries_are_full_width_and_leave_no_empty_cells(client):
     for path, minimum in (("/vehicles/shitzu-squalo", 4), ("/characters/jason-duval", 2), ("/regions/vice-city", 2)):
         page = html(client, path)
-        assert 'class="container gallery-page"' in page, path
+        assert 'class="container gallery-page"' in page or 'class="p-gallery"' in page, path
         gallery = page.split('class="bento bento--')[1].split("</ul>")[0]
         n = gallery.count('<li class="bento__item')
         wide = gallery.count("bento__item--wide")
@@ -786,7 +869,7 @@ def test_detail_galleries_are_full_width_and_leave_no_empty_cells(client):
             assert n == 5 and wide == 1
         else:
             assert wide == 0
-        assert 'class="gallery"' not in page.split('class="container profile"')[1].split("</section>")[0], path
+        assert 'class="gallery"' not in page, path
 
 
 def test_an_explicit_cast_choice_is_never_overridden_by_the_automatic_start():

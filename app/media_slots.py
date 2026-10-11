@@ -80,3 +80,29 @@ FOCUS = {
     "vehicle-grotti-cheetah-01": "bottom-left",
     "vehicle-grotti-cheetah-02": "center",
 }
+
+# The Characters pages (Gate 3A). Slugs of media_assets rows, chosen by eye from the contact sheet: whole faces, and the
+# person on the side the text is not. main = the spread / hero picture, second = the smaller overlapping frame,
+# pos / pos2 = where the subject sits (CSS object-position) so a tall crop keeps the face.
+CHARACTER_STAGE = {
+    "jason-duval": {"main": "shot-jason-duval-01", "second": "shot-jason-duval-04", "pos": "78% 40%", "pos2": "30% 40%", "pos_m": "93% 30%", "hero_side": "left"},
+    "lucia-caminos": {"main": "shot-lucia-caminos-03", "second": "shot-lucia-caminos-10", "pos": "26% 40%", "pos2": "60% 40%", "pos_m": "10% 40%", "hero_side": "right"},
+    "cal-hampton": {"main": "art-cal-hampton", "second": "shot-cal-hampton-01", "pos": "50% 30%", "pos2": "50% 40%"},
+    "boobie-ike": {"main": "art-boobie-ike", "second": "shot-boobie-ike-01", "pos": "50% 30%", "pos2": "50% 40%"},
+    "dre-quan-priest": {"main": "art-dequan-priest", "second": "shot-dequan-priest-02", "pos": "60% 40%", "pos2": "60% 40%"},
+    "real-dimez": {"main": "art-real-dimez", "second": "shot-real-dimez-01", "pos": "40% 40%", "pos2": "50% 30%"},
+    "raul-bautista": {"main": "art-raul-bautista", "second": "shot-raul-bautista-01", "pos": "50% 30%", "pos2": "50% 30%"},
+    "brian-heder": {"main": "art-brian-heder", "second": "shot-brian-heder-01", "pos": "65% 40%", "pos2": "60% 40%"},
+}
+CAST_LEADS = ("jason-duval", "lucia-caminos")
+# Opening picture of the Characters page: both leads, faces whole, space on the left for the title.
+CHARACTERS_OPENING = "art-jason-lucia-beach"
+# Names for the groups the supporting cast falls into, keyed by the people in the group. Anything not listed gets a plain title.
+CAST_GROUP_TITLES = {
+    frozenset({"boobie-ike", "dre-quan-priest", "real-dimez"}): "Only Raw Records",
+}
+# Where each person sits on the relationship network (a 1200 x 560 canvas). Leads in the middle, the rest around them.
+NETWORK_LAYOUT = {
+    "jason-duval": (410, 250), "lucia-caminos": (790, 250), "brian-heder": (150, 110), "cal-hampton": (150, 390),
+    "boobie-ike": (880, 100), "dre-quan-priest": (1060, 250), "real-dimez": (900, 420), "raul-bautista": (560, 450),
+}

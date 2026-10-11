@@ -11,6 +11,8 @@ erDiagram
     LOCATIONS |o--o{ CHARACTERS : "home of"
     CHARACTERS ||--o{ CHARACTER_RELATIONSHIPS : "from"
     CHARACTERS ||--o{ CHARACTER_RELATIONSHIPS : "to"
+    CHARACTERS ||--o{ CHARACTER_REGIONS : "placed in"
+    REGIONS ||--o{ CHARACTER_REGIONS : "places"
     VEHICLE_CATEGORIES ||--o{ VEHICLES : "groups"
     MISSIONS ||--o{ MISSION_CHARACTERS : "features"
     CHARACTERS ||--o{ MISSION_CHARACTERS : "appears in"
@@ -60,6 +62,10 @@ erDiagram
     CHARACTER_RELATIONSHIPS { int from_character_id PK_FK
                               int to_character_id PK_FK
                               enum relationship_type }
+    CHARACTER_REGIONS { int character_id PK_FK
+                        smallint region_id PK_FK
+                        varchar note
+                        varchar source_url }
     VEHICLE_CATEGORIES { tinyint category_id PK
                          varchar slug UK
                          varchar name UK }
@@ -105,7 +111,7 @@ erDiagram
                      int vehicle_id PK_FK }
 ```
 
-## Tables and why each exists (20)
+## Tables and why each exists (21)
 
 | # | Table | Why it exists | Key points |
 |---|-------|---------------|-----------|
@@ -126,6 +132,7 @@ erDiagram
 | 18 | `media_locations` | Many-to-many media <-> location. | Composite PK. |
 | 19 | `media_regions` | **Added in Phase 2.** Many-to-many media <-> region. Official region imagery belongs to regions. Linking it to the fictional demo locations would be misleading. | Composite PK, both FKs ON DELETE CASCADE. Created by `database/migrations/001_phase2_media.sql` and also part of `schema.sql`. |
 | 20 | `media_vehicles` | **Added in the Phase 2 refinement.** Many-to-many media <-> vehicle. Official vehicle screenshots belong to the five vehicles Rockstar names. A concept vehicle never gets one (a test enforces it). | Composite PK, both FKs ON DELETE CASCADE. Created by `database/migrations/002_phase2_garage.sql` and also part of `schema.sql`. |
+| 21 | `character_regions` | **Added in Gate 3A.** Many-to-many character <-> region, only where Rockstar's own text places a person in a region (three rows: Jason Duval and Brian Heder in the Leonida Keys, Boobie Ike in Vice City). Carries the `note` (what the source says) and its `source_url`. Official characters have no invented home place, so this is how a region filter works for them. | Composite PK, both FKs ON DELETE CASCADE, `source_url` NOT NULL. Created by `database/migrations/005_gate3a_cast.sql` and also part of `schema.sql`. |
 
 ### Decision: four favourite tables instead of one "polymorphic" table
 A single `favourites(user_id, entity_type, entity_id)` table cannot have a real foreign key, so MySQL could not stop a
@@ -141,7 +148,7 @@ enforces, not just a convention.
 
 * **One-to-many:** regions -> locations, vehicle_categories -> vehicles, locations -> characters (home).
 * **Many-to-many:** characters <-> characters, missions <-> characters / vehicles / locations, users <-> each entity (favourites), media <-> characters / locations.
-* **Composite primary keys:** 12 tables (`character_relationships`, 3 mission junctions, 4 favourites, 4 media junctions).
+* **Composite primary keys:** 13 tables (`character_relationships`, `character_regions`, 3 mission junctions, 4 favourites, 4 media junctions).
 * **Cascade rules:** deleting a character removes its junction rows (CASCADE) but only blanks `home_location_id` on
   characters when a location is deleted (SET NULL). Deleting a region or category that is still in use is **blocked** (RESTRICT).
 
@@ -197,6 +204,8 @@ Until it is applied the website still works: media lookups tolerate the missing 
 **Migration 003 (`003_concept_copy.sql`)** contains only `UPDATE` statements that rewrite the text of concept characters, locations, stories, vehicles and relationships so it reads naturally, with a `WHERE content_status = 'demo'` guard on every statement. A test restores the old wording, applies the migration and proves that no official row changed and that the result equals a fresh seed.
 
 **Migration 004 (`004_leonida_in_motion.sql`)** adds 21 official screenshots (ids 86 to 106) and their region and character links, sets `local_path` on the eight clip rows (`clips/<slug>.mp4`, a relative path into the Git-ignored `media/` folder), adds the reel row (id 107, `permission_required` / `pending_review`) and rewrites the editorial text of the official characters, regions and vehicles. It never changes a name, slug, label or source link. Every statement is an upsert or an `UPDATE`; there is no `DROP`, `DELETE` or `TRUNCATE`.
+
+**Migration 005 (`005_gate3a_cast.sql`)** (Gate 3A, Characters) is additive only. It runs `CREATE TABLE IF NOT EXISTS character_regions`, then two `INSERT ... WHERE NOT EXISTS` statements: the three region placements Rockstar's text supports, and the one relationship between Dre'Quan Priest and Real Dimez (`associate`, official, sourced: Rockstar's page says he signed Real Dimez to Only Raw Records). No existing row is changed, no character is removed. The public pages and the API default to official characters; the three original characters stay in `characters` for the stories and the DBMS demonstration. Until the migration is applied the site still works (the region lookups tolerate the missing table); run `python -m scripts.migrate_db --plan` and then `python -m scripts.migrate_db` on your development database.
 
 The public Garage lists only `content_status = 'official'` vehicles. The eight concept vehicles remain in the database because the story archive links them to missions (many-to-many), but they have no public page, and the JSON API still serves the whole table.
 

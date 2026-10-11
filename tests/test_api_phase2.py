@@ -129,7 +129,7 @@ def test_phase1_response_shapes_are_unchanged(client):
     detail = client.get("/api/v1/characters/jason-duval").get_json()
     assert set(detail) == {"slug", "full_name", "alias", "role_title", "summary", "biography", "content_status",
                            "source_url", "source_note", "home_location_slug", "home_location_name", "region_slug",
-                           "region_name", "relationships", "missions", "locations"}
+                           "region_name", "relationships", "regions", "missions", "locations"}   # regions: added in Gate 3A
     region = client.get("/api/v1/regions").get_json()
     assert set(region) == {"data", "filters"} and set(region["data"][0]) == {"slug", "name", "summary", "content_status", "location_count"}
     assert set(client.get("/api/v1/regions/vice-city").get_json()) == {

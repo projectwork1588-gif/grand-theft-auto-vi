@@ -16,7 +16,7 @@ def count(cur, table):
 
 
 def test_exact_row_counts(cur):
-    expected = {"regions": 6, "locations": 8, "characters": 11, "character_relationships": 7,
+    expected = {"regions": 6, "locations": 8, "characters": 11, "character_relationships": 8, "character_regions": 3,
                 "vehicle_categories": 6, "vehicles": 13, "missions": 5, "mission_characters": 10,
                 "mission_vehicles": 8, "mission_locations": 8, "media_assets": 107,
                 "media_characters": 59, "media_regions": 36, "media_vehicles": 17, "media_locations": 0, "users": 0}

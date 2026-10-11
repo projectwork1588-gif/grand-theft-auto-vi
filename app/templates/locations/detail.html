@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_components.html" import badge, type_badge, page_hero, provenance %}
+{% from "_components.html" import badge, type_badge, page_hero, provenance, person_item %}
 {% block title %}{{ location.name }}{% endblock %}
 {% block description %}{{ location.summary }}{% endblock %}
 {% block content %}
@@ -47,7 +47,7 @@
       <section aria-labelledby="lr-title">
         <h2 class="panel-title" id="lr-title">Based here</h2>
         <ul class="link-list">
-          {% for c in location.residents %}<li><a href="{{ url_for('pages.character_detail', slug=c.slug) }}"><span><span class="name">{{ c.full_name }}</span><br><span class="meta">{{ c.role_title }}</span></span></a></li>{% endfor %}
+          {% for c in location.residents %}{{ person_item(c, c.role_title) }}{% endfor %}
         </ul>
       </section>
       {% endif %}
@@ -55,7 +55,7 @@
       <section aria-labelledby="lc-title">
         <h2 class="panel-title" id="lc-title">Passing through</h2>
         <ul class="link-list">
-          {% for c in location.characters_in_missions %}<li><a href="{{ url_for('pages.character_detail', slug=c.slug) }}"><span class="name">{{ c.full_name }}</span></a></li>{% endfor %}
+          {% for c in location.characters_in_missions %}{{ person_item(c) }}{% endfor %}
         </ul>
       </section>
       {% endif %}

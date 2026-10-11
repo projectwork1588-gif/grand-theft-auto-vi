@@ -49,7 +49,7 @@ def test_list_page_escapes_hostile_database_values(client, monkeypatch):
                "home_location_slug": None, "home_location_name": None, "region_slug": None, "region_name": "<i>r</i>"}
     monkeypatch.setattr(characters_repo, "search", lambda *a, **k: ([hostile], 1))
     monkeypatch.setattr(characters_repo, "ids_by_slug", lambda slugs: {})
-    page = client.get("/characters").get_data(as_text=True)
+    page = client.get("/characters?q=x").get_data(as_text=True)          # the Explore results list
     assert "<script>alert(1)</script>" not in page and "&lt;script&gt;alert(1)&lt;/script&gt;" in page
     assert "<img src=x" not in page and "&lt;b&gt;role&lt;/b&gt;" in page
 
@@ -57,9 +57,10 @@ def test_list_page_escapes_hostile_database_values(client, monkeypatch):
 def test_detail_page_escapes_hostile_database_values(client, monkeypatch):
     original = characters_repo.get_by_slug
     monkeypatch.setattr(characters_repo, "get_by_slug",
-                        lambda slug: dict(original(slug), biography="<img src=x onerror=alert(1)>", source_url="javascript:alert(1)"))
+                        lambda slug, *a, **k: dict(original(slug, *a, **k), biography="<img src=x onerror=alert(1)>", source_url="javascript:alert(1)"))
     page = client.get("/characters/jason-duval").get_data(as_text=True)
     assert "<img src=x onerror" not in page and "&lt;img src=x onerror=alert(1)&gt;" in page
+    assert "javascript:alert" not in page                                      # an unsafe source link is never rendered
 
 
 def test_search_text_is_reflected_escaped(client):

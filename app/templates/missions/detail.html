@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_components.html" import badge, type_badge, page_hero, provenance %}
+{% from "_components.html" import badge, type_badge, page_hero, provenance, person_item %}
 {% block title %}{{ mission.title }}{% endblock %}
 {% block description %}{{ mission.summary }}{% endblock %}
 {% block content %}
@@ -20,9 +20,7 @@
       <div>
         <h2 class="panel-title">Who is in it</h2>
         <ul class="link-list">
-          {% for c in mission.characters %}
-          <li><a href="{{ url_for('pages.character_detail', slug=c.slug) }}"><span><span class="name">{{ c.full_name }}</span>{% if c.alias %} <span class="meta">&ldquo;{{ c.alias }}&rdquo;</span>{% endif %}<br><span class="meta">{{ c.role_in_mission }}</span></span></a></li>
-          {% endfor %}
+          {% for c in mission.characters %}{{ person_item(c, c.role_in_mission) }}{% endfor %}
         </ul>
       </div>
       {% endif %}

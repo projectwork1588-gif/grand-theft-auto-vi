@@ -54,35 +54,180 @@ def _local_poster(slug):
     return path if local_media.is_servable(path) else None
 
 
-# ---------------------------------------------------------------- characters
+# ---------------------------------------------------------------- characters (Gate 3A)
+def _relationship_view(rows, me_slug, names):
+    """Relationship rows from either direction as [{slug, name, type, text}] about the *other* person."""
+    seen, out = set(), []
+    for r in rows:
+        other = r["slug"]
+        if other == me_slug or other in seen:
+            continue
+        seen.add(other)
+        out.append({"slug": other, "name": r["full_name"], "type": r["relationship_type"], "text": r["description"],
+                    "direction": r["direction"]})
+    return out
+
+
+def _cast_entries(include_media=True):
+    """The eight official characters in CAST_ORDER, each with its pictures, local motion portrait and connections."""
+    rows = {r["slug"]: r for r in characters_repo.featured_official(50)}
+    ids = {slug: rows[slug]["character_id"] for slug in rows}
+    stage_slugs = set()
+    for pick in media_slots.CHARACTER_STAGE.values():
+        stage_slugs.update((pick["main"], pick["second"]))
+    stage_media = media.by_slugs(stage_slugs)
+    cast = []
+    for number, slug in enumerate((s for s in media_slots.CAST_ORDER if s in rows), start=1):
+        row = dict(rows[slug])
+        pick = media_slots.CHARACTER_STAGE.get(slug, {})
+        row["number"] = number
+        row["is_lead"] = slug in media_slots.CAST_LEADS
+        row["main"] = stage_media.get(pick.get("main"))
+        row["second"] = stage_media.get(pick.get("second"))
+        row["pos"] = pick.get("pos", "50% 40%")
+        row["pos2"] = pick.get("pos2", "50% 40%")
+        row["hero_side"] = pick.get("hero_side", "left")
+        row["pos_m"] = pick.get("pos_m", pick.get("pos", "50% 40%"))
+        row["clip_video"] = _local_clip(slug)
+        row["clip_poster"] = _local_poster(slug)
+        row["connections"] = _relationship_view(characters_repo.relationships_for(ids[slug]), slug, rows)
+        row["regions"] = characters_repo.regions_for(ids[slug])
+        cast.append(row)
+    # a person with no spotlight picture of their own still gets their best cover
+    missing = [c for c in cast if not c["main"]]
+    if missing:
+        covers = media.covers("character", [ids[c["slug"]] for c in missing])
+        for c in missing:
+            c["main"] = covers.get(ids[c["slug"]])
+    return cast
+
+
+def _cast_groups(cast):
+    """The supporting cast in groups the data supports: people tied to a lead, then connected clusters among the rest
+    (titled where the source names them), then anyone with no stated connection."""
+    supporting = [c for c in cast if not c["is_lead"]]
+    by_slug = {c["slug"]: c for c in supporting}
+    lead_slugs = set(media_slots.CAST_LEADS)
+    groups, used = [], set()
+    # people with a stated tie to one of the leads
+    tied = [c for c in supporting if any(k["slug"] in lead_slugs for k in c["connections"])]
+    if tied:
+        names = {k["name"] for c in tied for k in c["connections"] if k["slug"] in lead_slugs}
+        title = f"Around {next(iter(names))}" if len(names) == 1 else "Around the leads"
+        groups.append({"title": title, "kicker": "Tied to a lead", "people": tied})
+        used.update(c["slug"] for c in tied)
+    # clusters among the others
+    remaining = [c for c in supporting if c["slug"] not in used]
+    adjacency = {c["slug"]: {k["slug"] for k in c["connections"] if k["slug"] in by_slug} for c in remaining}
+    seen = set()
+    for c in remaining:
+        if c["slug"] in seen or not adjacency[c["slug"]]:
+            continue
+        stack, component = [c["slug"]], set()
+        while stack:
+            cur = stack.pop()
+            if cur in component:
+                continue
+            component.add(cur)
+            stack.extend(adjacency.get(cur, ()))
+        seen |= component
+        members = [x for x in remaining if x["slug"] in component]
+        title = media_slots.CAST_GROUP_TITLES.get(frozenset(component), "Connected")
+        groups.append({"title": title, "kicker": "Connected to each other", "people": members})
+        used.update(component)
+    alone = [c for c in supporting if c["slug"] not in used]
+    for c in alone:
+        groups.append({"title": None, "kicker": "No stated connections yet", "people": [c], "single": True})
+    return groups
+
+
+def _network(cast):
+    """Nodes and edges for the relationship network, straight from the official character_relationships rows."""
+    by_slug = {c["slug"]: c for c in cast}
+    edges = []
+    for r in characters_repo.official_relationships(50):
+        if r["from_slug"] in by_slug and r["to_slug"] in by_slug:
+            edges.append({"from": r["from_slug"], "to": r["to_slug"], "type": r["relationship_type"], "text": r["description"],
+                          "from_name": r["from_name"], "to_name": r["to_name"]})
+    linked = {e["from"] for e in edges} | {e["to"] for e in edges}
+    nodes = []
+    fallback = list(media_slots.NETWORK_LAYOUT.values())
+    for i, c in enumerate(cast):
+        x, y = media_slots.NETWORK_LAYOUT.get(c["slug"], fallback[i % len(fallback)])
+        nodes.append({"slug": c["slug"], "name": c["full_name"], "role": c["role_title"], "x": x, "y": y, "lead": c["is_lead"],
+                      "linked": c["slug"] in linked, "image": c["second"] if not c["is_lead"] else c["main"],
+                      "pos": c["pos2"] if not c["is_lead"] else c["pos"]})
+    for e in edges:
+        a = next(n for n in nodes if n["slug"] == e["from"])
+        b = next(n for n in nodes if n["slug"] == e["to"])
+        e.update(x1=a["x"], y1=a["y"], x2=b["x"], y2=b["y"], mx=(a["x"] + b["x"]) / 2, my=(a["y"] + b["y"]) / 2)
+    return {"nodes": nodes, "edges": edges, "unlinked": [n["name"] for n in nodes if not n["linked"]]}
+
+
 def character_index(args):
-    result = characters.list_characters(args)
-    _attach_covers("character", result["data"], characters_repo.ids_by_slug, media_slots.CHARACTER_COVERS)
+    """The Characters landing page: editorial by default, a results list when the Explore panel is used.
+
+    Only official characters are ever listed here; a status in the query string is ignored."""
+    clean = {k: v for k, v in args.items() if k in ("q", "region", "sort", "page", "per_page")}
+    result = characters.list_characters(clean)
     result["regions"] = regions_repo.list_all()
-    result["hero_cover"] = _page_cover("characters")
-    filtered = any(result["filters"].get(k) for k in ("q", "status", "region")) or result["pagination"]["page"] > 1
-    result["editorial"] = not filtered and result["pagination"]["pages"] == 1
-    rows = result["data"]
-    result["leads"] = [r for r in rows if r["slug"] in media_slots.CHARACTER_COVERS and r["content_status"] == "official"]
-    lead_slugs = {r["slug"] for r in result["leads"]}
-    result["supporting"] = [r for r in rows if r["content_status"] == "official" and r["slug"] not in lead_slugs]
-    result["concepts"] = [r for r in rows if r["content_status"] != "official"]
+    exploring = bool(result["filters"].get("q") or result["filters"].get("region") or clean.get("sort") or result["pagination"]["page"] > 1)
+    result["mode"] = "results" if exploring else "editorial"
+    cast = _cast_entries()
+    result["cast"] = cast
+    result["leads"] = [c for c in cast if c["is_lead"]]
+    result["groups"] = _cast_groups(cast)
+    result["network"] = _network(cast)
+    result["opening"] = media.by_slugs([media_slots.CHARACTERS_OPENING]).get(media_slots.CHARACTERS_OPENING)
+    result["together"] = media.by_slugs(["shot-jason-and-lucia-03"]).get("shot-jason-and-lucia-03")
+    if result["mode"] == "results":
+        ids = characters_repo.ids_by_slug([r["slug"] for r in result["data"]])
+        by_slug = {c["slug"]: c for c in cast}
+        for row in result["data"]:
+            entry = by_slug.get(row["slug"])
+            row["cover"] = entry["main"] if entry else None
+            row["pos"] = entry["pos"] if entry else "50% 40%"
+            row["number"] = entry["number"] if entry else None
     return result
 
 
 def character_detail(slug):
     character, character_id = characters.get_character_with_id(slug)
+    cast = _cast_entries()
+    entry = next((c for c in cast if c["slug"] == slug), None)
+    character["number"] = entry["number"] if entry else None
+    character["is_lead"] = slug in media_slots.CAST_LEADS
+    character["main"] = entry["main"] if entry else None
+    character["second"] = entry["second"] if entry else None
+    character["pos"] = entry["pos"] if entry else "50% 40%"
+    character["pos2"] = entry["pos2"] if entry else "50% 40%"
+    character["hero_side"] = entry["hero_side"] if entry else "left"
+    character["pos_m"] = entry["pos_m"] if entry else "50% 40%"
+    character["cover"] = character["main"]
+    gallery = media.for_entity("character", character_id, limit=14)
+    used = {m["slug"] for m in (character["main"], character["second"]) if m}
+    character["gallery"] = [m for m in gallery if m["slug"] not in used]
     character["costars"] = characters_repo.costars_for(character_id)
-    character["gallery"] = media.for_entity("character", character_id)
-    preferred_slug = media_slots.CHARACTER_COVERS.get(slug)
-    preferred = media.by_slugs([preferred_slug]).get(preferred_slug) if preferred_slug else None
-    character["cover"] = preferred or (character["gallery"][0] if character["gallery"] else None)
-    if preferred:  # lead the gallery with the chosen image
-        character["gallery"] = [preferred] + [m for m in character["gallery"] if m["slug"] != preferred["slug"]]
     clips = {c["character_slug"]: c for c in media.character_clips()}
     character["clip"] = clips.get(slug)
     character["clip_video"] = _local_clip(slug)
     character["clip_poster"] = _local_poster(slug)
+    # connections with a face, and the people either side of them in the cast
+    by_slug = {c["slug"]: c for c in cast}
+    character["connections"] = []
+    for r in character["relationships"]:
+        other = by_slug.get(r["slug"])
+        character["connections"].append({"slug": r["slug"], "name": r["full_name"], "type": r["relationship_type"], "text": r["description"],
+                                         "image": other["main"] if other else None, "pos": other["pos"] if other else "50% 40%",
+                                         "role": other["role_title"] if other else ""})
+    order = [c["slug"] for c in cast]
+    if slug in order:
+        i = order.index(slug)
+        character["prev"] = by_slug[order[(i - 1) % len(order)]]
+        character["next"] = by_slug[order[(i + 1) % len(order)]]
+    else:
+        character["prev"] = character["next"] = None
+    character["cast_nav"] = cast
     return character
 
 
@@ -240,7 +385,7 @@ def home():
         "regions": region_cards,
         "vehicles": garage["data"],
         "missions": missions.list_missions({"per_page": "3", "sort": "newest"})["data"],
-        "official_links": characters_repo.official_relationships(4),
+        "official_links": characters_repo.official_relationships(4, exclude=(("dre-quan-priest", "real-dimez"),)),  # the approved four
         "hero": pick(media_slots.HERO_SLUGS),
         "hero_layers": local_media.hero_layers(),
         "videos": [m for m in pick(media_slots.VIDEO_SLUGS) if media_urls.player_src(m["embed_url"])],

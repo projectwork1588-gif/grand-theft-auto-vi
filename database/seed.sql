@@ -134,6 +134,18 @@ INSERT INTO character_relationships (from_character_id, to_character_id, relatio
 (8, 9,  'ally',      'Delia trusts Tomas to move quiet cargo through the wetlands.', 'demo', NULL),
 (9, 10, 'rival',     'Tomas and Nico disagree over who controls the river route.', 'demo', NULL);
 
+-- Gate 3A: Rockstar's page says Dre'Quan "signed the Real Dimez" and that the duo are "signed to Only Raw Records".
+INSERT INTO character_relationships (from_character_id, to_character_id, relationship_type, description, content_status, source_url) VALUES
+(5, 11, 'associate', 'Dre''Quan signed Real Dimez to Only Raw Records.', 'official', 'https://www.rockstargames.com/VI/only-in-leonida');
+
+-- Gate 3A: where Rockstar's own text places an official character in a region (the Keys, Vice City). Nothing inferred.
+INSERT INTO character_regions (character_id, region_id, note, source_url)
+SELECT c.character_id, r.region_id, x.note, 'https://www.rockstargames.com/VI/only-in-leonida'
+FROM (SELECT 'jason-duval' AS cs, 'leonida-keys' AS rs, 'Works for local drug runners in the Keys.' AS note
+      UNION ALL SELECT 'brian-heder', 'leonida-keys', 'A drug runner from the golden age of smuggling in the Keys.'
+      UNION ALL SELECT 'boobie-ike', 'vice-city', 'A local Vice City legend.') x
+JOIN characters c ON c.slug = x.cs JOIN regions r ON r.slug = x.rs;
+
 -- ------------------------ vehicle categories / vehicles -----------------------
 INSERT INTO vehicle_categories (category_id, slug, name, description) VALUES
 (1, 'sports',     'Sports',      'Fast, low-slung road cars.'),

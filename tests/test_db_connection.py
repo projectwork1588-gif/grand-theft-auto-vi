@@ -5,7 +5,7 @@ from app.config import TestingConfig
 from app.db import get_db, transaction
 
 EXPECTED_TABLES = {
-    "users", "regions", "locations", "characters", "character_relationships",
+    "users", "regions", "locations", "characters", "character_relationships", "character_regions",
     "vehicle_categories", "vehicles", "missions", "mission_characters", "mission_vehicles",
     "mission_locations", "favourite_characters", "favourite_vehicles", "favourite_missions",
     "favourite_locations", "media_assets", "media_characters", "media_locations", "media_regions", "media_vehicles",
@@ -49,7 +49,7 @@ def test_foreign_keys_are_defined(cur):
         "SELECT COUNT(*) AS n FROM information_schema.REFERENTIAL_CONSTRAINTS "
         "WHERE CONSTRAINT_SCHEMA = DATABASE()"
     )
-    assert cur.fetchone()["n"] == 27  # 23 from Phase 1 plus media_regions (2) and media_vehicles (2)
+    assert cur.fetchone()["n"] == 29  # 23 from Phase 1, media_regions (2), media_vehicles (2) and character_regions (2, Gate 3A)
 
 
 def test_composite_primary_keys_exist(cur):
@@ -58,7 +58,7 @@ def test_composite_primary_keys_exist(cur):
         "WHERE TABLE_SCHEMA = DATABASE() AND CONSTRAINT_NAME = 'PRIMARY' "
         "GROUP BY TABLE_NAME HAVING COUNT(*) > 1"
     )
-    assert len(cur.fetchall()) == 12  # 10 from Phase 1 plus media_regions and media_vehicles
+    assert len(cur.fetchall()) == 13  # 10 from Phase 1, media_regions, media_vehicles and character_regions
 
 
 def test_pool_connection_from_flask_app(app_context):

@@ -110,3 +110,13 @@
   </ul>
   {% endif %}
 {%- endmacro %}
+
+{# One person in a list on a story or place page. Rockstar's characters link to their profile; Team Valkyrie's original
+   characters are shown by name only, unlinked and labelled, so they are never mistaken for the game's cast. #}
+{% macro person_item(c, meta='') -%}
+  {% if c.content_status == 'official' %}
+  <li><a href="{{ url_for('pages.character_detail', slug=c.slug) }}"><span><span class="name">{{ c.full_name }}</span>{% if meta %}<br><span class="meta">{{ meta }}</span>{% endif %}</span></a></li>
+  {% else %}
+  <li><span class="link-list__plain"><span><span class="name">{{ c.full_name }}</span>{% if meta %}<br><span class="meta">{{ meta }}</span>{% endif %}</span><span class="badge badge--demo">Original character</span></span></li>
+  {% endif %}
+{%- endmacro %}

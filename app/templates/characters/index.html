@@ -1,142 +1,186 @@
 {% extends "base.html" %}
-{% from "_components.html" import badge, picture, initials, pager, page_hero, results_line, option %}
+{% from "_components.html" import option, results_line, pager %}
+{% from "characters/_cast.html" import shot, portrait, chips %}
 {% block title %}Characters{% endblock %}
-{% block description %}Jason, Lucia and the rest of the cast of Grand Theft Auto VI, with original characters from Team Valkyrie alongside.{% endblock %}
+{% block description %}Jason Duval, Lucia Caminos and the six people around them in Grand Theft Auto VI: who they are, how they connect and what Rockstar has shown of them.{% endblock %}
+{% block header_class %}{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='css/characters.css') }}">{% endblock %}
 {% block content %}
-{{ page_hero('The cast', 'The people of Leonida', 'Jason and Lucia, the crew around them, and a few original characters of our own.', cover=hero_cover) }}
+{% set sizes_wide = '(min-width: 1100px) 56vw, 100vw' %}
+<div class="cast-page">
 
-<section class="section section--tight">
-  <div class="container">
-    <form class="filters" method="get" action="{{ url_for('pages.characters') }}" role="search" aria-label="Search and filter characters">
-      <label>Search
-        <input type="search" name="q" value="{{ filters.q or '' }}" maxlength="80" placeholder="Name, alias or role">
-      </label>
-      <label>Show
-        <select name="status">
-          {{ option('', 'Everyone', filters.status or '') }}
-          {{ option('official', 'From Rockstar', filters.status) }}
-          {{ option('fan', 'Fan view', filters.status) }}
-          {{ option('demo', 'Original concepts', filters.status) }}
-        </select>
-      </label>
-      <label>Region
-        <select name="region">
-          {{ option('', 'Any region', filters.region or '') }}
-          {% for r in regions %}{{ option(r.slug, r.name, filters.region) }}{% endfor %}
-        </select>
-      </label>
-      <label>Sort by
-        <select name="sort">
-          {{ option('name_asc', 'Name A to Z', filters.sort) }}
-          {{ option('name_desc', 'Name Z to A', filters.sort) }}
-          {{ option('newest', 'Newest first', filters.sort) }}
-        </select>
-      </label>
-      <div class="filters__actions">
-        <button class="btn" type="submit">Apply</button>
-        <a class="link-arrow" href="{{ url_for('pages.characters') }}">Reset</a>
-      </div>
-    </form>
-  </div>
-</section>
-
-{% if data and editorial %}
-  {% if leads %}
-  <section class="section section--tight" aria-labelledby="leads-title">
-    <div class="container">
-      <h2 class="subhead subhead--first" id="leads-title">The leads</h2>
-      <div class="duo">
-        {% for c in leads %}
-        <a class="duo__panel reveal" data-delay="{{ loop.index }}" href="{{ url_for('pages.character_detail', slug=c.slug) }}">
-          {{ picture(c.cover, fallback=initials(c.full_name), sizes='(min-width: 900px) 98vw, 190vw', alt='', cls='duo__media') }}
-          <span class="duo__shade" aria-hidden="true"></span>
-          <span class="duo__body">
-            <span class="duo__role">{{ c.role_title }}</span>
-            <span class="duo__name">{{ c.full_name }}</span>
-            <span class="duo__summary">{{ c.summary }}</span>
-            <span class="duo__more">Read the profile</span>
-          </span>
-        </a>
-        {% endfor %}
-      </div>
+  {# ------------------------------------------------------------------ opening #}
+  <header class="cast-open">
+    <div class="cast-open__bg" aria-hidden="true">{{ shot(opening, '100vw', '0% 22%', eager=true) }}</div>
+    <div class="cast-open__in">
+      <p class="eyebrow">The cast</p>
+      <h1>The people of Leonida</h1>
+      <p class="cast-open__lede">Jason and Lucia, and the six people who orbit them.</p>
     </div>
-  </section>
-  {% endif %}
+  </header>
 
-  {% if supporting %}
-  <section class="section section--tight" aria-labelledby="crew-title">
-    <div class="container">
-      <h2 class="subhead subhead--first" id="crew-title">Around them</h2>
-      <ul class="portraits">
-        {% for c in supporting %}
-        <li class="reveal" data-delay="{{ loop.index0 % 3 + 1 }}">
-          <a class="portrait" href="{{ url_for('pages.character_detail', slug=c.slug) }}">
-            {{ picture(c.cover, fallback=initials(c.full_name), sizes='(min-width: 900px) 67vw, (min-width: 520px) 112vw, 200vw', alt='') }}
-            <span class="portrait__shade" aria-hidden="true"></span>
-            <span class="portrait__body">
-              <span class="portrait__role">{{ c.role_title }}</span>
-              <span class="portrait__name">{{ c.full_name }}</span>
-              <span class="portrait__sum">{{ c.summary }}</span>
-            </span>
-          </a>
-        </li>
-        {% endfor %}
-      </ul>
-    </div>
-  </section>
-  {% endif %}
+  {# ------------------------------------------------------------------ jump navigation (always at hand) #}
+  <nav class="cast-nav" data-cast-nav aria-label="Jump to a character">
+    <ol>
+      {% for c in cast %}
+      <li><a href="{% if mode == 'editorial' %}#{{ c.slug }}{% else %}{{ url_for('pages.character_detail', slug=c.slug) }}{% endif %}"{% if c.is_lead %} class="is-lead"{% endif %}>
+        <span class="cast-nav__no">{{ '%02d' % c.number }}</span><span class="cast-nav__name">{{ c.full_name }}</span></a></li>
+      {% endfor %}
+      <li class="cast-nav__more"><a href="#explore" data-open-explore>Explore</a></li>
+    </ol>
+  </nav>
 
-  {% if concepts %}
-  <section class="section section--tight" aria-labelledby="orig-title">
-    <div class="container">
-      <h2 class="subhead subhead--first" id="orig-title">Original characters</h2>
-      <p class="muted note">Team Valkyrie's own invented people. They sit beside the cast to show how stories, places and vehicles connect, and they are not part of Rockstar's game.</p>
-      <ul class="originals">
-        {% for c in concepts %}
-        <li class="reveal">
-          <a class="original" href="{{ url_for('pages.character_detail', slug=c.slug) }}">
-            <span class="original__name">{{ c.full_name }}<small class="original__role">{{ c.role_title }}</small></span>
-            <span class="original__sum">{{ c.summary }}</span>
-            {{ badge(c.content_status) }}
-          </a>
-        </li>
-        {% endfor %}
-      </ul>
-    </div>
+  {# ------------------------------------------------------------------ Explore: search, region, sort (secondary) #}
+  <section class="explore-wrap" aria-label="Explore the cast">
+    <details class="explore" id="explore"{% if mode == 'results' %} open{% endif %}>
+      <summary><span>Explore and filter the cast</span><span class="explore__hint">Search, region, sort</span></summary>
+      <form class="explore__form" method="get" action="{{ url_for('pages.characters') }}" role="search" aria-label="Search and filter characters">
+        <label>Search
+          <input type="search" name="q" value="{{ filters.q or '' }}" maxlength="80" placeholder="Name, alias or role">
+        </label>
+        <label>Region
+          <select name="region">
+            {{ option('', 'Any region', filters.region or '') }}
+            {% for r in regions %}{{ option(r.slug, r.name, filters.region) }}{% endfor %}
+          </select>
+        </label>
+        <label>Sort by
+          <select name="sort">
+            {{ option('name_asc', 'Name A to Z', filters.sort) }}
+            {{ option('name_desc', 'Name Z to A', filters.sort) }}
+            {{ option('newest', 'Newest first', filters.sort) }}
+          </select>
+        </label>
+        <div class="explore__actions">
+          <button class="pill" type="submit">Apply</button>
+          <a class="link-arrow" href="{{ url_for('pages.characters') }}">Back to the full cast</a>
+        </div>
+      </form>
+    </details>
   </section>
-  {% endif %}
-{% elif data %}
-<section class="section section--tight">
-  <div class="container">
-    <p class="results-meta" role="status">{{ results_line(pagination) }}</p>
-    <ul class="portraits">
+
+{% if mode == 'results' %}
+  {# ------------------------------------------------------------------ results of the Explore panel #}
+  <section class="results" aria-labelledby="results-title">
+    <p class="results__meta" id="results-title" role="status">{{ results_line(pagination) }}</p>
+    {% if data %}
+    <ul class="results__list">
       {% for c in data %}
-      <li class="reveal" data-delay="{{ loop.index0 % 3 + 1 }}">
-        <a class="portrait" href="{{ url_for('pages.character_detail', slug=c.slug) }}">
-          {{ picture(c.cover, fallback=initials(c.full_name), sizes='(min-width: 900px) 67vw, (min-width: 520px) 112vw, 200vw', alt='') }}
-          <span class="portrait__shade" aria-hidden="true"></span>
-          <span class="portrait__body">
-            <span class="portrait__role">{{ c.role_title }}</span>
-            <span class="portrait__name">{{ c.full_name }}</span>
-            <span class="portrait__sum">{{ c.summary }}</span>
-            <span>{{ badge(c.content_status) }}</span>
+      <li>
+        <a class="result" href="{{ url_for('pages.character_detail', slug=c.slug) }}">
+          <span class="result__art">{{ shot(c.cover, '(min-width: 900px) 30vw, 90vw', c.pos) }}</span>
+          <span class="result__body">
+            <span class="result__role">{{ c.role_title }}</span>
+            <span class="result__name">{{ c.full_name }}</span>
+            <span class="result__sum">{{ c.summary }}</span>
           </span>
         </a>
       </li>
       {% endfor %}
     </ul>
     {{ pager(pagination) }}
-  </div>
-</section>
-{% else %}
-<section class="section section--tight">
-  <div class="container">
-    <p class="results-meta" role="status">{{ results_line(pagination) }}</p>
-    <div class="empty">
-      <h2>No one by that name</h2>
-      <p>Try a shorter search, or <a href="{{ url_for('pages.characters') }}">see everyone</a>.</p>
+    {% else %}
+    <div class="results__empty">
+      <h2>{% if filters.region and not filters.q %}Nobody is tied to that region yet{% else %}No one by that name{% endif %}</h2>
+      <p>{% if filters.region %}Rockstar has only placed a few of the cast in a region so far: Jason and Brian in the Keys, Boobie in Vice City. {% endif %}Try a shorter search, or <a href="{{ url_for('pages.characters') }}">see everyone</a>.</p>
     </div>
-  </div>
-</section>
+    {% endif %}
+  </section>
+{% else %}
+
+  {# ------------------------------------------------------------------ the leads: the strongest treatment #}
+  <section class="tier" aria-labelledby="leads-title">
+    <div class="tier__head"><h2 id="leads-title">The leads</h2><p>Two protagonists, one story.</p></div>
+    {% for c in leads %}
+    <article class="spread spread--lead{% if loop.index0 == 1 %} spread--flip{% endif %}" id="{{ c.slug }}" data-spread data-name="{{ c.full_name }}">
+      <div class="spread__art">
+        <a class="spread__main" href="{{ url_for('pages.character_detail', slug=c.slug) }}" tabindex="-1" aria-hidden="true">{{ shot(c.main, '(min-width: 1100px) 40vw, 100vw', c.pos, eager=(loop.first)) }}</a>
+        <div class="spread__second">{{ shot(c.second, '(min-width: 1100px) 22vw, 60vw', c.pos2) }}</div>
+      </div>
+      <div class="spread__text">
+        <p class="spread__no">{{ '%02d' % c.number }} <span aria-hidden="true">&middot;</span> {{ c.role_title }}</p>
+        <h3 class="spread__name"><a href="{{ url_for('pages.character_detail', slug=c.slug) }}">{{ c.full_name }}</a></h3>
+        <p class="spread__sum">{{ c.summary }}</p>
+        <p class="spread__bio">{{ c.biography }}</p>
+        {{ chips(c.connections) }}
+        <div class="spread__foot">
+          {{ portrait(c, wide=true) }}
+          <a class="pill" href="{{ url_for('pages.character_detail', slug=c.slug) }}">Read the profile</a>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+
+    {% if together %}
+    <div class="together">
+      {{ shot(together, '100vw', '50% 30%') }}
+      <div class="together__in"><p class="eyebrow">Partners</p><h3>Jason and Lucia</h3><p>The two leads of the story.</p></div>
+    </div>
+    {% endif %}
+  </section>
+
+  {# ------------------------------------------------------------------ the supporting cast: compact, grouped by what ties them #}
+  <section class="tier tier--crew" aria-labelledby="crew-title">
+    <div class="tier__head"><h2 id="crew-title">Around them</h2><p>Six people the story keeps running into.</p></div>
+    {% for g in groups %}
+    <div class="group group--{{ g.people | length }}{% if g.single %} group--single{% endif %}">
+      <div class="group__head"><p class="eyebrow">{{ g.kicker }}</p>{% if g.title %}<h3>{{ g.title }}</h3>{% endif %}</div>
+      <div class="group__grid">
+        {% for c in g.people %}
+        <article class="person{% if g.single %} person--feature{% endif %}" id="{{ c.slug }}" data-spread data-name="{{ c.full_name }}">
+          <a class="person__art" href="{{ url_for('pages.character_detail', slug=c.slug) }}" tabindex="-1" aria-hidden="true">{{ shot(c.main, ('(min-width: 1100px) 56vw, 100vw' if g.single else '(min-width: 1100px) 30vw, 100vw'), c.pos) }}</a>
+          <div class="person__text">
+            <p class="spread__no">{{ '%02d' % c.number }} <span aria-hidden="true">&middot;</span> {{ c.role_title }}</p>
+            <h4 class="person__name"><a href="{{ url_for('pages.character_detail', slug=c.slug) }}">{{ c.full_name }}</a></h4>
+            <p class="person__sum">{{ c.summary }}</p>
+            {% if g.single %}<p class="spread__bio">{{ c.biography }}</p>{% endif %}
+            {{ chips(c.connections) }}
+            <div class="person__foot">
+              {{ portrait(c) }}
+              <a class="pill pill--small" href="{{ url_for('pages.character_detail', slug=c.slug) }}">Profile</a>
+            </div>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </section>
+
+  {# ------------------------------------------------------------------ the relationship network, from character_relationships #}
+  <section class="web" aria-labelledby="web-title">
+    <p class="eyebrow">Who knows who</p>
+    <h2 id="web-title">The connections Rockstar has stated</h2>
+    <p class="web__lede">Every line is a row in our relationship table, drawn from Rockstar's own words. {% if network.unlinked %}{{ network.unlinked | join(' and ') }} {{ 'has' if network.unlinked | length == 1 else 'have' }} no stated connection yet.{% endif %}</p>
+    <svg class="web__svg" data-network viewBox="0 0 1200 560" role="group" aria-label="Connections between the eight characters">
+      <defs>
+        {% for n in network.nodes %}<clipPath id="face-{{ loop.index0 }}"><circle cx="{{ n.x }}" cy="{{ n.y }}" r="{{ 41 if n.lead else 31 }}"/></clipPath>{% endfor %}
+      </defs>
+      {% for e in network.edges %}
+      <g class="edge" data-from="{{ e.from }}" data-to="{{ e.to }}">
+        <line x1="{{ e.x1 }}" y1="{{ e.y1 }}" x2="{{ e.x2 }}" y2="{{ e.y2 }}"/>
+        <text x="{{ e.mx }}" y="{{ e.my - 10 }}" text-anchor="middle">{{ e.type }}</text>
+        <title>{{ e.from_name }} and {{ e.to_name }}: {{ e.text }}</title>
+      </g>
+      {% endfor %}
+      {% for n in network.nodes %}
+      <a class="node{% if n.lead %} node--lead{% endif %}{% if not n.linked %} node--alone{% endif %}" href="{{ url_for('pages.character_detail', slug=n.slug) }}" data-slug="{{ n.slug }}">
+        <circle class="node__ring" cx="{{ n.x }}" cy="{{ n.y }}" r="{{ 44 if n.lead else 34 }}"/>
+        {% if n.image and image_src(n.image.embed_url, 320) %}
+        <image href="{{ image_src(n.image.embed_url, 320) }}" x="{{ n.x - 80 }}" y="{{ n.y - 46 }}" width="160" height="90" preserveAspectRatio="xMidYMid slice" clip-path="url(#face-{{ loop.index0 }})"/>
+        {% endif %}
+        <text x="{{ n.x }}" y="{{ n.y + (68 if n.lead else 58) }}" text-anchor="middle">{{ n.name }}</text>
+        <title>{{ n.name }}, {{ n.role }}</title>
+      </a>
+      {% endfor %}
+    </svg>
+    <ul class="web__list">
+      {% for e in network.edges %}
+      <li><b>{{ e.from_name }} <span aria-hidden="true">&rarr;</span> {{ e.to_name }}</b><span>{{ e.type }}</span><em>{{ e.text }}</em></li>
+      {% endfor %}
+    </ul>
+    <p class="web__legend"><span class="web__key web__key--lead"></span> The leads <span class="web__key web__key--line"></span> A relationship Rockstar states <span class="web__key web__key--dim"></span> No stated connection yet</p>
+  </section>
 {% endif %}
+</div>
 {% endblock %}

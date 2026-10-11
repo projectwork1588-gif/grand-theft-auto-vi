@@ -10,8 +10,10 @@ from scripts.init_db import init_database
 
 CONTENT_TABLES = ("regions", "locations", "characters", "character_relationships", "vehicle_categories",
                   "missions", "mission_characters", "mission_vehicles", "mission_locations")
-MEDIA_TABLES = ("media_assets", "media_characters", "media_regions", "media_vehicles")
-PHASE1_SHAPE = ["DROP TABLE media_vehicles", "DROP TABLE media_regions", "DELETE FROM vehicles WHERE vehicle_id > 8",
+MEDIA_TABLES = ("media_assets", "media_characters", "media_regions", "media_vehicles", "character_regions")
+PHASE1_SHAPE = ["DROP TABLE character_regions",
+                "DELETE FROM character_relationships WHERE from_character_id = 5 AND to_character_id = 11",
+                "DROP TABLE media_vehicles", "DROP TABLE media_regions", "DELETE FROM vehicles WHERE vehicle_id > 8",
                 "DELETE FROM media_assets WHERE media_id > 3",
                 "UPDATE media_assets SET embed_url = NULL, usage_status = 'link_only', approval_status = 'pending_review' WHERE media_id IN (1, 2)",
                 "UPDATE characters SET summary = 'Fictional demo character.', biography = 'Fictional demo character invented by Team Valkyrie.', source_note = 'Invented for database demonstration.' WHERE content_status = 'demo'",
@@ -46,7 +48,9 @@ def official_fingerprint():
         cursor = connection.cursor(dictionary=True)
         digest = hashlib.sha256()
         for table in OFFICIAL_TABLES:
-            cursor.execute(f"SELECT * FROM {table} WHERE content_status = 'official' ORDER BY 1, 2")
+            # migration 005 ADDS one official relationship (Dre'Quan to Real Dimez); everything else must be untouched
+            extra = " AND NOT (from_character_id = 5 AND to_character_id = 11)" if table == "character_relationships" else ""
+            cursor.execute(f"SELECT * FROM {table} WHERE content_status = 'official'{extra} ORDER BY 1, 2")
             for row in cursor.fetchall():
                 row.pop("created_at", None)
                 digest.update(repr(sorted(row.items())).encode())
@@ -75,7 +79,8 @@ def test_destructive_statement_detector():
 
 def test_shipped_migrations_contain_nothing_destructive():
     files = migrate_db.migration_files()
-    assert [f.name for f in files] == ["001_phase2_media.sql", "002_phase2_garage.sql", "003_concept_copy.sql", "004_leonida_in_motion.sql"]
+    assert [f.name for f in files] == ["001_phase2_media.sql", "002_phase2_garage.sql", "003_concept_copy.sql", "004_leonida_in_motion.sql",
+                                       "005_gate3a_cast.sql"]
     for path in files:
         migrate_db.check_non_destructive(path)  # raises if it finds DROP, DELETE or TRUNCATE
 
@@ -125,7 +130,8 @@ def test_pages_work_on_a_phase1_shaped_database_and_the_migration_adds_the_visua
     client = app.test_client()
     try:
         as_migrator(PHASE1_SHAPE)
-        for path in ("/", "/characters", "/characters/jason-duval", "/regions", "/regions/vice-city", "/missions", "/vehicles"):
+        for path in ("/", "/characters", "/characters?region=leonida-keys", "/characters/jason-duval", "/regions", "/regions/vice-city",
+                     "/missions", "/vehicles", "/api/v1/characters?region=vice-city", "/api/v1/characters/jason-duval"):
             response = client.get(path)
             assert response.status_code == 200, path
             assert "rockstargames.com/VI/_next/static/media" not in response.get_data(as_text=True), path

@@ -113,6 +113,7 @@ a:hover .media__img, .hover-zoom:hover .media__img, button:hover .media__img { t
 .link-list li:last-child { border-bottom: 1px solid var(--line); }
 .link-list a { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 15px 2px; text-decoration: none; transition: padding .35s var(--ease-out), color .2s; }
 .link-list a:hover { color: var(--pink); padding-left: 10px; }
+.link-list__plain { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 15px 2px; }
 .link-list .meta { color: var(--soft); font-size: var(--t-small); font-weight: 500; }
 .link-list .name { font-weight: 700; }
 .stack { display: grid; gap: 26px; }

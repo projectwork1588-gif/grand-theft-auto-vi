@@ -24,7 +24,8 @@ def test_region_detail_lists_locations_and_characters(client):
     assert body["source_url"] == "https://www.rockstargames.com/VI/only-in-leonida"
     assert [loc["slug"] for loc in body["locations"]] == [
         "bayfront-studio-lot", "neon-row-district", "sunset-pier-boardwalk"]
-    assert [c["slug"] for c in body["characters"]] == ["delia-marsh"]
+    # only Rockstar's own characters are shown on a region; Delia Marsh (original) lives here but is not public
+    assert [c["slug"] for c in body["characters"]] == ["boobie-ike"]
     assert "region_id" not in body
 
 

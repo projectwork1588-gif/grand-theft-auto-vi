@@ -1,107 +1,104 @@
 {% extends "base.html" %}
-{% from "_components.html" import badge, type_badge, picture, initials, page_hero, provenance, bento %}
+{% from "_components.html" import bento %}
+{% from "characters/_cast.html" import shot, portrait %}
 {% block title %}{{ character.full_name }}{% endblock %}
 {% block description %}{{ character.summary }}{% endblock %}
+{% block header_class %}{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='css/characters.css') }}">{% endblock %}
 {% block content %}
-{% call page_hero(character.role_title, character.full_name, character.summary, cover=character.cover, tall=true) %}
-  <p class="hero-badges">{{ badge(character.content_status) }}{% if character.alias %} <span class="badge badge--type">&ldquo;{{ character.alias }}&rdquo;</span>{% endif %}</p>
-{% endcall %}
+<article class="profile-page{% if character.is_lead %} profile-page--lead{% endif %}">
 
-<section class="section section--tight">
-  <div class="container profile">
-    <div class="profile__main stack">
-      <div>
-        <h2 class="panel-title">The story so far</h2>
-        <p class="lede">{{ character.biography }}</p>
-      </div>
+  {# ------------------------------------------------------------------ hero: full bleed for the leads, a framed picture for everyone else #}
+  <header class="p-hero p-hero--{{ 'full' if character.is_lead else 'split' }} p-hero--{{ character.hero_side }}">
+    <div class="p-hero__art">{{ shot(character.main, ('100vw' if character.is_lead else '(min-width: 1100px) 58vw, 100vw'), character.pos, eager=true, posm=(character.pos_m if character.is_lead else none)) }}</div>
+    <div class="p-hero__shade" aria-hidden="true"></div>
+    <div class="p-hero__in">
+      <p class="eyebrow">{% if character.number %}{{ '%02d' % character.number }} / 08 &middot; {% endif %}{{ character.role_title }}</p>
+      <h1>{{ character.full_name }}</h1>
+      <p class="p-hero__lede">{{ character.summary }}</p>
+      {% if character.alias %}<p class="p-hero__alias">Known as &ldquo;{{ character.alias }}&rdquo;</p>{% endif %}
+    </div>
+  </header>
 
-      {% if character.clip_video %}
-      <div>
-        <h2 class="panel-title">In motion</h2>
-        <div class="clip-stage">
-          <video id="clip-loop" data-loop data-src="{{ media_file_url(character.clip_video) }}" muted loop playsinline preload="none"
-                 {% if character.clip_poster %}poster="{{ media_file_url(character.clip_poster) }}"{% endif %}
-                 aria-label="Short muted loop of {{ character.full_name }} from Rockstar's own clip"></video>
-          <span class="clip-stage__label">{{ character.full_name }}</span>
-        </div>
-        <p class="provenance">
-          <button class="cast__btn" type="button" data-loop-toggle="clip-loop" hidden>Pause</button>
-          {% if character.clip and character.clip.source_url %}<a href="{{ character.clip.source_url }}" target="_blank" rel="noopener noreferrer">Watch the full clip on rockstargames.com</a>{% endif %}
-        </p>
-      </div>
-      {% elif character.clip and image_src(character.clip.embed_url, 1280) %}
-      <div>
-        <h2 class="panel-title">In motion</h2>
-        <a class="clip-link" href="{{ character.clip.source_url }}" target="_blank" rel="noopener noreferrer">
-          <span class="play-btn__disc" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
-          Watch {{ character.full_name }}'s clip on rockstargames.com
-        </a>
-      </div>
-      {% endif %}
-
-      <dl class="facts">
+  {# ------------------------------------------------------------------ the story, with the motion portrait #}
+  <section class="p-story" aria-labelledby="story-title">
+    <div class="p-story__text">
+      <h2 id="story-title" class="p-label">The story so far</h2>
+      <p class="p-story__bio">{{ character.biography }}</p>
+      <dl class="p-facts">
         <div><dt>Role</dt><dd>{{ character.role_title }}</dd></div>
-        {% if character.alias %}<div><dt>Known as</dt><dd>{{ character.alias }}</dd></div>{% endif %}
-        {% if character.region_name %}<div><dt>Region</dt><dd><a href="{{ url_for('pages.region_detail', slug=character.region_slug) }}">{{ character.region_name }}</a></dd></div>{% endif %}
+        {% for r in character.regions %}
+        <div><dt>Region</dt><dd><a href="{{ url_for('pages.region_detail', slug=r.slug) }}">{{ r.name }}</a><small>{{ r.note }}</small></dd></div>
+        {% endfor %}
         {% if character.home_location_name %}<div><dt>Home</dt><dd><a href="{{ url_for('pages.location_detail', slug=character.home_location_slug) }}">{{ character.home_location_name }}</a></dd></div>{% endif %}
       </dl>
-      {{ provenance(character) }}
-
+      {% if character.source_url and character.source_url.startswith('https://') %}<p class="p-source"><a href="{{ character.source_url }}" target="_blank" rel="noopener noreferrer">Read it on rockstargames.com</a></p>{% endif %}
     </div>
-
-    <aside class="profile__side stack">
-      {% if character.relationships %}
-      <section aria-labelledby="rel-title">
-        <h2 class="panel-title" id="rel-title">Connections</h2>
-        <ul class="link-list">
-          {% for r in character.relationships %}
-          <li><a href="{{ url_for('pages.character_detail', slug=r.slug) }}">
-            <span><span class="name">{{ r.full_name }}</span><br><span class="meta">{{ r.description }}</span></span>
-          </a></li>
-          {% endfor %}
-        </ul>
-      </section>
+    <div class="p-story__media">
+      {% if character.clip_video %}
+        {{ portrait(character, wide=character.is_lead, label='In motion') }}
+      {% elif character.clip and image_src(character.clip.embed_url, 1280) %}
+      <a class="p-clip-link" href="{{ character.clip.source_url }}" target="_blank" rel="noopener noreferrer">
+        <span class="play-btn__disc" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+        Watch {{ character.full_name }}'s clip on rockstargames.com
+      </a>
       {% endif %}
+      {% if character.second %}<div class="p-story__second">{{ shot(character.second, '(min-width: 1100px) 28vw, 70vw', character.pos2) }}</div>{% endif %}
+    </div>
+  </section>
 
-      {% if character.missions %}
-      <section aria-labelledby="mis-title">
-        <h2 class="panel-title" id="mis-title">Stories</h2>
-        <ul class="link-list">
-          {% for m in character.missions %}
-          <li><a href="{{ url_for('pages.mission_detail', slug=m.slug) }}"><span><span class="name">{{ m.title }}</span><br><span class="meta">{{ m.role_in_mission }}</span></span></a></li>
-          {% endfor %}
-        </ul>
-      </section>
-      {% endif %}
+  {# ------------------------------------------------------------------ connections, with faces #}
+  <section class="p-connections" aria-labelledby="conn-title">
+    <h2 id="conn-title" class="p-label">Connections</h2>
+    {% if character.connections %}
+    <ul class="p-conn">
+      {% for k in character.connections %}
+      <li>
+        <a class="p-conn__card" href="{{ url_for('pages.character_detail', slug=k.slug) }}">
+          <span class="p-conn__face">{{ shot(k.image, '160px', k.pos) }}</span>
+          <span class="p-conn__body"><i>{{ k.type }}</i><b>{{ k.name }}</b><span>{{ k.text }}</span></span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="p-empty">Rockstar has not stated any connections for {{ character.full_name }} yet.</p>
+    {% endif %}
+    {% if character.costars %}
+    <p class="p-costars">Seen alongside: {% for c in character.costars %}<a href="{{ url_for('pages.character_detail', slug=c.slug) }}">{{ c.full_name }}</a>{{ ', ' if not loop.last }}{% endfor %}</p>
+    {% endif %}
+  </section>
 
-      {% if character.locations %}
-      <section aria-labelledby="loc-title">
-        <h2 class="panel-title" id="loc-title">Places</h2>
-        <ul class="link-list">
-          {% for l in character.locations %}<li><a href="{{ url_for('pages.location_detail', slug=l.slug) }}"><span class="name">{{ l.name }}</span></a></li>{% endfor %}
-        </ul>
-      </section>
-      {% endif %}
-
-      {% if character.costars %}
-      <section aria-labelledby="co-title">
-        <h2 class="panel-title" id="co-title">Seen alongside</h2>
-        <ul class="link-list">
-          {% for c in character.costars %}
-          <li><a href="{{ url_for('pages.character_detail', slug=c.slug) }}"><span><span class="name">{{ c.full_name }}</span><br><span class="meta">{{ c.shared_missions }} shared stor{{ 'y' if c.shared_missions == 1 else 'ies' }}</span></span></a></li>
-          {% endfor %}
-        </ul>
-      </section>
-      {% endif %}
-    </aside>
-  </div>
-
-  {% if character.gallery | length > 1 %}
-  <div class="container gallery-page">
-    <h2 class="subhead gallery-page__title" id="gallery-title">Gallery</h2>
+  {# ------------------------------------------------------------------ gallery #}
+  {% if character.gallery | length >= 2 %}
+  <section class="p-gallery" aria-labelledby="gallery-title">
+    <h2 id="gallery-title" class="p-label">From the footage and artwork</h2>
     {{ bento(character.gallery, 'gallery-title') }}
-  </div>
+  </section>
   {% endif %}
-  <div class="container"><p class="section-more"><a class="link-arrow" href="{{ url_for('pages.characters') }}">All characters</a></p></div>
-</section>
+
+  {# ------------------------------------------------------------------ onward: the people either side, and everyone #}
+  <section class="p-next" aria-label="More of the cast">
+    {% if character.prev and character.next %}
+    <div class="p-next__pair">
+      <a class="p-next__card" href="{{ url_for('pages.character_detail', slug=character.prev.slug) }}" rel="prev">
+        <span class="p-next__art">{{ shot(character.prev.main, '(min-width: 900px) 40vw, 100vw', character.prev.pos) }}</span>
+        <span class="p-next__body"><small>Previous</small><b>{{ character.prev.full_name }}</b><span>{{ character.prev.role_title }}</span></span>
+      </a>
+      <a class="p-next__card" href="{{ url_for('pages.character_detail', slug=character.next.slug) }}" rel="next">
+        <span class="p-next__art">{{ shot(character.next.main, '(min-width: 900px) 40vw, 100vw', character.next.pos) }}</span>
+        <span class="p-next__body"><small>Next</small><b>{{ character.next.full_name }}</b><span>{{ character.next.role_title }}</span></span>
+      </a>
+    </div>
+    {% endif %}
+    <nav class="p-all" aria-label="All eight characters">
+      <ol>
+        {% for c in character.cast_nav %}
+        <li><a href="{{ url_for('pages.character_detail', slug=c.slug) }}"{% if c.slug == character.slug %} aria-current="page"{% endif %}><span>{{ '%02d' % c.number }}</span>{{ c.full_name }}</a></li>
+        {% endfor %}
+      </ol>
+      <a class="link-arrow" href="{{ url_for('pages.characters') }}">The whole cast</a>
+    </nav>
+  </section>
+</article>
 {% endblock %}

@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages.css') }}">
+  {% block head_extra %}{% endblock %}
 </head>
 <body{% if config.AUTOPLAY_ALWAYS %} data-autoplay="always"{% endif %}>
   <a class="skip-link" href="#main">Skip to content</a>
