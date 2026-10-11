@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages.css') }}">
 </head>
-<body>
+<body{% if config.AUTOPLAY_ALWAYS %} data-autoplay="always"{% endif %}>
   <a class="skip-link" href="#main">Skip to content</a>
 
   <header class="site-header {% block header_class %}site-header--solid{% endblock %}" data-header>
@@ -63,6 +63,12 @@
             <li><a href="{{ url_for('main.credits') }}"{% if request.endpoint == 'main.credits' %} aria-current="page"{% endif %}>Credits and legal</a></li>
           </ul>
         </div>
+        <div class="site-menu__motion" data-motion-row hidden>
+          <p class="site-menu__label">Motion</p>
+          <button class="motion-switch" type="button" data-motion-toggle aria-pressed="true">
+            <span>Autoplay footage and slideshows</span><b>On</b>
+          </button>
+        </div>
         <p class="site-menu__note">Unofficial fan project. Not affiliated with Rockstar Games or Take-Two Interactive. <a href="{{ url_for('main.credits') }}">Credits and legal</a></p>
       </div>
     </div>
@@ -86,6 +92,7 @@
         <ul class="footer-nav__small">
           <li><a href="{{ url_for('main.about') }}">About the project</a></li>
           <li><a href="{{ url_for('main.credits') }}">Credits and legal</a></li>
+          <li data-motion-row hidden><button class="footer-motion" type="button" data-motion-toggle aria-pressed="true">Autoplay footage <b>On</b></button></li>
         </ul>
       </nav>
     </div>

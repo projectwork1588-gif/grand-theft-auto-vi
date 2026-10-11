@@ -485,7 +485,7 @@ def test_pages_use_no_inline_styles_or_scripts(client):
 def test_homepage_garage_is_a_showroom_of_official_images(client):
     page = html(client, "/")
     garage = page.split('id="garage"')[1].split("</section>")[0]
-    track = garage.split('class="showroom__track"')[1]
+    track = garage.split('class="showroom__track"')[1].split("</ul>")[0]
     assert len(re.findall(r'<a class="slide"', track)) == 5 and "<svg" not in track and "ULTIMATE_EDITION" in track
     assert "Corvina" not in garage
     assert "data-showroom-prev" in garage and "data-showroom-next" in garage and "data-showroom-progress" in garage
@@ -605,15 +605,31 @@ def test_cinematic_slots_match_the_files_the_builder_writes():
         assert slot["trailer"] in media_slots.VIDEO_SLUGS and slot["title"]
 
 
-def test_script_plays_one_moment_at_a_time_silently_and_only_when_motion_is_welcome():
+def test_script_plays_one_moment_at_a_time_silently_and_obeys_the_motion_policy():
     code = _script().split("function cinemas()")[1].split("function regionExplorer()")[0]
-    assert "automatic = !calm && !slow" in code and "document.hidden" in code and "IntersectionObserver" in code
+    assert "automatic = function () { return motionAllowed() && !slow; }" in code and "document.hidden" in code
+    assert "IntersectionObserver" in code and "0.35" in code                       # muted autoplay at 35 percent in view
     assert "best" in code and "p === best" in code and "tvMedia" in code          # the most visible wins; the reel and overlay count
     assert "p.video.muted = true" in code and "withSound = soundOn && activated()" in code   # silent unless the visitor asked
-    assert "toggleSound" in code and "sessionStorage" in code and "ramp(" in code  # a click or M turns it on, remembered, faded
+    assert "toggleSound" in code and "sessionStorage" in code and "ramp(" in code  # the sound button or M, remembered, faded
+    assert "p.refused = true" in code and "setMotion(true)" in code                # a refused play() becomes a plain Play button
+    assert "window.setInterval" in code and "pageshow" in code and "visibilitychange" in code   # it reconciles; no missed event sticks
     assert "Replay" not in code and '"ended"' not in code                          # it loops: nothing ends, nothing to replay
-    assert "createElement" not in code                                              # no interface is ever built
+    assert "createElement" not in code                                              # the buttons are real markup, never built here
     assert "youtube" not in code.lower() and "iframe" not in code.lower()          # no third-party player on the page
+
+
+def test_motion_policy_is_one_remembered_choice_with_a_server_switch(client):
+    script = _script()
+    head = script.split("// ---- Header turns solid")[0]
+    assert "tv-motion" in head and "function motionAllowed()" in head and "tv:motion" in head
+    assert "reduceMotion && !autoplayAlways" in head and "saveData" in head       # the system setting is honoured by default
+    assert 'getAttribute("data-autoplay") === "always"' in head
+    from app.config import Config
+    assert Config.AUTOPLAY_ALWAYS in (True, False)
+    page = html(client, "/")
+    assert "data-motion-toggle" in page and "data-motion-row" in page            # the menu switch
+    assert page.count("data-motion-optin") >= 2                                   # explorer and garage always offer a Play pill
 
 
 def test_trailers_and_screenshots_are_two_distinct_blocks(client):
@@ -707,7 +723,7 @@ def test_cast_script_seeks_one_buffered_reel_and_holds_a_chosen_person():
     assert '"Replay"' in code                                                     # replay is a first-class state
 
 
-def test_native_moments_are_silent_loops_with_nothing_on_top(client, local_cinematic):
+def test_native_moments_are_silent_loops_with_two_small_icon_buttons(client, local_cinematic):
     page = html(client, "/")
     for anchor, slot in (("moment", "moment-1"), ("world", "moment-2"), ("finale", "moment-3")):
         section = page.split(f'id="{anchor}"')[1].split("</section>")[0]
@@ -716,8 +732,9 @@ def test_native_moments_are_silent_loops_with_nothing_on_top(client, local_cinem
         assert 'preload="none"' in video and f'poster="/media/cinematic/{slot}.jpg"' in video, slot
         assert f'<source src="/media/cinematic/{slot}-mobile.mp4" media="(max-width: 700px)"' in section, slot
         assert f'<source src="/media/cinematic/{slot}.mp4" type="video/mp4">' in section, slot
-        assert "<button" not in section and "cinema__bar" not in section and "Rockstar Games" not in section, slot
-        assert "data-cinema-sound" not in section and "data-cinema-toggle" not in section and "Enable sound" not in section, slot
+        assert "cinema__bar" not in section and "Rockstar Games" not in section and "Enable sound" not in section, slot
+        assert section.count("<button") == 2 and "data-cinema-toggle" in section and "data-cinema-sound" in section, slot   # pause and sound
+        assert 'class="cinema__tools" data-cinema-tools hidden' in section, slot    # only two small icon buttons, shown by the script
     assert page.index('id="leads"') < page.index('id="moment"') < page.index('id="cast"') < page.index('id="world"') < page.index('id="leonida"')
     assert page.index('id="media"') < page.index('id="finale"') < page.index('class="section band closing"')
     assert "<iframe" not in page.split("<dialog")[0]
@@ -920,7 +937,7 @@ def test_screenshots_have_no_helper_text(client):
 
 def test_region_explorer_advances_by_itself_and_stays_manual(client):
     code = _script().split("function regionExplorer()")[1].split("function showroom()")[0]
-    assert "INTERVAL = 6500" in code and "reduceMotion" in code                   # a calm pace; reduced motion does not advance
+    assert "INTERVAL = 7000" in code and "motionAllowed()" in code                # a calm pace; no advance unless motion is allowed
     assert "mouseenter" in code and "focusin" in code and "holding" in code       # it waits while the visitor is pointing at it
     assert "IntersectionObserver" in code and "document.hidden" in code           # and only while it is on screen
     assert 'tab.addEventListener("click"' in code                                  # manual selection stays
@@ -932,4 +949,22 @@ def test_hero_artwork_is_not_clipped_at_the_top():
     css = _css()["pages.css"]
     assert re.search(r"\.hero__bg \{ position: absolute; inset: 0;", css)          # the whole picture, headroom included
     assert "heroBg.style.setProperty" not in _script()                          # no parallax that would push it off
+
+
+def test_garage_advances_one_vehicle_at_a_time_and_waits_for_the_visitor():
+    code = _script().split("function showroom()")[1].split("function loops()")[0]
+    assert "INTERVAL = 7000" in code and "motionAllowed()" in code               # one vehicle every seven seconds
+    assert "pointermove" in code and "focusin" in code and "holding" in code     # a moving pointer and keyboard focus hold it
+    assert "focus-visible" in code and "leaveTimer" in code                      # a pointer that only rests lets go
+    assert "IntersectionObserver" in code and "document.hidden" in code          # only while on screen
+    assert "touched()" in code and "cancelGlide" in code                         # a manual move restarts the clock
+    assert "is-wrapping" in code and "function glide(" in code                   # fades back to the first; a slow eased glide
+    assert 'scrollTo({ left: 0, behavior: "auto" })' in code                      # no long sweep back across the track
+
+
+def test_lucia_card_is_lifted_without_losing_the_night_look(client):
+    page = html(client, "/")
+    assert "leads__card--lucia-caminos" in page and "leads__card--jason-duval" in page
+    css = _css()["pages.css"]
+    assert ".leads__card--lucia-caminos .media__img { filter: brightness(" in css
 

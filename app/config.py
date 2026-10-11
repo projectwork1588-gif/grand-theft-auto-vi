@@ -17,7 +17,15 @@ def _int(name, default):
         return int(default)
 
 
+def _flag(name, default="0"):
+    return os.getenv(name, default).strip().lower() in ("1", "true", "yes", "on")
+
+
 class Config:
+    # Footage, the cast reel, the region explorer and the garage start by themselves. A visitor whose system asks
+    # for reduced motion (or has data saver on) gets a Play button instead, unless this is set: then they autoplay
+    # too, muted, with a pause control. A visitor's own choice in the menu always wins.
+    AUTOPLAY_ALWAYS = _flag("TV_AUTOPLAY_ALWAYS")
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-insecure-key")
     DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
     DB_PORT = _int("DB_PORT", 3306)

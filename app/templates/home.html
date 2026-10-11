@@ -26,6 +26,21 @@
     </video>
     {% endif %}
     <div class="cinema__shade" aria-hidden="true"></div>
+    {% if native %}
+    {# Two small icon buttons; hidden until the script runs. The pause button turns into a plain "Play footage" pill when the
+       browser or the visitor's settings keep footage from starting by itself. #}
+    <div class="cinema__tools" data-cinema-tools hidden>
+      <button class="cinema__tool cinema__tool--toggle" type="button" data-cinema-toggle aria-label="Pause footage">
+        <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>
+        <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+        <span data-tool-label>Play footage</span>
+      </button>
+      <button class="cinema__tool" type="button" data-cinema-sound aria-label="Sound" aria-pressed="false">
+        <svg class="i-sound-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
+        <svg class="i-sound-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 010 6M18.2 6.6a7.6 7.6 0 010 10.8"/></svg>
+      </button>
+    </div>
+    {% endif %}
   </div>
 </section>
 {% endif %}
@@ -85,7 +100,7 @@
     </div>
     <div class="leads">
       {% for c in leads %}
-      <a class="key-card leads__card reveal" data-delay="{{ loop.index }}" href="{{ url_for('pages.character_detail', slug=c.slug) }}">
+      <a class="key-card leads__card leads__card--{{ c.slug }} reveal" data-delay="{{ loop.index }}" href="{{ url_for('pages.character_detail', slug=c.slug) }}">
         {{ picture(c.cover, fallback=initials(c.full_name), sizes='(min-width: 900px) 67vw, 222vw', alt='') }}
         <span class="key-card__body">
           <span class="key-card__eyebrow">{{ c.role_title }}</span>
@@ -124,6 +139,7 @@
                             {% if reel.poster %}poster="{{ media_file_url(reel.poster) }}"{% endif %}
                             aria-label="Reel of official character clips"></video>{% endif %}
         <div class="cast__shade" aria-hidden="true"></div>
+        {% if reel %}<button class="optin" type="button" data-motion-optin hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> Play the reel</button>{% endif %}
         <div class="cast__caption" aria-live="polite">
           <p class="cast__role" data-role>{{ first.role_title if first else '' }}</p>
           <p class="cast__name" data-name>{{ first.full_name if first else '' }}</p>
@@ -164,6 +180,7 @@
     </div>
     <div class="regions reveal" data-regions>
       <div class="regions__stage">
+        <button class="optin" type="button" data-motion-optin hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> Auto-play the regions</button>
         {% for r in regions %}
         <div class="regions__view{% if loop.first %} is-active{% endif %}" data-region-view="{{ loop.index0 }}">
           {{ picture(r.cover, fallback=r.name, sizes='(min-width: 900px) 100vw, 180vw', alt='', cls='regions__media') }}
@@ -214,6 +231,7 @@
   </div>
   <div class="container">
     <div class="showroom__bar" aria-hidden="true"><span data-showroom-progress></span></div>
+    <p class="showroom__optin"><button class="optin" type="button" data-motion-optin hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> Auto-play the garage</button></p>
     <p class="section-more"><a class="link-arrow" href="{{ url_for('pages.vehicles') }}">Open the garage</a></p>
   </div>
 </section>

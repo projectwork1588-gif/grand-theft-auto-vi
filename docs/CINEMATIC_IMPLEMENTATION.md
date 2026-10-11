@@ -83,3 +83,47 @@ How the loops are built (`scripts/make_cinematics.py`): moments 1 and 2 dissolve
 Defect found and fixed during this pass: when the first cinematic moment was still stopping, the cast reel declined to start and never retried; it now resumes when the other video has stopped.
 
 Encodes after this pass: desktop 11.2, 6.1 and 2.8 MB (20 MB); phone 3.3, 2.3 and 1.3 MB (7 MB). Tests: 323 passed. Width sweep: clean.
+
+
+---
+
+## Real-world playback pass (autoplay did nothing in the owner's browser)
+
+### Why it failed
+
+Every automated check in the previous passes ran in Chrome with `prefers-reduced-motion: no-preference` emulated. The owner's
+browser reports **`prefers-reduced-motion: reduce`**: on Windows that is Settings, Accessibility, Visual effects, **Animation
+effects off** (on this machine the underlying `SPI_GETCLIENTAREAANIMATION` value is False, and a visible, un-emulated Chrome
+reports `reduce`). The page honoured that by design: no autoplay for the cinematic moments, the cast reel or the region
+explorer. Because the moments have no controls, it simply looked broken. The other suspects (observer thresholds, video
+loading, `play()` rejections, the hand-off from one video to the next, event order) were checked again and are **not** the
+cause: with motion allowed, playback started, handed off and recovered correctly in every run below.
+
+### What changed
+
+| Area | Change |
+|------|--------|
+| Motion policy | One remembered choice, `tv-motion` in the visitor's local storage, decides whether footage, the reel, the explorer and the garage move by themselves. Default: allowed, unless the system asks for reduced motion or data saver is on. A click on any Play control, or the footer switch "Autoplay footage On/Off", sets it and everything follows. An explicit Off always wins. |
+| Server switch | `TV_AUTOPLAY_ALWAYS=1` (in `.env`, documented in `.env.example`) makes motion start by itself even on a reduced-motion system. Muted, with a pause button. Data saver is still respected. The owner's local `.env` has it set so the preview behaves as asked; leave it 0 on a public site. |
+| Cinematic moments | Two small round icon buttons in the bottom-right corner: pause/play and sound. Sound stays off until chosen (browsers refuse audible autoplay), is remembered for the visit and carries to the next moment. When autoplay is suppressed or the browser refuses it, the pause button becomes a pink "Play footage" pill so the section is never a dead picture. A visitor's explicit pause stays until they press play. |
+| Reliability | The moments reconcile once a second, and on `pageshow`, `focus`, `visibilitychange` and the hand-off event, so a missed observer callback during quick scrolling cannot leave a section frozen. A `play()` rejection becomes the Play pill instead of silence. |
+| Cast reel | Same policy and reconcile. A Play the reel pill appears only when motion is suppressed. |
+| Region explorer | 7 s per region (was 6.5 s). Holds while the pointer is moving over it or keyboard focus is inside it; a pointer that merely rests there (the page scrolled under it) lets go after 3.5 s. Auto-play pill when suppressed. |
+| Garage | Advances one of the five vehicles every 7 s with a slow eased glide (about 1.1 s, snapping paused while it runs), fades back to the first vehicle at the end instead of sweeping back, waits for the pointer, keyboard focus and any manual move, stops off screen. Previous and next arrows stay. |
+| Lucia's card | The night picture is lifted (brightness 1.56) and the scrim over her face opened; the bottom-left stays dark for the words. Mean luminance of the card went from 51 to 74 (her face band from 46 to 81) against 88 for Jason's daylight card; the neon is unchanged. |
+
+### How it was verified
+
+A visible, un-emulated Chrome (reduced motion reported as reduce, as in the owner's browser), scrolled with real mouse-wheel
+events. Playback state was logged at each stop: see `review/playback/playback-log.txt` in the review ZIP.
+
+Results: 326 tests passed. Width sweep (8 routes x 88 widths): no overflow, no header problems. Logs and screenshots:
+`review/playback/` (and `Team-Valkyrie-Playback-Fix-Review.zip` in the project root).
+
+### Remaining browser limits
+
+* A browser or system that asks for reduced motion, or has data saver on, still gets a Play button first (one click, remembered). That is deliberate; `TV_AUTOPLAY_ALWAYS=1` overrides it for the whole site.
+* Audible playback always needs the visitor to interact first (browser rule). The sound button is that interaction; the choice is remembered for the visit.
+* Safari in Low Power Mode and some battery-saver modes refuse even muted autoplay; the page then shows the Play pill instead of a still picture.
+* The loop seam is baked into each file; a browser's own loop can still show a one-frame hiccup on a slow device. Not detectable from script.
+* An explicit pause is honoured until Play is pressed, including after scrolling away and back.

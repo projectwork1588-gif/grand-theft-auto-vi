@@ -151,7 +151,7 @@
 .regions__tab:hover, .regions__tab.is-active { color: var(--text); }
 .regions__tab.is-active::after { transform: scaleX(1); }
 @keyframes regionTick { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-.regions.is-auto.is-timing:not(.is-held) .regions__tab.is-active::after { animation: regionTick var(--auto-ms, 6500ms) linear forwards; transition: none; }
+.regions.is-auto.is-timing:not(.is-held) .regions__tab.is-active::after { animation: regionTick var(--auto-ms, 7000ms) linear forwards; transition: none; }
 @media (max-width: 1000px) { .regions__tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: var(--s1); } }
 @media (max-width: 560px) { .regions__tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 760px) {
@@ -445,3 +445,15 @@
 .prose .label-guide { display: grid; gap: 18px; margin: 20px 0 8px; padding-left: 0; list-style: none; }
 .label-guide li { display: grid; grid-template-columns: 120px 1fr; gap: 18px; align-items: start; }
 @media (max-width: 560px) { .label-guide li { grid-template-columns: 1fr; gap: 6px; } }
+
+/* ---------- Motion opt-in placement, garage fade, and Lucia's exposure ---------- */
+.cast__stage .optin, .regions__stage .optin { position: absolute; z-index: 3; top: var(--s2); right: var(--s2); }
+.showroom__optin { margin: var(--s2) 0 0; }
+.showroom__track { transition: opacity var(--dur-2) var(--ease); }
+.showroom__track.is-wrapping { opacity: 0; }
+/* Lucia's cover is a night shot and reads about two stops darker than Jason's daylight one. Lift the picture and open
+   the scrim over her face, keep the neon, and leave the bottom-left as dark as it needs to be for the words. */
+.leads__card--lucia-caminos .media__img { filter: brightness(1.56) contrast(1.02) saturate(1.06); }
+.leads__card--lucia-caminos.key-card::after { background:
+  linear-gradient(90deg, rgba(13, 11, 32, .66) 0%, rgba(13, 11, 32, .16) 32%, rgba(13, 11, 32, 0) 60%),
+  linear-gradient(0deg, rgba(13, 11, 32, .78) 0%, rgba(13, 11, 32, .36) 26%, rgba(13, 11, 32, 0) 54%); }

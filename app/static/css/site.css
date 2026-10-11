@@ -188,3 +188,8 @@ html:not(.js) .hero, html:not(.js) .page-hero { padding-top: 48px; }
   *, *::before, *::after { animation-duration: .001ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; transition-delay: 0s !important; }
   .js .reveal { opacity: 1; transform: none; }
 }
+@media (prefers-reduced-motion: reduce) {
+  /* The visitor (or the server setting) has opted in to footage and slideshows: give back only the fades that carry them. */
+  html.motion-on .cinema__video, html.motion-on .regions__view, html.motion-on .regions__view.is-active, html.motion-on .showroom__track { transition-duration: var(--dur-3) !important; }
+  html.motion-on .regions.is-auto.is-timing:not(.is-held) .regions__tab.is-active::after { animation-duration: var(--auto-ms, 7000ms) !important; }
+}
