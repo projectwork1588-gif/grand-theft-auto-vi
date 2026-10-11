@@ -53,6 +53,24 @@
     <div class="hero__card">
       <div class="hero__bg" aria-hidden="true" data-hero-bg>
         <div class="hero__sky"></div>
+        {% if hero_layers %}
+        {# The motion poster: the same artwork cut into sky, world and the pair, so each layer can travel at its own speed.
+           Built locally by scripts/make_hero_layers.py; without it the single official picture below is used. #}
+        <div class="hero__stage" data-hero-stage>
+          {% for name in ['sky', 'haze', 'mid', 'glow', 'fg', 'lit'] if name != 'lit' or hero_layers.lit %}
+          {% if name in ('haze', 'glow') %}
+          <div class="hero__{{ name }}"></div>
+          {% else %}
+          {% set layer = hero_layers[name] %}
+          <div class="hero__layer hero__layer--{{ name }}"{% if name == 'lit' %} aria-hidden="true"{% endif %}>
+            <img src="{{ media_file_url(layer.full) }}"
+                 {% if layer.small %}srcset="{{ media_file_url(layer.small) }} 1280w, {{ media_file_url(layer.full) }} 1920w" sizes="(min-width: 760px) 100vw, 180vw"{% endif %}
+                 alt="" width="1920" height="1080" decoding="async" {% if name == 'lit' %}loading="lazy"{% else %}fetchpriority="high"{% endif %}>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+        {% else %}
         {% for m in hero %}
           <div class="media hero__slide{% if hero | length > 1 %} hero__slide--cycle{% endif %}" data-slide="{{ loop.index }}">
             {% if image_src(m.embed_url, 1920) %}
@@ -61,6 +79,7 @@
             {% endif %}
           </div>
         {% endfor %}
+        {% endif %}
         <div class="hero__shade"></div>
       </div>
 

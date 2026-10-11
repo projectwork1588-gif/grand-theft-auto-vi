@@ -1,3 +1,8 @@
 # Optional: only for building the short local video loops (python -m scripts.make_loops).
 # The site itself does not need this. It bundles a private ffmpeg binary, so nothing else has to be installed.
 imageio-ffmpeg==0.6.0
+
+# Optional: only for building the hero parallax layers (python -m scripts.make_hero_layers).
+numpy==2.5.4
+opencv-python-headless==5.0.0.93
+pillow==12.3.0

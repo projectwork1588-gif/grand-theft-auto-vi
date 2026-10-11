@@ -813,6 +813,84 @@ def local_cinematic(app, tmp_path):
     app.config["MEDIA_ROOT"] = previous
 
 
+@pytest.fixture()
+def local_hero(app, tmp_path):
+    """A media folder with tiny stand-ins for the three hero layers and their phone copies."""
+    folder = tmp_path / "hero"
+    folder.mkdir()
+    for name in ("sky", "mid", "fg", "fg-lit"):
+        (folder / f"{name}.webp").write_bytes(b"RIFFxxxxWEBP")
+        (folder / f"{name}-1280.webp").write_bytes(b"RIFFxxxxWEBP")
+    previous = app.config["MEDIA_ROOT"]
+    app.config["MEDIA_ROOT"] = str(tmp_path)
+    yield tmp_path
+    app.config["MEDIA_ROOT"] = previous
+
+
+def test_hero_is_the_single_picture_until_the_layers_are_built(client):
+    page = html(client, "/")
+    hero = page.split('id="top"')[1].split("</section>")[0]
+    assert "hero__stage" not in hero and "hero__layer" not in hero and "hero__slide" in hero
+
+
+def test_hero_becomes_a_layered_motion_poster_when_the_layers_exist(client, local_hero):
+    page = html(client, "/")
+    hero = page.split('id="top"')[1].split("</section>")[0]
+    assert 'data-hero-stage' in hero and "hero__slide" not in hero
+    order = [hero.index(f"hero__layer--{n}") for n in ("sky", "mid", "fg")]
+    assert order == sorted(order) and hero.index("hero__haze") < hero.index("hero__layer--mid") < hero.index("hero__glow") < hero.index("hero__layer--fg")
+    for n in ("sky", "mid", "fg"):
+        assert f'/media/hero/{n}.webp' in hero and f'/media/hero/{n}-1280.webp 1280w' in hero
+    assert hero.count("<img") == 4 and 'aria-hidden="true"' in hero.split("hero__layer--lit")[1][:60]   # the light pass is a decoration
+    # the lockup, buttons and release line are untouched
+    for needle in ("Welcome, gamers", "Team Valkyrie presents", 'aria-label="Six"', "Start exploring", "Watch the trailer", "hero__release"):
+        assert needle in hero, needle
+    assert client.get("/media/hero/fg.webp").status_code == 200
+    for bad in ("/media/hero/fg.png", "/media/hero/../clips/x.mp4", "/media/hero/sub/fg.webp", "/media/hero/Fg.webp"):
+        assert client.get(bad).status_code == 404, bad
+
+
+def test_a_partial_set_of_hero_layers_is_ignored(app, tmp_path):
+    from app import local_media
+    previous = app.config["MEDIA_ROOT"]
+    try:
+        app.config["MEDIA_ROOT"] = str(tmp_path)
+        (tmp_path / "hero").mkdir()
+        (tmp_path / "hero" / "sky.webp").write_bytes(b"RIFFxxxxWEBP")
+        (tmp_path / "hero" / "fg.webp").write_bytes(b"RIFFxxxxWEBP")
+        with app.app_context():
+            assert local_media.hero_layers() is None                              # no mid: the single picture stays
+            (tmp_path / "hero" / "mid.webp").write_bytes(b"RIFFxxxxWEBP")
+            layers = local_media.hero_layers()
+            assert set(layers) == {"sky", "mid", "fg"} and layers["sky"]["small"] is None       # the warm copy is optional
+            (tmp_path / "hero" / "fg-lit.webp").write_bytes(b"RIFFxxxxWEBP")
+            assert set(local_media.hero_layers()) == {"sky", "mid", "fg", "lit"}
+    finally:
+        app.config["MEDIA_ROOT"] = previous
+
+
+def test_hero_motion_is_gated_paused_off_screen_and_simpler_on_phones():
+    css = _css()["pages.css"]
+    assert ".motion-on .hero__stage .hero__layer {" in css                          # nothing moves unless motion is allowed
+    assert "@keyframes heroDolly" in css and "alternate" in css                     # eases out and back: no snap at the turn
+    assert ".hero__stage.is-paused *" in css and ".hero__stage.is-hidden *" in css
+    phone = css.split("@media (max-width: 760px) {")[-1]
+    assert "animation: none" in phone and ".hero__layer--lit { display: none; }" in phone     # phones: push-in and depth only
+    reduced = _css()["site.css"]
+    assert "html.motion-on .hero__stage .hero__layer" in reduced                    # the reduced-motion blanket does not flatten it once allowed
+    code = _script().split("function heroStage()")[1].split("// ---- Hero: the picture drifts")[0]
+    assert "IntersectionObserver" in code and "is-paused" in code and "visibilitychange" in code
+
+
+def test_hero_layer_builder_is_self_contained_and_never_touches_the_source():
+    import inspect
+    from scripts import make_hero_layers as mh
+    source = inspect.getsource(mh)
+    assert "unlink" not in source and "rmtree" not in source and "os.remove" not in source
+    assert mh.OUT_DIR.name == "hero" and (mh.W, mh.H) == (1920, 1080)
+    assert "media" in str(mh.SOURCE_CANDIDATES[0]) and "source" in str(mh.SOURCE_CANDIDATES[0])
+
+
 def test_hero_is_one_static_robbery_card_that_keeps_the_required_identity(client):
     page = html(client, "/")
     hero = page.split('id="top"')[1].split("</section>")[0]

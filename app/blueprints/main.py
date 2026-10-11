@@ -67,7 +67,7 @@ def credits():
 
 @main_bp.route("/media/<path:filename>")
 def media_file(filename):
-    """Serve a locally built clip. Anything that is not clips/<safe-name>.mp4 or .jpg is a 404."""
+    """Serve a locally built clip, moment or hero layer. Anything outside clips/, cinematic/ and hero/ safe names is a 404."""
     if not local_media.is_servable(filename):
         abort(404)
     return send_from_directory(local_media.root(), filename, max_age=3600, conditional=True)

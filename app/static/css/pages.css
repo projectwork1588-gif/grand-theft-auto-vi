@@ -457,3 +457,51 @@
 .leads__card--lucia-caminos.key-card::after { background:
   linear-gradient(90deg, rgba(13, 11, 32, .66) 0%, rgba(13, 11, 32, .16) 32%, rgba(13, 11, 32, 0) 60%),
   linear-gradient(0deg, rgba(13, 11, 32, .78) 0%, rgba(13, 11, 32, .36) 26%, rgba(13, 11, 32, 0) 54%); }
+
+/* =========================== HERO MOTION POSTER ===========================
+   The artwork cut into sky, world and the pair (scripts/make_hero_layers.py). The camera pushes in very slowly and the
+   layers travel at different speeds, so depth comes from real separation, not from moving a copy of the picture.
+   Atmosphere (haze and sunset glow) is gradients only. Nothing here moves unless the visitor allows motion
+   (html.motion-on), it pauses off screen and in a hidden tab, and it is simpler on phones. */
+.hero__stage { position: absolute; inset: 0; overflow: hidden; }
+.hero__layer { position: absolute; inset: 0; transform-origin: 62% 0%; }
+.hero__layer img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 62% 0%; }
+.hero__haze, .hero__glow { position: absolute; pointer-events: none; }
+.hero__haze {
+  inset: -8% -10% 22% -10%; opacity: .55;
+  background:
+    radial-gradient(46% 38% at 26% 34%, rgba(255, 176, 214, .30), rgba(255, 176, 214, 0) 70%),
+    radial-gradient(38% 32% at 72% 24%, rgba(178, 160, 255, .26), rgba(178, 160, 255, 0) 70%),
+    radial-gradient(58% 26% at 46% 70%, rgba(255, 198, 172, .22), rgba(255, 198, 172, 0) 72%);
+}
+.hero__glow {
+  inset: 0; opacity: .4;
+  background: radial-gradient(44% 24% at 38% 78%, rgba(255, 138, 172, .55), rgba(255, 138, 172, 0) 72%),
+              radial-gradient(30% 16% at 70% 74%, rgba(255, 190, 140, .32), rgba(255, 190, 140, 0) 70%);
+}
+.hero__layer--sky { --z: 1.025; --tx: -1.5px; --ty: 0px; }
+.hero__layer--mid { --z: 1.045; --tx: -4px; --ty: 1px; }
+.hero__layer--fg { --z: 1.07; --tx: -9px; --ty: 2px; }
+.hero__layer--lit { --z: 1.07; --tx: -9px; --ty: 2px; opacity: 0; pointer-events: none; }
+/* One animation per layer moves scale and travel together from rest, so the picture never needs more bleed than the
+   push itself gives and nothing snaps at the turn-around: it eases out, and back, forever. */
+@keyframes heroDolly { to { scale: var(--z); translate: var(--tx) var(--ty); } }
+@keyframes heroHaze { from { translate: -3% 0; } to { translate: 3.5% 1.2%; } }
+@keyframes heroGlow { from { opacity: .28; scale: 1; } to { opacity: .78; scale: 1.06; } }
+.motion-on .hero__stage .hero__layer { animation: heroDolly 26s cubic-bezier(.45, .05, .55, .95) infinite alternate both; will-change: scale, translate; }
+.motion-on .hero__stage .hero__haze { animation: heroHaze 41s ease-in-out infinite alternate both; }
+.motion-on .hero__stage .hero__glow { animation: heroGlow 13s ease-in-out infinite alternate both; transform-origin: 40% 78%; }
+/* The pair catch the same sunset light as the glow, a touch warmer when it is strongest: a pre-warmed copy of the cut-out
+   figures (never of the whole picture) cross-fades over them. Same travel as the pair, so it sits exactly on them, and it
+   costs only an opacity change: no blend mode, no filter. */
+@keyframes heroLit { from { opacity: 0; } to { opacity: .34; } }
+.motion-on .hero__stage .hero__layer--lit { animation: heroDolly 26s cubic-bezier(.45, .05, .55, .95) infinite alternate both, heroLit 13s ease-in-out infinite alternate both; }
+.hero__stage.is-paused *, .hero__stage.is-hidden * { animation-play-state: paused !important; }
+@media (max-width: 760px) {
+  .hero__layer--sky { --z: 1.015; --tx: 0px; --ty: 0px; }
+  .hero__layer--mid { --z: 1.03; --tx: -2px; --ty: 0px; }
+  .hero__layer--fg { --z: 1.05; --tx: -4px; --ty: 0px; }
+  .motion-on .hero__stage .hero__haze { animation: none; }           /* phones: the push-in and its depth, nothing more */
+  .motion-on .hero__stage .hero__glow { animation-duration: 16s; }
+  .hero__layer--lit { display: none; }
+}

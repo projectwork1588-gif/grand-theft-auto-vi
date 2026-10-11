@@ -35,3 +35,18 @@ It reads `media/source-videos/trailers/GTAVI_Trailer_1.mp4` and `GTAVI_Trailer_2
 The source recordings are never modified. A moment appears on the page only when its video exists; without
 `moment-1.mp4` the first slot falls back to an official still with a link into Rockstar's own player.
 
+
+## The hero motion poster (`media/hero/`)
+
+The homepage hero can run as a layered motion poster: the Robbery artwork cut into sky, world and the pair, so each layer
+moves at its own speed. Build the layers from the picture the site already shows:
+
+```powershell
+pip install -r requirements-media.txt            # numpy, opencv, pillow (also the private ffmpeg)
+python -m scripts.make_hero_layers --fetch       # downloads that one picture to media/source/, then builds media/hero/
+python -m scripts.make_hero_layers --debug       # (re)build from media/source/hero-robbery.png and write masks and a stress test
+```
+
+It writes `sky.webp`, `mid.webp`, `fg.webp`, `fg-lit.webp` and lighter `-1280` copies (about 470 KB for the desktop set,
+270 KB for phones). Without them the hero is the single official picture, exactly as before. Everything in `media/` is
+Git-ignored. See `docs/HERO_MOTION_POSTER.md`.

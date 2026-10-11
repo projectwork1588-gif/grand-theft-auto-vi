@@ -192,4 +192,9 @@ html:not(.js) .hero, html:not(.js) .page-hero { padding-top: 48px; }
   /* The visitor (or the server setting) has opted in to footage and slideshows: give back only the fades that carry them. */
   html.motion-on .cinema__video, html.motion-on .regions__view, html.motion-on .regions__view.is-active, html.motion-on .showroom__track { transition-duration: var(--dur-3) !important; }
   html.motion-on .regions.is-auto.is-timing:not(.is-held) .regions__tab.is-active::after { animation-duration: var(--auto-ms, 7000ms) !important; }
+  /* the hero motion poster: its own timings, looping, once motion is allowed */
+  html.motion-on .hero__stage .hero__layer { animation-duration: 26s !important; animation-iteration-count: infinite !important; }
+  html.motion-on .hero__stage .hero__layer--lit { animation-duration: 26s, 13s !important; }
+  html.motion-on .hero__stage .hero__haze { animation-duration: 41s !important; animation-iteration-count: infinite !important; }
+  html.motion-on .hero__stage .hero__glow { animation-duration: 13s !important; animation-iteration-count: infinite !important; }
 }

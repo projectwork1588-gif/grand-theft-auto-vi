@@ -126,6 +126,18 @@
     select.addEventListener("change", function () { select.form.submit(); });
   });
 
+  // ---- Hero motion poster: its animations run only while the hero is on screen and the tab is visible ----------
+  (function heroStage() {
+    var stage = document.querySelector("[data-hero-stage]");
+    if (!stage) { return; }
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) { stage.classList.toggle("is-paused", !entry.isIntersecting); });
+      }, { threshold: 0 }).observe(stage);
+    }
+    document.addEventListener("visibilitychange", function () { stage.classList.toggle("is-hidden", document.hidden); });
+  })();
+
   // ---- Hero: the picture drifts slower than the page, the lockup fades as you leave -------------
   var heroBg = document.querySelector("[data-hero-bg]");
   var heroContent = document.querySelector("[data-hero-content]");

@@ -242,6 +242,7 @@ def home():
         "missions": missions.list_missions({"per_page": "3", "sort": "newest"})["data"],
         "official_links": characters_repo.official_relationships(4),
         "hero": pick(media_slots.HERO_SLUGS),
+        "hero_layers": local_media.hero_layers(),
         "videos": [m for m in pick(media_slots.VIDEO_SLUGS) if media_urls.player_src(m["embed_url"])],
         "video_posters": {m["slug"]: m for m in pick(media_slots.VIDEO_POSTER_SLUGS)},
         "screenshots": pick(media_slots.SCREENSHOT_SLUGS),
