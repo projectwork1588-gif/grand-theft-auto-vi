@@ -67,7 +67,7 @@ Phase 2 added `services/site.py`, which builds the **page view-models**: it call
 
 ## Security headers
 
-Every response carries a Content-Security-Policy: styles, fonts and video only from this site, images only from `www.rockstargames.com`, frames only from `www.rockstargames.com` and `www.youtube-nocookie.com` (the signature moment), scripts from this site plus `www.youtube.com` (YouTube's IFrame API loader), no objects, no framing by other sites. `Referrer-Policy` stays `strict-origin-when-cross-origin`, which YouTube's embed needs (a missing referrer gives player error 153). There are no inline scripts, inline styles or event-handler attributes (tested on every page; the scripts set styles through the CSSOM, which the policy allows). All dynamic text is escaped by Jinja (tested with hostile database values). External links use `rel="noopener noreferrer"`.
+Every response carries a Content-Security-Policy: styles, fonts and video only from this site, images only from `www.rockstargames.com`, frames only from `www.rockstargames.com` and `www.youtube-nocookie.com` (the trailer overlay, opened only on request), scripts from this site only (since Design Reset Gate 2 no third-party script loads on the homepage), no objects, no framing by other sites. `Referrer-Policy` stays `strict-origin-when-cross-origin`, which YouTube's embed needs (a missing referrer gives player error 153). There are no inline scripts, inline styles or event-handler attributes (tested on every page; the scripts set styles through the CSSOM, which the policy allows). All dynamic text is escaped by Jinja (tested with hostile database values). External links use `rel="noopener noreferrer"`.
 
 ## Media architecture
 

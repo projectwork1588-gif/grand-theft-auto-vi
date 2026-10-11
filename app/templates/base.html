@@ -63,7 +63,7 @@
             <li><a href="{{ url_for('main.credits') }}"{% if request.endpoint == 'main.credits' %} aria-current="page"{% endif %}>Credits and legal</a></li>
           </ul>
         </div>
-        <p class="site-menu__note">{{ disclaimer }}</p>
+        <p class="site-menu__note">Unofficial fan project. Not affiliated with Rockstar Games or Take-Two Interactive. <a href="{{ url_for('main.credits') }}">Credits and legal</a></p>
       </div>
     </div>
   </nav>
@@ -97,6 +97,7 @@
   <dialog id="video-dialog" aria-label="Trailer player">
     <div class="dialog-frame">
       <button class="dialog-close" type="button" data-close>Close</button>
+      <p class="dialog-title" data-title></p>
       <div class="player" data-player></div>
       <p class="dialog-caption" data-caption></p>
     </div>

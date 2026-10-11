@@ -207,7 +207,7 @@ New regression checks, all in `tests/test_pages.py`:
 | `test_cast_order_is_stable_when_the_database_returns_rows_differently` | Feeds the page the database rows reversed and expects the same order. |
 | `test_loop_builder_cuts_the_reel_in_the_same_order` | `scripts/make_loops.py` uses the same sequence. |
 | `test_no_serif_or_italic_type_anywhere`, `test_no_text_is_set_below_the_readable_floor` | No serif face, no italic, nothing under 0.7rem. |
-| `test_signature_moment_*` | The section sits between the leads and the cast, has no heading, validates its video id, is allowed by the policy without widening it beyond YouTube, and is a window of 8 to 12 seconds. |
+| `test_cinematic_*`, `test_native_cinematic_*`, `test_policy_allows_only_the_trailer_frame_*` | (Design Reset Gate 2) The section sits between the leads and the cast, falls back to an official still and the trailer overlay without footage, renders native video with one sound button and no third-party player when `media/cinematic/` holds a video, serves only strictly named cinematic files, and the policy allows no third-party scripts. |
 | `test_trailers_and_screenshots_are_two_distinct_blocks` | One lead trailer, three cards, six screenshots with the first and last wide (no empty cells). |
 | `test_stories_section_separates_team_stories_from_official_connections` | "Team Valkyrie original" on the stories, an Official badge on the connections, no numbered list. |
 

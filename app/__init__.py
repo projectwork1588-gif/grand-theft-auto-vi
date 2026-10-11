@@ -6,7 +6,7 @@ from .config import get_config
 from .errors import register_error_handlers
 
 # Only our own files, Rockstar's official image and player host, and YouTube's embedded player (privacy-enhanced
-# domain) for the one signature moment. Fonts are bundled. No inline scripts or styles.
+# domain) inside the trailer dialog. No third-party scripts. Fonts are bundled. No inline scripts or styles.
 CONTENT_SECURITY_POLICY = (
     "default-src 'self'; "
     "img-src 'self' https://www.rockstargames.com data:; "
@@ -14,7 +14,7 @@ CONTENT_SECURITY_POLICY = (
     "frame-src https://www.rockstargames.com https://www.youtube-nocookie.com; "
     "style-src 'self'; "
     "font-src 'self'; "
-    "script-src 'self' https://www.youtube.com; connect-src 'self'; object-src 'none'; "
+    "script-src 'self'; connect-src 'self'; object-src 'none'; "
     "base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
 )
 

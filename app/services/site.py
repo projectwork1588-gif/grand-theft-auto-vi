@@ -219,18 +219,15 @@ def home():
     pick = lambda slugs: [featured[s] for s in slugs if s in featured]  # noqa: E731
     featured_all = featured
 
-    moment = None
-    spec = media_slots.SIGNATURE_MOMENT
-    if media_urls.youtube_id(spec.get("youtube_id")) and spec["end"] > spec["start"]:
-        videos = [m for m in pick(media_slots.VIDEO_SLUGS) if media_urls.player_src(m["embed_url"])]
-        moment = {
-            **spec,
-            "poster": featured_all.get(spec["poster"]),
-            "trailer": next((m for m in videos if m["slug"] == spec["trailer"]), None),
-        }
+    spec = media_slots.CINEMATIC
+    all_videos = [m for m in pick(media_slots.VIDEO_SLUGS) if media_urls.player_src(m["embed_url"])]
+    trailer = next((m for m in all_videos if m["slug"] == spec["trailer"]), None)
+    poster = featured_all.get(spec["poster"]) or featured_all.get("shot-grassrivers-05")
+    native = local_media.cinematic()
+    cinema = {**spec, "poster": poster, "trailer": trailer, "native": native} if (native or (poster and trailer)) else None
 
     return {
-        "moment": moment,
+        "cinema": cinema,
         "leads": leads,
         "cast": cast,
         "reel": reel,

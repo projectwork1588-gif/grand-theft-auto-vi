@@ -22,16 +22,13 @@ CAST_ORDER = (
     "dre-quan-priest", "real-dimez", "raul-bautista", "brian-heder",
 )
 
-# The signature moment shown between the leads and the cast. It is nine seconds of Rockstar's own Trailer 1,
-# played through YouTube's embedded player from Rockstar's official upload (there is no downloadable file and no
-# stated licence for the trailers, so nothing is copied or hosted here). Start and end are seconds into the video.
-# Chosen by stepping through Trailer 1, Trailer 2 and the other official footage: see docs/MEDIA_INVENTORY.md.
-SIGNATURE_MOMENT = {
-    "title": "Grand Theft Auto VI Trailer 1, official footage",
-    "youtube_id": "QdBZY2fkU-0",
-    "start": 18.5,
-    "end": 27.3,
-    "poster": "shot-grassrivers-05",
+# The cinematic moment between the leads and the cast. There is no downloadable trailer and no stated licence, so
+# nothing of Rockstar's video is copied or hosted. The section always works from an official still and opens the
+# trailer in Rockstar's own player on request. If the owner supplies footage that is authorised for reuse and builds
+# media/cinematic/cinematic.mp4 (see local_media.cinematic), the same section plays it as native video instead.
+CINEMATIC = {
+    "title": "Trailer 1",
+    "poster": "poster-trailer-1",
     "trailer": "official-trailer-1",
 }
 

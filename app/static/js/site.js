@@ -100,7 +100,7 @@
       var y = window.scrollY;
       var limit = window.innerHeight * 1.1;
       if (y > limit) { return; }
-      heroBg.style.setProperty("transform", "translate3d(0," + Math.round(y * 0.22) + "px,0)");
+      heroBg.style.setProperty("transform", "translate3d(0," + Math.round(Math.min(y * 0.1, heroBg.offsetHeight * 0.07)) + "px,0)");
       heroContent.style.setProperty("transform", "translate3d(0," + Math.round(y * -0.08) + "px,0)");
       heroContent.style.setProperty("opacity", String(Math.max(0, 1 - y / (window.innerHeight * 0.75))));
     };
@@ -419,168 +419,86 @@
     render();
   })();
 
-  // ---- The signature moment: nine seconds of Rockstar's Trailer 1 in YouTube's embedded player --------
-  // Nothing is downloaded or hosted (the trailers have no download and no stated licence). The player is
-  // YouTube's own IFrame API on the privacy-enhanced domain, unaltered and uncropped. What the page controls is
-  // WHEN it is shown: it is created when the section is a screen away and plays muted and hidden behind an
-  // official still, so YouTube's own title bar has faded before anything is revealed. The footage then
-  // dissolves in when the section is on screen, and the still returns whenever it is paused. It never starts
-  // for visitors who prefer reduced motion or have data saver on. Sound is opt-in through one clear button.
-  (function signatureMoment() {
-    var root = document.querySelector("[data-moment]");
-    if (!root) { return; }
-    var mount = root.querySelector("[data-moment-player]");
-    var toggleBtn = root.querySelector("[data-moment-toggle]");
-    var soundBtn = root.querySelector("[data-moment-sound]");
-    var soundLabel = root.querySelector("[data-moment-sound-label]");
-    var toggleLabel = root.querySelector("[data-moment-toggle-label]");
-    var videoId = root.getAttribute("data-youtube");
-    var start = parseFloat(root.getAttribute("data-start"));
-    var end = parseFloat(root.getAttribute("data-end"));
-    if (!/^[A-Za-z0-9_-]{11}$/.test(videoId || "") || !(end > start)) { return; }
+  // ---- The cinematic moment: native video when authorised footage exists, an official still otherwise ---------
+  // There is no third-party player on the page. When media/cinematic/ holds a video the section plays it muted as it
+  // enters the screen, pauses it when it leaves, and offers one clear Enable sound button. It stays on the still for
+  // visitors who prefer reduced motion or have data saver on, and on phones that have no lighter cut, with a button
+  // to play it on request. Without a video the section is the still and a play control that opens Rockstar's
+  // own player in the trailer overlay (handled by the dialog code below).
+  (function cinema() {
+    var root = document.querySelector("[data-cinema]");
+    var video = root && root.querySelector("[data-cinema-video]");
+    if (!root || !video) { return; }
+    var toggleBtn = root.querySelector("[data-cinema-toggle]");
+    var toggleLabel = root.querySelector("[data-cinema-toggle-label]");
+    var soundBtn = root.querySelector("[data-cinema-sound]");
+    var soundLabel = root.querySelector("[data-cinema-sound-label]");
+    var phone = window.matchMedia("(max-width: 700px)").matches;
+    var slow = !!(navigator.connection && /(^|-)(2g|3g)$/.test(navigator.connection.effectiveType || ""));
+    // Phones play only when a lighter cut was supplied; slow connections and calm visitors wait to be asked.
+    var automatic = !calm && !slow && (!phone || root.hasAttribute("data-mobile-cut"));
+    var state = { wanted: automatic, visible: false, near: false, loaded: false, failed: false };
 
-    var FIRST_REVEAL_AFTER = 3.2; // seconds of real playback before the first reveal (the title bar has faded)
-    var RESUME_REVEAL_AFTER = 0.8;
-    var player = null;
-    var phase = "idle"; // idle, loading, ready, failed
-    var state = { motion: !calm, visible: false, near: false, muted: true, everRevealed: false, playingSince: 0, wasPlaying: false, lastKick: 0 };
-    var poll = 0;
-    root.classList.toggle("is-calm", calm);
+    video.muted = true;
+    video.setAttribute("playsinline", "");
 
-    function setButtons() {
-      var playing = state.motion;
+    function labels() {
+      var playing = !video.paused && !video.ended;
       if (toggleBtn) {
-        toggleBtn.hidden = phase === "failed";
-        toggleBtn.setAttribute("aria-label", playing ? "Pause the footage" : "Play the footage");
+        toggleBtn.hidden = state.failed;
         toggleBtn.classList.toggle("is-paused", !playing);
+        toggleBtn.setAttribute("aria-label", playing ? "Pause the footage" : "Play the footage");
         if (toggleLabel) { toggleLabel.textContent = playing ? "Pause" : "Play the footage"; }
       }
       if (soundBtn) {
-        soundBtn.hidden = phase !== "ready" || !state.motion;
-        soundBtn.classList.toggle("is-on", !state.muted);
-        soundBtn.setAttribute("aria-pressed", String(!state.muted));
-        if (soundLabel) { soundLabel.textContent = state.muted ? "Enable sound" : "Sound on"; }
+        soundBtn.hidden = state.failed || !state.loaded;
+        soundBtn.setAttribute("aria-pressed", String(!video.muted));
+        if (soundLabel) { soundLabel.textContent = video.muted ? "Enable sound" : "Sound on"; }
       }
     }
 
-    function loadApi(done) {
-      if (window.YT && window.YT.Player) { done(); return; }
-      var previous = window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady = function () {
-        if (typeof previous === "function") { previous(); }
-        done();
-      };
-      var tag = document.createElement("script");
-      tag.src = "https://www.youtube.com/iframe_api";
-      tag.async = true;
-      tag.onerror = function () { phase = "failed"; setButtons(); };
-      document.head.appendChild(tag);
+    function load() {
+      if (state.loaded || state.failed) { return; }
+      state.loaded = true;
+      video.preload = "auto";
+      video.load();
     }
 
-    function hideFootage() { root.classList.remove("is-live"); }
-
-    function wrap() {
-      root.classList.add("is-dip");
-      try { player.seekTo(start, true); } catch (e) { /* player not ready */ }
-      window.setTimeout(function () { root.classList.remove("is-dip"); }, 420);
-    }
-
-    function tick() {
-      if (!player || typeof player.getCurrentTime !== "function") { return; }
-      var playing = player.getPlayerState() === 1;
-      if (playing && !state.wasPlaying) { state.playingSince = Date.now(); }
-      state.wasPlaying = playing;
-      if (!playing) {
-        // A player that was asked to play while its frame was hidden can sit idle: ask again, gently.
-        if (Date.now() - state.lastKick > 2000) { state.lastKick = Date.now(); apply(); }
-        return;
+    function sync() {
+      if (state.failed) { return; }
+      var shouldPlay = state.wanted && state.visible && !document.hidden;
+      if (shouldPlay) {
+        load();
+        safePlay(video);
+      } else if (!video.paused) {
+        video.pause();
       }
-      var t = player.getCurrentTime();
-      if (t >= end - 0.1 || t < start - 1.5) { wrap(); return; }
-      if (t >= end - 0.45) { root.classList.add("is-dip"); }
-      // Reveal only once it has genuinely been playing for a moment, is inside the chosen window and is on screen.
-      var settled = (Date.now() - state.playingSince) / 1000 >= (state.everRevealed ? RESUME_REVEAL_AFTER : FIRST_REVEAL_AFTER);
-      if (settled && state.visible && state.motion && t >= start - 0.05 && !root.classList.contains("is-live")) {
-        root.classList.add("is-live");
-        state.everRevealed = true;
-      }
+      labels();
     }
 
-    function apply() {
-      if (!player || phase !== "ready") { return; }
-      var onScreen = state.visible && state.motion && !document.hidden;
-      // Before the first reveal it may pre-roll while within a screen of the section; afterwards only on screen.
-      var play = state.motion && !document.hidden && (onScreen || (state.near && !state.everRevealed));
-      try {
-        if (play) { player.playVideo(); } else { player.pauseVideo(); }
-      } catch (e) { /* ignore */ }
-      if (!onScreen) { hideFootage(); }
-      setButtons();
-    }
-
-    function create() {
-      if (phase !== "idle") { return; }
-      phase = "loading";
-      loadApi(function () {
-        var holder = document.createElement("div");
-        mount.appendChild(holder);
-        player = new window.YT.Player(holder, {
-          host: "https://www.youtube-nocookie.com",
-          videoId: videoId,
-          playerVars: {
-            autoplay: 0, controls: 0, disablekb: 1, fs: 0, iv_load_policy: 3, modestbranding: 1,
-            playsinline: 1, rel: 0, cc_load_policy: 0, origin: window.location.origin
-          },
-          events: {
-            onReady: function () {
-              phase = "ready";
-              var frame = player.getIframe();
-              if (frame) {
-                frame.setAttribute("tabindex", "-1");
-                frame.setAttribute("title", root.getAttribute("aria-label") || "Official footage");
-              }
-              player.mute();
-              poll = window.setInterval(tick, 120);
-              // Cue at the exact start (fractional seconds); the cued event starts it when it is wanted.
-              if (state.motion && !document.hidden) {
-                player.loadVideoById({ videoId: videoId, startSeconds: start });
-              } else {
-                player.cueVideoById({ videoId: videoId, startSeconds: start });
-              }
-              setButtons();
-            },
-            onStateChange: function (e) {
-              if (e.data === 0) { wrap(); try { player.playVideo(); } catch (err) { /* ignore */ } }
-              if (e.data === 5) { apply(); } // cued
-            },
-            onError: function () {
-              phase = "failed";
-              hideFootage();
-              window.clearInterval(poll);
-              setButtons();
-            }
-          }
-        });
-      });
-    }
+    video.addEventListener("playing", function () { root.classList.add("is-live"); labels(); });
+    video.addEventListener("pause", labels);
+    video.addEventListener("volumechange", labels);
+    video.addEventListener("error", function () {
+      state.failed = true;
+      root.classList.remove("is-live");
+      labels();
+    });
+    // A source that never starts leaves the still showing; the controls stay hidden rather than do nothing.
+    video.addEventListener("stalled", function () { if (video.readyState < 2 && state.failed) { labels(); } });
 
     if (toggleBtn) {
       toggleBtn.addEventListener("click", function () {
-        state.motion = !state.motion;
-        if (state.motion && phase === "idle") { create(); }
-        if (!state.motion) { hideFootage(); }
-        apply();
-        setButtons();
+        state.wanted = video.paused;       // an explicit choice overrides the automatic rule, both ways
+        if (state.wanted) { load(); safePlay(video); } else { video.pause(); }
+        labels();
       });
     }
     if (soundBtn) {
       soundBtn.addEventListener("click", function () {
-        if (!player) { return; }
-        try {
-          if (state.muted) { player.unMute(); player.setVolume(70); } else { player.mute(); }
-          state.muted = player.isMuted();
-        } catch (e) { /* ignore */ }
-        setButtons();
+        video.muted = !video.muted;
+        if (!video.muted) { video.volume = 0.7; if (video.paused) { state.wanted = true; safePlay(video); } }
+        labels();
       });
     }
 
@@ -588,16 +506,15 @@
       new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
           state.near = entry.isIntersecting;
-          if (state.near && state.motion) { create(); } // a screen away, so it is warm when seen
-          apply();
+          if (state.near && state.wanted) { load(); }   // warm a screen away so it starts without a stall
         });
       }, { rootMargin: "100% 0px 100% 0px" }).observe(root);
       new IntersectionObserver(function (entries) {
-        entries.forEach(function (entry) { state.visible = entry.isIntersecting; apply(); });
-      }, { threshold: 0.3 }).observe(root);
+        entries.forEach(function (entry) { state.visible = entry.isIntersecting; sync(); });
+      }, { threshold: 0.35 }).observe(root);
     }
-    document.addEventListener("visibilitychange", apply);
-    setButtons();
+    document.addEventListener("visibilitychange", sync);
+    labels();
   })();
 
   // ---- Region explorer: hover, focus or tap a region to preview it; choose to step inside -------
@@ -746,6 +663,7 @@
     closeOnBackdrop(videoDialog);
     var playerBox = videoDialog.querySelector("[data-player]");
     var videoCaption = videoDialog.querySelector("[data-caption]");
+    var videoTitle = videoDialog.querySelector("[data-title]");
     videoDialog.addEventListener("close", function () { playerBox.textContent = ""; }); // stops playback
     document.querySelectorAll("[data-video]").forEach(function (trigger) {
       trigger.addEventListener("click", function () {
@@ -755,7 +673,8 @@
         frame.allow = "autoplay; fullscreen; picture-in-picture";
         playerBox.textContent = "";
         playerBox.appendChild(frame);
-        videoCaption.textContent = (trigger.getAttribute("data-title") || "") + " · official video, © Rockstar Games";
+        if (videoTitle) { videoTitle.textContent = (trigger.getAttribute("data-title") || "").replace(/^Grand Theft Auto VI[:,]?\s*/, ""); }
+        videoCaption.textContent = "Official video, played in Rockstar's own player. © Rockstar Games";
         videoDialog.showModal();
       });
     });

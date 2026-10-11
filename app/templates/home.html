@@ -6,42 +6,42 @@
 {% set featured_video = videos[0] if videos else none %}
 
 {# ============================== HERO ============================== #}
+{# One framed card of official key art. The identity lines are required: Welcome, gamers / Team Valkyrie presents / Grand Theft Auto VI. #}
 <section class="hero" id="top" aria-labelledby="hero-title" data-chapter="Welcome">
-  <div class="hero__bg" aria-hidden="true" data-hero-bg>
-    <div class="hero__sky"></div>
-    {% for m in hero %}
-      <div class="media hero__slide{% if hero | length > 1 %} hero__slide--cycle{% endif %}" data-slide="{{ loop.index }}">
-        {% if image_src(m.embed_url, 1920) %}
-        <img class="media__img" src="{{ image_src(m.embed_url, 1920) }}" srcset="{{ image_srcset(m.embed_url) }}" sizes="100vw"
-             alt="" {% if loop.first %}fetchpriority="high"{% else %}loading="lazy"{% endif %} decoding="async" referrerpolicy="no-referrer">
-        {% endif %}
+  <div class="container--wide">
+    <div class="hero__card">
+      <div class="hero__bg" aria-hidden="true" data-hero-bg>
+        <div class="hero__sky"></div>
+        {% for m in hero %}
+          <div class="media hero__slide{% if hero | length > 1 %} hero__slide--cycle{% endif %}" data-slide="{{ loop.index }}">
+            {% if image_src(m.embed_url, 1920) %}
+            <img class="media__img" src="{{ image_src(m.embed_url, 1920) }}" srcset="{{ image_srcset(m.embed_url) }}" sizes="(min-width: 760px) 100vw, 180vw"
+                 alt="" {% if loop.first %}fetchpriority="high"{% else %}loading="lazy"{% endif %} decoding="async" referrerpolicy="no-referrer">
+            {% endif %}
+          </div>
+        {% endfor %}
+        <div class="hero__shade"></div>
       </div>
-    {% endfor %}
-    <div class="hero__shade"></div>
-  </div>
 
-  <div class="container hero__content" data-hero-content>
-    <p class="hero__welcome">Welcome, gamers</p>
-    <p class="hero__presents">Team Valkyrie presents</p>
-    <h1 id="hero-title" class="hero__title">
-      <span class="hero__gta">Grand Theft Auto</span>
-      <span class="hero__vi" aria-label="Six">VI</span>
-    </h1>
-    <p class="hero__lede">The people, places and machines of Leonida, in one place.</p>
-    <div class="hero__actions">
-      <a class="btn" href="#leads">Start exploring</a>
-      {% if featured_video %}
-      <button class="play-btn" type="button" data-video="{{ player_src(featured_video.embed_url, true) }}" data-title="{{ featured_video.title }}">
-        <span class="play-btn__disc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></span>
-        Watch the trailer
-      </button>
-      {% endif %}
-    </div>
-  </div>
+      <div class="hero__content" data-hero-content>
+        <p class="hero__welcome">Welcome, gamers</p>
+        <p class="hero__presents">Team Valkyrie presents</p>
+        <h1 id="hero-title" class="hero__title">
+          <span class="hero__gta">Grand Theft Auto</span>
+          <span class="hero__vi" aria-label="Six">VI</span>
+        </h1>
+        <p class="hero__lede">The people, places and machines of Leonida, in one place.</p>
+        <div class="hero__actions">
+          <a class="btn" href="#leads">Start exploring</a>
+          {% if featured_video %}
+          <button class="play-btn" type="button" data-video="{{ player_src(featured_video.embed_url, true) }}" data-title="{{ featured_video.title }}">
+            <span class="play-btn__disc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></span>
+            Watch the trailer
+          </button>
+          {% endif %}
+        </div>
+      </div>
 
-  <div class="hero__foot">
-    <div class="container">
-      <a class="hero__cue" href="#leads" aria-label="Scroll down"><i></i>Scroll</a>
       <p class="hero__release">Coming<strong>{{ release_note }}</strong></p>
     </div>
   </div>
@@ -50,22 +50,21 @@
 {# ============================== TWO LEADS ============================== #}
 {% if leads %}
 <section class="section chapter" id="leads" aria-labelledby="leads-title" data-chapter="The leads">
-  <div class="container">
+  <div class="container--wide">
     <div class="section-head reveal">
       <p class="eyebrow">Jason and Lucia</p>
       <h2 id="leads-title">Two leads, one story</h2>
       <p class="subtitle">Jason Duval and Lucia Caminos are the two leads of Grand Theft Auto VI.</p>
     </div>
-    <div class="duo">
+    <div class="leads">
       {% for c in leads %}
-      <a class="duo__panel reveal" data-delay="{{ loop.index }}" href="{{ url_for('pages.character_detail', slug=c.slug) }}">
-        {{ picture(c.cover, fallback=initials(c.full_name), sizes='(min-width: 900px) 98vw, 190vw', alt='', cls='duo__media') }}
-        <span class="duo__shade" aria-hidden="true"></span>
-        <span class="duo__body">
-          <span class="duo__role">{{ c.role_title }}</span>
-          <span class="duo__name">{{ c.full_name }}</span>
-          <span class="duo__summary">{{ c.summary }}</span>
-          <span class="duo__more">Read the profile</span>
+      <a class="key-card leads__card reveal" data-delay="{{ loop.index }}" href="{{ url_for('pages.character_detail', slug=c.slug) }}">
+        {{ picture(c.cover, fallback=initials(c.full_name), sizes='(min-width: 900px) 67vw, 222vw', alt='') }}
+        <span class="key-card__body">
+          <span class="key-card__eyebrow">{{ c.role_title }}</span>
+          <h3 class="key-card__title">{{ c.full_name }}</h3>
+          <span class="key-card__line">{{ c.summary }}</span>
+          <span class="pill">Read the profile</span>
         </span>
       </a>
       {% endfor %}
@@ -74,37 +73,53 @@
 </section>
 {% endif %}
 
-{# ============================== THE SIGNATURE MOMENT ============================== #}
-{# Nine seconds of Rockstar's own Trailer 1 in YouTube's embedded player. No heading: the footage is the point.
-   The player is created by the script only when the section is near the screen. #}
-{% if moment %}
-<section class="moment chapter" id="moment" data-chapter="The footage" aria-label="{{ moment.title }}"
-         data-moment data-youtube="{{ moment.youtube_id }}" data-start="{{ moment.start }}" data-end="{{ moment.end }}">
-  <div class="moment__frame">
-    {{ picture(moment.poster, fallback='', sizes='max(100vw, 178vh)', alt='', cls='moment__poster') }}
-    <div class="moment__player" data-moment-player aria-hidden="true"></div>
-    <div class="moment__dip" aria-hidden="true"></div>
-    <div class="moment__shade" aria-hidden="true"></div>
+{# ============================== THE CINEMATIC MOMENT ============================== #}
+{# Native video when the owner has supplied authorised footage (media/cinematic/); otherwise an official still with
+   a play control that opens the trailer in Rockstar's own player. No iframe, no third-party interface on the page. #}
+{% if cinema %}
+{% set native = cinema.native %}
+<section class="cinema chapter{% if native %} has-video{% endif %}" id="moment" data-chapter="The footage" aria-label="{{ 'Grand Theft Auto VI' if native else cinema.title }}, official footage"
+         data-cinema{% if native and native.mobile %} data-mobile-cut{% endif %}>
+  <div class="cinema__frame">
+    {{ picture(cinema.poster, fallback='', sizes='max(100vw, 178vh)', alt='', cls='cinema__poster') }}
+    {% if native %}
+    <video class="cinema__video" data-cinema-video muted loop playsinline preload="none" aria-label="Grand Theft Auto VI, official footage"
+           {% if native.poster %}poster="{{ media_file_url(native.poster) }}"{% endif %}>
+      {% if native.mobile %}<source src="{{ media_file_url(native.mobile) }}" media="(max-width: 700px)" type="video/mp4">{% endif %}
+      <source src="{{ media_file_url(native.video) }}" type="video/mp4">
+    </video>
+    {% endif %}
+    <div class="cinema__shade" aria-hidden="true"></div>
   </div>
-  <div class="moment__bar">
-    <div class="container moment__inner">
-      <div class="moment__ui">
-        <button class="moment__sound" type="button" data-moment-sound aria-pressed="false" hidden>
-          <svg class="moment__icon moment__icon--off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 9l5 6M21 9l-5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          <svg class="moment__icon moment__icon--on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 010 7M18.5 6a8.5 8.5 0 010 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          <span data-moment-sound-label>Enable sound</span>
+  <div class="cinema__bar">
+    <div class="container--wide cinema__inner">
+      <div class="cinema__copy">
+        <p class="cinema__eyebrow">{% if native %}Official footage{% else %}Official trailer{% endif %}</p>
+        {% if cinema.trailer and not native %}
+        <button class="cinema__play" type="button" data-video="{{ player_src(cinema.trailer.embed_url, true) }}" data-title="{{ cinema.trailer.title }}">
+          <span class="cinema__disc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></span>
+          <span class="cinema__play-label">Watch {{ cinema.title }}</span>
         </button>
-        <button class="moment__pause" type="button" data-moment-toggle aria-label="Pause the footage" hidden>
-          <svg class="moment__icon moment__icon--pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>
-          <svg class="moment__icon moment__icon--play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
-          <span class="moment__pause-label" data-moment-toggle-label>Pause</span>
-        </button>
+        {% endif %}
+        <p class="cinema__credit"><span>{% if native %}Grand Theft Auto VI{% else %}Played in Rockstar's own player{% endif %}</span> <span aria-hidden="true">&middot;</span> <span>&copy; Rockstar Games</span></p>
       </div>
-      <p class="moment__credit">
-        {{ moment.title }} <span aria-hidden="true">&middot;</span> &copy; Rockstar Games
-        {% if moment.trailer %}<span aria-hidden="true">&middot;</span>
-        <button class="moment__link" type="button" data-video="{{ player_src(moment.trailer.embed_url, true) }}" data-title="{{ moment.trailer.title }}">Watch the full trailer</button>{% endif %}
-      </p>
+      {% if native %}
+      <div class="cinema__ui">
+        <button class="cinema__btn" type="button" data-cinema-toggle aria-label="Pause the footage" hidden>
+          <svg class="cinema__icon cinema__icon--pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>
+          <svg class="cinema__icon cinema__icon--play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+          <span class="cinema__btn-label" data-cinema-toggle-label>Pause</span>
+        </button>
+        <button class="cinema__btn" type="button" data-cinema-sound aria-pressed="false" hidden>
+          <svg class="cinema__icon cinema__icon--off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 9l5 6M21 9l-5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <svg class="cinema__icon cinema__icon--on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 010 7M18.5 6a8.5 8.5 0 010 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <span data-cinema-sound-label>Enable sound</span>
+        </button>
+        {% if cinema.trailer %}
+        <button class="cinema__btn" type="button" data-video="{{ player_src(cinema.trailer.embed_url, true) }}" data-title="{{ cinema.trailer.title }}">Watch the full trailer</button>
+        {% endif %}
+      </div>
+      {% endif %}
     </div>
   </div>
 </section>
@@ -167,25 +182,23 @@
 
 {# ============================== REGIONS ============================== #}
 <section class="section chapter" id="leonida" aria-labelledby="leonida-title" data-chapter="Leonida">
-  <div class="container">
+  <div class="container--wide">
     <div class="section-head reveal">
       <p class="eyebrow">Explore Leonida</p>
       <h2 id="leonida-title">Six regions, one state</h2>
       <p class="subtitle">Hover a region to preview it, or choose one to step inside.</p>
     </div>
-  </div>
-  <div class="container--wide">
     <div class="regions reveal" data-regions>
       <div class="regions__stage">
         {% for r in regions %}
         <div class="regions__view{% if loop.first %} is-active{% endif %}" data-region-view="{{ loop.index0 }}">
-          {{ picture(r.cover, fallback=r.name, sizes='100vw', alt='', cls='regions__media') }}
+          {{ picture(r.cover, fallback=r.name, sizes='(min-width: 900px) 100vw, 180vw', alt='', cls='regions__media') }}
           <span class="regions__shade" aria-hidden="true"></span>
           <div class="regions__text">
-            <p class="regions__num">{{ '%02d' | format(loop.index) }} / {{ '%02d' | format(regions | length) }}</p>
+            <p class="regions__num">Region {{ '%02d' | format(loop.index) }} / {{ '%02d' | format(regions | length) }}</p>
             <h3 class="regions__name">{{ r.name }}</h3>
             <p class="regions__summary">{{ r.summary }}</p>
-            <a class="btn" href="{{ url_for('pages.region_detail', slug=r.slug) }}">Explore {{ r.name }}</a>
+            <a class="pill" href="{{ url_for('pages.region_detail', slug=r.slug) }}">Explore {{ r.name }}</a>
           </div>
         </div>
         {% endfor %}

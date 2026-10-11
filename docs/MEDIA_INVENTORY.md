@@ -33,6 +33,8 @@ All 85 referenced URLs were requested before they were recorded and returned HTT
 
 ## The signature moment (refinement round 3)
 
+> **Superseded by Design Reset Gate 2.** The homepage no longer plays any trailer footage through YouTube's player as a background. The section is now a native-video slot: an official still with a play control that opens Rockstar's own player on request, or, when the owner supplies footage that is authorised for reuse and builds `media/cinematic/cinematic.mp4`, native HTML5 video (muted autoplay in view, paused out of view, an Enable sound button, reduced-motion and phone fallbacks). The rights findings below still apply and are the reason nothing is copied from the trailers. See `docs/DESIGN_GATE2.md`.
+
 The homepage has one full-screen sequence between the two leads and the cast. This section records how it was chosen, what the usage position is, and what the limits are.
 
 ### Rights position

@@ -8,7 +8,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; scroll-padding-top: calc(var(--header-h) + 8px); -webkit-text-size-adjust: 100%; }
 html.menu-open { overflow: hidden; }
-#top, .moment { scroll-margin-top: calc(-1 * (var(--header-h) + 8px)); }   /* full-bleed: flush with the top of the screen */
+#top, .cinema { scroll-margin-top: calc(-1 * (var(--header-h) + 8px)); }   /* full-bleed: flush with the top of the screen */
 .section.chapter { scroll-margin-top: calc(-8px - clamp(36px, 7vw, 100px)); }
 body {
   margin: 0; min-height: 100vh; display: flex; flex-direction: column;
@@ -44,7 +44,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .section-head { display: grid; gap: var(--s2); margin-bottom: var(--s5); max-width: 700px; }
 .eyebrow { display: inline-flex; align-items: center; gap: 14px; margin: 0; font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--label); }
 .eyebrow::before { content: ""; width: 26px; height: 1px; background: currentColor; opacity: .8; }
-.section-head .subtitle { max-width: 52ch; }
+.section-head .subtitle { max-width: 52ch; text-wrap: balance; }
 
 /* ---------- Header: lockup on the left, one pill and a menu on the right ---------- */
 .site-header {
@@ -53,7 +53,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   transition: background var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease);
 }
 .site-header.is-solid, .site-header--solid, html.menu-open .site-header {
-  background: rgba(26, 23, 64, .94); box-shadow: 0 1px 0 var(--line); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  background: rgba(26, 23, 64, .985); box-shadow: 0 1px 0 var(--line-strong), 0 12px 28px -18px rgba(0, 0, 0, .6); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
 }
 .header-inner { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
 
@@ -116,7 +116,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   font: 700 var(--t-small)/1 var(--font-text); letter-spacing: var(--track-ui); transition: background var(--dur-2); }
 .site-menu__watch:hover { background: var(--action-hover); color: var(--on-action); }
 .site-menu__watch svg { width: 11px; height: 11px; fill: currentColor; }
-.site-menu__note { margin: 0; max-width: 40ch; color: var(--text-3); font-size: var(--t-small); line-height: 1.6; }
+.site-menu__note { margin: 0; max-width: 44ch; color: var(--text-3); font-size: var(--t-micro); line-height: 1.5; opacity: .85; }
 /* Without JavaScript the menu is simply a list under the header. */
 html:not(.js) .site-header { position: static; background: var(--ground-2); }
 html:not(.js) .site-menu { position: static; }
@@ -194,6 +194,6 @@ html:not(.js) .hero, html:not(.js) .page-hero { padding-top: 48px; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+  *, *::before, *::after { animation-duration: .001ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; transition-delay: 0s !important; }
   .js .reveal { opacity: 1; transform: none; }
 }

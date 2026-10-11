@@ -502,11 +502,13 @@ def test_homepage_regions_are_an_explorer_not_six_columns(client):
     assert regions.count("rockstargames.com/VI/_next/static/media/") >= 6        # every region shows official artwork
 
 
-def test_homepage_leads_are_two_matched_panels(client):
+def test_homepage_leads_are_two_matched_cards(client):
     page = html(client, "/")
     leads = page.split('id="leads"')[1].split("</section>")[0]
-    assert names(leads, "duo__name") == ["Jason Duval", "Lucia Caminos"]
-    assert leads.count('class="duo__panel') == 2 and leads.count('class="media duo__media"') == 2
+    assert names(leads, "key-card__title") == ["Jason Duval", "Lucia Caminos"]
+    assert leads.count('class="key-card leads__card') == 2 and leads.count('class="key-card__eyebrow"') == 2
+    assert leads.count('<span class="pill">Read the profile</span>') == 2
+    assert 'href="/characters/jason-duval"' in leads and 'href="/characters/lucia-caminos"' in leads
 
 
 def test_media_section_uses_official_posters_and_the_official_player(client):
@@ -567,45 +569,47 @@ def test_copy_names_jason_and_lucia_as_the_two_leads(client):
     assert "playable protagonists" not in page and "first two" not in page
 
 
-def test_signature_moment_sits_between_the_leads_and_the_cast(client):
+def test_cinematic_moment_sits_between_the_leads_and_the_cast(client):
     page = html(client, "/")
     assert page.index('id="leads"') < page.index('id="moment"') < page.index('id="cast"')
     moment = page.split('id="moment"')[1].split("</section>")[0]
     assert not re.search(r"<h[1-6]", moment)                                      # the footage is the point, no heading
-    assert 'data-youtube="QdBZY2fkU-0"' in page and 'data-start="18.5"' in page and 'data-end="27.3"' in page
-    assert "<iframe" not in page.split("<dialog")[0]                              # created by the script, near the screen
-    assert "moment__poster" in moment and "rockstargames.com/VI/_next/static/media/" in moment   # official still while it loads
-    assert "Watch the full trailer" in moment and "data-video=" in moment         # a way into Rockstar's own player
+    assert "<iframe" not in page.split("<dialog")[0] and "youtube" not in moment.lower().replace("rockstar", "")
+    assert "cinema__poster" in moment and "rockstargames.com/VI/_next/static/media/" in moment   # an official still
+    assert "data-video=" in moment and "Watch Trailer 1" in moment                # a way into Rockstar's own player
     assert "&copy; Rockstar Games" in moment
+    assert "<video" not in moment and "data-cinema-video" not in moment           # no native video until it is supplied
 
 
-def test_signature_moment_player_is_allowed_by_the_policy_and_nothing_else_widened(client):
+def test_policy_allows_only_the_trailer_frame_and_no_third_party_scripts(client):
     csp = client.get("/").headers["Content-Security-Policy"]
     assert "frame-src https://www.rockstargames.com https://www.youtube-nocookie.com;" in csp
-    assert "script-src 'self' https://www.youtube.com;" in csp
+    assert "script-src 'self';" in csp and "youtube.com;" not in csp.split("script-src")[1].split(";")[0]
     assert "unsafe-inline" not in csp and "unsafe-eval" not in csp
-    assert "img-src 'self' https://www.rockstargames.com data:;" in csp
+    assert "img-src 'self' https://www.rockstargames.com data:;" in csp and "media-src 'self';" in csp
 
 
-def test_signature_moment_ids_are_validated(monkeypatch, client):
+def test_cinematic_needs_a_real_still_and_a_real_trailer(monkeypatch, client):
     from app import media_slots, media_urls
     assert media_urls.youtube_id("QdBZY2fkU-0") == "QdBZY2fkU-0"
     for bad in (None, "", "short", "x" * 12, 'QdBZY2fkU-0"><script>', "../../etc/passwd"):
         assert media_urls.youtube_id(bad) is None, bad
-    monkeypatch.setitem(media_slots.SIGNATURE_MOMENT, "youtube_id", "bad id")
-    assert 'id="moment"' not in html(client, "/")                                  # a bad id removes the section
+    monkeypatch.setitem(media_slots.CINEMATIC, "trailer", "no-such-video")
+    assert 'id="moment"' not in html(client, "/")                                  # nothing to play: the section is left out
 
 
-def test_signature_moment_window_is_a_real_short_sequence():
+def test_cinematic_slots_point_at_listed_official_media():
     from app import media_slots
-    span = media_slots.SIGNATURE_MOMENT["end"] - media_slots.SIGNATURE_MOMENT["start"]
-    assert 8 <= span <= 12
+    assert media_slots.CINEMATIC["trailer"] in media_slots.VIDEO_SLUGS
+    assert media_slots.CINEMATIC["poster"] in media_slots.VIDEO_POSTER_SLUGS + media_slots.BACKDROP_SLUGS
 
 
-def test_script_only_starts_the_moment_when_motion_is_welcome():
-    moment = _script().split("function signatureMoment()")[1]
-    assert "motion: !calm" in moment and "document.hidden" in moment and "IntersectionObserver" in moment
-    assert "youtube-nocookie.com" in moment and "player.mute()" in moment
+def test_script_only_plays_the_cinematic_when_motion_is_welcome():
+    code = _script().split("function cinema()")[1].split("function regionExplorer()")[0]
+    assert "automatic = !calm" in code and "document.hidden" in code and "IntersectionObserver" in code
+    assert "video.muted = true" in code and "video.pause()" in code               # muted autoplay, paused when out of view
+    assert "data-mobile-cut" in code and "effectiveType" in code                  # phones and slow links wait or get a lighter cut
+    assert "youtube" not in code.lower() and "iframe" not in code.lower()          # no third-party player on the page
 
 
 def test_trailers_and_screenshots_are_two_distinct_blocks(client):
@@ -682,34 +686,45 @@ def test_locally_built_reel_matches_the_rules_when_it_exists():
 
 
 def test_cast_script_seeks_one_buffered_reel_and_holds_a_chosen_person():
-    code = _script().split("function castStage()")[1].split("function signatureMoment()")[0]
+    code = _script().split("function castStage()")[1].split("function cinema()")[0]
     assert "video.src = reelSrc" in code and 'video.preload = "auto"' in code     # buffered once, early
     assert "data-clip" not in code                                                # no per-person download on choosing
     assert "HOLD_BEFORE_END" in code and "video.pause()" in code                  # a chosen person plays once, then holds
     assert '"Replay"' in code                                                     # replay is a first-class state
 
 
-def test_signature_footage_has_no_text_pills_and_one_clear_sound_control(client):
+def test_native_cinematic_has_one_sound_button_and_no_third_party_player(client, local_cinematic):
     page = html(client, "/")
     moment = page.split('id="moment"')[1].split("</section>")[0]
-    assert "moment__btn" not in moment                                            # the old row of text pills is gone
-    assert "data-moment-sound" in moment and "Enable sound" in moment
-    assert 'aria-label="Pause the footage"' in moment                             # the pause control is an icon with a label
-    assert moment.count("<button") == 3                                           # sound, pause, and the trailer link
+    assert "<video" in moment and 'data-cinema-video' in moment and "muted" in moment and "playsinline" in moment
+    assert 'preload="none"' in moment and 'poster="/media/cinematic/cinematic.jpg"' in moment
+    assert '<source src="/media/cinematic/cinematic-mobile.mp4" media="(max-width: 700px)"' in moment
+    assert '<source src="/media/cinematic/cinematic.mp4" type="video/mp4">' in moment
+    assert "data-cinema-sound" in moment and "Enable sound" in moment
+    assert 'aria-label="Pause the footage"' in moment and "data-mobile-cut" in moment
+    assert "<iframe" not in page.split("<dialog")[0] and "Watch Trailer 1" not in moment    # no fake play disc over real footage
+    assert "Watch the full trailer" in moment and "&copy; Rockstar Games" in moment
+    assert moment.count("<button") == 3                                           # pause, sound, and the full trailer
 
 
-def test_footage_script_hides_the_player_until_it_has_settled():
-    code = _script().split("function signatureMoment()")[1]
-    assert "FIRST_REVEAL_AFTER" in code and "is-live" in code
-    assert "playerVars" in code and "controls: 0" in code and "modestbranding: 1" in code
-    assert "crop" not in code.lower().replace("cropping", "")                    # branding is never cropped or covered
+def test_native_cinematic_reveals_only_once_playing_and_survives_a_bad_file():
+    code = _script().split("function cinema()")[1].split("function regionExplorer()")[0]
+    assert '"playing"' in code and "is-live" in code                              # the still stays until frames are moving
+    assert '"error"' in code and "state.failed = true" in code                   # a broken file leaves the still, no dead controls
+    assert 'video.preload = "auto"' in code and "video.load()" in code           # nothing downloads until it is wanted
 
 
 def test_display_titles_use_the_condensed_face_and_body_stays_sans():
-    css = _css()["pages.css"]
-    for selector in (".duo__name", ".cast__name", ".page-hero h1", ".garage-row__name", ".video-card__title b"):
-        rule = re.search(r"^" + re.escape(selector) + r" \{([^}]*)\}", css, re.M).group(1)
-        assert "var(--font-mark)" in rule and "text-transform: uppercase" in rule, selector
+    css = _css()
+    wanted = {
+        "components.css": (".key-card__title",),
+        "pages.css": (".hero__vi", ".regions__name", ".cast__name", ".page-hero h1", ".garage-row__name"),
+    }
+    for sheet, selectors in wanted.items():
+        for selector in selectors:
+            rule = re.search(r"^" + re.escape(selector) + r" \{([^}]*)\}", css[sheet], re.M)
+            assert rule, selector
+            assert re.search(r"var\(--font-(?:mark|display)\)", rule.group(1)), selector
 
 
 def test_images_ask_for_what_the_layout_needs(client):
@@ -718,8 +733,9 @@ def test_images_ask_for_what_the_layout_needs(client):
     page = html(client, "/")
     assert "2560w" in page                                                         # high-density screens can get 2560
     leads = page.split('id="leads"')[1].split("</section>")[0]
-    assert 'sizes="(min-width: 900px) 98vw, 190vw"' in leads                      # tall crops are sized by height
+    assert 'sizes="(min-width: 900px) 67vw, 222vw"' in leads                     # 4:3 and 4:5 crops are sized by height
     assert 'sizes="max(100vw, 178vh)"' in page.split('id="moment"')[1].split("</section>")[0]
+    assert 'sizes="(min-width: 760px) 100vw, 180vw"' in page.split('id="top"')[1].split("</section>")[0]
 
 
 def test_detail_galleries_are_full_width_and_leave_no_empty_cells(client):
@@ -742,6 +758,85 @@ def test_detail_galleries_are_full_width_and_leave_no_empty_cells(client):
 
 def test_an_explicit_cast_choice_is_never_overridden_by_the_automatic_start():
     """Regression: the first time the stage scrolled into view it restarted the reel over the visitor's choice."""
-    code = _script().split("function castStage()")[1].split("function signatureMoment()")[0]
+    code = _script().split("function castStage()")[1].split("function cinema()")[0]
     assert code.count("state.started = true") >= 4                               # automatic start, person, pause, reel
     assert "!state.started" in code                                              # the automatic start checks it
+
+
+
+# ------------------------------------------------------------------ design reset, Gate 2: hero, leads, cinematic, regions
+@pytest.fixture()
+def local_cinematic(app, tmp_path):
+    """A media folder with a tiny stand-in cinematic, its poster and a lighter phone cut."""
+    folder = tmp_path / "cinematic"
+    folder.mkdir()
+    for name in ("cinematic.mp4", "cinematic-mobile.mp4"):
+        (folder / name).write_bytes(b"ftypmp42")
+    (folder / "cinematic.jpg").write_bytes(b"JFIF")
+    previous = app.config["MEDIA_ROOT"]
+    app.config["MEDIA_ROOT"] = str(tmp_path)
+    yield tmp_path
+    app.config["MEDIA_ROOT"] = previous
+
+
+def test_hero_is_one_framed_card_that_keeps_the_required_identity(client):
+    page = html(client, "/")
+    hero = page.split('id="top"')[1].split("</section>")[0]
+    assert 'class="hero__card"' in hero and "hero__bg" in hero and "hero__shade" in hero
+    assert "Welcome, gamers" in hero and "Team Valkyrie presents" in hero
+    assert 'class="hero__gta">Grand Theft Auto</span>' in hero and 'class="hero__vi"' in hero
+    assert "Start exploring" in hero and "Watch the trailer" in hero and "hero__release" in hero
+    assert "rockstargames.com/VI/_next/static/media/" in hero                    # official key art
+    assert hero.count("<h1") == 1
+
+
+def test_cinematic_falls_back_to_the_still_and_the_overlay_without_footage(client):
+    page = html(client, "/")
+    moment = page.split('id="moment"')[1].split("</section>")[0]
+    assert "has-video" not in page
+    assert 'class="cinema__play"' in moment and "data-title=" in moment
+    assert "Played in Rockstar's own player" in moment
+
+
+def test_cinematic_files_are_served_with_strict_names(client, local_cinematic):
+    ok = client.get("/media/cinematic/cinematic.mp4")
+    assert ok.status_code == 200 and ok.headers["Content-Type"].startswith("video/mp4")
+    assert client.get("/media/cinematic/cinematic.jpg").status_code == 200
+    for bad in ("/media/cinematic/Cinematic.mp4", "/media/cinematic/cinematic.php", "/media/cinematic/../clips/x.mp4",
+                "/media/cinematic/sub/cinematic.mp4", "/media/cinematic/cinematic.json", "/media/source-videos/trailers/a.mp4"):
+        assert client.get(bad).status_code == 404, bad
+
+
+def test_cinematic_lookup_needs_the_video_and_tolerates_missing_extras(app, tmp_path):
+    from app import local_media
+    previous = app.config["MEDIA_ROOT"]
+    try:
+        app.config["MEDIA_ROOT"] = str(tmp_path)
+        with app.app_context():
+            assert local_media.cinematic() is None
+            (tmp_path / "cinematic").mkdir()
+            (tmp_path / "cinematic" / "cinematic.jpg").write_bytes(b"JFIF")
+            assert local_media.cinematic() is None                                 # a poster alone is not a cinematic
+            (tmp_path / "cinematic" / "cinematic.mp4").write_bytes(b"ftypmp42")
+            found = local_media.cinematic()
+            assert found["video"] == "cinematic/cinematic.mp4" and found["poster"] == "cinematic/cinematic.jpg"
+            assert found["mobile"] is None
+    finally:
+        app.config["MEDIA_ROOT"] = previous
+
+
+def test_region_explorer_is_one_stage_six_tabs_and_real_links(client):
+    page = html(client, "/")
+    regions = page.split('id="leonida"')[1].split("</section>")[0]
+    assert regions.count("data-region-view=") == 6 and regions.count("data-region-tab=") == 6
+    assert regions.count('class="pill"') == 6                                      # one way in per region
+    assert re.findall(r'class="regions__num">Region (\d\d) / 06<', regions) == ["01", "02", "03", "04", "05", "06"]
+    for slug in ("vice-city", "leonida-keys", "grassrivers", "port-gellhorn", "ambrosia", "mount-kalaga"):
+        assert f'href="/regions/{slug}"' in regions, slug
+
+
+def test_section_order_and_untouched_sections_survive_gate_2(client):
+    page = html(client, "/")
+    order = [page.index(f'id="{name}"') for name in ("top", "leads", "moment", "cast", "leonida", "garage", "stories", "media")]
+    assert order == sorted(order)
+    assert page.count("data-cast-item") == 8 and 'data-showroom' in page and 'class="theatre"' in page
