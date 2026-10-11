@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_components.html" import badge, type_badge, picture, initials, page_hero, provenance %}
+{% from "_components.html" import badge, type_badge, picture, initials, page_hero, provenance, bento %}
 {% block title %}{{ character.full_name }}{% endblock %}
 {% block description %}{{ character.summary }}{% endblock %}
 {% block content %}
@@ -47,18 +47,6 @@
       </dl>
       {{ provenance(character) }}
 
-      {% if character.gallery | length > 1 %}
-      <div>
-        <h2 class="panel-title">Gallery</h2>
-        <ul class="gallery">
-          {% for m in character.gallery %}
-          {% if image_src(m.embed_url, 1920) %}
-          <li><a href="{{ image_src(m.embed_url, 1920) }}" data-lightbox data-caption="{{ m.title }}">{{ picture(m, sizes='(min-width: 900px) 25vw, 50vw') }}</a></li>
-          {% endif %}
-          {% endfor %}
-        </ul>
-      </div>
-      {% endif %}
     </div>
 
     <aside class="profile__side stack">
@@ -107,6 +95,13 @@
       {% endif %}
     </aside>
   </div>
+
+  {% if character.gallery | length > 1 %}
+  <div class="container gallery-page">
+    <h2 class="subhead gallery-page__title" id="gallery-title">Gallery</h2>
+    {{ bento(character.gallery, 'gallery-title') }}
+  </div>
+  {% endif %}
   <div class="container"><p class="section-more"><a class="link-arrow" href="{{ url_for('pages.characters') }}">All characters</a></p></div>
 </section>
 {% endblock %}

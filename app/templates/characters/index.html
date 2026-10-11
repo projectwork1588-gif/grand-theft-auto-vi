@@ -48,7 +48,7 @@
       <div class="duo">
         {% for c in leads %}
         <a class="duo__panel reveal" data-delay="{{ loop.index }}" href="{{ url_for('pages.character_detail', slug=c.slug) }}">
-          {{ picture(c.cover, fallback=initials(c.full_name), sizes='(min-width: 900px) 46vw, 100vw', alt='', cls='duo__media') }}
+          {{ picture(c.cover, fallback=initials(c.full_name), sizes='(min-width: 900px) 98vw, 190vw', alt='', cls='duo__media') }}
           <span class="duo__shade" aria-hidden="true"></span>
           <span class="duo__body">
             <span class="duo__role">{{ c.role_title }}</span>
@@ -71,7 +71,7 @@
         {% for c in supporting %}
         <li class="reveal" data-delay="{{ loop.index0 % 3 + 1 }}">
           <a class="portrait" href="{{ url_for('pages.character_detail', slug=c.slug) }}">
-            {{ picture(c.cover, fallback=initials(c.full_name), sizes='(min-width: 900px) 30vw, 50vw', alt='') }}
+            {{ picture(c.cover, fallback=initials(c.full_name), sizes='(min-width: 900px) 67vw, (min-width: 520px) 112vw, 200vw', alt='') }}
             <span class="portrait__shade" aria-hidden="true"></span>
             <span class="portrait__body">
               <span class="portrait__role">{{ c.role_title }}</span>
@@ -113,7 +113,7 @@
       {% for c in data %}
       <li class="reveal" data-delay="{{ loop.index0 % 3 + 1 }}">
         <a class="portrait" href="{{ url_for('pages.character_detail', slug=c.slug) }}">
-          {{ picture(c.cover, fallback=initials(c.full_name), sizes='(min-width: 900px) 30vw, 50vw', alt='') }}
+          {{ picture(c.cover, fallback=initials(c.full_name), sizes='(min-width: 900px) 67vw, (min-width: 520px) 112vw, 200vw', alt='') }}
           <span class="portrait__shade" aria-hidden="true"></span>
           <span class="portrait__body">
             <span class="portrait__role">{{ c.role_title }}</span>

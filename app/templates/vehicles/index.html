@@ -21,7 +21,7 @@
       {% for v in data %}
       <article class="garage-row reveal">
         <a class="garage-row__media" href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}" tabindex="-1" aria-hidden="true">
-          {{ picture(v.cover, fallback=v.manufacturer or v.name, sizes='(min-width: 900px) 58vw, 100vw', alt='') }}
+          {{ picture(v.cover, fallback=v.manufacturer or v.name, sizes='(min-width: 860px) 56vw, 100vw', alt='') }}
         </a>
         <div class="garage-row__text">
           <p class="garage-row__cat">{{ v.category_name }}</p>

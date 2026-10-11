@@ -78,7 +78,7 @@
 {%- endmacro %}
 
 {# A showroom slide / garage row image block with the vehicle text. #}
-{% macro vehicle_slide(v, index, sizes='(min-width: 900px) 70vw, 100vw') -%}
+{% macro vehicle_slide(v, index, sizes='(min-width: 900px) min(84vw, 980px), 165vw') -%}
   <a class="slide" href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}">
     {{ picture(v.cover, fallback=v.manufacturer or v.name, sizes=sizes, alt='') }}
     <span class="slide__shade" aria-hidden="true"></span>
@@ -89,4 +89,24 @@
       <span class="slide__make">{{ v.manufacturer or 'Manufacturer not stated' }}</span>
     </span>
   </a>
+{%- endmacro %}
+
+{# A gallery that fills its rows exactly. Six or more images use four columns in runs of six (wide, one, one,
+   one, one, wide); fewer use an even grid, so there is never an empty cell. Grouped for the image viewer. #}
+{% macro bento(items, labelledby='') -%}
+  {% set usable = [] %}
+  {% for m in items %}{% if image_src(m.embed_url, 2560) %}{% set _ = usable.append(m) %}{% endif %}{% endfor %}
+  {% set n = usable | length %}
+  {% set shown = ((n // 6) * 6) if n >= 6 else n %}
+  {% set mode = 'quad' if n >= 6 else ('five' if n == 5 else ('three' if n == 3 else 'duo')) %}
+  {% if n >= 2 %}
+  <ul class="bento bento--{{ mode }}" data-gallery{% if labelledby %} aria-labelledby="{{ labelledby }}"{% endif %}>
+    {% for m in usable[:shown] %}
+    {% set wide = (mode == 'quad' and loop.index0 % 6 in (0, 5)) or (mode == 'five' and loop.first) %}
+    <li class="bento__item{% if wide %} bento__item--wide{% endif %}">
+      <a href="{{ image_src(m.embed_url, 2560) }}" data-lightbox data-caption="{{ m.title }}">{{ picture(m, sizes=('(min-width: 800px) 47vw, 100vw' if wide else '(min-width: 800px) 24vw, 50vw')) }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
 {%- endmacro %}

@@ -59,7 +59,7 @@
     <div class="duo">
       {% for c in leads %}
       <a class="duo__panel reveal" data-delay="{{ loop.index }}" href="{{ url_for('pages.character_detail', slug=c.slug) }}">
-        {{ picture(c.cover, fallback=initials(c.full_name), sizes='(min-width: 900px) 46vw, 100vw', alt='', cls='duo__media') }}
+        {{ picture(c.cover, fallback=initials(c.full_name), sizes='(min-width: 900px) 98vw, 190vw', alt='', cls='duo__media') }}
         <span class="duo__shade" aria-hidden="true"></span>
         <span class="duo__body">
           <span class="duo__role">{{ c.role_title }}</span>
@@ -81,21 +81,30 @@
 <section class="moment chapter" id="moment" data-chapter="The footage" aria-label="{{ moment.title }}"
          data-moment data-youtube="{{ moment.youtube_id }}" data-start="{{ moment.start }}" data-end="{{ moment.end }}">
   <div class="moment__frame">
-    {{ picture(moment.poster, fallback='', sizes='100vw', alt='', cls='moment__poster') }}
+    {{ picture(moment.poster, fallback='', sizes='max(100vw, 178vh)', alt='', cls='moment__poster') }}
     <div class="moment__player" data-moment-player aria-hidden="true"></div>
     <div class="moment__dip" aria-hidden="true"></div>
     <div class="moment__shade" aria-hidden="true"></div>
   </div>
   <div class="moment__bar">
     <div class="container moment__inner">
-      <p class="moment__credit">{{ moment.title }} <span aria-hidden="true">&middot;</span> &copy; Rockstar Games</p>
-      <div class="moment__controls">
-        <button class="moment__btn" type="button" data-moment-toggle hidden>Pause</button>
-        <button class="moment__btn" type="button" data-moment-sound aria-pressed="false" hidden>Sound on</button>
-        {% if moment.trailer %}
-        <button class="moment__btn moment__btn--accent" type="button" data-video="{{ player_src(moment.trailer.embed_url, true) }}" data-title="{{ moment.trailer.title }}">Watch the full trailer</button>
-        {% endif %}
+      <div class="moment__ui">
+        <button class="moment__sound" type="button" data-moment-sound aria-pressed="false" hidden>
+          <svg class="moment__icon moment__icon--off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 9l5 6M21 9l-5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <svg class="moment__icon moment__icon--on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 010 7M18.5 6a8.5 8.5 0 010 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <span data-moment-sound-label>Enable sound</span>
+        </button>
+        <button class="moment__pause" type="button" data-moment-toggle aria-label="Pause the footage" hidden>
+          <svg class="moment__icon moment__icon--pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>
+          <svg class="moment__icon moment__icon--play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+          <span class="moment__pause-label" data-moment-toggle-label>Pause</span>
+        </button>
       </div>
+      <p class="moment__credit">
+        {{ moment.title }} <span aria-hidden="true">&middot;</span> &copy; Rockstar Games
+        {% if moment.trailer %}<span aria-hidden="true">&middot;</span>
+        <button class="moment__link" type="button" data-video="{{ player_src(moment.trailer.embed_url, true) }}" data-title="{{ moment.trailer.title }}">Watch the full trailer</button>{% endif %}
+      </p>
     </div>
   </div>
 </section>
@@ -142,8 +151,7 @@
           <button type="button" class="cast__item{% if loop.first %} is-active{% endif %}" data-cast-item aria-pressed="{{ 'true' if loop.first else 'false' }}"
                   data-slug="{{ c.slug }}" data-name="{{ c.full_name }}" data-role="{{ c.role_title }}" data-summary="{{ c.summary }}"
                   data-href="{{ url_for('pages.character_detail', slug=c.slug) }}"
-                  {% if c.cover and image_src(c.cover.embed_url, 1280) %}data-image="{{ image_src(c.cover.embed_url, 1280) }}"{% endif %}
-                  {% if c.clip %}data-clip="{{ media_file_url(c.clip) }}"{% endif %}
+                  {% if c.cover and image_src(c.cover.embed_url, 1280) %}data-image="{{ image_src(c.cover.embed_url, 1920) }}"{% endif %}
                   {% if c.start is defined %}data-start="{{ c.start }}" data-end="{{ c.end }}"{% endif %}>
             <span class="cast__num">{{ '%02d' | format(loop.index) }}</span>
             <span class="cast__item-name">{{ c.full_name }}</span>
@@ -294,7 +302,7 @@
       {% set poster = video_posters.get(['poster-trailer-2', 'poster-trailer-1', 'poster-extended-look'][loop.index0]) %}
       <div class="theatre__item{% if loop.first %} theatre__item--lead{% endif %} reveal" data-delay="{{ loop.index }}">
         <button class="video-card" type="button" data-video="{{ player_src(m.embed_url, true) }}" data-title="{{ m.title }}">
-          {{ picture(poster, fallback='VI', sizes='(min-width: 900px) ' ~ ('62vw' if loop.first else '30vw') ~ ', 100vw', alt='') }}
+          {{ picture(poster, fallback='VI', sizes='(min-width: 900px) ' ~ ('64vw' if loop.first else '32vw') ~ ', 100vw', alt='') }}
           <span class="video-card__shade" aria-hidden="true"></span>
           <span class="video-card__play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
           <span class="video-card__title"><b>{{ m.title | replace('Grand Theft Auto VI', '') | replace(':', '') | trim or m.title }}</b><small>Official video</small></span>
@@ -317,7 +325,7 @@
       <ul class="bento" data-gallery aria-labelledby="shots-title">
         {% for m in screenshots %}
         <li class="bento__item{% if loop.first or loop.last %} bento__item--wide{% endif %} reveal" data-delay="{{ loop.index0 % 3 + 1 }}">
-          <a href="{{ image_src(m.embed_url, 1920) }}" data-lightbox data-caption="{{ m.title }}">{{ picture(m, sizes='(min-width: 900px) 34vw, 50vw') }}</a>
+          <a href="{{ image_src(m.embed_url, 2560) }}" data-lightbox data-caption="{{ m.title }}">{{ picture(m, sizes=('(min-width: 800px) 47vw, 100vw' if (loop.first or loop.last) else '(min-width: 800px) 24vw, 50vw')) }}</a>
         </li>
         {% endfor %}
       </ul>

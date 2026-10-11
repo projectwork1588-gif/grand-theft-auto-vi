@@ -167,9 +167,11 @@
     window.addEventListener("scroll", showWhenScrolled, { passive: true });
   })();
 
-  // ---- Cast stage: one frame, eight people. The reel plays through; a name holds on that person ----
-  // Both controls exist in the markup from the first paint. The script only changes their state, never
-  // their visibility, so "Play whole reel" is available on load and after every selection.
+  // ---- Cast stage: one frame, eight people, about four seconds each -----------------------------
+  // One reel file is buffered once. Choosing a person seeks straight to that person's segment (keyframes sit
+  // at every start, so it is instant), plays it once and holds on the final frame. "Play whole reel" runs
+  // all eight in order and loops. Both controls are in the markup from the first paint and are never hidden:
+  // the script only changes their state.
   (function castStage() {
     var root = document.querySelector("[data-cast]");
     if (!root) { return; }
@@ -185,19 +187,25 @@
     var pauseBtn = root.querySelector("[data-toggle]");
     var reelBtn = root.querySelector("[data-play-reel]");
     var reelSrc = root.getAttribute("data-reel");
+    var HOLD_BEFORE_END = 0.06; // stop just before the dissolve into the next person
     var segments = items.map(function (it) {
       return it.hasAttribute("data-start") ? { start: parseFloat(it.getAttribute("data-start")), end: parseFloat(it.getAttribute("data-end")) } : null;
     });
 
-    // mode: "reel" plays every clip in order, "clip" loops the chosen person. motion: playback is wanted.
-    var state = { index: 0, mode: reelSrc ? "reel" : "clip", motion: !calm, visible: false, current: "" };
+    // mode: "reel" plays everyone in order and loops; "single" plays one person once and holds.
+    // motion: playback is wanted. held: a single person has reached the end of their segment.
+    var state = { index: 0, mode: "reel", motion: !calm, visible: false, loaded: false, held: false, started: false };
     var timer = null;
     var raf = 0;
 
     if (still) { still.addEventListener("error", function () { still.hidden = true; }); }
 
     function render() {
-      if (pauseBtn) { pauseBtn.textContent = state.motion ? "Pause" : "Play"; }
+      if (pauseBtn) {
+        var label = "Pause";
+        if (state.held) { label = "Replay"; } else if (!state.motion) { label = "Play"; }
+        pauseBtn.textContent = label;
+      }
       if (reelBtn) {
         var on = state.mode === "reel";
         reelBtn.classList.toggle("is-active", on);
@@ -234,145 +242,208 @@
       }
     }
 
-    function load(src) {
-      if (!video || state.current === src) { return; }
-      state.current = src;
-      video.classList.remove("is-ready");
-      video.src = src;
-      video.loop = true;
+    // Buffer the reel once. Done early when motion is welcome, or on the first explicit request.
+    function ensureLoaded() {
+      if (!video || !reelSrc || state.loaded) { return; }
+      state.loaded = true;
+      video.preload = "auto";
+      video.src = reelSrc;
       video.load();
     }
 
-    // Rewind to the start of whatever is loaded and play it (when it is wanted and visible).
-    function playFromStart() {
-      if (!video) { return; }
+    function seekTo(t, then) {
       var go = function () {
-        try { video.currentTime = 0; } catch (e) { /* not seekable yet */ }
-        apply();
+        try { video.currentTime = t; } catch (e) { /* not seekable yet */ }
+        then();
       };
       if (video.readyState >= 1) { go(); } else { video.addEventListener("loadedmetadata", go, { once: true }); }
     }
 
-    function startReel() {
-      state.mode = "reel";
-      if (video && reelSrc) { load(reelSrc); }
-      showItem(0);
-      render();
-      playFromStart();
+    function begin(t) {
+      if (!video || !reelSrc) { return; }
+      ensureLoaded();
+      state.held = false;
+      video.loop = state.mode === "reel";
+      seekTo(t, function () { play(); });
     }
 
-    function startClip(i) {
-      var clip = items[i].getAttribute("data-clip");
-      state.mode = "clip";
-      showItem(i);
-      if (video && clip) { load(clip); render(); playFromStart(); } else { if (video) { video.pause(); } render(); }
-    }
-
-    // Whole-reel mode: keep the name list and caption in step with the picture.
-    function follow() {
-      raf = 0;
-      if (state.mode !== "reel" || !video || video.paused) { return; }
-      var t = video.currentTime;
-      for (var n = 0; n < segments.length; n++) {
-        var seg = segments[n];
-        if (seg && t >= seg.start && t < seg.end) {
-          if (n !== state.index) { showItem(n); }
-          break;
-        }
-      }
-      raf = window.requestAnimationFrame(follow);
-    }
-
-    function apply() {
+    function play() {
       if (!video) { return; }
-      var play = state.motion && state.visible && !document.hidden;
-      if (play) {
+      var wanted = state.motion && state.visible && !document.hidden;
+      if (wanted) {
         safePlay(video);
-        if (!raf && state.mode === "reel") { raf = window.requestAnimationFrame(follow); }
+        armGuard();
+        if (!raf) { raf = window.requestAnimationFrame(follow); }
       } else {
         video.pause();
       }
       render();
     }
 
-    if (video) {
-      video.addEventListener("playing", function () {
-        video.classList.add("is-ready");
-        if (state.mode === "reel" && !raf) { raf = window.requestAnimationFrame(follow); }
-      });
-      video.addEventListener("error", function () { video.classList.remove("is-ready"); });
+    function startReel() {
+      state.mode = "reel";
+      showItem(0);
+      begin(0);
     }
 
-    // Choosing a person is an explicit request for motion, even when autoplay is off.
+    function startPerson(i) {
+      var seg = segments[i];
+      state.mode = "single";
+      showItem(i);
+      if (seg && video && reelSrc) { begin(seg.start); } else { if (video) { video.pause(); } render(); }
+    }
+
+    // Keeps the name list and caption in step with the picture, and holds a single person at the end.
+    // Called from the frame loop, from timeupdate and from a timer, so the hold never depends on one of them.
+    function sync() {
+      if (!video) { return false; }
+      var t = video.currentTime;
+      if (state.mode === "reel") {
+        for (var n = 0; n < segments.length; n++) {
+          var seg = segments[n];
+          if (seg && t >= seg.start && t < seg.end) {
+            if (n !== state.index) { showItem(n); }
+            break;
+          }
+        }
+        return true;
+      }
+      var mine = segments[state.index];
+      if (mine && !state.held && t >= mine.end - HOLD_BEFORE_END) {
+        video.pause();
+        try { video.currentTime = Math.max(mine.start, mine.end - HOLD_BEFORE_END - 0.02); } catch (e) { /* ignore */ }
+        state.held = true;
+        render();
+        return false;
+      }
+      return !state.held;
+    }
+
+    function follow() {
+      raf = 0;
+      if (!video || video.paused) { return; }
+      if (sync()) { raf = window.requestAnimationFrame(follow); }
+    }
+
+    // A timer is the backstop for the end of a single person's segment (frame loops stop in idle tabs).
+    var guard = 0;
+    function armGuard() {
+      window.clearTimeout(guard);
+      var mine = segments[state.index];
+      if (state.mode !== "single" || !mine || !video) { return; }
+      var left = Math.max(0.05, mine.end - HOLD_BEFORE_END - video.currentTime);
+      guard = window.setTimeout(function () { if (!video.paused) { sync(); } }, left * 1000 + 40);
+    }
+
+    if (video) {
+      // Show the video only once a real frame has been presented, so there is never a black flash.
+      var markReady = function () { video.classList.add("is-ready"); };
+      video.addEventListener("playing", function () {
+        if ("requestVideoFrameCallback" in video) { video.requestVideoFrameCallback(markReady); }
+        else { video.addEventListener("timeupdate", markReady, { once: true }); }
+        if (!raf) { raf = window.requestAnimationFrame(follow); }
+      });
+      video.addEventListener("error", function () { video.classList.remove("is-ready"); });
+      video.addEventListener("timeupdate", function () { if (!video.paused) { sync(); } });
+      video.addEventListener("seeked", armGuard);
+    }
+
+    // Any explicit choice is a request for motion, even when autoplay is off, and it responds at once.
     items.forEach(function (it, i) {
       it.addEventListener("click", function () {
         state.motion = true;
-        startClip(i);
+        state.started = true; // an explicit choice always wins over the automatic start
+        startPerson(i);
       });
     });
     if (pauseBtn) {
       pauseBtn.addEventListener("click", function () {
+        state.started = true;
+        if (state.held) {                       // replay the same person from the start
+          state.motion = true;
+          startPerson(state.index);
+          return;
+        }
         state.motion = !state.motion;
-        if (state.motion && video && !state.current) {
-          if (state.mode === "reel" && reelSrc) { startReel(); } else { startClip(state.index); }
+        if (state.motion && !state.loaded) {
+          if (state.mode === "reel") { startReel(); } else { startPerson(state.index); }
         } else {
-          apply();
+          play();
         }
       });
     }
     if (reelBtn) {
       reelBtn.addEventListener("click", function () {
         state.motion = true;
+        state.started = true;
         startReel();
       });
     }
 
     if ("IntersectionObserver" in window && video) {
-      var watch = new IntersectionObserver(function (entries) {
+      // Fetch the reel a little before it is seen, so a name responds instantly when chosen.
+      new IntersectionObserver(function (entries, obs) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting && !calm) { ensureLoaded(); obs.disconnect(); }
+        });
+      }, { rootMargin: "100% 0px 100% 0px" }).observe(root);
+      new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
           state.visible = entry.isIntersecting;
-          if (state.visible && state.motion && !state.current) {
-            if (state.mode === "reel" && reelSrc) { startReel(); } else { startClip(state.index); }
+          if (state.visible && state.motion && !state.started) {
+            state.started = true;
+            startReel();
           } else {
-            apply();
+            play();
           }
         });
-      }, { threshold: 0.35 });
-      watch.observe(root.querySelector(".cast__stage"));
+      }, { threshold: 0.35 }).observe(root.querySelector(".cast__stage"));
     }
-    document.addEventListener("visibilitychange", apply);
+    document.addEventListener("visibilitychange", play);
     render();
   })();
 
   // ---- The signature moment: nine seconds of Rockstar's Trailer 1 in YouTube's embedded player --------
-  // Nothing is downloaded or hosted. The player (YouTube's own IFrame API, privacy-enhanced domain) is only
-  // created when the section is close to the screen, plays muted, pauses when scrolled away, and is never
-  // started automatically for visitors who prefer reduced motion or have data saver on.
+  // Nothing is downloaded or hosted (the trailers have no download and no stated licence). The player is
+  // YouTube's own IFrame API on the privacy-enhanced domain, unaltered and uncropped. What the page controls is
+  // WHEN it is shown: it is created when the section is a screen away and plays muted and hidden behind an
+  // official still, so YouTube's own title bar has faded before anything is revealed. The footage then
+  // dissolves in when the section is on screen, and the still returns whenever it is paused. It never starts
+  // for visitors who prefer reduced motion or have data saver on. Sound is opt-in through one clear button.
   (function signatureMoment() {
     var root = document.querySelector("[data-moment]");
     if (!root) { return; }
     var mount = root.querySelector("[data-moment-player]");
     var toggleBtn = root.querySelector("[data-moment-toggle]");
     var soundBtn = root.querySelector("[data-moment-sound]");
+    var soundLabel = root.querySelector("[data-moment-sound-label]");
+    var toggleLabel = root.querySelector("[data-moment-toggle-label]");
     var videoId = root.getAttribute("data-youtube");
     var start = parseFloat(root.getAttribute("data-start"));
     var end = parseFloat(root.getAttribute("data-end"));
     if (!/^[A-Za-z0-9_-]{11}$/.test(videoId || "") || !(end > start)) { return; }
 
+    var FIRST_REVEAL_AFTER = 3.2; // seconds of real playback before the first reveal (the title bar has faded)
+    var RESUME_REVEAL_AFTER = 0.8;
     var player = null;
     var phase = "idle"; // idle, loading, ready, failed
-    var state = { motion: !calm, visible: false, muted: true };
+    var state = { motion: !calm, visible: false, near: false, muted: true, everRevealed: false, playingSince: 0, wasPlaying: false, lastKick: 0 };
     var poll = 0;
+    root.classList.toggle("is-calm", calm);
 
     function setButtons() {
+      var playing = state.motion;
       if (toggleBtn) {
         toggleBtn.hidden = phase === "failed";
-        toggleBtn.textContent = state.motion ? "Pause" : "Play the footage";
+        toggleBtn.setAttribute("aria-label", playing ? "Pause the footage" : "Play the footage");
+        toggleBtn.classList.toggle("is-paused", !playing);
+        if (toggleLabel) { toggleLabel.textContent = playing ? "Pause" : "Play the footage"; }
       }
       if (soundBtn) {
-        soundBtn.hidden = phase !== "ready";
-        soundBtn.textContent = state.muted ? "Sound on" : "Sound off";
+        soundBtn.hidden = phase !== "ready" || !state.motion;
+        soundBtn.classList.toggle("is-on", !state.muted);
         soundBtn.setAttribute("aria-pressed", String(!state.muted));
+        if (soundLabel) { soundLabel.textContent = state.muted ? "Enable sound" : "Sound on"; }
       }
     }
 
@@ -390,6 +461,8 @@
       document.head.appendChild(tag);
     }
 
+    function hideFootage() { root.classList.remove("is-live"); }
+
     function wrap() {
       root.classList.add("is-dip");
       try { player.seekTo(start, true); } catch (e) { /* player not ready */ }
@@ -398,21 +471,34 @@
 
     function tick() {
       if (!player || typeof player.getCurrentTime !== "function") { return; }
-      if (player.getPlayerState() !== 1) { return; } // only while it is really playing
+      var playing = player.getPlayerState() === 1;
+      if (playing && !state.wasPlaying) { state.playingSince = Date.now(); }
+      state.wasPlaying = playing;
+      if (!playing) {
+        // A player that was asked to play while its frame was hidden can sit idle: ask again, gently.
+        if (Date.now() - state.lastKick > 2000) { state.lastKick = Date.now(); apply(); }
+        return;
+      }
       var t = player.getCurrentTime();
       if (t >= end - 0.1 || t < start - 1.5) { wrap(); return; }
       if (t >= end - 0.45) { root.classList.add("is-dip"); }
-      // Show the player only once it is inside the chosen nine seconds, never the frames before them.
-      if (!root.classList.contains("is-live") && t >= start - 0.05) { root.classList.add("is-live"); }
+      // Reveal only once it has genuinely been playing for a moment, is inside the chosen window and is on screen.
+      var settled = (Date.now() - state.playingSince) / 1000 >= (state.everRevealed ? RESUME_REVEAL_AFTER : FIRST_REVEAL_AFTER);
+      if (settled && state.visible && state.motion && t >= start - 0.05 && !root.classList.contains("is-live")) {
+        root.classList.add("is-live");
+        state.everRevealed = true;
+      }
     }
-
-    function wanted() { return state.motion && state.visible && !document.hidden; }
 
     function apply() {
       if (!player || phase !== "ready") { return; }
+      var onScreen = state.visible && state.motion && !document.hidden;
+      // Before the first reveal it may pre-roll while within a screen of the section; afterwards only on screen.
+      var play = state.motion && !document.hidden && (onScreen || (state.near && !state.everRevealed));
       try {
-        if (wanted()) { player.playVideo(); } else { player.pauseVideo(); }
+        if (play) { player.playVideo(); } else { player.pauseVideo(); }
       } catch (e) { /* ignore */ }
+      if (!onScreen) { hideFootage(); }
       setButtons();
     }
 
@@ -439,8 +525,8 @@
               }
               player.mute();
               poll = window.setInterval(tick, 120);
-              // Cue at the exact start (fractional seconds), then play when it is wanted and visible.
-              if (wanted()) {
+              // Cue at the exact start (fractional seconds); the cued event starts it when it is wanted.
+              if (state.motion && !document.hidden) {
                 player.loadVideoById({ videoId: videoId, startSeconds: start });
               } else {
                 player.cueVideoById({ videoId: videoId, startSeconds: start });
@@ -449,11 +535,11 @@
             },
             onStateChange: function (e) {
               if (e.data === 0) { wrap(); try { player.playVideo(); } catch (err) { /* ignore */ } }
-              if (e.data === 5) { apply(); } // cued: play now if it is wanted
+              if (e.data === 5) { apply(); } // cued
             },
             onError: function () {
               phase = "failed";
-              root.classList.remove("is-live");
+              hideFootage();
               window.clearInterval(poll);
               setButtons();
             }
@@ -466,15 +552,17 @@
       toggleBtn.addEventListener("click", function () {
         state.motion = !state.motion;
         if (state.motion && phase === "idle") { create(); }
+        if (!state.motion) { hideFootage(); }
         apply();
         setButtons();
       });
     }
     if (soundBtn) {
       soundBtn.addEventListener("click", function () {
-        state.muted = !state.muted;
+        if (!player) { return; }
         try {
-          if (state.muted) { player.mute(); } else { player.unMute(); player.setVolume(70); }
+          if (state.muted) { player.unMute(); player.setVolume(70); } else { player.mute(); }
+          state.muted = player.isMuted();
         } catch (e) { /* ignore */ }
         setButtons();
       });
@@ -483,12 +571,14 @@
     if ("IntersectionObserver" in window) {
       new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
-          if (entry.isIntersecting && state.motion) { create(); } // arrives early so it is ready when seen
+          state.near = entry.isIntersecting;
+          if (state.near && state.motion) { create(); } // a screen away, so it is warm when seen
+          apply();
         });
-      }, { rootMargin: "120% 0px 120% 0px" }).observe(root);
+      }, { rootMargin: "100% 0px 100% 0px" }).observe(root);
       new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) { state.visible = entry.isIntersecting; apply(); });
-      }, { threshold: 0.25 }).observe(root);
+      }, { threshold: 0.3 }).observe(root);
     }
     document.addEventListener("visibilitychange", apply);
     setButtons();

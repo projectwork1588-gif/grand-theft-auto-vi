@@ -7,7 +7,7 @@ import re
 
 IMAGE_PREFIX = "https://www.rockstargames.com/VI/_next/static/media/"
 PLAYER_PREFIX = "https://www.rockstargames.com/videoplayer?"
-IMAGE_WIDTHS = (640, 1280, 1920)
+IMAGE_WIDTHS = (640, 960, 1280, 1920, 2560)  # the service serves up to 3840
 
 
 def is_official_image(url):

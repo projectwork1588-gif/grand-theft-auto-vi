@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_components.html" import badge, picture, page_hero, provenance, vehicle_slide %}
+{% from "_components.html" import badge, picture, page_hero, provenance, vehicle_slide, bento %}
 {% block title %}{{ vehicle.name }}{% endblock %}
 {% block description %}{{ vehicle.summary }}{% endblock %}
 {% block content %}
@@ -20,16 +20,6 @@
       </dl>
       {{ provenance(vehicle) }}
 
-      {% if vehicle.gallery | length > 1 %}
-      <div>
-        <h2 class="panel-title">Gallery</h2>
-        <ul class="gallery">
-          {% for m in vehicle.gallery %}{% if image_src(m.embed_url, 1920) %}
-          <li><a href="{{ image_src(m.embed_url, 1920) }}" data-lightbox data-caption="{{ m.title }}">{{ picture(m, sizes='(min-width: 900px) 30vw, 50vw') }}</a></li>
-          {% endif %}{% endfor %}
-        </ul>
-      </div>
-      {% endif %}
     </div>
 
     <aside class="profile__side stack">
@@ -48,6 +38,13 @@
       </section>
     </aside>
   </div>
+
+  {% if vehicle.gallery | length > 1 %}
+  <div class="container gallery-page">
+    <h2 class="subhead gallery-page__title" id="gallery-title">Gallery</h2>
+    {{ bento(vehicle.gallery, 'gallery-title') }}
+  </div>
+  {% endif %}
 
   {% if vehicle.more %}
   <div class="container">
