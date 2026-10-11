@@ -484,8 +484,8 @@
   })();
 
   // ---- The cinematic moments: native video that loops by itself ------------------------------------------
-  // Up to three sections, each a plain looping <video> over its own poster, with two small icon buttons (pause and
-  // sound) in the corner. Rules:
+  // Up to three sections, each a plain looping <video> over its own poster, with one discreet speaker icon in the
+  // corner (and no play or pause control during normal playback). Rules:
   //  * One video plays at a time: the most visible eligible moment wins; the cast reel and the trailer overlay
   //    count too (window.tvMedia). A once-a-second reconcile recovers from any missed event.
   //  * Muted autoplay when a moment is at least 35 percent in view, paused when it leaves, resumed when revisited.
@@ -493,7 +493,7 @@
   //  * Sound is the visitor's choice: browsers refuse audible autoplay until the page has been interacted with. The
   //    sound button turns it on (faded in), the choice is remembered for the visit, and later moments follow it.
   //  * When motion is not allowed (reduced motion, data saver, or the visitor turned it off) or the browser refuses
-  //    to autoplay, the pause button becomes a plain "Play footage" button: one click starts everything.
+  //    to autoplay, a plain "Play footage" button appears (and only then): one press starts everything.
   window.tvMedia = window.tvMedia || { cast: false, cinema: false, modal: false };
   (function cinemas() {
     var roots = [].slice.call(document.querySelectorAll("[data-cinema]"));
@@ -503,7 +503,7 @@
       if (!video) { return; }
       players.push({
         root: root, video: video, toggleBtn: root.querySelector("[data-cinema-toggle]"), soundBtn: root.querySelector("[data-cinema-sound]"),
-        ratio: 0, loaded: false, failed: false, userPaused: false, refused: false, ramp: 0
+        ratio: 0, loaded: false, failed: false, refused: false, ramp: 0
       });
     });
     if (!players.length) { return; }
@@ -533,10 +533,9 @@
       var playing = !p.video.paused;
       if (p.toggleBtn) {
         var text = p.toggleBtn.querySelector("[data-tool-label]");
+        // Normal playback shows no play or pause control at all; this one exists only when playback is blocked.
         p.toggleBtn.classList.toggle("is-suppressed", suppressed && !playing);
-        p.toggleBtn.classList.toggle("is-paused", !playing);
-        p.toggleBtn.classList.toggle("is-held", p.userPaused);
-        p.toggleBtn.setAttribute("aria-label", playing ? "Pause footage" : "Play footage");
+        p.toggleBtn.hidden = !(suppressed && !playing);
         if (text) { text.textContent = "Play footage"; }
       }
       if (p.soundBtn) {
@@ -560,12 +559,16 @@
       p.video.volume = withSound ? 0 : 1;
       var promise = p.video.play();
       if (promise && typeof promise.catch === "function") {
-        promise.catch(function () {
+        promise.catch(function (err) {
+          var name = err && err.name;
+          if (name === "AbortError") { return; }             // interrupted by a pause (quick scrolling): the reconcile retries
           if (withSound) {                                   // audible playback refused: carry on silently
             p.video.muted = true; p.video.volume = 1;
             safePlay(p.video);
-          } else {                                           // even muted playback refused: offer a plain Play button
+          } else if (name === "NotAllowedError") {           // even muted playback refused: offer a plain Play button
             p.refused = true; labels(p);
+          } else if (name === "NotSupportedError") {         // the file cannot be played: the poster stays
+            p.failed = true; labels(p);
           }
         });
       }
@@ -582,7 +585,7 @@
       var best = null;
       var blocked = document.hidden || window.tvMedia.modal || window.tvMedia.cast;
       players.forEach(function (p) {
-        if (!blocked && !p.failed && !p.userPaused && !p.refused && automatic() && p.ratio >= 0.35 && (!best || p.ratio > best.ratio)) { best = p; }
+        if (!blocked && !p.failed && !p.refused && automatic() && p.ratio >= 0.35 && (!best || p.ratio > best.ratio)) { best = p; }
       });
       players.forEach(function (p) { if (p === best) { start(p); } else { stop(p); } });
       window.tvMedia.cinema = players.some(function (p) { return !p.video.paused; });
@@ -604,14 +607,6 @@
       p.video.muted = true;
       var tools = p.root.querySelector("[data-cinema-tools]");
       if (tools) { tools.hidden = false; }
-      // A tap on a touch screen (no hover there) brings the two buttons up for a few seconds.
-      var toolTimer = 0;
-      p.root.addEventListener("pointerdown", function (e) {
-        if (e.pointerType === "mouse") { return; }
-        p.root.classList.add("is-tools");
-        window.clearTimeout(toolTimer);
-        toolTimer = window.setTimeout(function () { p.root.classList.remove("is-tools"); }, 4000);
-      }, { passive: true });
       p.video.addEventListener("playing", function () { p.refused = false; p.root.classList.add("is-live"); labels(p); document.dispatchEvent(new Event("tv:state")); });
       p.video.addEventListener("pause", function () {
         window.tvMedia.cinema = players.some(function (q) { return !q.video.paused; });
@@ -620,17 +615,12 @@
       });
       p.video.addEventListener("error", function () { p.failed = true; p.root.classList.remove("is-live"); apply(); });
       if (p.toggleBtn) {
+        // Shown only when footage cannot start by itself: one press starts it (and opts in to motion, remembered).
         p.toggleBtn.addEventListener("click", function () {
-          if (!automatic() || p.refused) {                   // a plain Play: opt in once, everything then follows
-            p.refused = false; p.userPaused = false;
-            if (!motionAllowed()) { setMotion(true); }
-            p.ratio = Math.max(p.ratio, 0.35);
-            apply(); start(p);
-          } else if (!p.video.paused) {                      // an explicit pause stays until Play is pressed
-            p.userPaused = true; p.video.pause();
-          } else {
-            p.userPaused = false; p.ratio = Math.max(p.ratio, 0.35); apply(); start(p);
-          }
+          p.refused = false;
+          if (!motionAllowed()) { setMotion(true); }
+          p.ratio = Math.max(p.ratio, 0.35);
+          apply(); start(p);
           labels(p);
         });
       }
@@ -657,6 +647,13 @@
       }, { threshold: [0, 0.1, 0.2, 0.35, 0.5, 0.65, 0.8, 1] });
       players.forEach(function (p) { near.observe(p.root); seen.observe(p.root); });
     }
+    ["pointerdown", "keydown", "touchend"].forEach(function (name) {
+      window.addEventListener(name, function () {
+        var retry = false;
+        players.forEach(function (p) { if (p.refused) { p.refused = false; retry = true; } });
+        if (retry) { apply(); }
+      }, { passive: true });
+    });
     document.addEventListener("visibilitychange", apply);
     document.addEventListener("tv:state", apply);
     document.addEventListener("tv:motion", apply);

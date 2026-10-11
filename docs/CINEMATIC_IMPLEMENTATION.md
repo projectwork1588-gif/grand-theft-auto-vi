@@ -182,3 +182,47 @@ when autoplay is suppressed is unchanged. Names and keys are unchanged (Pause fo
 
 Browser cache: media is served with `Cache-Control: max-age=3600`, so a browser that already has the old
 `moment-1.mp4` may keep playing it for up to an hour. A hard refresh (Ctrl+F5) loads the corrected file.
+
+
+---
+
+## Moment 2 audio, and a clean corner
+
+### Moment 2
+
+* **Defect:** the same as Moment 1. The seam's `acrossfade` between two branches of one stream produced no audio, so the
+  last 0.8 s of the loop had picture and no sound (audio 6.87 s, picture 7.63 s).
+* **Fix:** the corrected pipeline (see above) was run for `moment-2` only; the desktop and phone files were rebuilt.
+  The approved ORIGINAL edit and its 0.4 s dissolve are untouched: all 229 frames of both encodes are bit-identical to
+  the previous files, same 1920x864 and 960x720 framing, same 7.63 s.
+* **Result (decoded, not metadata):** audio 7.64 s against picture 7.63 s; no silent window; the soundtrack matches
+  Trailer 2 at r 0.99+ in every checked window; the loop point has no click (biggest step across the join 359 against
+  6263 inside the file) and a smooth 0.8 s fade instead of the old 21.9 dB drop.
+* **Not a defect:** the first 2.2 s of Moment 2 are quiet. That is the original Trailer 2 sound at 6.35 to 8.5 s
+  (about -31 dB, against -9 dB where the music starts at 138.15 s). The music enters with the dissolve.
+* **Loudness across the moments** (EBU R128 integrated, decoded): Moment 1 -16.2, Moment 2 -16.2, Moment 3 -16.5 LUFS,
+  desktop and phone alike.
+
+### Moment 3 (inspected, not changed)
+
+Decoded audio 10.97 s against picture 10.97 s, no silent window, the soundtrack matches Trailer 2 at r 0.99, and the
+only quiet part is the designed dip through silence at the loop (sound and picture fade together), with no click at the
+join (step 2 against 10745 inside the file). No defect, so the file was not touched.
+
+### Controls
+
+There is no play or pause button during normal playback. Each moment has one discreet speaker icon at the bottom right
+(faint at rest, clear on hover or focus, a 44 px target on touch), muted by default, remembered for the session, M key
+as before. The pause button was removed entirely. The only other control that can appear is a pink **Play footage**
+button, and only when playback is genuinely blocked or suppressed:
+
+| Situation | Result |
+|-----------|--------|
+| Demo setup (`TV_AUTOPLAY_ALWAYS=1`) | autoplay, speaker only |
+| Browser refuses play() (NotAllowedError) | Play footage button; one key press or tap anywhere retries by itself |
+| play() interrupted by quick scrolling (AbortError) | nothing shown; the one-second reconcile retries |
+| System asks for reduced motion, data saver on, or slow connection | Play footage button; pressing it opts in and is remembered |
+| Visitor switched autoplay off in the footer | Play footage button; never forced back on, also after a reload |
+
+Pausing at will is still possible without a button on the footage: the footer switch "Autoplay footage Off" stops all
+footage, the explorer and the garage, and the page still pauses everything out of view.

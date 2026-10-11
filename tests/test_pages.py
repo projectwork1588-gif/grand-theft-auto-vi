@@ -734,7 +734,7 @@ def test_native_moments_are_silent_loops_with_two_small_icon_buttons(client, loc
         assert f'<source src="/media/cinematic/{slot}.mp4" type="video/mp4">' in section, slot
         assert "cinema__bar" not in section and "Rockstar Games" not in section and "Enable sound" not in section, slot
         assert section.count("<button") == 2 and "data-cinema-toggle" in section and "data-cinema-sound" in section, slot   # pause and sound
-        assert 'class="cinema__tools" data-cinema-tools hidden' in section, slot    # only two small icon buttons, shown by the script
+        assert 'class="cinema__tools" data-cinema-tools hidden' in section, slot    # a speaker and a hidden fallback, shown by the script
     assert page.index('id="leads"') < page.index('id="moment"') < page.index('id="cast"') < page.index('id="world"') < page.index('id="leonida"')
     assert page.index('id="media"') < page.index('id="finale"') < page.index('class="section band closing"')
     assert "<iframe" not in page.split("<dialog")[0]
@@ -934,16 +934,24 @@ def test_cinematic_loop_audio_is_whole_and_aligned_to_the_picture():
     assert "afade=t=out" in mc.audio_graph(mc.MOMENTS["moment-3"], "") and "amix" not in mc.audio_graph(mc.MOMENTS["moment-3"], "")
 
 
-def test_cinematic_tools_stay_out_of_the_picture_until_asked_for():
-    css = _css()["components.css"]
-    assert re.search(r"\.cinema__tool--toggle \{ opacity: 0; pointer-events: none; \}", css)   # the pause button is hidden at rest
-    assert ".cinema.is-tools .cinema__tool" in css and ".cinema__tool:focus-visible" in css       # touch and keyboard bring it up
-    assert "@media (hover: hover)" in css and ".cinema:hover .cinema__tool" in css                  # hover only where hover exists
-    assert "@media (pointer: coarse)" in css and "min-width: 44px" in css                           # a proper touch target
-    assert ".cinema__tool--toggle.is-held" in css                                                   # a chosen pause is never hidden
-    assert ".cinema .cinema__tools .cinema__tool--toggle.is-suppressed" in css                      # the Play pill stays loud
+def test_cinematic_moments_show_only_a_speaker_and_a_fallback_that_stays_hidden(client, local_cinematic):
+    page = html(client, "/")
+    for anchor in ("moment", "world", "finale"):
+        section = page.split(f'id="{anchor}"')[1].split("</section>")[0]
+        assert section.count("<button") == 2
+        speaker = section.split("data-cinema-sound")[1].split("</button>")[0]
+        assert 'aria-label="Sound"' in section and 'aria-pressed="false"' in section and "i-sound-off" in speaker
+        fallback = section.split("data-cinema-toggle")[1].split("</button>")[0]
+        assert 'aria-label="Play footage"' in section and " hidden" in section.split("data-cinema-toggle")[1][:80]   # hidden until blocked
+        assert "Pause" not in section and "i-pause" not in section and "Replay" not in section                      # no pause control exists
     code = _script().split("function cinemas()")[1].split("function regionExplorer()")[0]
-    assert '"pointerdown"' in code and 'classList.add("is-tools")' in code and "e.pointerType === \"mouse\"" in code
+    assert "Pause footage" not in code and "userPaused" not in code and "is-tools" not in code
+    assert "p.toggleBtn.hidden = !(suppressed && !playing)" in code                # the fallback shows only when blocked
+    assert 'name === "NotAllowedError"' in code and 'name === "AbortError"' in code  # only a real refusal; a pause-interrupt retries
+    assert '["pointerdown", "keydown", "touchend"]' in code                          # one more try after the first gesture
+    css = _css()["components.css"]
+    assert ".cinema__tool[hidden]" in css and "@media (pointer: coarse)" in css and "min-width: 44px" in css
+    assert ".cinema__tool--toggle.is-held" not in css and ".cinema.is-tools" not in css
 
 
 def test_hero_art_is_not_repeated_in_the_closing_band(client):

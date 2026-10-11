@@ -1,6 +1,9 @@
 """Check that a cinematic moment's sound is whole and loops cleanly.
 
-    python scripts/qa/audio_loop_check.py media/cinematic/moment-1.mp4 [source.mp4 source_start]
+    python scripts/qa/audio_loop_check.py media/cinematic/moment-1.mp4 [source.mp4 source_start [second_start from_seconds]]
+
+A moment cut from two places (Moment 2) takes the second source start, as it would be at the file's time 0, and the file
+time from which it applies.
 
 Reports: audio length against picture length; the quietest 100 ms window (a silent gap shows as under -60 dB); the
 level a quarter second either side of the loop point and the largest sample jump there against the file's normal
@@ -73,6 +76,8 @@ def main():
     if len(sys.argv) >= 4:
         src, src_start = sys.argv[2], float(sys.argv[3])
         ref = samples(src, src_start, secs + 0.2)
+        ref2 = samples(src, float(sys.argv[4]), secs + 0.2) if len(sys.argv) >= 6 else None
+        switch = float(sys.argv[5]) if len(sys.argv) >= 6 else None
         # compare 1 s windows of the file's middle with the original (same instants), allowing a flat gain and a small offset
         best = []
         for t0 in (1.0, 3.0, 5.0, 7.0):
@@ -80,8 +85,9 @@ def main():
             i0 = int(t0 * RATE)
             x = data[i0:i0 + n]
             top = (-2, 0)
+            use = ref2 if (ref2 is not None and t0 >= switch) else ref
             for lag in range(-480, 481, 8):
-                y = ref[i0 + lag:i0 + lag + n]
+                y = use[i0 + lag:i0 + lag + n]
                 if len(y) < n:
                     continue
                 num = sum(a_ * b_ for a_, b_ in zip(x, y))
