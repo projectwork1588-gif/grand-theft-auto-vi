@@ -11,7 +11,7 @@
   height: clamp(560px, calc(100svh - var(--header-h) - var(--s3)), 880px); border-radius: var(--r-card); background: var(--card);
   padding: clamp(24px, 4vw, 64px);
 }
-.hero__bg { position: absolute; inset: -9% 0 0 0; z-index: -1; will-change: transform; }
+.hero__bg { position: absolute; inset: 0; z-index: -1; }
 .hero__sky { position: absolute; inset: 0; background: var(--sunset); }
 .hero__slide { position: absolute; inset: 0; opacity: 0; background: transparent; }
 .hero__slide:not(.hero__slide--cycle) { opacity: 1; }
@@ -20,7 +20,7 @@
 .hero__slide[data-slide="1"] { animation-delay: -1.2s; }
 .hero__slide[data-slide="2"] { animation-delay: 7.8s; }
 .hero__slide[data-slide="3"] { animation-delay: 16.8s; }
-.hero__slide .media__img { object-position: 62% 24%; }
+.hero__slide .media__img { object-position: 62% 0%; }
 /* One scrim, left-weighted, so the lockup always sits on shade and the pair stays bright on the right. */
 .hero__shade {
   position: absolute; inset: 0;
@@ -107,11 +107,6 @@
 .cast__summary { max-width: 46ch; color: #e6dcea; font-size: var(--t-small); line-height: 1.5; }
 .cast__caption.is-switching > * { animation: castIn .6s var(--ease-out) both; }
 @keyframes castIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-.cast__controls { position: absolute; z-index: 3; right: 16px; top: 16px; display: flex; gap: 8px; }
-.cast__btn { padding: 9px 16px; border-radius: var(--r-pill); cursor: pointer; border: 1px solid rgba(255, 255, 255, .3); background: rgba(13, 11, 32, .55); backdrop-filter: blur(8px); color: var(--text); font: 700 var(--t-micro)/1 var(--font-body); letter-spacing: var(--track-ui); min-height: 40px; transition: background .25s, color .25s, border-color .25s; }
-.cast__btn:hover { background: var(--text); color: var(--night); border-color: var(--text); }
-.cast__btn.is-active { background: rgba(255, 95, 150, .22); border-color: var(--pink); }
-.cast__btn.is-active:hover { background: var(--text); color: var(--night); border-color: var(--text); }
 .cast__list { display: grid; align-content: center; }
 .cast__item { display: grid; grid-template-columns: 36px 1fr; grid-template-rows: auto auto; column-gap: 6px; width: 100%; padding: 11px 4px; text-align: left; background: none; border: 0; border-top: 1px solid var(--line); color: var(--muted); cursor: pointer; transition: color .3s, padding .4s var(--ease-out), background .3s; font: inherit; }
 .cast__list li:last-child .cast__item { border-bottom: 1px solid var(--line); }
@@ -155,6 +150,8 @@
 .regions__tab-name { font: 700 var(--t-lead)/1.1 var(--font-display); text-transform: uppercase; letter-spacing: var(--track-caps); overflow-wrap: anywhere; }
 .regions__tab:hover, .regions__tab.is-active { color: var(--text); }
 .regions__tab.is-active::after { transform: scaleX(1); }
+@keyframes regionTick { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.regions.is-auto.is-timing:not(.is-held) .regions__tab.is-active::after { animation: regionTick var(--auto-ms, 6500ms) linear forwards; transition: none; }
 @media (max-width: 1000px) { .regions__tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: var(--s1); } }
 @media (max-width: 560px) { .regions__tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 760px) {
@@ -247,60 +244,28 @@
 .closing .band__shade { background: radial-gradient(70% 62% at 50% 48%, rgba(13, 11, 32, .8), rgba(13, 11, 32, .3) 100%), linear-gradient(180deg, var(--night) 0%, rgba(13, 11, 32, .1) 24%, rgba(13, 11, 32, .1) 76%, var(--night) 100%); }
 
 /* =========================== THE CINEMATIC MOMENTS =========================== */
+/* A full-bleed picture that loops by itself. Nothing sits on top of it: no bar, no buttons, no text. */
 .cinema { position: relative; background: var(--ground); isolation: isolate; }
-.cinema__frame { position: relative; height: clamp(440px, 86svh, 900px); overflow: hidden; background: #000; }
+.cinema__frame { position: relative; height: clamp(520px, 100svh, 1000px); overflow: hidden; background: #000; }
 .cinema--band .cinema__frame, .cinema--finale .cinema__frame { height: auto; aspect-ratio: 1920 / 864; }
 .cinema--finale { background: #000; }
 .cinema__poster { position: absolute; inset: 0; }
-.cinema__poster .media__img { object-position: 50% 50%; animation: cinemaDrift 32s ease-in-out infinite alternate; }
-@keyframes cinemaDrift { from { transform: scale(1.02); } to { transform: scale(1.08); } }
-.cinema__poster-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.cinema__poster .media__img { object-position: 50% 50%; }
+.cinema__poster-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .cinema__video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #000; opacity: 0; transition: opacity var(--dur-3) var(--ease); }
-.cinema.is-live .cinema__video, .cinema.is-ended .cinema__video { opacity: 1; }
-/* The page's own ground flows into and out of the picture. */
+.cinema.is-live .cinema__video { opacity: 1; }
+/* The page's own ground flows into and out of the picture, and the edges are gently darkened. */
 .cinema__shade { position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(180deg, var(--ground) 0%, rgba(13, 11, 32, 0) 14%, rgba(13, 11, 32, 0) 62%, rgba(13, 11, 32, .72) 90%, var(--ground) 100%); }
-.cinema--band .cinema__shade { background: linear-gradient(180deg, var(--ground) 0%, rgba(13, 11, 32, 0) 10%, rgba(13, 11, 32, 0) 66%, rgba(13, 11, 32, .7) 92%, var(--ground) 100%); }
-.cinema--finale .cinema__shade { background: linear-gradient(180deg, var(--ground) 0%, rgba(0, 0, 0, 0) 16%); }
-.cinema--finale .cinema__bar { position: static; padding-block: var(--s3) var(--s6); background: linear-gradient(180deg, #000 0%, var(--ground) 100%); }
-.cinema__bar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; padding-bottom: clamp(16px, 2.6vw, 36px); }
-.cinema__inner { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: var(--s2) var(--s3); }
-.cinema__copy { display: grid; gap: var(--s1); justify-items: start; }
-.cinema__copy > p { margin: 0; }
-.cinema__eyebrow { font: 700 var(--t-micro)/1 var(--font-body); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--label); text-shadow: 0 1px 10px rgba(0, 0, 0, .6); }
-.cinema__credit { font: 600 var(--t-micro)/1.4 var(--font-body); letter-spacing: var(--track-ui); color: var(--text-2); text-shadow: 0 1px 10px rgba(0, 0, 0, .65); }
-.cinema__play { display: inline-flex; align-items: center; gap: var(--s2); margin-block: var(--s1); padding: 0; border: 0; background: none; color: var(--text); cursor: pointer; text-align: left; }
-.cinema__disc { display: grid; place-items: center; flex: none; width: 76px; height: 76px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .55);
-  background: rgba(255, 255, 255, .14); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  transition: transform var(--dur-3) var(--ease), background var(--dur-2), color var(--dur-2), border-color var(--dur-2); }
-.cinema__disc svg { width: 26px; height: 26px; fill: currentColor; margin-left: 3px; }
-.cinema__play:hover .cinema__disc, .cinema__play:focus-visible .cinema__disc { transform: scale(1.08); background: var(--action); border-color: var(--action); color: var(--on-action); }
-.cinema__play-label { font: 700 var(--t-h3)/1 var(--font-display); letter-spacing: var(--track-caps); text-transform: uppercase; text-shadow: 0 2px 20px rgba(0, 0, 0, .6); }
-.cinema__ui { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1); }
-.cinema__btn { display: inline-flex; align-items: center; gap: 10px; height: 44px; padding: 0 18px; border-radius: var(--r-pill); cursor: pointer; color: var(--text);
-  border: 1px solid rgba(255, 255, 255, .4); background: rgba(13, 11, 32, .55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  font: 700 var(--t-small)/1 var(--font-body); letter-spacing: var(--track-ui); transition: background var(--dur-2), color var(--dur-2), border-color var(--dur-2); }
-.cinema__btn:hover { background: var(--text); color: var(--ground); border-color: var(--text); }
-.cinema__btn[aria-pressed="true"] { border-color: var(--action); background: rgba(255, 95, 150, .26); }
-.cinema__btn[aria-pressed="true"]:hover { background: var(--text); }
-.cinema__btn[hidden] { display: none; }
-.cinema__icon { width: 20px; height: 20px; flex: none; }
-.cinema__icon--on, .cinema__icon--play, .cinema__icon--replay { display: none; }
-.cinema__btn[aria-pressed="true"] .cinema__icon--on { display: block; }
-.cinema__btn[aria-pressed="true"] .cinema__icon--off { display: none; }
-.cinema__btn.is-paused .cinema__icon--pause { display: none; }
-.cinema__btn.is-paused .cinema__icon--play { display: block; }
-.cinema__btn.is-ended .cinema__icon--pause, .cinema__btn.is-ended .cinema__icon--play { display: none; }
-.cinema__btn.is-ended .cinema__icon--replay { display: block; }
+  background:
+    linear-gradient(180deg, var(--ground) 0%, rgba(13, 11, 32, 0) 16%, rgba(13, 11, 32, 0) 84%, var(--ground) 100%),
+    radial-gradient(120% 90% at 50% 50%, rgba(13, 11, 32, 0) 60%, rgba(13, 11, 32, .5) 100%); }
+.cinema--finale .cinema__shade {
+  background: linear-gradient(180deg, var(--ground) 0%, rgba(0, 0, 0, 0) 16%, rgba(0, 0, 0, 0) 84%, var(--ground) 100%); }
 @media (max-width: 700px) {
-  .cinema--full .cinema__frame { height: auto; aspect-ratio: 4 / 5; max-height: 86svh; }
+  .cinema--full .cinema__frame { height: auto; aspect-ratio: 4 / 5; max-height: 100svh; }
   .cinema--band .cinema__frame { aspect-ratio: 4 / 3; }
   .cinema--finale .cinema__frame { aspect-ratio: 4 / 3; }
-  .cinema__disc { width: 64px; height: 64px; }
-  .cinema__play-label { font-size: var(--t-h4); }
-  .cinema__btn { height: 40px; padding-inline: 14px; }
 }
-@media (max-width: 560px) { .cinema__btn[data-video] { display: none; } }
 
 /* =========================== TRAILERS AND SCREENSHOTS =========================== */
 .theatre { display: grid; gap: clamp(12px, 1.6vw, 22px); grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr; }

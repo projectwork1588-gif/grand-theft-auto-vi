@@ -20,13 +20,13 @@
   <header class="site-header {% block header_class %}site-header--solid{% endblock %}" data-header>
     <div class="container--wide header-inner">
       {% macro lockup() -%}
-      <img class="brand__emblem" src="{{ url_for('static', filename='img/emblem.svg') }}" alt="" width="52" height="35">
+      <img class="brand__emblem" src="{{ url_for('static', filename='img/emblem.svg') }}" alt="" width="50" height="39">
       <span class="brand__text">
         <span class="brand__title">Team Valkyrie</span>
-        <span class="brand__sub"><span class="brand__sub-long">Grand Theft Auto VI fan guide</span><span class="brand__sub-short">Grand Theft Auto VI</span></span>
+        <span class="brand__sub">Grand Theft Auto VI</span>
       </span>
       {%- endmacro %}
-      <a class="brand" href="{{ url_for('main.index') }}" aria-label="Team Valkyrie, a Grand Theft Auto VI fan guide: home">{{ lockup() }}</a>
+      <a class="brand" href="{{ url_for('main.index') }}" aria-label="Team Valkyrie, Grand Theft Auto VI: home">{{ lockup() }}</a>
       <nav class="header-nav" aria-label="Primary">
         <ul>
           {% for endpoints, label in nav_items %}
@@ -77,7 +77,7 @@
   <footer class="site-footer">
     <div class="container footer-main">
       <div class="footer-brand">
-        <a class="brand" href="{{ url_for('main.index') }}" aria-label="Team Valkyrie, a Grand Theft Auto VI fan guide: home">{{ lockup() }}</a>
+        <a class="brand" href="{{ url_for('main.index') }}" aria-label="Team Valkyrie, Grand Theft Auto VI: home">{{ lockup() }}</a>
       </div>
       <nav class="footer-nav" aria-label="Footer">
         <ul>

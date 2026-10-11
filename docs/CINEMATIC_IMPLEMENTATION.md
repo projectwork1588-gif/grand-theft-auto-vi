@@ -1,6 +1,6 @@
 # Cinematic implementation (on the approved Gate 2 foundation)
 
-Status: **built, verified, awaiting the owner's visual approval.** Gate 3 and Phase 3 have not been started. The Gate 2 hero, Jason and Lucia cards, native-video foundation and Leonida explorer were kept, not redesigned.
+Status: **built, corrected once on the owner's review, awaiting visual approval.** Gate 3 and Phase 3 have not been started. The Gate 2 hero, Jason and Lucia cards, native-video foundation and Leonida explorer were kept, not redesigned.
 
 ## What was built
 
@@ -59,3 +59,27 @@ Nothing downloads until a moment is within one screen of the viewport (`preload=
 4. **Loudness** was normalised to -16 LUFS; trailer masters are much louder, so the moments are quieter than the originals but consistent with each other.
 
 Gate 3 and Phase 3 remain on hold.
+
+
+---
+
+## Correction pass (after the first review)
+
+| Request | What changed |
+|---------|--------------|
+| Hero head clipped | The hero background had been extended 9 percent above the card (for a parallax) and the top of the artwork, including Jason's hair, was cut off. It now sits exactly in the card and no longer drifts, so the whole picture and its headroom show. |
+| "Fan guide" wording | The lockup's second line is now just "Grand Theft Auto VI" (header, footer, menu). The accessible name changed to match. |
+| Emblem | The header emblem is the cleaner Gate 1 cut: a bolder V with two feathers per wing (it was three). The favicon is unchanged. |
+| First moment | Immersive: full viewport, nothing on top of it. It autoplays when scrolled into view and loops seamlessly. It was extended by about 2.3 s (the low-angle towers open it and the daytime lowrider street closes it) so the loop dissolves day into day. The loop is 9.75 s. |
+| Controls and credit text | Removed from all three moments: no Replay, sound, trailer or credit text. The three sections are the picture only. |
+| Sound | The loops are silent. Browsers refuse audible autoplay until a visitor has interacted, and a short excerpt of music on repeat is a poor default. For anyone who wants it, a click or tap on the picture (or the M key) fades the sound in, and the choice is remembered for the visit. There is no button. |
+| Cast reel | The Play whole reel, Pause and Replay buttons are gone. The reel runs by itself from person 1 to 8 and loops (19.7 s). Choosing a name jumps to that person and the reel carries on. The name list stays on the right. |
+| Region explorer | Advances by itself every 6.5 s from region 1 to 6 and around again, only while on screen, and waits while the visitor is hovering or focused in it. A quiet progress line under the active tab shows the timing. Manual selection is unchanged; reduced motion does not advance. |
+| Trailers | Order is Trailer 1 (the large primary item), Trailer 2, An Extended Look. The hero's "Watch the trailer" now opens Trailer 1. The subtitle is a single plain line. |
+| Screenshots | The helper sentence is gone. |
+
+How the loops are built (`scripts/make_cinematics.py`): moments 1 and 2 dissolve their last 0.8 s into their first 0.8 s inside the file, so the loop point is an ordinary frame-to-frame step; moment 3 dips through black at the seam because it ends on a logo on black. The page only sets the `loop` attribute.
+
+Defect found and fixed during this pass: when the first cinematic moment was still stopping, the cast reel declined to start and never retried; it now resumes when the other video has stopped.
+
+Encodes after this pass: desktop 11.2, 6.1 and 2.8 MB (20 MB); phone 3.3, 2.3 and 1.3 MB (7 MB). Tests: 323 passed. Width sweep: clean.

@@ -16,7 +16,7 @@ and remove the folder if Rockstar asks. Every row is listed in `docs/MEDIA_INVEN
 
 ## The cinematic moments (`media/cinematic/`)
 
-The homepage has three native-video moments: after Jason and Lucia (full viewport), above the region explorer (a
+The homepage has three native-video moments, each a silent, seamless loop with no controls: after Jason and Lucia (full viewport), above the region explorer (a
 2.22:1 band) and before the closing (the finale, on black). Build them from your own recordings:
 
 ```powershell
@@ -28,8 +28,8 @@ It reads `media/source-videos/trailers/GTAVI_Trailer_1.mp4` and `GTAVI_Trailer_2
 
 | File | What it is |
 |------|------------|
-| `moment-N.mp4` | Desktop: H.264 High, AAC stereo, faststart, loudness-normalised to -16 LUFS (about 8.7, 6.3 and 3.0 MB) |
-| `moment-N-mobile.mp4` | A lighter phone cut, cropped 4:5, 4:3 and 4:3 (about 2.5, 2.4 and 1.5 MB) |
+| `moment-N.mp4` | Desktop: H.264 High, AAC stereo, faststart, loudness-normalised to -16 LUFS (about 11.2, 6.1 and 2.8 MB) |
+| `moment-N-mobile.mp4` | A lighter phone cut, cropped 4:5, 4:3 and 4:3 (about 3.3, 2.3 and 1.3 MB) |
 | `moment-N.jpg` | A high-quality poster, also the reduced-motion and data-saver picture |
 
 The source recordings are never modified. A moment appears on the page only when its video exists; without

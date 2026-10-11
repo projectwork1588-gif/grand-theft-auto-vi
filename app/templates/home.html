@@ -5,13 +5,13 @@
 {% block content %}
 {% set featured_video = videos[0] if videos else none %}
 
-{# A cinematic moment: native video (muted, scroll-triggered) over its own poster. Without a built video only the first
-   slot renders, as an official still with a link into Rockstar's own player. `variant` is full, band or finale. #}
+{# A cinematic moment: a full-bleed native video that loops by itself, with nothing on top of it. Without a built video only
+   the first slot renders, as the official still. `variant` is full, band or finale. #}
 {% macro cinema_section(c, variant, anchor) %}
 {% if c %}
 {% set native = c.native %}
 <section class="cinema cinema--{{ variant }} chapter{% if native %} has-video{% endif %}" id="{{ anchor }}" data-chapter="{{ c.title }}"
-         aria-label="{{ c.title }}" data-cinema data-slot="{{ c.slot }}"{% if native and native.mobile %} data-mobile-cut{% endif %}>
+         aria-label="{{ c.title }}" data-cinema data-slot="{{ c.slot }}">
   <div class="cinema__frame">
     {% if native and native.poster %}
     <img class="cinema__poster-img" src="{{ media_file_url(native.poster) }}" alt="" decoding="async" loading="lazy">
@@ -19,45 +19,13 @@
     {{ picture(c.poster, fallback='', sizes='max(100vw, 178vh)', alt='', cls='cinema__poster') }}
     {% endif %}
     {% if native %}
-    <video class="cinema__video" data-cinema-video muted playsinline preload="none" aria-label="{{ c.title }}, official footage"
+    <video class="cinema__video" data-cinema-video muted loop playsinline preload="none" aria-hidden="true" tabindex="-1"
            {% if native.poster %}poster="{{ media_file_url(native.poster) }}"{% endif %}>
       {% if native.mobile %}<source src="{{ media_file_url(native.mobile) }}" media="(max-width: 700px)" type="video/mp4">{% endif %}
       <source src="{{ media_file_url(native.video) }}" type="video/mp4">
     </video>
     {% endif %}
     <div class="cinema__shade" aria-hidden="true"></div>
-  </div>
-  <div class="cinema__bar">
-    <div class="container--wide cinema__inner">
-      <div class="cinema__copy">
-        <p class="cinema__eyebrow">{{ c.title }}</p>
-        {% if c.trailer and not native %}
-        <button class="cinema__play" type="button" data-video="{{ player_src(c.trailer.embed_url, true) }}" data-title="{{ c.trailer.title }}">
-          <span class="cinema__disc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></span>
-          <span class="cinema__play-label">Watch Official Trailer</span>
-        </button>
-        {% endif %}
-        <p class="cinema__credit">&copy; Rockstar Games</p>
-      </div>
-      {% if native %}
-      <div class="cinema__ui">
-        <button class="cinema__btn" type="button" data-cinema-toggle aria-label="Pause the footage" hidden>
-          <svg class="cinema__icon cinema__icon--pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>
-          <svg class="cinema__icon cinema__icon--play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
-          <svg class="cinema__icon cinema__icon--replay" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V2L7 6.5 12 11V8a5 5 0 11-5 5H5a7 7 0 107-8z" fill="currentColor"/></svg>
-          <span class="cinema__btn-label" data-cinema-toggle-label>Pause</span>
-        </button>
-        <button class="cinema__btn" type="button" data-cinema-sound aria-pressed="false" hidden>
-          <svg class="cinema__icon cinema__icon--off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 9l5 6M21 9l-5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          <svg class="cinema__icon cinema__icon--on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 010 7M18.5 6a8.5 8.5 0 010 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          <span data-cinema-sound-label>Enable sound</span>
-        </button>
-        {% if c.trailer and variant == 'full' %}
-        <button class="cinema__btn" type="button" data-video="{{ player_src(c.trailer.embed_url, true) }}" data-title="{{ c.trailer.title }}">Watch Official Trailer</button>
-        {% endif %}
-      </div>
-      {% endif %}
-    </div>
   </div>
 </section>
 {% endif %}
@@ -141,7 +109,7 @@
     <div class="section-head reveal">
       <p class="eyebrow">The cast</p>
       <h2 id="cast-title">Eight faces of Leonida</h2>
-      <p class="subtitle">{% if reel %}Rockstar's own short clips, cut into one reel. Pick a name to hold on that moment.{% else %}Pick a name to meet them.{% endif %}</p>
+      <p class="subtitle">{% if reel %}Rockstar's own short clips, cut into one reel. Pick a name to jump to that moment.{% else %}Pick a name to meet them.{% endif %}</p>
     </div>
 
     {% set first = cast[0] if cast else none %}
@@ -162,13 +130,6 @@
           <p class="cast__summary" data-summary>{{ first.summary if first else '' }}</p>
           {% if first %}<a class="link-arrow" data-link href="{{ url_for('pages.character_detail', slug=first.slug) }}">Read the profile</a>{% endif %}
         </div>
-        {% if reel %}
-        {# Both controls are in the markup from the start and never hidden: the script only changes their state. #}
-        <div class="cast__controls" role="group" aria-label="Reel controls">
-          <button class="cast__btn" type="button" data-toggle>Pause</button>
-          <button class="cast__btn cast__btn--reel is-active" type="button" data-play-reel aria-pressed="true">Play whole reel</button>
-        </div>
-        {% endif %}
       </div>
       <ul class="cast__list" aria-label="Characters">
         {% for c in cast %}
@@ -319,13 +280,13 @@
     <div class="section-head reveal">
       <p class="eyebrow">Watch</p>
       <h2 id="media-title">The official trailers</h2>
-      <p class="subtitle">Straight from Rockstar. Press play and the video opens in Rockstar's own player.</p>
+      <p class="subtitle">The three official videos, straight from Rockstar.</p>
     </div>
 
     {% if videos %}
     <div class="theatre">
       {% for m in videos %}
-      {% set poster = video_posters.get(['poster-trailer-2', 'poster-trailer-1', 'poster-extended-look'][loop.index0]) %}
+      {% set poster = video_posters.get(['poster-trailer-1', 'poster-trailer-2', 'poster-extended-look'][loop.index0]) %}
       <div class="theatre__item{% if loop.first %} theatre__item--lead{% endif %} reveal" data-delay="{{ loop.index }}">
         <button class="video-card" type="button" data-video="{{ player_src(m.embed_url, true) }}" data-title="{{ m.title }}">
           {{ picture(poster, fallback='VI', sizes='(min-width: 900px) ' ~ ('64vw' if loop.first else '32vw') ~ ', 100vw', alt='') }}
@@ -346,7 +307,6 @@
     <div class="gallery-block">
       <div class="gallery-block__head reveal">
         <h3 class="subhead gallery-block__title" id="shots-title">Screenshots</h3>
-        <p class="muted">Official screenshots from Rockstar. Select one to view it larger.</p>
       </div>
       <ul class="bento" data-gallery aria-labelledby="shots-title">
         {% for m in screenshots %}

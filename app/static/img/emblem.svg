@@ -1,15 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 48" width="72" height="48" role="img" aria-label="Team Valkyrie emblem">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 8 64 50" width="64" height="50" role="img" aria-label="Team Valkyrie emblem">
   <defs>
     <linearGradient id="v" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#ff5f96"/><stop offset=".6" stop-color="#ff9b52"/><stop offset="1" stop-color="#ffd47c"/>
     </linearGradient>
-    <g id="wing" fill="#f6f1ea">
-      <path d="M24 8C17 4 9 4 1 1c6 7 14 10 22 13z"/>
-      <path d="M23 16c-7-3-14-3-20-3 5 6 12 9 19 10z" opacity=".82"/>
-      <path d="M22 25c-6-2-11-2-16-1 4 5 10 7 15 7z" opacity=".6"/>
+    <g id="w" fill="#f6f1ea">
+      <path d="M20 20C14 16 8 15 2 10c4 9 10 14 18 17z"/>
+      <path d="M19 31c-6-2-11-2-16-1 4 5 9 8 16 8z" opacity=".8"/>
     </g>
   </defs>
-  <path d="M36 46 25 9h7l4 17 4-17h7z" fill="url(#v)"/>
-  <use href="#wing"/>
-  <use href="#wing" transform="translate(72 0) scale(-1 1)"/>
+  <path d="M32 56 21 17h9l2 12 2-12h9z" fill="url(#v)"/>
+  <use href="#w"/>
+  <use href="#w" transform="translate(64 0) scale(-1 1)"/>
 </svg>

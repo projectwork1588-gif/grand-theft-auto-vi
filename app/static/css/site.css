@@ -59,12 +59,11 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 
 .brand { display: inline-flex; align-items: center; gap: 14px; color: var(--text); text-decoration: none; min-width: 0; }
 .brand:hover { color: var(--text); }
-.brand__emblem { width: 52px; height: 35px; flex: none; transition: transform var(--dur-3) var(--ease); }
+.brand__emblem { width: 50px; height: 39px; flex: none; transition: transform var(--dur-3) var(--ease); }
 .brand:hover .brand__emblem { transform: translateY(-2px); }
 .brand__text { display: grid; gap: 6px; line-height: 1; min-width: 0; }
 .brand__title { font: 700 var(--t-h4)/1 var(--font-display); letter-spacing: var(--track-brand); text-transform: uppercase; white-space: nowrap; }
 .brand__sub { font: 600 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--text-2); white-space: nowrap; }
-.brand__sub-short { display: none; }
 
 .header-actions { display: flex; align-items: center; gap: var(--s1); }
 .header-pill, .menu-btn {
@@ -129,10 +128,8 @@ html:not(.js) .hero, html:not(.js) .page-hero { padding-top: 48px; }
 }
 @media (max-width: 640px) {
   :root { --header-h: 64px; }
-  .brand__emblem { width: 44px; height: 30px; }
+  .brand__emblem { width: 42px; height: 33px; }
   .brand__title { font-size: var(--t-lead); }
-  .brand__sub-long { display: none; }
-  .brand__sub-short { display: inline; }
   .header-pill { display: none; }
   .menu-btn { padding: 0 16px; }
 }

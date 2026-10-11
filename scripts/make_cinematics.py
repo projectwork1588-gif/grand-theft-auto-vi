@@ -6,6 +6,10 @@
 Reads media/source-videos/trailers/ and writes media/cinematic/ (both Git-ignored; nothing here is ever committed).
 The source recordings are never modified. Needs ffmpeg (`pip install imageio-ffmpeg` is enough).
 
+Each moment is built as a seamless loop (the page plays it with the <video> loop attribute and no controls):
+  crossfade  the last 0.8 s dissolves into the first 0.8 s, so the end flows into the start (day and bright shots)
+  dip        the picture and sound dip through black at the seam (the finale, which ends on a logo on black)
+
 For every moment it writes
   moment-N.mp4          desktop: H.264 High, AAC stereo, faststart, loudness-normalised
   moment-N-mobile.mp4   a lighter cut cropped for phones (4:5 or 4:3)
@@ -29,18 +33,22 @@ TRAILER_2 = SOURCE_DIR / "GTAVI_Trailer_2.mp4"
 BARS = "crop=3840:1728:0:216"     # Trailer 2: remove the 216 px letterbox bars
 LOUDNESS = {"I": -16.0, "TP": -1.5, "LRA": 11.0}
 AUDIO_BITRATE = "128k"
-FADE_IN, FADE_OUT = 0.25, 0.4     # audio only; the picture is faded by the page
+SEAM = 0.8                        # seconds of crossfade or dip at the loop point
 
 # Each moment: its parts (source, start seconds, length seconds), an optional dissolve between two parts, the poster
 # frame, and the phone crop applied after the parts are joined (t is seconds into the finished moment).
 MOMENTS = {
     "moment-1": {
         "title": "Dawn over Leonida",
-        "parts": [(TRAILER_1, 19.16, 8.26)],
+        # Extended: the low-angle towers open it and the daytime lowrider street closes it, so the loop dissolves
+        # day into day. Trailer 1 shots (source seconds): towers 18.37, marsh and flamingos 19.17, beach 21.73,
+        # speedboat 23.27, night road 24.83, lowriders 27.43, next cut 28.97.
+        "parts": [(TRAILER_1, 18.40, 10.55)],
         "bars": False,
+        "loop": "crossfade",
         "desktop": "scale=1920:1080:flags=lanczos",
-        # 4:5. Focal points per shot: marsh and flamingos, beach, speedboat, night road.
-        "mobile": "crop=1728:2160:x='if(lt(t,2.56),1056,if(lt(t,4.10),864,if(lt(t,5.66),1363,403)))':y=0,scale=720:900:flags=lanczos",
+        # 4:5 phone crop with a focal point per shot (seconds into the clip before the seam).
+        "mobile": "crop=1728:2160:x='if(lt(t,0.77),1056,if(lt(t,3.33),1056,if(lt(t,4.87),864,if(lt(t,6.43),1363,if(lt(t,9.03),403,1056)))))':y=0,scale=720:900:flags=lanczos",
         "poster": (TRAILER_1, 21.3),
         "desktop_crf": 23, "mobile_crf": 25, "maxrate": "9M", "mobile_maxrate": "3.5M",
     },
@@ -49,6 +57,7 @@ MOMENTS = {
         "parts": [(TRAILER_2, 6.35, 3.35), (TRAILER_2, 138.15, 5.50)],
         "dissolve": 0.4,
         "bars": True,
+        "loop": "crossfade",
         "desktop": "scale=1920:864:flags=lanczos",
         # 4:3, centred; the helicopter shot sits right of centre.
         "mobile": "crop=2304:1728:x='if(between(t,2.95,4.75),1150,768)':y=0,scale=960:720:flags=lanczos",
@@ -59,6 +68,7 @@ MOMENTS = {
         "title": "Last light",
         "parts": [(TRAILER_2, 152.85, 10.95)],
         "bars": True,
+        "loop": "dip",
         "desktop": "scale=1920:864:flags=lanczos",
         # 4:3, centred on the logo (a 1:1 crop would clip the date line).
         "mobile": "crop=2304:1728:768:0,scale=960:720:flags=lanczos",
@@ -89,6 +99,12 @@ def total_length(moment):
     return sum(length for _s, _t, length in parts) - dissolve * (len(parts) - 1)
 
 
+def loop_length(moment):
+    """Length of the finished loop: a crossfade seam overlaps the end with the start, a dip seam does not shorten it."""
+    length = total_length(moment)
+    return length - SEAM if moment.get("loop") == "crossfade" else length
+
+
 def input_args(moment):
     args = []
     for src, start, length in moment["parts"]:
@@ -112,7 +128,19 @@ def video_graph(moment, variant):
         chains.append(f"[p0][p1]xfade=transition=fade:duration={dissolve}:offset={offset:.3f}[j]")
         joined = "[j]"
     tail = "" if variant == "desktop" else moment["mobile"] + ","
-    chains.append(f"{joined}{tail}fps=30,format=yuv420p[v]")
+    length = total_length(moment)
+    if moment.get("loop") == "crossfade":
+        # mid | (end dissolving into the start): the loop point is then an ordinary frame-to-frame step
+        chains.append(f"{joined}{tail}fps=30,format=yuv420p,split=3[m][t][h]")
+        chains.append(f"[m]trim=start={SEAM}:end={length - SEAM:.3f},setpts=PTS-STARTPTS,fps=30[mid]")
+        chains.append(f"[t]trim=start={length - SEAM:.3f}:end={length:.3f},setpts=PTS-STARTPTS,fps=30[tl]")
+        chains.append(f"[h]trim=start=0:end={SEAM},setpts=PTS-STARTPTS,fps=30[hd]")
+        chains.append(f"[tl][hd]xfade=transition=fade:duration={SEAM}:offset=0[seam]")
+        chains.append("[mid][seam]concat=n=2:v=1:a=0[v]")
+    elif moment.get("loop") == "dip":
+        chains.append(f"{joined}{tail}fps=30,format=yuv420p,fade=t=out:st={length - SEAM:.3f}:d={SEAM},fade=t=in:st=0:d={SEAM}[v]")
+    else:
+        chains.append(f"{joined}{tail}fps=30,format=yuv420p[v]")
     return ";".join(chains)
 
 
@@ -126,7 +154,17 @@ def audio_graph(moment, normaliser):
         chains.append(f"[s0][s1]acrossfade=d={dissolve}:c1=tri:c2=tri[aj]")
         joined = "[aj]"
     length = total_length(moment)
-    chains.append(f"{joined}{normaliser}afade=t=in:st=0:d={FADE_IN},afade=t=out:st={length - FADE_OUT:.3f}:d={FADE_OUT}[a]")
+    if moment.get("loop") == "crossfade":
+        chains.append(f"{joined}{normaliser}asplit=3[am][at][ah]")
+        chains.append(f"[am]atrim=start={SEAM}:end={length - SEAM:.3f},asetpts=PTS-STARTPTS[amid]")
+        chains.append(f"[at]atrim=start={length - SEAM:.3f}:end={length:.3f},asetpts=PTS-STARTPTS[atl]")
+        chains.append(f"[ah]atrim=start=0:end={SEAM},asetpts=PTS-STARTPTS[ahd]")
+        chains.append(f"[atl][ahd]acrossfade=d={SEAM}:c1=tri:c2=tri[aseam]")
+        chains.append("[amid][aseam]concat=n=2:v=0:a=1[a]")
+    elif moment.get("loop") == "dip":
+        chains.append(f"{joined}{normaliser}afade=t=out:st={length - SEAM:.3f}:d={SEAM},afade=t=in:st=0:d={SEAM}[a]")
+    else:
+        chains.append(f"{joined}{normaliser}anull[a]")
     return ";".join(chains)
 
 
@@ -173,14 +211,14 @@ def main(only=None):
     for slot, moment in MOMENTS.items():
         if only and slot != only:
             continue
-        print(f"{slot} ({moment['title']}), {total_length(moment):.2f} s", flush=True)
+        print(f"{slot} ({moment['title']}), loop {loop_length(moment):.2f} s ({moment.get('loop')})", flush=True)
         stats = measure_loudness(ffmpeg, moment)
         norm = normaliser_for(stats)
         print(f"  loudness before: {stats['input_i']} LUFS, true peak {stats['input_tp']} dBTP", flush=True)
         encode(ffmpeg, moment, "desktop", norm, OUT_DIR / f"{slot}.mp4")
         encode(ffmpeg, moment, "mobile", norm, OUT_DIR / f"{slot}-mobile.mp4")
         poster(ffmpeg, moment, OUT_DIR / f"{slot}.jpg")
-        report[slot] = {"title": moment["title"], "seconds": round(total_length(moment), 2),
+        report[slot] = {"title": moment["title"], "seconds": round(loop_length(moment), 2), "loop": moment.get("loop"),
                         "loudness_before_lufs": float(stats["input_i"])}
     manifest = OUT_DIR / "manifest.json"
     existing = json.loads(manifest.read_text(encoding="utf-8")) if manifest.exists() else {}

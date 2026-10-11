@@ -100,7 +100,6 @@
       var y = window.scrollY;
       var limit = window.innerHeight * 1.1;
       if (y > limit) { return; }
-      heroBg.style.setProperty("transform", "translate3d(0," + Math.round(Math.min(y * 0.1, heroBg.offsetHeight * 0.07)) + "px,0)");
       heroContent.style.setProperty("transform", "translate3d(0," + Math.round(y * -0.08) + "px,0)");
       heroContent.style.setProperty("opacity", String(Math.max(0, 1 - y / (window.innerHeight * 0.75))));
     };
@@ -195,11 +194,10 @@
     window.addEventListener("resize", update);
   })();
 
-  // ---- Cast stage: one frame, eight people, about four seconds each -----------------------------
+  // ---- Cast stage: one frame, eight people, about three seconds each -----------------------------
   // One reel file is buffered once. Choosing a person seeks straight to that person's segment (keyframes sit
-  // at every start, so it is instant), plays it once and holds on the final frame. "Play whole reel" runs
-  // all eight in order and loops. Both controls are in the markup from the first paint and are never hidden:
-  // the script only changes their state.
+  // at every start, so it is instant) and the reel carries on from there. The reel runs by itself, all eight
+  // in order, and loops. There are no control buttons.
   (function castStage() {
     var root = document.querySelector("[data-cast]");
     if (!root) { return; }
@@ -317,7 +315,7 @@
 
     function startPerson(i) {
       var seg = segments[i];
-      state.mode = "single";
+      state.mode = "reel";               // choosing a name jumps there; the reel carries on from that person
       showItem(i);
       if (seg && video && reelSrc) { begin(seg.start); } else { if (video) { video.pause(); } render(); }
     }
@@ -375,7 +373,12 @@
       video.addEventListener("error", function () { video.classList.remove("is-ready"); });
       video.addEventListener("play", function () { window.tvMedia = window.tvMedia || {}; window.tvMedia.cast = true; document.dispatchEvent(new Event("tv:state")); });
       video.addEventListener("pause", function () { window.tvMedia = window.tvMedia || {}; window.tvMedia.cast = false; document.dispatchEvent(new Event("tv:state")); });
-      document.addEventListener("tv:state", function () { if (window.tvMedia.cinema && !video.paused) { video.pause(); } });
+      // Yield while a cinematic moment or the trailer overlay is playing, and carry on once they have stopped.
+      document.addEventListener("tv:state", function () {
+        var tv = window.tvMedia || {};
+        if ((tv.cinema || tv.modal) && !video.paused) { video.pause(); }
+        else if (!tv.cinema && !tv.modal && state.started && video.paused && state.visible && state.motion && !document.hidden) { play(); }
+      });
       video.addEventListener("timeupdate", function () { if (!video.paused) { sync(); } });
       video.addEventListener("seeked", armGuard);
     }
@@ -435,28 +438,23 @@
     render();
   })();
 
-  // ---- The cinematic moments: native video, muted, started and stopped by scrolling ---------------------
-  // Up to three sections, each a plain <video> over its own poster. No third-party player. Rules:
-  //  * One video plays at a time: the most visible eligible section wins; the cast reel and the trailer overlay
+  // ---- The cinematic moments: native video that loops by itself, with nothing on top of it -----------------
+  // Up to three sections, each a plain looping <video> over its own poster. No controls, no captions, no player.
+  //  * One video plays at a time: the most visible eligible moment wins; the cast reel and the trailer overlay
   //    count too (window.tvMedia).
-  //  * Muted autoplay on entry, paused on exit. A moment plays once and holds its last frame; Replay is offered.
-  //  * Sound is the visitor's choice. Browsers refuse audible autoplay until the page has been interacted with, so
-  //    nothing is unmuted before a deliberate click on Enable sound. The choice is remembered for the visit, and
-  //    later moments then start with sound (faded in) where the browser allows it.
-  //  * Reduced motion, data saver and slow connections get the poster and a Play button; nothing autoplays.
+  //  * Muted autoplay when a moment is on screen, paused when it leaves. The loop seam is baked into the file, so
+  //    the loop is continuous.
+  //  * Browsers refuse audible autoplay until the visitor has interacted with the page, and a short excerpt of music
+  //    on repeat is a poor default, so the loops are silent. The sound is there for anyone who wants it: a click
+  //    or tap on the picture (or the M key) turns it on, faded in, and the choice is remembered for the visit.
+  //  * Reduced motion, data saver and slow connections keep the poster; nothing autoplays.
   window.tvMedia = window.tvMedia || { cast: false, cinema: false, modal: false };
   (function cinemas() {
     var roots = [].slice.call(document.querySelectorAll("[data-cinema]"));
     var players = [];
     roots.forEach(function (root) {
       var video = root.querySelector("[data-cinema-video]");
-      if (!video) { return; }
-      players.push({
-        root: root, video: video,
-        toggleBtn: root.querySelector("[data-cinema-toggle]"), toggleLabel: root.querySelector("[data-cinema-toggle-label]"),
-        soundBtn: root.querySelector("[data-cinema-sound]"), soundLabel: root.querySelector("[data-cinema-sound-label]"),
-        ratio: 0, loaded: false, failed: false, ended: false, userPaused: false, requested: false, ramp: 0
-      });
+      if (video) { players.push({ root: root, video: video, ratio: 0, loaded: false, failed: false, ramp: 0 }); }
     });
     if (!players.length) { return; }
 
@@ -480,24 +478,6 @@
       }, 40);
     }
 
-    function labels(p) {
-      var v = p.video;
-      var playing = !v.paused && !v.ended;
-      if (p.toggleBtn) {
-        p.toggleBtn.hidden = p.failed;
-        p.toggleBtn.classList.toggle("is-paused", !playing && !p.ended);
-        p.toggleBtn.classList.toggle("is-ended", p.ended);
-        var text = p.ended ? "Replay" : (playing ? "Pause" : "Play");
-        p.toggleBtn.setAttribute("aria-label", p.ended ? "Replay the footage" : (playing ? "Pause the footage" : "Play the footage"));
-        if (p.toggleLabel) { p.toggleLabel.textContent = text; }
-      }
-      if (p.soundBtn) {
-        p.soundBtn.hidden = p.failed || (!p.loaded && automatic);
-        p.soundBtn.setAttribute("aria-pressed", String(soundOn));
-        if (p.soundLabel) { p.soundLabel.textContent = soundOn ? "Sound on" : "Enable sound"; }
-      }
-    }
-
     function load(p) {
       if (p.loaded || p.failed) { return; }
       p.loaded = true;
@@ -506,7 +486,7 @@
     }
 
     function start(p) {
-      if (!p.video.paused || p.ended || p.video.ended) { return; }   // a finished moment holds its last frame
+      if (!p.video.paused) { return; }
       load(p);
       var withSound = soundOn && activated();
       p.video.muted = !withSound;
@@ -514,14 +494,10 @@
       var promise = p.video.play();
       if (promise && typeof promise.catch === "function") {
         promise.catch(function () {
-          if (withSound) {          // the browser refused audible playback: carry on silently
-            p.video.muted = true; p.video.volume = 1;
-            safePlay(p.video);
-          }
+          if (withSound) { p.video.muted = true; p.video.volume = 1; safePlay(p.video); }   // refused: carry on silently
         });
       }
-      if (withSound) { ramp(p, 1, 400); }
-      window.tvMedia.cinema = true;
+      if (withSound) { ramp(p, 1, 500); }
     }
 
     function stop(p) {
@@ -534,70 +510,41 @@
       var best = null;
       var blocked = document.hidden || window.tvMedia.modal || window.tvMedia.cast;
       players.forEach(function (p) {
-        var eligible = !blocked && !p.failed && !p.ended && !p.userPaused && p.ratio >= 0.35 && (automatic || p.requested);
-        if (eligible && (!best || p.ratio > best.ratio)) { best = p; }
+        if (!blocked && !p.failed && automatic && p.ratio >= 0.35 && (!best || p.ratio > best.ratio)) { best = p; }
       });
-      players.forEach(function (p) {
-        if (p === best) { start(p); } else { stop(p); }
-      });
+      players.forEach(function (p) { if (p === best) { start(p); } else { stop(p); } });
       window.tvMedia.cinema = players.some(function (p) { return !p.video.paused; });
-      players.forEach(labels);
+    }
+
+    function toggleSound() {
+      soundOn = !soundOn;
+      try { window.sessionStorage.setItem("tv-sound", soundOn ? "1" : "0"); } catch (e) { /* ignore */ }
+      players.forEach(function (p) {
+        if (p.video.paused) { return; }
+        if (soundOn) { p.video.muted = false; p.video.volume = 0; ramp(p, 1, 500); } else { p.video.muted = true; }
+      });
     }
 
     players.forEach(function (p) {
-      var v = p.video;
-      v.muted = true;
-      v.addEventListener("playing", function () { p.root.classList.add("is-live"); labels(p); document.dispatchEvent(new Event("tv:state")); });
-      v.addEventListener("pause", function () {
-        // The browser fires pause just before ended: note the end first so nothing restarts a finished moment.
-        if (v.ended || (v.duration && v.currentTime >= v.duration - 0.05)) { p.ended = true; p.root.classList.add("is-ended"); }
+      p.video.muted = true;
+      p.video.addEventListener("playing", function () { p.root.classList.add("is-live"); document.dispatchEvent(new Event("tv:state")); });
+      p.video.addEventListener("pause", function () {
         window.tvMedia.cinema = players.some(function (q) { return !q.video.paused; });
-        labels(p);
         document.dispatchEvent(new Event("tv:state"));
       });
-      v.addEventListener("volumechange", function () { labels(p); });
-      v.addEventListener("ended", function () {
-        p.ended = true;
-        p.root.classList.add("is-ended");
-        window.tvMedia.cinema = false;
-        labels(p);
-        apply();
-      });
-      v.addEventListener("error", function () { p.failed = true; p.root.classList.remove("is-live"); labels(p); apply(); });
-
-      if (p.toggleBtn) {
-        p.toggleBtn.addEventListener("click", function () {
-          p.requested = true;
-          if (p.ended) {                       // replay from the start
-            p.ended = false; p.userPaused = false;
-            p.root.classList.remove("is-ended");
-            try { v.currentTime = 0; } catch (e) { /* not seekable yet */ }
-            apply(); start(p); return;
-          }
-          if (!v.paused) { p.userPaused = true; v.pause(); }
-          else { p.userPaused = false; p.ratio = Math.max(p.ratio, 0.35); apply(); start(p); }
-          labels(p);
-        });
-      }
-      if (p.soundBtn) {
-        p.soundBtn.addEventListener("click", function () {
-          soundOn = !soundOn;
-          try { window.sessionStorage.setItem("tv-sound", soundOn ? "1" : "0"); } catch (e) { /* ignore */ }
-          players.forEach(function (q) {
-            if (q.video.paused) { return; }
-            if (soundOn) { q.video.muted = false; q.video.volume = 0; ramp(q, 1, 400); } else { q.video.muted = true; }
-          });
-          if (soundOn && p.video.paused && !p.ended) { p.userPaused = false; p.requested = true; start(p); }
-          players.forEach(labels);
-        });
-      }
+      p.video.addEventListener("error", function () { p.failed = true; p.root.classList.remove("is-live"); apply(); });
+      p.root.addEventListener("click", function () { if (!p.video.paused) { toggleSound(); } });
+    });
+    document.addEventListener("keydown", function (e) {
+      if ((e.key === "m" || e.key === "M") && !e.ctrlKey && !e.metaKey && !e.altKey && !/input|textarea|select/i.test((e.target.tagName || ""))
+          && players.some(function (p) { return !p.video.paused; })) { toggleSound(); }
     });
 
     if ("IntersectionObserver" in window) {
       var near = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
           var p = players.filter(function (q) { return q.root === entry.target; })[0];
-          if (p && entry.isIntersecting && automatic) { load(p); }
+          if (p && entry.isIntersecting && automatic) { load(p); }   // a screen away, so it starts without a stall
         });
       }, { rootMargin: "100% 0px 100% 0px" });
       var seen = new IntersectionObserver(function (entries) {
@@ -611,17 +558,23 @@
     }
     document.addEventListener("visibilitychange", apply);
     document.addEventListener("tv:state", apply);
-    players.forEach(labels);
   })();
 
-  // ---- Region explorer: hover, focus or tap a region to preview it; choose to step inside -------
+  // ---- Region explorer: moves on by itself every few seconds; hover, focus or tap to choose --------------
+  // It advances from region 1 to 6 and around again, only while it is on screen, and never while the visitor is
+  // pointing at it. A choice made by hand holds for a full interval before it moves on. Reduced motion: no advance.
   (function regionExplorer() {
     var root = document.querySelector("[data-regions]");
     if (!root) { return; }
     var views = [].slice.call(root.querySelectorAll("[data-region-view]"));
     var tabs = [].slice.call(root.querySelectorAll("[data-region-tab]"));
     if (views.length < 2 || views.length !== tabs.length) { return; }
+    var INTERVAL = 6500;
     var current = 0;
+    var timer = 0;
+    var visible = false;
+    var holding = false;
+    var auto = !reduceMotion;
 
     function activate(i) {
       if (i === current) { return; }
@@ -637,10 +590,24 @@
         if (n === i) { tab.setAttribute("aria-current", "true"); } else { tab.removeAttribute("aria-current"); }
       });
     }
+
+    function schedule() {
+      window.clearTimeout(timer);
+      root.classList.toggle("is-held", holding || !visible || document.hidden);
+      if (!auto || holding || !visible || document.hidden) { return; }
+      // restart the progress line under the active tab
+      root.classList.remove("is-timing");
+      void root.offsetWidth;
+      root.classList.add("is-timing");
+      timer = window.setTimeout(function () { activate((current + 1) % views.length); schedule(); }, INTERVAL);
+    }
+
     views.forEach(function (view, n) {
       if (n !== 0) { view.setAttribute("aria-hidden", "true"); if ("inert" in view) { view.inert = true; } }
     });
     tabs[0].setAttribute("aria-current", "true");
+    root.style.setProperty("--auto-ms", INTERVAL + "ms");
+    root.classList.toggle("is-auto", auto);
 
     tabs.forEach(function (tab, n) {
       if (!coarse) {
@@ -649,9 +616,20 @@
       tab.addEventListener("focus", function () { activate(n); });
       tab.addEventListener("click", function (e) {
         // On touch screens the first tap previews, the second opens the page.
-        if (coarse && current !== n) { e.preventDefault(); activate(n); }
+        if (coarse && current !== n) { e.preventDefault(); activate(n); schedule(); }
       });
     });
+    root.addEventListener("mouseenter", function () { holding = true; schedule(); });
+    root.addEventListener("mouseleave", function () { holding = false; schedule(); });
+    root.addEventListener("focusin", function () { holding = true; schedule(); });
+    root.addEventListener("focusout", function () { holding = false; schedule(); });
+    root.addEventListener("touchstart", function () { schedule(); }, { passive: true });
+    document.addEventListener("visibilitychange", schedule);
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) { visible = entry.isIntersecting; schedule(); });
+      }, { threshold: 0.4 }).observe(root);
+    }
   })();
 
   // ---- Garage showroom: swipe, drag or use the arrows -------------------------------------------

@@ -4,9 +4,9 @@ falls back to its original artwork."""
 
 # One static hero, chosen by the owner: the Robbery artwork (no embedded logo). No cycle.
 HERO_SLUGS = ("art-jason-lucia-robbery",)
-# Trailer 2 leads. Each video has its own official poster image, in the same order.
-VIDEO_SLUGS = ("official-trailer-2", "official-trailer-1", "official-an-extended-look")
-VIDEO_POSTER_SLUGS = ("poster-trailer-2", "poster-trailer-1", "poster-extended-look")
+# Trailer 1 leads, then Trailer 2, then An Extended Look. Each video has its own official poster, in the same order.
+VIDEO_SLUGS = ("official-trailer-1", "official-trailer-2", "official-an-extended-look")
+VIDEO_POSTER_SLUGS = ("poster-trailer-1", "poster-trailer-2", "poster-extended-look")
 SCREENSHOT_SLUGS = (
     "shot-vice-city-10", "shot-leonida-keys-01", "shot-jason-duval-01",
     "shot-lucia-caminos-03", "shot-mount-kalaga-04", "shot-port-gellhorn-06",

@@ -85,25 +85,22 @@ def test_homepage_cast_stage_plays_local_loops_when_they_exist(client, local_cli
     assert "data-clip" not in cast and cast.count("data-start=") == 8      # one reel, seeked by time, not eight files
 
 
-def test_cast_controls_are_in_the_first_paint_and_never_hidden(client, local_clips):
-    """Regression: 'Play whole reel' used to appear only after a second character was chosen."""
+def test_cast_reel_has_no_control_buttons_and_keeps_the_list(client, local_clips):
+    """The reel runs by itself: no Play whole reel, Pause or Replay buttons, and the name list stays on the right."""
     cast = _cast_section(html(client, "/"))
-    controls = cast.split('class="cast__controls"')[1].split("</div>")[0]
-    reel_button = re.search(r"<button[^>]*data-play-reel[^>]*>", controls).group(0)
-    pause_button = re.search(r"<button[^>]*data-toggle[^>]*>", controls).group(0)
-    assert "hidden" not in reel_button and "hidden" not in pause_button
-    assert 'aria-pressed="true"' in reel_button and "is-active" in reel_button       # the reel is the active mode on load
-    assert "Play whole reel" in controls
+    assert "cast__controls" not in cast and "data-play-reel" not in cast and "data-toggle" not in cast
+    assert "Play whole reel" not in cast and "Replay" not in cast
+    assert cast.count("data-cast-item") == 8 and 'class="cast__list"' in cast
+    assert 'data-reel="/media/clips/leonida-reel.mp4"' in cast and "data-video-stage" in cast
 
 
-def test_cast_script_never_hides_the_reel_or_pause_controls():
-    """The script may change their state but must not toggle their visibility (the original bug)."""
+def test_cast_script_runs_the_reel_by_itself_and_jumps_on_a_name():
     from pathlib import Path
     script = (Path(__file__).resolve().parent.parent / "app" / "static" / "js" / "site.js").read_text(encoding="utf-8")
-    cast_code = script.split("function castStage()")[1].split("function signatureMoment()")[0]
-    assert "reelBtn.hidden" not in cast_code and "pauseBtn.hidden" not in cast_code
-    assert "wholeBtn" not in cast_code
-    assert 'setAttribute("aria-pressed"' in cast_code                             # state is exposed through aria-pressed
+    cast_code = script.split("function castStage()")[1].split("function cinemas()")[0]
+    assert 'state.mode = "reel"' in cast_code and 'state.mode = "single"' not in cast_code   # always the whole reel
+    assert "video.loop = state.mode ===" in cast_code and "startReel()" in cast_code          # it starts itself and loops
+    assert "begin(seg.start)" in cast_code                                                    # a name jumps to that person
 
 
 def test_cast_playlist_uses_one_explicit_order_not_database_order(client, local_clips):
@@ -425,9 +422,9 @@ def test_hero_is_calm_and_keeps_the_required_identity(client):
 
 def test_brand_lockup_is_in_the_header_and_footer(client):
     page = html(client, "/characters")
-    # Design reset, Gate 1: the emblem plus a two-line lockup, in the header and again in the footer.
-    assert page.count('class="brand__emblem"') == 2 and page.count("Grand Theft Auto VI fan guide") >= 2
-    assert page.count('class="brand__title">Team Valkyrie<') == 2
+    assert page.count('class="brand__emblem"') == 2 and page.count('class="brand__title">Team Valkyrie<') == 2
+    assert page.count('<span class="brand__sub">Grand Theft Auto VI</span>') == 2
+    assert "fan guide" not in page.split('id="main"')[0].lower().replace("a fan-made guide", "")   # no small "fan guide" wording
     assert 'class="header-pill"' in page and "/#media" in page
 
 
@@ -573,11 +570,10 @@ def test_first_cinematic_moment_sits_between_the_leads_and_the_cast(client):
     page = html(client, "/")
     assert page.index('id="leads"') < page.index('id="moment"') < page.index('id="cast"')
     moment = page.split('id="moment"')[1].split("</section>")[0]
-    assert not re.search(r"<h[1-6]", moment)                                      # the footage is the point, no heading
+    assert not re.search(r"<h[1-6]", moment) and "<button" not in moment           # the picture only: no heading, no buttons
     assert "<iframe" not in page.split("<dialog")[0] and "youtube" not in moment.lower().replace("rockstar", "")
     assert "cinema__poster" in moment and "rockstargames.com/VI/_next/static/media/" in moment   # an official still
-    assert "data-video=" in moment and "Watch Official Trailer" in moment         # a way into Rockstar's own player
-    assert "&copy; Rockstar Games" in moment and "Dawn over Leonida" in moment
+    assert "Rockstar Games" not in moment and "Watch Official Trailer" not in moment            # no credit or link on top
     assert "<video" not in moment and "data-cinema-video" not in moment           # no native video until it is built
     assert 'id="world"' not in page and 'id="finale"' not in page                 # the other two need their own video
 
@@ -609,13 +605,14 @@ def test_cinematic_slots_match_the_files_the_builder_writes():
         assert slot["trailer"] in media_slots.VIDEO_SLUGS and slot["title"]
 
 
-def test_script_plays_one_moment_at_a_time_muted_and_only_when_motion_is_welcome():
+def test_script_plays_one_moment_at_a_time_silently_and_only_when_motion_is_welcome():
     code = _script().split("function cinemas()")[1].split("function regionExplorer()")[0]
     assert "automatic = !calm && !slow" in code and "document.hidden" in code and "IntersectionObserver" in code
     assert "best" in code and "p === best" in code and "tvMedia" in code          # the most visible wins; the reel and overlay count
-    assert "v.muted = true" in code and "withSound = soundOn && activated()" in code   # muted unless the visitor asked
-    assert '"ended"' in code and "Replay" in code and ".loop" not in code         # plays once, holds, replay is offered
-    assert "sessionStorage" in code and "ramp(" in code                           # the sound choice is kept for the visit, faded
+    assert "p.video.muted = true" in code and "withSound = soundOn && activated()" in code   # silent unless the visitor asked
+    assert "toggleSound" in code and "sessionStorage" in code and "ramp(" in code  # a click or M turns it on, remembered, faded
+    assert "Replay" not in code and '"ended"' not in code                          # it loops: nothing ends, nothing to replay
+    assert "createElement" not in code                                              # no interface is ever built
     assert "youtube" not in code.lower() and "iframe" not in code.lower()          # no third-party player on the page
 
 
@@ -710,30 +707,27 @@ def test_cast_script_seeks_one_buffered_reel_and_holds_a_chosen_person():
     assert '"Replay"' in code                                                     # replay is a first-class state
 
 
-def test_native_moments_have_sound_controls_and_no_third_party_player(client, local_cinematic):
+def test_native_moments_are_silent_loops_with_nothing_on_top(client, local_cinematic):
     page = html(client, "/")
     for anchor, slot in (("moment", "moment-1"), ("world", "moment-2"), ("finale", "moment-3")):
         section = page.split(f'id="{anchor}"')[1].split("</section>")[0]
-        assert "<video" in section and "data-cinema-video" in section and "muted" in section and "playsinline" in section, slot
-        assert 'preload="none"' in section and f'poster="/media/cinematic/{slot}.jpg"' in section, slot
+        video = section.split("<video")[1].split(">")[0]
+        assert "data-cinema-video" in video and "muted" in video and "playsinline" in video and " loop" in video, slot
+        assert 'preload="none"' in video and f'poster="/media/cinematic/{slot}.jpg"' in video, slot
         assert f'<source src="/media/cinematic/{slot}-mobile.mp4" media="(max-width: 700px)"' in section, slot
         assert f'<source src="/media/cinematic/{slot}.mp4" type="video/mp4">' in section, slot
-        assert "data-cinema-sound" in section and "Enable sound" in section and "data-cinema-toggle" in section, slot
-        assert " loop" not in section.split("<video")[1].split(">")[0], slot  # plays once and holds its last frame
-        assert "cinema__play" not in section and "&copy; Rockstar Games" in section, slot   # no fake play disc over real footage
+        assert "<button" not in section and "cinema__bar" not in section and "Rockstar Games" not in section, slot
+        assert "data-cinema-sound" not in section and "data-cinema-toggle" not in section and "Enable sound" not in section, slot
     assert page.index('id="leads"') < page.index('id="moment"') < page.index('id="cast"') < page.index('id="world"') < page.index('id="leonida"')
     assert page.index('id="media"') < page.index('id="finale"') < page.index('class="section band closing"')
     assert "<iframe" not in page.split("<dialog")[0]
-    first = page.split('id="moment"')[1].split("</section>")[0]
-    assert "Watch Official Trailer" in first and first.count("<button") == 3     # pause, sound, and the trailer overlay
 
 
 def test_native_moments_reveal_only_once_playing_and_survive_a_bad_file():
     code = _script().split("function cinemas()")[1].split("function regionExplorer()")[0]
     assert '"playing"' in code and "is-live" in code                              # the poster stays until frames are moving
-    assert '"error"' in code and "p.failed = true" in code                        # a broken file leaves the poster, no dead controls
-    assert 'video.preload = "auto"' in code or 'p.video.preload = "auto"' in code
-    assert "p.video.load()" in code                                               # nothing downloads until it is wanted
+    assert '"error"' in code and "p.failed = true" in code                        # a broken file leaves the poster
+    assert 'p.video.preload = "auto"' in code and "p.video.load()" in code        # nothing downloads until it is wanted
 
 
 def test_display_titles_use_the_condensed_face_and_body_stays_sans():
@@ -815,12 +809,11 @@ def test_hero_is_one_static_robbery_card_that_keeps_the_required_identity(client
     assert "Jason_and_Lucia_Beach" not in page                                    # Beach is gone from the homepage
 
 
-def test_first_moment_falls_back_to_the_still_and_the_overlay_without_footage(client):
+def test_first_moment_falls_back_to_the_still_without_footage(client):
     page = html(client, "/")
     moment = page.split('id="moment"')[1].split("</section>")[0]
-    assert "has-video" not in page
-    assert 'class="cinema__play"' in moment and "data-title=" in moment
-    assert "Watch Official Trailer" in moment and "Played in Rockstar" not in page
+    assert "has-video" not in page and "<button" not in moment and "cinema__play" not in page
+    assert "Played in Rockstar" not in page and "Watch Official Trailer" not in moment
 
 
 def test_cinematic_files_are_served_with_strict_names(client, local_cinematic):
@@ -884,23 +877,59 @@ def test_only_the_built_moments_appear(client, app, tmp_path):
         app.config["MEDIA_ROOT"] = previous
 
 
-def test_cinematic_builder_uses_the_approved_ranges_and_never_touches_the_sources():
+def test_cinematic_builder_loops_seamlessly_and_never_touches_the_sources():
     import inspect
     from scripts import make_cinematics as mc
     m1, m2, m3 = (mc.MOMENTS[k] for k in ("moment-1", "moment-2", "moment-3"))
-    assert m1["parts"] == [(mc.TRAILER_1, 19.16, 8.26)]
+    assert m1["parts"] == [(mc.TRAILER_1, 18.40, 10.55)]                         # extended: towers first, lowriders last
     assert m2["parts"] == [(mc.TRAILER_2, 6.35, 3.35), (mc.TRAILER_2, 138.15, 5.50)] and m2["dissolve"] == 0.4
     assert m3["parts"] == [(mc.TRAILER_2, 152.85, 10.95)]
     assert m2["bars"] and m3["bars"] and not m1["bars"]                          # Trailer 2 is letterboxed, Trailer 1 is not
+    assert (m1["loop"], m2["loop"], m3["loop"]) == ("crossfade", "crossfade", "dip")
     assert mc.LOUDNESS["I"] == -16.0 and mc.OUT_DIR.name == "cinematic"
+    assert abs(mc.loop_length(m1) - (10.55 - mc.SEAM)) < 1e-6 and mc.loop_length(m3) == 10.95
     source = inspect.getsource(mc)
     assert "unlink" not in source and "rmtree" not in source                      # it only ever writes into media/cinematic
     graph = mc.video_graph(m2, "desktop")
     assert "xfade=transition=fade:duration=0.4:offset=2.950" in graph and "crop=3840:1728:0:216" in graph
+    assert f"xfade=transition=fade:duration={mc.SEAM}:offset=0[seam]" in graph      # the loop seam is baked in
+    assert "fade=t=out" in mc.video_graph(m3, "desktop") and "fade=t=in:st=0" in mc.video_graph(m3, "desktop")
 
 
 def test_hero_art_is_not_repeated_in_the_closing_band(client):
     page = html(client, "/")
     closing = page.split('class="section band closing"')[1]
     assert "Jason_and_Lucia_Robbery" not in closing
+
+
+def test_trailers_are_ordered_trailer_1_trailer_2_extended_look(client):
+    page = html(client, "/")
+    media = page.split('id="media"')[1].split("</section>")[0]
+    titles = re.findall(r'<span class="video-card__title"><b>([^<]+)</b>', media)
+    assert len(titles) == 3 and "Trailer 1" in titles[0] and "Trailer 2" in titles[1] and "Extended Look" in titles[2], titles
+    lead = media.split("theatre__item--lead")[1].split("</div>")[0]
+    assert "Trailer 1" in lead                                                    # Trailer 1 is the primary item
+    assert "GTAVI_Trailer1_poster" in lead or "Trailer1" in lead or "trailer-1" in lead.lower()
+
+
+def test_screenshots_have_no_helper_text(client):
+    page = html(client, "/")
+    assert "Select one to view it larger" not in page and "Official screenshots from Rockstar" not in page
+    assert 'class="gallery-block__head' in page and ">Screenshots<" in page
+
+
+def test_region_explorer_advances_by_itself_and_stays_manual(client):
+    code = _script().split("function regionExplorer()")[1].split("function showroom()")[0]
+    assert "INTERVAL = 6500" in code and "reduceMotion" in code                   # a calm pace; reduced motion does not advance
+    assert "mouseenter" in code and "focusin" in code and "holding" in code       # it waits while the visitor is pointing at it
+    assert "IntersectionObserver" in code and "document.hidden" in code           # and only while it is on screen
+    assert 'tab.addEventListener("click"' in code                                  # manual selection stays
+    css = _css()["pages.css"]
+    assert "@keyframes regionTick" in css and ".regions.is-auto" in css           # a quiet progress line under the active tab
+
+
+def test_hero_artwork_is_not_clipped_at_the_top():
+    css = _css()["pages.css"]
+    assert re.search(r"\.hero__bg \{ position: absolute; inset: 0;", css)          # the whole picture, headroom included
+    assert "heroBg.style.setProperty" not in _script()                          # no parallax that would push it off
 
