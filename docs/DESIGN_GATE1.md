@@ -1,6 +1,6 @@
 # Design reset, Gate 1: identity, tokens, typography, header, overflow fix
 
-Status: **built and verified, awaiting the owner's approval.** Gate 2 (the homepage) has not been started.
+Status: **conditionally approved by the owner; amended after review and awaiting confirmation of the visuals.** Gate 2 (the homepage) has not been started and will not start until the owner confirms.
 Direction approved by the owner: Concept A (Key Art Index) as the foundation. See [DESIGN_RESET.md](DESIGN_RESET.md).
 
 ## What this gate changes
@@ -10,10 +10,22 @@ Direction approved by the owner: Concept A (Key Art Index) as the foundation. Se
 | Brand identity | New Team Valkyrie emblem (a V with folded wings) and a two-line lockup, "TEAM VALKYRIE" over "GRAND THEFT AUTO VI FAN GUIDE". Served as `app/static/img/emblem.svg`, with a favicon. |
 | Design tokens | New `app/static/css/tokens.css`: colour, type scale, tracking, spacing, radii, motion. The old token names still resolve (mapped onto the new ones) until each page is rebuilt. |
 | Typography | Barlow Condensed caps for display and titles, Manrope for everything read. Nine sizes. Every font size, letter-spacing and radius in the three stylesheets was moved onto the scale. |
-| Header | 72 px (64 px on phones). Lockup left; a "Trailers" pill and a Menu button right. The menu is a full-screen numbered index at every width. Solid after the first screen; always solid on inner pages. |
+| Header | 72 px (64 px on phones). Lockup left. From 1100 px up the five sections sit inline in the header beside a "Trailers" pill; below 1100 px a Menu button opens a full-screen numbered index. Solid after the first screen; always solid on inner pages. |
 | Responsive overflow | The homepage no longer scrolls sideways between 901 and 1090 px (or at 320 and 340 px). |
 | Accessibility | White text on the pink action colour was 2.9:1. It is now dark text at 6.5:1 on every primary button. |
 | Guard rails | `tests/test_design_tokens.py` fails on any font size, letter-spacing or radius outside the system. `scripts/qa/sweep.mjs` is a real-browser width sweep (below). |
+
+## Amendments after the owner's review
+
+| Owner decision | What was done |
+|----------------|---------------|
+| Show the emblem at real header and favicon sizes beside the crest and monogram | `review/gate1/emblem-realistic-1x.jpg`: each option in the real header (solid and over the hero art, with inline navigation) and as a 16 and 32 px favicon in dark and light tabs, with the raster enlarged. |
+| Keep TEAM VALKYRIE primary, GRAND THEFT AUTO VI FAN GUIDE secondary | Unchanged. |
+| Inline navigation on wide screens; full-screen menu for mobile and smaller tablets | Inline at 1100 px and up (the narrowest width where lockup, five links and pill fit with room); the numbered menu below. Growing past 1100 px while the menu is open closes it and unlocks scrolling. The menu button and overlay are hidden at wide widths, so assistive technology sees one primary navigation. |
+| Dark text on pink | Kept (6.5:1). |
+| About 180 px VI numeral, responsive and balanced | New token `--t-numeral` (104 to 180 px, fluid: 180 px from 1,200 px wide). The existing hero numeral uses it so the interim page is balanced; Gate 2 builds the hero around it. |
+
+**Favicon.** The wings do not survive 16 px: both the full mark and a simplified two-feather cut smudge in a browser tab. The favicon therefore uses the V on the ground tile (cut A), which stays crisp. The header, footer and menu keep the full winged mark at 52 px (44 on phones), where it reads clearly at 1x. If the owner prefers wings in the tab, cut B (V with two wing dashes) is in the comparison sheet.
 
 ## What this gate deliberately does not change
 
@@ -26,7 +38,7 @@ Direction approved by the owner: Concept A (Key Art Index) as the foundation. Se
 
 | | Before | After |
 |---|--------|-------|
-| Distinct text sizes | 34 | **9** (12, 14, 17, 21, 26, 33 and three fluid display sizes) |
+| Distinct text sizes | 34 | **9** at 1280 px (12, 14, 17, 21, 26, 33 and three fluid display sizes) |
 | Text style combinations | 59 | **28** |
 | Font families in use | 3 (including an Arial fallback) | **2** |
 | Corner radii | 10 | **3** (12, 24, pill) plus circles |
@@ -51,18 +63,19 @@ Where it appears: header (52 x 35 px, 44 x 30 on phones), footer, menu, favicon.
 
 Colour: ground `#12102A`, ground 2 `#1A1740`, card `#1D1A45`, text `#F6F1EA` (16.5:1), text 2 `#CFC8DC` (11.4:1), text 3 `#9A93B3` (6.4:1), action `#FF5F96` (the only action colour), label `#FFD47C` (the only label colour), official `#3DE0C8` (status only). Text on the action colour is `#12102A` (6.5:1).
 
-Type: micro 12, small 14, body 17, lead 21, h4 26, h3 33, h2 41 to 65, h1 52 to 104, display 64 to 140. Tracking: tight, caps, ui, label, brand.
+Type: micro 12, small 14, body 17, lead 21, h4 26, h3 33, h2 41 to 65, h1 52 to 104, display 64 to 140, and the hero numeral 104 to 180 (hero only). Tracking: tight, caps, ui, label, brand.
 
 Space: 8, 16, 24, 32, 48, 72, 112. Section rhythm 72 to 112 px. Shape: card 24, tile 12, pill. Motion: 160, 320, 640 ms, one easing.
 
 The style tile (`review/gate1/style-tile.html`, screenshots `tile-desktop.jpg`, `tile-mobile.jpg`) renders these with the real stylesheets.
 
-## The header and menu
+## The header, inline navigation and menu
 
-* The lockup is a link home. The "Trailers" pill goes to the trailers section of the homepage. The menu button is always present, at every width.
-* The menu is a numbered index (01 Characters ... 05 Stories), a "Watch the trailers" action, About and Credits, and the non-affiliation line. The current section is marked.
-* Keyboard: Escape closes and returns focus to the button; Tab stays inside the menu while it is open; page scroll is locked while open.
-* Without JavaScript the header is static and the menu is a plain list under it.
+* The lockup is a link home. The "Trailers" pill goes to the trailers section of the homepage.
+* **1100 px and up:** Characters, Garage, Leonida, Locations and Stories sit inline; the current section is underlined in the action colour; there is no menu button.
+* **Below 1100 px:** a Menu button opens a numbered full-screen index (01 Characters ... 05 Stories), a "Watch the trailers" action, About and Credits, and the non-affiliation line.
+* Keyboard: Escape closes the menu and returns focus to the button; Tab stays inside the open menu; page scroll is locked while it is open.
+* Without JavaScript the header is static and, below 1100 px, the menu is a plain list under it.
 * Small screens: 640 px and below show "GRAND THEFT AUTO VI" under the name and hide the pill (it is in the menu); 480 px and below make the menu button icon-only; 359 px and below drop the second line. The width sweep confirms the header fits at every width from 320 px.
 
 ## The overflow fix
@@ -75,7 +88,7 @@ The style tile (`review/gate1/style-tile.html`, screenshots `tile-desktop.jpg`, 
 
 ## Verification
 
-* `pytest`: 309 passed (the old lockup test was replaced; two tests added for the menu and the emblem files; six design-token guards added).
+* `pytest`: 309 passed (the old lockup test was replaced; tests added for the menu, the inline navigation and the emblem files; six design-token guards added).
 * Width sweep, real Chrome, 88 widths from 320 to 1920 px, for the homepage, each index page, one detail page of each kind, About, Credits and the 404 page. It checks for sideways page scroll, any element past the viewport edge outside a deliberate scroller, and a header that does not fit. Re-run with:
 
 ```bash
@@ -87,17 +100,18 @@ node scripts/qa/cdp.mjs scripts/qa/sweep.mjs                        # in another
 
 ## Interim states the owner will see (all belong to Gate 2 or 3)
 
-* **The homepage hero's "VI" numeral is smaller than before.** It now follows the display size (up to 140 px) instead of a one-off 240 px. Gate 2 rebuilds the hero.
+* **The homepage hero's "VI" numeral is 180 px at most** (it was 240 px) and fluid; Gate 2 builds the hero around it.
 * **Some small gold labels over bright photographs are hard to read** (for example "Protagonist" over Jason's sky on the lead cards). Gate 2's card family adds the one left-weighted scrim that fixes this.
 * **Section backgrounds still use near-black scrims** in a few places; they were recoloured to the new ground but each is replaced when its section is rebuilt.
 * **The "Jump to ..." pill and the section layouts are as before.**
 
-## Decisions for the owner at this gate
+## Decisions
 
-1. **Emblem:** approve option 1, ask for a bolder variant, or choose option 2 or 3.
-2. **Lockup:** "TEAM VALKYRIE" over "GRAND THEFT AUTO VI FAN GUIDE", or the reverse emphasis.
-3. **Menu at every width:** approve, or restore the five links inline on screens wider than 1180 px.
-4. **Dark text on the pink action colour:** approve (it is the only way to pass contrast without darkening the pink).
-5. **Display scale:** keep 140 px as the largest size, or allow a 180 px hero numeral for Gate 2.
+Decided by the owner: lockup, inline navigation on wide screens, dark text on pink, a 180 px numeral.
 
-Gate 2 starts only after these are answered.
+**Still to confirm from the screenshots:**
+
+1. The emblem, from the real-size comparison: the winged V in the header with the V-on-tile favicon (recommended), or the crest or monogram.
+2. The favicon cut: A (V only, recommended) or B (V with wing dashes).
+
+Gate 2 starts only after these are confirmed.

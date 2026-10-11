@@ -39,6 +39,10 @@
     });
     // A link to a section of the page we are already on closes the menu; a link to another page simply leaves.
     nav.addEventListener("click", function (e) { if (e.target.closest("a")) { setOpen(false); } });
+    // Growing past the menu's range (the inline navigation takes over) closes it and unlocks the page.
+    var wide = window.matchMedia("(min-width: 1100px)");
+    var onWide = function () { if (wide.matches && toggle.getAttribute("aria-expanded") === "true") { setOpen(false); } };
+    if (wide.addEventListener) { wide.addEventListener("change", onWide); } else if (wide.addListener) { wide.addListener(onWide); }
     // Tab stays inside the open menu and its button.
     nav.addEventListener("keydown", function (e) {
       if (e.key !== "Tab" || toggle.getAttribute("aria-expanded") !== "true") { return; }

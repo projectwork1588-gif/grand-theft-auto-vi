@@ -27,6 +27,13 @@
       </span>
       {%- endmacro %}
       <a class="brand" href="{{ url_for('main.index') }}" aria-label="Team Valkyrie, a Grand Theft Auto VI fan guide: home">{{ lockup() }}</a>
+      <nav class="header-nav" aria-label="Primary">
+        <ul>
+          {% for endpoints, label in nav_items %}
+          <li><a href="{{ url_for(endpoints[0]) }}"{% if request.endpoint in endpoints %} aria-current="page"{% endif %}>{{ label }}</a></li>
+          {% endfor %}
+        </ul>
+      </nav>
       <div class="header-actions">
         <a class="header-pill" href="{{ url_for('main.index') }}#media"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> Trailers</a>
         <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-menu" data-nav-toggle>
@@ -37,7 +44,7 @@
     </div>
   </header>
 
-  <nav class="site-menu" id="site-menu" aria-label="Primary" data-nav>
+  <nav class="site-menu" id="site-menu" aria-label="Site menu" data-nav>
     <div class="container--wide site-menu__inner">
       <div>
         <p class="site-menu__label">Explore</p>

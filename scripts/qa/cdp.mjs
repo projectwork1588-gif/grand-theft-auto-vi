@@ -67,7 +67,7 @@ export async function launch() {
       return r.result.value;
     },
     async shot(path, { full = false, clip } = {}) {
-      const params = { format: "jpeg", quality: 86, captureBeyondViewport: full };
+      const params = { format: "jpeg", quality: 86, captureBeyondViewport: full || !!clip };
       if (clip) params.clip = { ...clip, scale: 1 };
       if (full) {
         const m = await send("Page.getLayoutMetrics");

@@ -9,7 +9,7 @@ from pathlib import Path
 CSS_DIR = Path(__file__).resolve().parent.parent / "app" / "static" / "css"
 COMPONENT_FILES = ("site.css", "components.css", "pages.css")
 RADII = {"var(--r-card)", "var(--r-tile)", "var(--r-pill)", "50%", "0", "inherit"}
-SIZE_TOKENS = {"micro", "small", "body", "lead", "h4", "h3", "h2", "h1", "display"}
+SIZE_TOKENS = {"micro", "small", "body", "lead", "h4", "h3", "h2", "h1", "display", "numeral"}
 
 
 def read(name):

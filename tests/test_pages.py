@@ -441,6 +441,16 @@ def test_menu_lists_every_section_and_the_project_pages(client):
     assert "/static/img/emblem.svg" in page and "/static/img/favicon.svg" in page and "css/tokens.css" in page
 
 
+def test_header_has_inline_navigation_with_the_current_section_marked(client):
+    page = html(client, "/vehicles")
+    header = page.split('class="header-nav"')[1].split("</nav>")[0]
+    for label in ("Characters", "Garage", "Leonida", "Locations", "Stories"):
+        assert f">{label}</a>" in header, label
+    assert header.count('aria-current="page"') == 1 and '<a href="/vehicles" aria-current="page">Garage</a>' in header
+    # one primary navigation landmark for assistive technology: the overlay menu has its own label
+    assert page.count('aria-label="Primary"') == 1 and 'aria-label="Site menu"' in page
+
+
 def test_emblem_and_favicon_are_served(client):
     for name in ("emblem.svg", "favicon.svg"):
         response = client.get(f"/static/img/{name}")

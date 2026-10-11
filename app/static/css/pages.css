@@ -47,7 +47,7 @@
 .hero__title { display: grid; justify-items: start; gap: 0; }
 .hero__gta { font: 700 var(--t-h3)/1 var(--font-body); letter-spacing: var(--track-label); text-transform: uppercase; animation-delay: .5s; text-shadow: 0 2px 24px rgba(0, 0, 0, .5); }
 .hero__vi {
-  font: 700 var(--t-display)/.82 var(--font-mark); letter-spacing: var(--track-caps); margin: .06em 0 0 -.04em; animation-delay: .75s;
+  font: 700 var(--t-numeral)/.82 var(--font-mark); letter-spacing: var(--track-caps); margin: .06em 0 0 -.04em; animation-delay: .75s;
   background: var(--sunset-text); -webkit-background-clip: text; background-clip: text; color: transparent;
   filter: drop-shadow(0 14px 40px rgba(255, 95, 150, .28));
 }

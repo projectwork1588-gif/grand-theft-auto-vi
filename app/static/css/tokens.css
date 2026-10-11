@@ -42,6 +42,7 @@
   --t-h2: clamp(2.5625rem, 1.9rem + 2.3vw, 4.0625rem);         /* 41 to 65  section titles */
   --t-h1: clamp(3.25rem, 2rem + 4.2vw, 6.5rem);                /* 52 to 104 page titles */
   --t-display: clamp(4rem, 2.2rem + 6.2vw, 8.75rem);           /* 64 to 140 hero only */
+  --t-numeral: clamp(6.5rem, 3rem + 11vw, 11.25rem);            /* 104 to 180  the VI numeral in the hero only */
   --track-tight: -.02em;      /* large Manrope headings */
   --track-caps: .01em;        /* condensed display caps */
   --track-ui: .04em;          /* buttons, nav, chips */
