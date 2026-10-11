@@ -228,3 +228,44 @@ Gate 3 and Phase 3 remain unauthorised.
 >
 > May I have your permission, or let me know any conditions? Thank you. [name, college, contact]
 
+---
+
+## Update: owner decisions and the four-artwork hero comparison
+
+### Decisions recorded
+
+| Topic | Decision |
+|-------|----------|
+| Footage | The owner's own recordings, for a classroom presentation; the owner handles permissions. Originals stay local and Git-ignored. Work now focuses on editing and optimisation. |
+| Sound | Autoplay with sound where possible, with an elegant Enable sound button (design below). |
+| Three moments | Approved: Moment 1 Trailer 1 19.17 to 27.40 s; Moment 2 Trailer 2 6.35 to 9.70 s and 138.15 to 143.65 s; Moment 3 Trailer 2 152.85 to 162.00 s. |
+| Character reel | Natural speed, then a brief artwork hold. Existing eight clips kept for now. |
+| Navigation | Subtle desktop chapter rail and minimal mobile navigation, provisionally approved. |
+| Process | Gate 2 and these visuals still await the owner's review. Nothing is integrated, no Gate 3, no Phase 3. |
+
+### Sound: what a browser allows, and the design that gets closest
+
+Browsers do not permit audible autoplay until the visitor has interacted with the page, so a first scroll-in can only start muted. The design that keeps sound as often as the platform allows:
+
+1. **Before any interaction:** each moment starts muted when it enters the viewport, with a clear "Enable sound" button.
+2. **One deliberate click** on Enable sound turns sound on for that clip and **remembers the choice for the visit** (session storage).
+3. **Later moments:** once the visitor has interacted with the page and has chosen sound on, the next moments start with sound, faded in over about 0.4 s and faded out when they leave the screen.
+4. **Always:** one clip audible at a time, a visible "Sound on" state with one-click mute, no sound while a clip is out of view or the tab is hidden, and a muted fallback if the browser refuses.
+
+The encodes will carry the clips' own stereo audio (AAC, about 96 kb/s, roughly 0.1 MB per clip), so the totals in section F change by under 0.4 MB.
+
+### Hero artwork: four candidates in the real Gate 2 hero
+
+Board: `review/cinematic/hero4-comparison.jpg` (the four artworks as published, then at 1440 px and 390 px in the actual hero).
+
+**Embedded logos or text:** none of the four published artworks carries a logo or caption. The only lettering is in-world (a "HADDIE" shirt print and a petrol-station sign). All four are acceptable on that criterion.
+
+| Artwork | Desktop (lockup on the left) | Phone (subjects at top, text below) | Verdict |
+|---------|------------------------------|-------------------------------------|---------|
+| **A. Beach** | Both faces large and on the right; the lockup sits on calm sky and the skyline. Warm palette that matches the site. | Both faces visible, the strongest close crop. | **Best single hero** |
+| B. 01 | Iconic pair-on-the-car composition but the lockup lands on the bonnet, palms and hotel: busy. | Lucia is cropped out; only Jason's face remains. | Weak in the hero; already the trailer poster |
+| C. 02 | Jason aims at the camera and Lucia stands behind him on the left, so **the lockup sits on top of Lucia**. Bright, daytime, teal water. | Lucia is cropped out. | Not suitable behind the lockup |
+| **D. Robbery** | The pair walk in from the right; the lockup sits on a dark petrol station, clean and legible. Darker, menacing, stylish. | Lucia (bandana) and Jason both present, with the lockup on dark. | **Best companion to A** |
+
+**Recommendation:** make **A (Beach) the lead image**. If the owner prefers to keep a cycle, use **A then D** only, 12 s each with a 1.4 s cross-fade, paused when the hero is off screen; drop B and C from the hero. B is better used as the Trailer 1 poster and C as a regions or characters banner, where nothing sits on its left. A phone-specific `object-position` per slide (A about 62 percent, D about 30 percent) keeps both characters in frame.
+
