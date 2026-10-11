@@ -140,3 +140,16 @@ See `docs/MEDIA_INVENTORY.md`. In short: official images and Rockstar's own vide
 | Stories read like a database result | A lead story with larger type, two more as plain rows, every one labelled "Team Valkyrie original", and a separate "Official" panel for Rockstar's character connections. The background image sits under a 93 percent shade. |
 | Navigation and hidden headings | The corner dial is now a labelled control ("Jump to | 03 The cast") with the section names in its list. Anchored sections land with the heading 66 px below the header, and the full-bleed footage lands flush with the top. It steps aside for the footer. |
 | "Rockstar's first two playable protagonists" | "Jason Duval and Lucia Caminos are the two leads of Grand Theft Auto VI." |
+
+## Round 3 follow-up (benchmark against Rockstar's site)
+
+See `docs/DESIGN_BENCHMARK.md` for the review, the gap analysis and the plan. What changed in code:
+
+| Area | Change |
+|------|--------|
+| Footage | `signatureMoment()`: pre-roll hidden, reveal after real playback, dissolve in, still returns on pause, one sound pill and an icon pause. CSP unchanged from round 3 |
+| Reel | `scripts/make_loops.py` builds one 28.5 s reel (4 s a person, dissolves) with a keyframe at each person; `castStage()` buffers it once and seeks. A chosen person plays once and holds; Replay and Play whole reel are always present |
+| Hold safety | The end of a person's segment is enforced from the frame loop, `timeupdate` and a timer, and snaps back if it overshoots |
+| Images | `IMAGE_WIDTHS` is now 640, 960, 1280, 1920, 2560; `sizes` follow the real layout, including height-scaled crops (`98vw` for the 4:5 panels, `max(100vw, 178vh)` for the footage poster); lightbox opens 2560 |
+| Display type | Names on cards and page banners use Barlow Condensed in caps. Body and large section headings stay Manrope |
+| Cards and galleries | `--r-card` and `--r-tile`; a `bento` macro fills rows exactly (runs of six, or an even grid below six) and is used on detail pages |

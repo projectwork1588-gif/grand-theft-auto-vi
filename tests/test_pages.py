@@ -82,7 +82,7 @@ def test_homepage_cast_stage_plays_local_loops_when_they_exist(client, local_cli
     assert "muted" in stage and "loop" in stage and "playsinline" in stage and 'preload="none"' in stage
     assert "autoplay" not in stage                                          # the script decides, honouring reduced motion
     cast = _cast_section(page)
-    assert cast.count('data-clip="/media/clips/') == 8 and cast.count("data-start=") == 8
+    assert "data-clip" not in cast and cast.count("data-start=") == 8      # one reel, seeked by time, not eight files
 
 
 def test_cast_controls_are_in_the_first_paint_and_never_hidden(client, local_clips):
@@ -619,3 +619,101 @@ def test_credits_mention_the_footage_and_only_the_fonts_in_use(client):
     page = html(client, "/credits")
     assert "Trailer 1" in page and "YouTube" in page and "Manrope and Barlow Condensed" in page
     assert "Newsreader" not in page
+
+
+# ------------------------------------------------------------------ round 3 follow-up: timing, footage UI, images, galleries
+def test_reel_gives_every_person_enough_screen_time(client, local_clips):
+    cast = _cast_section(html(client, "/"))
+    starts = [float(x) for x in re.findall(r'data-start="([0-9.]+)"', cast)]
+    ends = [float(x) for x in re.findall(r'data-end="([0-9.]+)"', cast)]
+    assert len(starts) == len(ends) == 8
+    for a, b in zip(starts, ends):
+        assert 3.0 <= b - a <= 5.0, (a, b)                                    # roughly 3 to 5 seconds each
+    assert all(ends[i] <= starts[i + 1] + 0.001 for i in range(7))           # segments are contiguous and ordered
+
+
+def test_loop_builder_timing_constants_keep_each_person_on_screen_for_seconds():
+    from scripts import make_loops
+    assert 3.0 <= make_loops.SEGMENT <= 5.0
+    assert make_loops.MOTION >= 2.0 and make_loops.MOTION < make_loops.SEGMENT   # slowed motion, then a held frame
+    assert 0 < make_loops.DISSOLVE <= 1.0                                       # a dissolve, not a hard cut
+
+
+def test_locally_built_reel_matches_the_rules_when_it_exists():
+    import json
+    from pathlib import Path
+    from app import media_slots
+    path = Path(__file__).resolve().parent.parent / "media" / "clips" / "manifest.json"
+    if not path.is_file():
+        pytest.skip("loops are not built on this machine")
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    assert [s["slug"] for s in manifest["segments"]] == list(media_slots.CAST_ORDER)
+    for seg in manifest["segments"]:
+        assert 3.0 <= seg["end"] - seg["start"] <= 5.0, seg
+    assert 24 <= manifest["duration"] <= 36
+
+
+def test_cast_script_seeks_one_buffered_reel_and_holds_a_chosen_person():
+    code = _script().split("function castStage()")[1].split("function signatureMoment()")[0]
+    assert "video.src = reelSrc" in code and 'video.preload = "auto"' in code     # buffered once, early
+    assert "data-clip" not in code                                                # no per-person download on choosing
+    assert "HOLD_BEFORE_END" in code and "video.pause()" in code                  # a chosen person plays once, then holds
+    assert '"Replay"' in code                                                     # replay is a first-class state
+
+
+def test_signature_footage_has_no_text_pills_and_one_clear_sound_control(client):
+    page = html(client, "/")
+    moment = page.split('id="moment"')[1].split("</section>")[0]
+    assert "moment__btn" not in moment                                            # the old row of text pills is gone
+    assert "data-moment-sound" in moment and "Enable sound" in moment
+    assert 'aria-label="Pause the footage"' in moment                             # the pause control is an icon with a label
+    assert moment.count("<button") == 3                                           # sound, pause, and the trailer link
+
+
+def test_footage_script_hides_the_player_until_it_has_settled():
+    code = _script().split("function signatureMoment()")[1]
+    assert "FIRST_REVEAL_AFTER" in code and "is-live" in code
+    assert "playerVars" in code and "controls: 0" in code and "modestbranding: 1" in code
+    assert "crop" not in code.lower().replace("cropping", "")                    # branding is never cropped or covered
+
+
+def test_display_titles_use_the_condensed_face_and_body_stays_sans():
+    css = _css()["pages.css"]
+    for selector in (".duo__name", ".cast__name", ".page-hero h1", ".garage-row__name", ".video-card__title b"):
+        rule = re.search(r"^" + re.escape(selector) + r" \{([^}]*)\}", css, re.M).group(1)
+        assert "var(--font-mark)" in rule and "text-transform: uppercase" in rule, selector
+
+
+def test_images_ask_for_what_the_layout_needs(client):
+    from app import media_urls
+    assert media_urls.IMAGE_WIDTHS[-1] >= 2560
+    page = html(client, "/")
+    assert "2560w" in page                                                         # high-density screens can get 2560
+    leads = page.split('id="leads"')[1].split("</section>")[0]
+    assert 'sizes="(min-width: 900px) 98vw, 190vw"' in leads                      # tall crops are sized by height
+    assert 'sizes="max(100vw, 178vh)"' in page.split('id="moment"')[1].split("</section>")[0]
+
+
+def test_detail_galleries_are_full_width_and_leave_no_empty_cells(client):
+    for path, minimum in (("/vehicles/shitzu-squalo", 4), ("/characters/jason-duval", 2), ("/regions/vice-city", 2)):
+        page = html(client, path)
+        assert 'class="container gallery-page"' in page, path
+        gallery = page.split('class="bento bento--')[1].split("</ul>")[0]
+        n = gallery.count('<li class="bento__item')
+        wide = gallery.count("bento__item--wide")
+        mode = gallery.split('"')[0]
+        assert n >= minimum, (path, n)
+        if mode == "quad":
+            assert n % 6 == 0 and wide == (n // 6) * 2, (path, n, wide)           # whole rows of 2+1+1 and 1+1+2
+        elif mode == "five":
+            assert n == 5 and wide == 1
+        else:
+            assert wide == 0
+        assert 'class="gallery"' not in page.split('class="container profile"')[1].split("</section>")[0], path
+
+
+def test_an_explicit_cast_choice_is_never_overridden_by_the_automatic_start():
+    """Regression: the first time the stage scrolled into view it restarted the reel over the visitor's choice."""
+    code = _script().split("function castStage()")[1].split("function signatureMoment()")[0]
+    assert code.count("state.started = true") >= 4                               # automatic start, person, pause, reel
+    assert "!state.started" in code                                              # the automatic start checks it

@@ -13,7 +13,7 @@ GOOD_PLAYER = "https://www.rockstargames.com/videoplayer?id=cpys7u21&embed&autop
 # ------------------------------------------------------------------ pure URL helpers
 def test_image_helpers_accept_only_the_official_prefix():
     assert media_urls.image_src(GOOD_IMG, 640).endswith("?akim=1&imdensity=1&imwidth=640")
-    assert media_urls.image_srcset(GOOD_IMG).count("w,") == 2 and "1920w" in media_urls.image_srcset(GOOD_IMG)
+    assert media_urls.image_srcset(GOOD_IMG).count("w,") == 4 and "2560w" in media_urls.image_srcset(GOOD_IMG)
     for bad in (None, "", "http://www.rockstargames.com/VI/_next/static/media/x.jpg",
                 "https://evil.example/VI/_next/static/media/x.jpg", "https://www.rockstargames.com/other/x.jpg",
                 "javascript:alert(1)", "data:image/png;base64,AAAA", GOOD_IMG + '" onerror="x', GOOD_IMG + " x"):

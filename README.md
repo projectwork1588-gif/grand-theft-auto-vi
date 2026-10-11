@@ -47,7 +47,7 @@ The cast stage and the character profiles can play short muted loops cut from Ro
 ```powershell
 pip install -r requirements-media.txt
 python -m scripts.fetch_clips      # about 40 MB, read straight from Rockstar's published archive
-python -m scripts.make_loops       # about 6 MB of 720p loops into media/clips/ (Git-ignored)
+python -m scripts.make_loops       # about 8 MB: a 28 s slowed, held reel and per-person loops into media/clips/ (Git-ignored)
 ```
 
 When the files are not there the pages fall back to Rockstar's own still images. The loops pause when scrolled out of view and do not autoplay when the visitor prefers reduced motion or has data saver on.
@@ -168,6 +168,7 @@ GTA 6/
 * [Example SQL queries](docs/queries.sql)
 * [Routes and roadmap](docs/ROUTES.md)
 * [Media inventory and rights](docs/MEDIA_INVENTORY.md)
+* [Design benchmark against Rockstar's site, defects and plan](docs/DESIGN_BENCHMARK.md)
 * [Verification reports](docs/VERIFICATION.md)
 
 ## Roadmap

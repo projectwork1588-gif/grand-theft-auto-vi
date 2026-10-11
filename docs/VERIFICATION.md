@@ -246,6 +246,50 @@ Before and after screenshots were saved to a Git-ignored `review/round3/` folder
 
 ---
 
+## Phase 2 refinement, round 3 follow-up (2026-10-11)
+
+### Test results (real MySQL 8.0.46 service, `gta6_vi_test` database only)
+
+```
+python -m pytest -q
+(see the final run recorded in the report)
+```
+
+New regression checks (all in `tests/test_pages.py`): reel timing (3 to 5 s a person, contiguous, ordered), the loop builder's constants, the locally built manifest when it exists, the cast script seeks one buffered reel and holds, an explicit choice is never overridden by the automatic start, the footage has no text pills and one clear sound control, the player stays hidden until settled and is never cropped, condensed caps on display titles, image `sizes` and the 2560 candidate, and full-width detail galleries with no empty cells.
+
+### Browser verification (built-in browser, test database, port 5057)
+
+| Check | Result |
+|-------|--------|
+| Reel from the initial state: "Play whole reel" pressed on load; started at 0 s and ran through; the highlighted name followed the footage (Cal at 8.8 s to 9.8 s, Boobie Ike from 10.5 s) | Verified by script and screenshot |
+| Choosing a person: the caption and name changed at once, the video sought to that person (Real Dimez 17.5 s), played to 20.92 s and held; the button read "Replay" | Verified by script |
+| Replay restarted from 17.5 s; "Play whole reel" restarted from 0 s; choosing Cal Hampton seeked to 7.0 s and left the reel button unpressed | Verified by script |
+| Footage: with autoplay off (the pane asks for reduced motion) the section shows the still and a "Play the footage" pill; pressing it created the player, which played from 18.5 s; after about 3 s of playback the footage dissolved in with no YouTube interface visible; "Enable sound" and a pause icon were the only controls | Verified by screenshot and script |
+| Detail pages: Jason Duval gallery (12 images in two runs of six), vehicle gallery, garage page, the caps titles and the card radii | Looked at in screenshots |
+| Image sizes: duo panels now request the 1920 candidate (about 1305 px of image for a 561 by 701 panel) | Measured by script |
+
+Before and after screenshots are in the Git-ignored `review/round3-followup/` folder.
+
+### Problems found and fixed in this pass
+
+| # | What failed | Cause and fix | How verified |
+|---|-------------|---------------|--------------|
+| 1 | The first time the stage scrolled into view it restarted the reel over the visitor's choice | The automatic start did not know about an explicit click. Any explicit choice now sets a flag the automatic start checks | Scripted, and a regression test |
+| 2 | Under throttled frame callbacks the video ran past the end of a person's segment, showing the next person under the wrong caption | The hold depended on one frame loop. Now enforced from the frame loop, `timeupdate` and a timer, and snaps back | Scripted before and after |
+| 3 | A black flash when the reel started | The video was shown on the first `playing` event, before a frame was presented. It now waits for the first presented frame | Screenshot |
+| 4 | A player created while its frame was hidden could sit idle | `tick()` asks again every 2 s while playback is wanted | Scripted |
+| 5 | Selecting a person fetched a separate file | One reel is buffered once and seeked | Measured |
+
+### Not verified or still open
+
+* **A native, interface-free trailer background is not achievable compliantly.** The trailers have no download and no licence, and Rockstar's own player is the same YouTube embed. The strongest compliant result is what is built. YouTube's interface shows a pause mark if the visitor pauses (the page puts its own still back instead) and cannot be removed.
+* Autoplay with a real, visible window on a phone was not exercised; the reduced-motion path was.
+* **Sound** was not audibly checked; the control was verified to toggle the player's mute state.
+* Rockstar's own pages could only be reviewed while the pane was visible; some lazy images were not loaded in the screenshots.
+* The owner's development database is unchanged and needs nothing for this round.
+
+---
+
 ## Phase 1 post-review verification (historical record)
 
 Date: 2026-10-09. Scope: the eight verification tasks requested after ChatGPT's review. Phase 2 has **not** been started and the homepage was **not** redesigned.

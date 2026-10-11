@@ -32,11 +32,11 @@ def local_clips(app, tmp_path):
     for slug in CLIP_SLUGS:
         (clips / f"{slug}.mp4").write_bytes(b"ftypmp42")
         (clips / f"{slug}.jpg").write_bytes(b"JFIF")
-        segments.append({"slug": slug, "name": slug, "start": round(cursor, 2), "end": round(cursor + 1.2, 2)})
-        cursor += 1.2
+        segments.append({"slug": slug, "name": slug, "start": round(cursor, 2), "end": round(cursor + 3.5, 2)})
+        cursor += 3.5
     (clips / "leonida-reel.mp4").write_bytes(b"ftypmp42")
     (clips / "leonida-reel.jpg").write_bytes(b"JFIF")
-    (clips / "manifest.json").write_text(json.dumps({"duration": round(cursor, 2), "segments": segments}), encoding="utf-8")
+    (clips / "manifest.json").write_text(json.dumps({"duration": round(cursor + 0.5, 2), "segment": 4.0, "dissolve": 0.5, "segments": segments}), encoding="utf-8")
     previous = app.config["MEDIA_ROOT"]
     app.config["MEDIA_ROOT"] = str(tmp_path)
     yield tmp_path

@@ -24,6 +24,7 @@ All 85 referenced URLs were requested before they were recorded and returned HTT
 
 ## What changed in refinement round 2
 
+* **Reel pacing (round 3 follow-up).** The clips are 1 to 1.5 s, so the reel gives each person a full beat: about 2.6 s of the clip slowed and motion-interpolated, then a held final frame with a slow push-in, 4.0 s in all, with 0.5 s dissolves, 28.5 s for eight people. Square clips sit flush right over a feathered extension of themselves. Total media is about 8 MB.
 * **Local motion.** Rockstar's downloads archive (`GTAVI_Videos.zip`, linked from its Videos page) holds the eight character clips at 1 to 1.5 seconds and 4K. `scripts/fetch_clips.py` reads only those eight out of the archive with HTTP range requests (about 40 MB, CRC checked). `scripts/make_loops.py` builds a muted 1280 by 720 loop and a poster for each (about 0.3 to 1 MB each) and one 9-second reel (2.2 MB). Total about 6 MB.
 * **Why these and not the trailers.** The trailers are 4K files over a gigabyte and Rockstar's player has no mute, loop or background control. Only the short clips are a sensible size for an ambient loop.
 * **Not committed.** `media/` is Git-ignored apart from its README. A fresh clone has no loops and every page falls back to official stills and posters.
@@ -56,6 +57,22 @@ Each official video was stepped through frame by frame (once per second, and per
 | 4 | Trailer 2, 35.5 s to 39.5 s | 4 s | First-person highway drive with road signs. Good camera movement but a single short beat. | Rejected: too short |
 | 5 | Trailer 2, 6.5 s to 10 s | 3.5 s | Coastal aerial and a stilt house, then dialogue scenes. | Rejected: too short, then talking heads |
 | 6 | An Extended Look | n/a | Could not be reviewed or embedded: age-restricted. | Excluded |
+| 7 | Official Cover Art Animation (the one downloadable "video" besides the character clips, 32.7 s, 3840 by 2160, with sound) | 32.7 s | An ESRB card, the R★ mark, a VI logo reveal and the key-art collage assembling, then the release date. A title sequence, not footage. | Rejected: not cinematic footage |
+
+### Why it is an embed and not a native video
+
+The goal was a background that feels native: no player interface, starting as the section arrives. The strongest compliant way to get that is limited by who owns the footage.
+
+| Route | What it would give | Why it is or is not used |
+|-------|-------------------|--------------------------|
+| A local `<video>` cut from the trailer | Fully native: no interface, instant, sound control, loops | **Not used.** There is no trailer download and no licence. This would be copying and re-editing Rockstar's marketing video without permission |
+| An officially downloadable clip | Native | Only the cover-art animation and eight 1 to 1.5 s character clips are offered. The animation is a title sequence; the clips are used for the cast reel |
+| Rockstar's own player (`/videoplayer?id=...`) | Rockstar's chosen presentation | It is a thin wrapper around the same YouTube embed (`youtube-nocookie.com/embed/<id>?autoplay=0&enablejsapi=1`), with no extra parameters to remove interface |
+| **YouTube's embedded player via the IFrame API** | The footage is Rockstar's own upload, unaltered; muted autoplay; scroll-aware pause; sound on request | **Used.** Interface cannot be switched off entirely, and we do not crop or cover it |
+
+What the page does to make it feel as native as the provider allows: it pre-rolls the player hidden behind an official still so YouTube's own title bar has faded; it only reveals the footage once it has really been playing and the section is on screen; it dissolves it in; it puts the still back whenever it is paused; the control layer is one "Enable sound" pill, an icon pause button and a credit line. What it does not do: remove or restyle YouTube's branding, crop the frame to hide it, or download anything.
+
+Sound: autoplay with sound is blocked by browsers, so the footage starts muted and a clearly labelled **Enable sound** button turns it on (a user gesture, so it is allowed).
 
 ### How it is played
 
