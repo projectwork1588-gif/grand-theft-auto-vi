@@ -535,6 +535,7 @@
         var text = p.toggleBtn.querySelector("[data-tool-label]");
         p.toggleBtn.classList.toggle("is-suppressed", suppressed && !playing);
         p.toggleBtn.classList.toggle("is-paused", !playing);
+        p.toggleBtn.classList.toggle("is-held", p.userPaused);
         p.toggleBtn.setAttribute("aria-label", playing ? "Pause footage" : "Play footage");
         if (text) { text.textContent = "Play footage"; }
       }
@@ -603,6 +604,14 @@
       p.video.muted = true;
       var tools = p.root.querySelector("[data-cinema-tools]");
       if (tools) { tools.hidden = false; }
+      // A tap on a touch screen (no hover there) brings the two buttons up for a few seconds.
+      var toolTimer = 0;
+      p.root.addEventListener("pointerdown", function (e) {
+        if (e.pointerType === "mouse") { return; }
+        p.root.classList.add("is-tools");
+        window.clearTimeout(toolTimer);
+        toolTimer = window.setTimeout(function () { p.root.classList.remove("is-tools"); }, 4000);
+      }, { passive: true });
       p.video.addEventListener("playing", function () { p.refused = false; p.root.classList.add("is-live"); labels(p); document.dispatchEvent(new Event("tv:state")); });
       p.video.addEventListener("pause", function () {
         window.tvMedia.cinema = players.some(function (q) { return !q.video.paused; });

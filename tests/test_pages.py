@@ -913,6 +913,39 @@ def test_cinematic_builder_loops_seamlessly_and_never_touches_the_sources():
     assert "fade=t=out" in mc.video_graph(m3, "desktop") and "fade=t=in:st=0" in mc.video_graph(m3, "desktop")
 
 
+def test_cinematic_loop_audio_is_whole_and_aligned_to_the_picture():
+    """The seam used to be acrossfade between two branches of one asplit, which produced no audio at all: the last
+    SEAM seconds of every crossfade loop were silent while the picture played on."""
+    from scripts import make_cinematics as mc
+    m1 = mc.MOMENTS["moment-1"]
+    graph = mc.audio_graph(m1, "")
+    assert "acrossfade" not in graph                                              # the failing construction is gone
+    assert "afade=t=out:st=0:d=0.8:curve=qsin" in graph and "afade=t=in:st=0:d=0.8:curve=qsin" in graph   # equal power
+    assert "amix=inputs=2:duration=longest:normalize=0[aseam]" in graph
+    assert mc.predicted_mid_frames(m1) == 269                                     # frames 24..292 of the 30 fps picture
+    cut = mc.SEAM + 269 / mc.FPS                                                  # the sound is cut where the picture is
+    assert f"atrim=start={mc.SEAM}:end={cut:.4f}" in graph and f"atrim=start={cut:.4f}:end={cut + mc.SEAM:.4f}" in graph
+    assert "concat=n=2:v=0:a=1[a]" in graph
+    # a measured frame count (xfade and trim rounding) moves the cut with the picture
+    assert f"end={mc.SEAM + 230 / mc.FPS:.4f}" in mc.audio_graph(m1, "", 230)
+    # the clip is read a little past its end so the seam is never short of sound
+    assert mc.input_args(m1)[3] == f"{10.55 + mc.AUDIO_TAIL:.3f}"
+    # dip loops (the finale) keep their own fade-through-silence and are untouched
+    assert "afade=t=out" in mc.audio_graph(mc.MOMENTS["moment-3"], "") and "amix" not in mc.audio_graph(mc.MOMENTS["moment-3"], "")
+
+
+def test_cinematic_tools_stay_out_of_the_picture_until_asked_for():
+    css = _css()["components.css"]
+    assert re.search(r"\.cinema__tool--toggle \{ opacity: 0; pointer-events: none; \}", css)   # the pause button is hidden at rest
+    assert ".cinema.is-tools .cinema__tool" in css and ".cinema__tool:focus-visible" in css       # touch and keyboard bring it up
+    assert "@media (hover: hover)" in css and ".cinema:hover .cinema__tool" in css                  # hover only where hover exists
+    assert "@media (pointer: coarse)" in css and "min-width: 44px" in css                           # a proper touch target
+    assert ".cinema__tool--toggle.is-held" in css                                                   # a chosen pause is never hidden
+    assert ".cinema .cinema__tools .cinema__tool--toggle.is-suppressed" in css                      # the Play pill stays loud
+    code = _script().split("function cinemas()")[1].split("function regionExplorer()")[0]
+    assert '"pointerdown"' in code and 'classList.add("is-tools")' in code and "e.pointerType === \"mouse\"" in code
+
+
 def test_hero_art_is_not_repeated_in_the_closing_band(client):
     page = html(client, "/")
     closing = page.split('class="section band closing"')[1]

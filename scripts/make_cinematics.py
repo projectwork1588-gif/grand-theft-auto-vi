@@ -19,6 +19,7 @@ Trailer 2's picture is letterboxed (2.22:1 inside a 16:9 frame); the black bars 
 true 2.22:1 pictures. Audio from every moment is brought to one loudness (-16 LUFS) so visitors do not hear jumps.
 """
 import json
+import math
 import re
 import shutil
 import subprocess
@@ -34,6 +35,8 @@ BARS = "crop=3840:1728:0:216"     # Trailer 2: remove the 216 px letterbox bars
 LOUDNESS = {"I": -16.0, "TP": -1.5, "LRA": 11.0}
 AUDIO_BITRATE = "128k"
 SEAM = 0.8                        # seconds of crossfade or dip at the loop point
+FPS = 30
+AUDIO_TAIL = 0.1                  # extra source audio read past the clip, so the seam never runs out of sound
 
 # Each moment: its parts (source, start seconds, length seconds), an optional dissolve between two parts, the poster
 # frame, and the phone crop applied after the parts are joined (t is seconds into the finished moment).
@@ -106,10 +109,21 @@ def loop_length(moment):
 
 
 def input_args(moment):
+    """-ss/-t per part. A crossfade loop reads a little past the end of the clip: the video trims cut at the exact
+    length, but the audio seam needs a whole seam of sound after the last picture frame that the middle uses."""
     args = []
-    for src, start, length in moment["parts"]:
+    parts = moment["parts"]
+    for i, (src, start, length) in enumerate(parts):
+        if moment.get("loop") == "crossfade" and i == len(parts) - 1:
+            length += AUDIO_TAIL
         args += ["-ss", f"{start:.3f}", "-t", f"{length:.3f}", "-i", str(src)]
     return args
+
+
+def predicted_mid_frames(moment):
+    """Pictures in the middle section of a crossfade loop: the frames from SEAM up to length - SEAM at FPS."""
+    length = total_length(moment)
+    return math.ceil((length - SEAM) * FPS - 1e-6) - round(SEAM * FPS)
 
 
 def video_graph(moment, variant):
@@ -144,8 +158,16 @@ def video_graph(moment, variant):
     return ";".join(chains)
 
 
-def audio_graph(moment, normaliser):
-    """Joined, faded, loudness-normalised audio ending on the [a] label."""
+def audio_graph(moment, normaliser, mid_frames=None):
+    """Joined, loudness-normalised audio ending on the [a] label, the same length as the picture.
+
+    Crossfade loops: [middle] then [seam], where the seam is the clip's last SEAM seconds fading out under its first
+    SEAM seconds fading in (equal power, so the level does not dip). The middle is cut on a picture-frame boundary
+    (mid_frames pictures), so sound and picture change over at exactly the same instant.
+
+    The seam is built with afade + amix on purpose. The earlier version used acrossfade between two branches of one
+    asplit, which silently produced no audio at all: the last SEAM seconds of every loop were missing.
+    """
     parts, dissolve = moment["parts"], moment.get("dissolve", 0.0)
     chains = [f"[{i}:a]aresample=48000,aformat=channel_layouts=stereo[s{i}]" for i in range(len(parts))]
     if len(parts) == 1:
@@ -155,11 +177,13 @@ def audio_graph(moment, normaliser):
         joined = "[aj]"
     length = total_length(moment)
     if moment.get("loop") == "crossfade":
+        mid = (mid_frames if mid_frames is not None else predicted_mid_frames(moment)) / FPS
+        cut = SEAM + mid                      # where the seam's tail piece starts, in clip time
         chains.append(f"{joined}{normaliser}asplit=3[am][at][ah]")
-        chains.append(f"[am]atrim=start={SEAM}:end={length - SEAM:.3f},asetpts=PTS-STARTPTS[amid]")
-        chains.append(f"[at]atrim=start={length - SEAM:.3f}:end={length:.3f},asetpts=PTS-STARTPTS[atl]")
-        chains.append(f"[ah]atrim=start=0:end={SEAM},asetpts=PTS-STARTPTS[ahd]")
-        chains.append(f"[atl][ahd]acrossfade=d={SEAM}:c1=tri:c2=tri[aseam]")
+        chains.append(f"[am]atrim=start={SEAM}:end={cut:.4f},asetpts=PTS-STARTPTS[amid]")
+        chains.append(f"[at]atrim=start={cut:.4f}:end={cut + SEAM:.4f},asetpts=PTS-STARTPTS,afade=t=out:st=0:d={SEAM}:curve=qsin[atl]")
+        chains.append(f"[ah]atrim=start=0:end={SEAM},asetpts=PTS-STARTPTS,afade=t=in:st=0:d={SEAM}:curve=qsin[ahd]")
+        chains.append("[atl][ahd]amix=inputs=2:duration=longest:normalize=0[aseam]")
         chains.append("[amid][aseam]concat=n=2:v=0:a=1[a]")
     elif moment.get("loop") == "dip":
         chains.append(f"{joined}{normaliser}afade=t=out:st={length - SEAM:.3f}:d={SEAM},afade=t=in:st=0:d={SEAM}[a]")
@@ -168,9 +192,25 @@ def audio_graph(moment, normaliser):
     return ";".join(chains)
 
 
-def measure_loudness(ffmpeg, moment):
+def picture_frames(ffmpeg, moment, variant="desktop"):
+    """Count the pictures the video graph really produces (xfade and trim rounding make this worth measuring)."""
+    result = subprocess.run([ffmpeg, "-hide_banner", *input_args(moment), "-filter_complex", video_graph(moment, variant),
+                             "-map", "[v]", "-an", "-f", "null", "-"], capture_output=True, text=True, encoding="utf-8", errors="replace")
+    counts = re.findall(r"frame=\s*(\d+)", result.stderr)
+    if not counts:
+        sys.exit("Could not count the frames of " + moment["title"])
+    return int(counts[-1])
+
+
+def mid_frames_for(ffmpeg, moment):
+    if moment.get("loop") != "crossfade":
+        return None
+    return picture_frames(ffmpeg, moment) - round(SEAM * FPS)
+
+
+def measure_loudness(ffmpeg, moment, mid_frames=None):
     """First pass: integrated loudness of the finished audio, so the second pass can apply an exact linear gain."""
-    flt = audio_graph(moment, f"loudnorm=I={LOUDNESS['I']}:TP={LOUDNESS['TP']}:LRA={LOUDNESS['LRA']}:print_format=json,")
+    flt = audio_graph(moment, f"loudnorm=I={LOUDNESS['I']}:TP={LOUDNESS['TP']}:LRA={LOUDNESS['LRA']}:print_format=json,", mid_frames)
     result = subprocess.run([ffmpeg, "-hide_banner", *input_args(moment), "-filter_complex", flt, "-map", "[a]", "-vn", "-f", "null", "-"],
                             capture_output=True, text=True, encoding="utf-8", errors="replace")
     blob = result.stderr[result.stderr.rindex("{"):result.stderr.rindex("}") + 1]
@@ -184,10 +224,10 @@ def normaliser_for(stats):
             f"measured_thresh={stats['input_thresh']}:offset={stats['target_offset']}:linear=true,")
 
 
-def encode(ffmpeg, moment, variant, normaliser, out):
+def encode(ffmpeg, moment, variant, normaliser, out, mid_frames=None):
     crf = moment[f"{variant}_crf"]
     maxrate = moment["maxrate" if variant == "desktop" else "mobile_maxrate"]
-    graph = video_graph(moment, variant) + ";" + audio_graph(moment, normaliser)
+    graph = video_graph(moment, variant) + ";" + audio_graph(moment, normaliser, mid_frames)
     run(ffmpeg, *input_args(moment), "-filter_complex", graph, "-map", "[v]", "-map", "[a]",
         "-c:v", "libx264", "-preset", "slow", "-profile:v", "high", "-crf", str(crf), "-maxrate", maxrate,
         "-bufsize", f"{float(maxrate[:-1]) * 2:g}M", "-pix_fmt", "yuv420p", "-g", "30",
@@ -212,11 +252,12 @@ def main(only=None):
         if only and slot != only:
             continue
         print(f"{slot} ({moment['title']}), loop {loop_length(moment):.2f} s ({moment.get('loop')})", flush=True)
-        stats = measure_loudness(ffmpeg, moment)
+        mid_frames = mid_frames_for(ffmpeg, moment)
+        stats = measure_loudness(ffmpeg, moment, mid_frames)
         norm = normaliser_for(stats)
         print(f"  loudness before: {stats['input_i']} LUFS, true peak {stats['input_tp']} dBTP", flush=True)
-        encode(ffmpeg, moment, "desktop", norm, OUT_DIR / f"{slot}.mp4")
-        encode(ffmpeg, moment, "mobile", norm, OUT_DIR / f"{slot}-mobile.mp4")
+        encode(ffmpeg, moment, "desktop", norm, OUT_DIR / f"{slot}.mp4", mid_frames)
+        encode(ffmpeg, moment, "mobile", norm, OUT_DIR / f"{slot}-mobile.mp4", mid_frames)
         poster(ffmpeg, moment, OUT_DIR / f"{slot}.jpg")
         report[slot] = {"title": moment["title"], "seconds": round(loop_length(moment), 2), "loop": moment.get("loop"),
                         "loudness_before_lufs": float(stats["input_i"])}

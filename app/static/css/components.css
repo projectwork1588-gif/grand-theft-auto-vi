@@ -161,17 +161,31 @@ dialog[open] .dialog-frame { animation: dialogIn var(--dur-3) var(--ease) both; 
 .optin:hover, .optin:focus-visible { background: var(--action-hover); transform: translateY(-1px); }
 .cinema__tools { position: absolute; z-index: 2; right: var(--gutter); bottom: var(--s3); display: flex; align-items: center; gap: var(--s1); }
 .cinema__tools[hidden] { display: none; }
-.cinema__tool { display: inline-flex; align-items: center; justify-content: center; gap: var(--s1); min-width: 40px; height: 40px; padding: 0; border-radius: var(--r-pill); border: 1px solid var(--line-strong); background: rgba(13, 11, 32, .5); color: var(--text); cursor: pointer; opacity: .66; backdrop-filter: blur(8px); transition: opacity var(--dur-2) var(--ease), background var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease); }
-.cinema:hover .cinema__tool, .cinema__tool:hover, .cinema__tool:focus-visible { opacity: 1; }
+.cinema__tool { display: inline-flex; align-items: center; justify-content: center; gap: var(--s1); min-width: 40px; height: 40px; padding: 0; border-radius: var(--r-pill); border: 1px solid transparent; background: transparent; color: var(--text); cursor: pointer; opacity: .55; transition: opacity var(--dur-2) var(--ease), background var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease); }
+/* At rest the footage is clean: the pause button is hidden and only the sound icon is faintly there, so sound can be found.
+   Pointing at the picture, keyboard focus, or a tap on a touch screen brings both up. */
+.cinema__tool--toggle { opacity: 0; pointer-events: none; }
+.cinema.is-tools .cinema__tool, .cinema__tool:focus-visible { opacity: 1; background: rgba(13, 11, 32, .5); border-color: var(--line-strong); backdrop-filter: blur(8px); }
+.cinema.is-tools .cinema__tool--toggle, .cinema__tool--toggle:focus-visible { pointer-events: auto; }
+/* Hover only where there is real hover: on a touch screen it would stay "stuck" after a tap. */
+@media (hover: hover) {
+  .cinema:hover .cinema__tool { opacity: 1; background: rgba(13, 11, 32, .5); border-color: var(--line-strong); backdrop-filter: blur(8px); }
+  .cinema:hover .cinema__tool--toggle { pointer-events: auto; }
+}
+@media (pointer: coarse) { .cinema__tool { min-width: 44px; height: 44px; } }
+.cinema__tools:has(:focus-visible) .cinema__tool { opacity: 1; background: rgba(13, 11, 32, .5); border-color: var(--line-strong); backdrop-filter: blur(8px); }
+.cinema__tools:has(:focus-visible) .cinema__tool--toggle { pointer-events: auto; }
 .cinema__tool:hover, .cinema__tool:focus-visible { background: rgba(13, 11, 32, .82); border-color: var(--text); }
-.cinema__tool svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* A pause the visitor chose stays visible, so it is never a frozen picture with no way back. */
+.cinema__tool--toggle.is-held { opacity: 1; pointer-events: auto; background: rgba(13, 11, 32, .5); border-color: var(--line-strong); backdrop-filter: blur(8px); }
+.cinema__tool svg { width: 18px; height: 18px; filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .55)); fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .cinema__tool [data-tool-label] { display: none; font: 700 var(--t-micro)/1 var(--font-body); letter-spacing: var(--track-ui); }
 .cinema__tool .i-play, .cinema__tool .i-sound-on { display: none; }
 .cinema__tool--toggle.is-paused .i-play { display: block; }
 .cinema__tool--toggle.is-paused .i-pause { display: none; }
 .cinema__tool.is-on .i-sound-on { display: block; }
 .cinema__tool.is-on .i-sound-off { display: none; }
-.cinema__tool--toggle.is-suppressed { padding: 0 var(--s2); opacity: 1; background: var(--action); border-color: var(--action); color: var(--on-action); }
+.cinema .cinema__tools .cinema__tool--toggle.is-suppressed { padding: 0 var(--s2); opacity: 1; pointer-events: auto; background: var(--action); border-color: var(--action); color: var(--on-action); backdrop-filter: none; }
 .cinema__tool--toggle.is-suppressed [data-tool-label] { display: inline; }
 .cinema__tool--toggle.is-suppressed .i-play { fill: currentColor; stroke: none; }
 .motion-switch { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); width: 100%; padding: var(--s2) 0; border: 0; border-top: 1px solid var(--line); background: none; color: var(--text-2); font: 600 var(--t-small)/1.3 var(--font-text); text-align: left; cursor: pointer; }

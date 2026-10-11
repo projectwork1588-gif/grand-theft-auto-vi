@@ -127,3 +127,58 @@ Results: 326 tests passed. Width sweep (8 routes x 88 widths): no overflow, no h
 * Safari in Low Power Mode and some battery-saver modes refuse even muted autoplay; the page then shows the Play pill instead of a still picture.
 * The loop seam is baked into each file; a browser's own loop can still show a one-frame hiccup on a slow device. Not detectable from script.
 * An explicit pause is honoured until Play is pressed, including after scrolling away and back.
+
+
+---
+
+## First moment: missing audio and quieter controls
+
+### The audio defect
+
+* **Symptom:** the last 0.8 s of Moment 1 was silent while the picture played on. It sits at the end of the clip, which is
+  the "extended" end, so it was heard as the extension having no sound.
+* **Not the source:** the soundtrack in Trailer 1 is continuous across the whole 18.40 to 28.95 s range (no gap, no level
+  change); the decoded source shows 13 s of unbroken music.
+* **Cause:** the loop seam audio was built with `acrossfade` between two pieces cut from one stream by `asplit` and
+  `atrim`. In that construction ffmpeg's `acrossfade` outputs nothing at all (proven by an isolated test: the same
+  two 0.8 s pieces give 0.000 s of audio through the split, and 0.800 s when read as separate inputs). The concat then
+  appended an empty seam, so the audio track ended at 8.95 s while the picture ran to 9.77 s. Because every part of
+  the build reported success and the encode metadata is fine, nothing flagged it; only decoding the audio shows it.
+  Moment 2 uses the same construction and has the same 0.8 s silent tail; Moment 3 (a dip through silence) does not.
+* **Fix (scripts/make_cinematics.py):** the seam is now `afade` out of the tail under `afade` in of the head,
+  equal power (`curve=qsin`), mixed with `amix normalize=0`. The audio is cut on a picture frame boundary (the number of
+  middle frames is measured from the real video graph), the source is read 0.1 s past the clip so the seam never runs
+  short, and the audio is exactly as long as the picture. Loudness normalisation (-16 LUFS, two pass) is applied before
+  the split, as before; no other music or ambience was introduced.
+
+### Verification of the files (not metadata)
+
+`scripts/qa/audio_loop_check.py` decodes the audio and reports lengths, quietest windows, the level step and click test at
+the loop point, and the match with the original soundtrack. Moment 1, desktop and phone files:
+
+| | before | after |
+|--|--|--|
+| audio length | 8.96 s | 9.77 s (picture 9.77 s) |
+| silent windows (under -60 dBFS) | none inside the audio, but 0.8 s absent at the end | none |
+| loop point (last 250 ms to first 250 ms) | step -0.3 dB | step +0.5 dB, biggest sample step 3022 against 10582 inside the file: no click |
+| match with the original soundtrack (1 s windows) | r 0.97 to 0.99 | r 0.97 to 0.99 |
+
+`review/audio-fix/waveform-before-after.jpg` shows the original, the shipped file and the rebuilt file one above the
+other. The picture is unchanged: 281 of 293 frames are bit-identical and the last 12 differ by under 1 dB of PSNR noise
+(average PSNR 53.7 dB, SSIM 0.999). Moments 2 and 3 were not rebuilt; their files are byte-identical.
+
+Music note: the song's pulse is about 0.52 s. The loop is 9.77 s, which is 18.8 pulses, so across the 0.8 s seam the
+end and the start are about a fifth of a pulse (roughly 0.11 s) out of step. It is heard as a smooth blend, not a
+cut; a perfectly on-the-beat loop would need the clip trimmed by 0.41 s, which changes the approved picture length.
+
+### The controls
+
+At rest only a very faint sound icon is visible at the bottom right; the pause button is hidden. Pointing at the
+picture, keyboard focus (either button, `:focus-visible`), or a tap on a touch screen brings both up for a moment
+(a tap keeps them for 4 s). Hover is only used where the device really has hover, so it never sticks after a tap. On
+touch screens the targets grow to 44 px. A pause the visitor chose stays visible, and the pink "Play footage" pill used
+when autoplay is suppressed is unchanged. Names and keys are unchanged (Pause footage / Play footage, and Sound with
+`aria-pressed`; the M key still toggles sound). Autoplay is still muted until sound is chosen.
+
+Browser cache: media is served with `Cache-Control: max-age=3600`, so a browser that already has the old
+`moment-1.mp4` may keep playing it for up to an hour. A hard refresh (Ctrl+F5) loads the corrected file.
