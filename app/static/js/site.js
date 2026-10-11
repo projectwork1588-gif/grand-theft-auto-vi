@@ -109,49 +109,63 @@
     }, { passive: true });
   }
 
-  // ---- Section navigator: a labelled control that names where you are and lists the sections ----
-  (function waypoint() {
-    var wp = document.querySelector("[data-waypoint]");
-    if (!wp) { return; }
+  // ---- Chapter navigation: a quiet rail of dots on wide screens, a progress hairline on phones ------
+  // Names appear on hover or keyboard focus only, so the rail never sits over artwork or controls. The same list is
+  // added to the header menu ("On this page"), which is how phones jump between sections.
+  (function chapterNav() {
+    var rail = document.querySelector("[data-rail]");
+    var hair = document.querySelector("[data-progress]");
     var chapters = [].slice.call(document.querySelectorAll("[data-chapter][id]"));
-    if (chapters.length < 3) { return; }
-    var list = wp.querySelector("[data-wp-list]");
-    var dial = wp.querySelector("[data-wp-toggle]");
-    var indexEl = wp.querySelector("[data-wp-index]");
-    var nameEl = wp.querySelector("[data-wp-name]");
+    if (!rail || chapters.length < 3) { return; }
+    var list = rail.querySelector("[data-rail-list]");
+    var pad = function (n) { return ("0" + n).slice(-2); };
     var links = chapters.map(function (chapter, i) {
+      var name = chapter.getAttribute("data-chapter");
       var li = document.createElement("li");
       var a = document.createElement("a");
-      var num = document.createElement("span");
-      num.textContent = ("0" + (i + 1)).slice(-2);
-      a.appendChild(num);
-      a.appendChild(document.createTextNode(chapter.getAttribute("data-chapter")));
       a.href = "#" + chapter.id;
+      a.setAttribute("aria-label", pad(i + 1) + " " + name);
+      var label = document.createElement("span");
+      label.className = "chapter-rail__label";
+      var num = document.createElement("b");
+      num.textContent = pad(i + 1);
+      label.appendChild(num);
+      label.appendChild(document.createTextNode(" " + name));
+      a.appendChild(label);
       li.appendChild(a);
       list.appendChild(li);
       return a;
     });
 
-    var open = function (state) {
-      dial.setAttribute("aria-expanded", String(state));
-      list.hidden = !state;
-    };
-    dial.addEventListener("click", function () { open(dial.getAttribute("aria-expanded") !== "true"); });
-    list.addEventListener("click", function (e) { if (e.target.closest("a")) { open(false); } });
-    document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape" && dial.getAttribute("aria-expanded") === "true") { open(false); dial.focus(); }
-    });
-    document.addEventListener("click", function (e) { if (!wp.contains(e.target)) { open(false); } });
+    var side = document.querySelector(".site-menu__side");
+    var menuLinks = [];
+    if (side) {
+      var block = document.createElement("div");
+      var title = document.createElement("p");
+      title.className = "site-menu__label";
+      title.textContent = "On this page";
+      var ul = document.createElement("ul");
+      ul.className = "site-menu__links";
+      chapters.forEach(function (chapter) {
+        var li = document.createElement("li");
+        var a = document.createElement("a");
+        a.href = "#" + chapter.id;
+        a.textContent = chapter.getAttribute("data-chapter");
+        li.appendChild(a);
+        ul.appendChild(li);
+        menuLinks.push(a);
+      });
+      block.appendChild(title);
+      block.appendChild(ul);
+      side.insertBefore(block, side.children[1] || null);
+    }
 
     var setActive = function (i) {
       links.forEach(function (a, n) {
         if (n === i) { a.setAttribute("aria-current", "true"); } else { a.removeAttribute("aria-current"); }
       });
-      indexEl.textContent = ("0" + (i + 1)).slice(-2);
-      if (nameEl) { nameEl.textContent = chapters[i].getAttribute("data-chapter"); }
     };
     setActive(0);
-
     if ("IntersectionObserver" in window) {
       var spy = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
@@ -161,26 +175,24 @@
       chapters.forEach(function (c) { spy.observe(c); });
     }
 
-    // Step aside for the footer so it never covers the links there.
     var footer = document.querySelector(".site-footer");
-    if (footer && "IntersectionObserver" in window) {
-      new IntersectionObserver(function (entries) {
-        var away = entries[0].isIntersecting;
-        wp.classList.toggle("is-away", away);
-        if (away) { open(false); }
-      }).observe(footer);
-    }
-
-    // Stay out of the way of the opening screen.
-    var showWhenScrolled = function () {
-      var show = window.scrollY > window.innerHeight * 0.55;
-      if (wp.hidden === show) {
-        wp.hidden = !show;
-        if (!show) { open(false); }
+    var update = function () {
+      var away = window.scrollY < window.innerHeight * 0.55;
+      if (rail.hidden !== away) { rail.hidden = away; }
+      if (hair) {
+        var max = document.documentElement.scrollHeight - window.innerHeight;
+        var p = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+        hair.hidden = away;
+        hair.firstElementChild.style.setProperty("--progress", String(p));
+      }
+      if (footer) {
+        var r = footer.getBoundingClientRect();
+        rail.classList.toggle("is-away", r.top < window.innerHeight);
       }
     };
-    showWhenScrolled();
-    window.addEventListener("scroll", showWhenScrolled, { passive: true });
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
   })();
 
   // ---- Cast stage: one frame, eight people, about four seconds each -----------------------------
@@ -285,7 +297,8 @@
 
     function play() {
       if (!video) { return; }
-      var wanted = state.motion && state.visible && !document.hidden;
+      var tv = window.tvMedia || {};
+      var wanted = state.motion && state.visible && !document.hidden && !tv.cinema && !tv.modal;
       if (wanted) {
         safePlay(video);
         armGuard();
@@ -360,6 +373,9 @@
         if (!raf) { raf = window.requestAnimationFrame(follow); }
       });
       video.addEventListener("error", function () { video.classList.remove("is-ready"); });
+      video.addEventListener("play", function () { window.tvMedia = window.tvMedia || {}; window.tvMedia.cast = true; document.dispatchEvent(new Event("tv:state")); });
+      video.addEventListener("pause", function () { window.tvMedia = window.tvMedia || {}; window.tvMedia.cast = false; document.dispatchEvent(new Event("tv:state")); });
+      document.addEventListener("tv:state", function () { if (window.tvMedia.cinema && !video.paused) { video.pause(); } });
       video.addEventListener("timeupdate", function () { if (!video.paused) { sync(); } });
       video.addEventListener("seeked", armGuard);
     }
@@ -419,102 +435,183 @@
     render();
   })();
 
-  // ---- The cinematic moment: native video when authorised footage exists, an official still otherwise ---------
-  // There is no third-party player on the page. When media/cinematic/ holds a video the section plays it muted as it
-  // enters the screen, pauses it when it leaves, and offers one clear Enable sound button. It stays on the still for
-  // visitors who prefer reduced motion or have data saver on, and on phones that have no lighter cut, with a button
-  // to play it on request. Without a video the section is the still and a play control that opens Rockstar's
-  // own player in the trailer overlay (handled by the dialog code below).
-  (function cinema() {
-    var root = document.querySelector("[data-cinema]");
-    var video = root && root.querySelector("[data-cinema-video]");
-    if (!root || !video) { return; }
-    var toggleBtn = root.querySelector("[data-cinema-toggle]");
-    var toggleLabel = root.querySelector("[data-cinema-toggle-label]");
-    var soundBtn = root.querySelector("[data-cinema-sound]");
-    var soundLabel = root.querySelector("[data-cinema-sound-label]");
-    var phone = window.matchMedia("(max-width: 700px)").matches;
-    var slow = !!(navigator.connection && /(^|-)(2g|3g)$/.test(navigator.connection.effectiveType || ""));
-    // Phones play only when a lighter cut was supplied; slow connections and calm visitors wait to be asked.
-    var automatic = !calm && !slow && (!phone || root.hasAttribute("data-mobile-cut"));
-    var state = { wanted: automatic, visible: false, near: false, loaded: false, failed: false };
-
-    video.muted = true;
-    video.setAttribute("playsinline", "");
-
-    function labels() {
-      var playing = !video.paused && !video.ended;
-      if (toggleBtn) {
-        toggleBtn.hidden = state.failed;
-        toggleBtn.classList.toggle("is-paused", !playing);
-        toggleBtn.setAttribute("aria-label", playing ? "Pause the footage" : "Play the footage");
-        if (toggleLabel) { toggleLabel.textContent = playing ? "Pause" : "Play the footage"; }
-      }
-      if (soundBtn) {
-        soundBtn.hidden = state.failed || !state.loaded;
-        soundBtn.setAttribute("aria-pressed", String(!video.muted));
-        if (soundLabel) { soundLabel.textContent = video.muted ? "Enable sound" : "Sound on"; }
-      }
-    }
-
-    function load() {
-      if (state.loaded || state.failed) { return; }
-      state.loaded = true;
-      video.preload = "auto";
-      video.load();
-    }
-
-    function sync() {
-      if (state.failed) { return; }
-      var shouldPlay = state.wanted && state.visible && !document.hidden;
-      if (shouldPlay) {
-        load();
-        safePlay(video);
-      } else if (!video.paused) {
-        video.pause();
-      }
-      labels();
-    }
-
-    video.addEventListener("playing", function () { root.classList.add("is-live"); labels(); });
-    video.addEventListener("pause", labels);
-    video.addEventListener("volumechange", labels);
-    video.addEventListener("error", function () {
-      state.failed = true;
-      root.classList.remove("is-live");
-      labels();
+  // ---- The cinematic moments: native video, muted, started and stopped by scrolling ---------------------
+  // Up to three sections, each a plain <video> over its own poster. No third-party player. Rules:
+  //  * One video plays at a time: the most visible eligible section wins; the cast reel and the trailer overlay
+  //    count too (window.tvMedia).
+  //  * Muted autoplay on entry, paused on exit. A moment plays once and holds its last frame; Replay is offered.
+  //  * Sound is the visitor's choice. Browsers refuse audible autoplay until the page has been interacted with, so
+  //    nothing is unmuted before a deliberate click on Enable sound. The choice is remembered for the visit, and
+  //    later moments then start with sound (faded in) where the browser allows it.
+  //  * Reduced motion, data saver and slow connections get the poster and a Play button; nothing autoplays.
+  window.tvMedia = window.tvMedia || { cast: false, cinema: false, modal: false };
+  (function cinemas() {
+    var roots = [].slice.call(document.querySelectorAll("[data-cinema]"));
+    var players = [];
+    roots.forEach(function (root) {
+      var video = root.querySelector("[data-cinema-video]");
+      if (!video) { return; }
+      players.push({
+        root: root, video: video,
+        toggleBtn: root.querySelector("[data-cinema-toggle]"), toggleLabel: root.querySelector("[data-cinema-toggle-label]"),
+        soundBtn: root.querySelector("[data-cinema-sound]"), soundLabel: root.querySelector("[data-cinema-sound-label]"),
+        ratio: 0, loaded: false, failed: false, ended: false, userPaused: false, requested: false, ramp: 0
+      });
     });
-    // A source that never starts leaves the still showing; the controls stay hidden rather than do nothing.
-    video.addEventListener("stalled", function () { if (video.readyState < 2 && state.failed) { labels(); } });
+    if (!players.length) { return; }
 
-    if (toggleBtn) {
-      toggleBtn.addEventListener("click", function () {
-        state.wanted = video.paused;       // an explicit choice overrides the automatic rule, both ways
-        if (state.wanted) { load(); safePlay(video); } else { video.pause(); }
-        labels();
-      });
+    var slow = !!(navigator.connection && /(^|-)(2g|3g)$/.test(navigator.connection.effectiveType || ""));
+    var automatic = !calm && !slow;
+    var interacted = false;
+    ["pointerdown", "keydown", "touchstart"].forEach(function (name) {
+      window.addEventListener(name, function () { interacted = true; }, { once: true, passive: true });
+    });
+    var activated = function () { return interacted || !!(navigator.userActivation && navigator.userActivation.hasBeenActive); };
+    var soundOn = false;
+    try { soundOn = window.sessionStorage.getItem("tv-sound") === "1"; } catch (e) { /* storage unavailable */ }
+
+    function ramp(p, to, ms, done) {
+      window.clearInterval(p.ramp);
+      var from = p.video.volume, steps = Math.max(1, Math.round(ms / 40)), n = 0;
+      p.ramp = window.setInterval(function () {
+        n += 1;
+        p.video.volume = Math.max(0, Math.min(1, from + (to - from) * (n / steps)));
+        if (n >= steps) { window.clearInterval(p.ramp); if (done) { done(); } }
+      }, 40);
     }
-    if (soundBtn) {
-      soundBtn.addEventListener("click", function () {
-        video.muted = !video.muted;
-        if (!video.muted) { video.volume = 0.7; if (video.paused) { state.wanted = true; safePlay(video); } }
-        labels();
-      });
+
+    function labels(p) {
+      var v = p.video;
+      var playing = !v.paused && !v.ended;
+      if (p.toggleBtn) {
+        p.toggleBtn.hidden = p.failed;
+        p.toggleBtn.classList.toggle("is-paused", !playing && !p.ended);
+        p.toggleBtn.classList.toggle("is-ended", p.ended);
+        var text = p.ended ? "Replay" : (playing ? "Pause" : "Play");
+        p.toggleBtn.setAttribute("aria-label", p.ended ? "Replay the footage" : (playing ? "Pause the footage" : "Play the footage"));
+        if (p.toggleLabel) { p.toggleLabel.textContent = text; }
+      }
+      if (p.soundBtn) {
+        p.soundBtn.hidden = p.failed || (!p.loaded && automatic);
+        p.soundBtn.setAttribute("aria-pressed", String(soundOn));
+        if (p.soundLabel) { p.soundLabel.textContent = soundOn ? "Sound on" : "Enable sound"; }
+      }
     }
+
+    function load(p) {
+      if (p.loaded || p.failed) { return; }
+      p.loaded = true;
+      p.video.preload = "auto";
+      p.video.load();
+    }
+
+    function start(p) {
+      if (!p.video.paused || p.ended || p.video.ended) { return; }   // a finished moment holds its last frame
+      load(p);
+      var withSound = soundOn && activated();
+      p.video.muted = !withSound;
+      p.video.volume = withSound ? 0 : 1;
+      var promise = p.video.play();
+      if (promise && typeof promise.catch === "function") {
+        promise.catch(function () {
+          if (withSound) {          // the browser refused audible playback: carry on silently
+            p.video.muted = true; p.video.volume = 1;
+            safePlay(p.video);
+          }
+        });
+      }
+      if (withSound) { ramp(p, 1, 400); }
+      window.tvMedia.cinema = true;
+    }
+
+    function stop(p) {
+      if (p.video.paused) { return; }
+      if (!p.video.muted && p.video.volume > 0) { ramp(p, 0, 250, function () { p.video.pause(); p.video.volume = 1; }); }
+      else { p.video.pause(); }
+    }
+
+    function apply() {
+      var best = null;
+      var blocked = document.hidden || window.tvMedia.modal || window.tvMedia.cast;
+      players.forEach(function (p) {
+        var eligible = !blocked && !p.failed && !p.ended && !p.userPaused && p.ratio >= 0.35 && (automatic || p.requested);
+        if (eligible && (!best || p.ratio > best.ratio)) { best = p; }
+      });
+      players.forEach(function (p) {
+        if (p === best) { start(p); } else { stop(p); }
+      });
+      window.tvMedia.cinema = players.some(function (p) { return !p.video.paused; });
+      players.forEach(labels);
+    }
+
+    players.forEach(function (p) {
+      var v = p.video;
+      v.muted = true;
+      v.addEventListener("playing", function () { p.root.classList.add("is-live"); labels(p); document.dispatchEvent(new Event("tv:state")); });
+      v.addEventListener("pause", function () {
+        // The browser fires pause just before ended: note the end first so nothing restarts a finished moment.
+        if (v.ended || (v.duration && v.currentTime >= v.duration - 0.05)) { p.ended = true; p.root.classList.add("is-ended"); }
+        window.tvMedia.cinema = players.some(function (q) { return !q.video.paused; });
+        labels(p);
+        document.dispatchEvent(new Event("tv:state"));
+      });
+      v.addEventListener("volumechange", function () { labels(p); });
+      v.addEventListener("ended", function () {
+        p.ended = true;
+        p.root.classList.add("is-ended");
+        window.tvMedia.cinema = false;
+        labels(p);
+        apply();
+      });
+      v.addEventListener("error", function () { p.failed = true; p.root.classList.remove("is-live"); labels(p); apply(); });
+
+      if (p.toggleBtn) {
+        p.toggleBtn.addEventListener("click", function () {
+          p.requested = true;
+          if (p.ended) {                       // replay from the start
+            p.ended = false; p.userPaused = false;
+            p.root.classList.remove("is-ended");
+            try { v.currentTime = 0; } catch (e) { /* not seekable yet */ }
+            apply(); start(p); return;
+          }
+          if (!v.paused) { p.userPaused = true; v.pause(); }
+          else { p.userPaused = false; p.ratio = Math.max(p.ratio, 0.35); apply(); start(p); }
+          labels(p);
+        });
+      }
+      if (p.soundBtn) {
+        p.soundBtn.addEventListener("click", function () {
+          soundOn = !soundOn;
+          try { window.sessionStorage.setItem("tv-sound", soundOn ? "1" : "0"); } catch (e) { /* ignore */ }
+          players.forEach(function (q) {
+            if (q.video.paused) { return; }
+            if (soundOn) { q.video.muted = false; q.video.volume = 0; ramp(q, 1, 400); } else { q.video.muted = true; }
+          });
+          if (soundOn && p.video.paused && !p.ended) { p.userPaused = false; p.requested = true; start(p); }
+          players.forEach(labels);
+        });
+      }
+    });
 
     if ("IntersectionObserver" in window) {
-      new IntersectionObserver(function (entries) {
+      var near = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
-          state.near = entry.isIntersecting;
-          if (state.near && state.wanted) { load(); }   // warm a screen away so it starts without a stall
+          var p = players.filter(function (q) { return q.root === entry.target; })[0];
+          if (p && entry.isIntersecting && automatic) { load(p); }
         });
-      }, { rootMargin: "100% 0px 100% 0px" }).observe(root);
-      new IntersectionObserver(function (entries) {
-        entries.forEach(function (entry) { state.visible = entry.isIntersecting; sync(); });
-      }, { threshold: 0.35 }).observe(root);
+      }, { rootMargin: "100% 0px 100% 0px" });
+      var seen = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          var p = players.filter(function (q) { return q.root === entry.target; })[0];
+          if (p) { p.ratio = entry.isIntersecting ? entry.intersectionRatio : 0; }
+        });
+        apply();
+      }, { threshold: [0, 0.1, 0.2, 0.35, 0.5, 0.65, 0.8, 1] });
+      players.forEach(function (p) { near.observe(p.root); seen.observe(p.root); });
     }
-    document.addEventListener("visibilitychange", sync);
-    labels();
+    document.addEventListener("visibilitychange", apply);
+    document.addEventListener("tv:state", apply);
+    players.forEach(labels);
   })();
 
   // ---- Region explorer: hover, focus or tap a region to preview it; choose to step inside -------
@@ -664,7 +761,12 @@
     var playerBox = videoDialog.querySelector("[data-player]");
     var videoCaption = videoDialog.querySelector("[data-caption]");
     var videoTitle = videoDialog.querySelector("[data-title]");
-    videoDialog.addEventListener("close", function () { playerBox.textContent = ""; }); // stops playback
+    videoDialog.addEventListener("close", function () {
+      playerBox.textContent = ""; // stops playback
+      window.tvMedia = window.tvMedia || {};
+      window.tvMedia.modal = false;
+      document.dispatchEvent(new Event("tv:state"));
+    });
     document.querySelectorAll("[data-video]").forEach(function (trigger) {
       trigger.addEventListener("click", function () {
         var frame = document.createElement("iframe");
@@ -674,7 +776,10 @@
         playerBox.textContent = "";
         playerBox.appendChild(frame);
         if (videoTitle) { videoTitle.textContent = (trigger.getAttribute("data-title") || "").replace(/^Grand Theft Auto VI[:,]?\s*/, ""); }
-        videoCaption.textContent = "Official video, played in Rockstar's own player. © Rockstar Games";
+        videoCaption.textContent = "Official trailer \u00b7 \u00a9 Rockstar Games";
+        window.tvMedia = window.tvMedia || {};
+        window.tvMedia.modal = true;
+        document.dispatchEvent(new Event("tv:state"));
         videoDialog.showModal();
       });
     });

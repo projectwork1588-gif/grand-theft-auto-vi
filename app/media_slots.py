@@ -2,7 +2,8 @@
 not content. If a slug is missing from the database (for example before the migrations are applied) the page
 falls back to its original artwork."""
 
-HERO_SLUGS = ("art-jason-lucia-beach", "art-jason-lucia-01", "art-jason-lucia-robbery")
+# One static hero, chosen by the owner: the Robbery artwork (no embedded logo). No cycle.
+HERO_SLUGS = ("art-jason-lucia-robbery",)
 # Trailer 2 leads. Each video has its own official poster image, in the same order.
 VIDEO_SLUGS = ("official-trailer-2", "official-trailer-1", "official-an-extended-look")
 VIDEO_POSTER_SLUGS = ("poster-trailer-2", "poster-trailer-1", "poster-extended-look")
@@ -11,9 +12,9 @@ SCREENSHOT_SLUGS = (
     "shot-lucia-caminos-03", "shot-mount-kalaga-04", "shot-port-gellhorn-06",
 )
 # Full-bleed backdrops for bands.
-BACKDROP_SLUGS = ("shot-vice-city-11", "art-jason-lucia-robbery", "shot-grassrivers-05")
+BACKDROP_SLUGS = ("shot-vice-city-11", "art-jason-lucia-02", "shot-grassrivers-05")
 BACKDROP_STORIES = "shot-vice-city-11"
-BACKDROP_CLOSING = "art-jason-lucia-robbery"
+BACKDROP_CLOSING = "art-jason-lucia-02"   # not the hero artwork
 
 # One explicit playlist order for the cast. The homepage name list, the reel's segments and the loop builder
 # (scripts/make_loops.py) all read this tuple, never the database's row order.
@@ -22,14 +23,13 @@ CAST_ORDER = (
     "dre-quan-priest", "real-dimez", "raul-bautista", "brian-heder",
 )
 
-# The cinematic moment between the leads and the cast. There is no downloadable trailer and no stated licence, so
-# nothing of Rockstar's video is copied or hosted. The section always works from an official still and opens the
-# trailer in Rockstar's own player on request. If the owner supplies footage that is authorised for reuse and builds
-# media/cinematic/cinematic.mp4 (see local_media.cinematic), the same section plays it as native video instead.
-CINEMATIC = {
-    "title": "Trailer 1",
-    "poster": "poster-trailer-1",
-    "trailer": "official-trailer-1",
+# The three cinematic moments (native HTML5 video, built by scripts/make_cinematics.py from the owner's own recordings).
+# Slot ids match the files in media/cinematic/. Only the first has an official-still fallback (an official poster with a
+# play control that opens Rockstar's own player); the other two appear only when their video has been built.
+CINEMATICS = {
+    "moment-1": {"title": "Dawn over Leonida", "poster": "poster-trailer-1", "trailer": "official-trailer-1"},
+    "moment-2": {"title": "Sun, water, speed", "poster": None, "trailer": "official-trailer-2"},
+    "moment-3": {"title": "Last light", "poster": None, "trailer": "official-trailer-2"},
 }
 
 # The two leads are presented as a matched pair: Jason by day on a motorcycle, Lucia at night on hers.

@@ -31,6 +31,8 @@ All 85 referenced URLs were requested before they were recorded and returned HTT
 * **Rights.** Rockstar states no licence terms for these files. Rows 61 to 68 carry the loop's path; row 107 (the reel) is marked `permission_required` / `pending_review`. The owner should decide before publishing the site publicly.
 * **New images.** 21 further official screenshots (rows 86 to 106) give each region a wider selection and Jason and Lucia more choice of crop. Each URL was requested before it was recorded.
 
+> **Reel update (cinematic implementation).** The cast reel no longer slows the clips. Each person plays their clip at true speed (1.0 to 1.5 s), dissolves over 0.4 s into their official artwork and holds it for about 1.6 s with a very slow push-in: 2.6 to 3.1 s per person, 19.7 s for all eight, 1600 x 900. `scripts/make_loops.py` fetches the eight artworks once into `media/source/art/`.
+
 ## The signature moment (refinement round 3)
 
 > **Superseded by Design Reset Gate 2.** The homepage no longer plays any trailer footage through YouTube's player as a background. The section is now a native-video slot: an official still with a play control that opens Rockstar's own player on request, or, when the owner supplies footage that is authorised for reuse and builds `media/cinematic/cinematic.mp4`, native HTML5 video (muted autoplay in view, paused out of view, an Enable sound button, reduced-motion and phone fallbacks). The rights findings below still apply and are the reason nothing is copied from the trailers. See `docs/DESIGN_GATE2.md`.

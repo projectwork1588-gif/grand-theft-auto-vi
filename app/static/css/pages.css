@@ -20,7 +20,7 @@
 .hero__slide[data-slide="1"] { animation-delay: -1.2s; }
 .hero__slide[data-slide="2"] { animation-delay: 7.8s; }
 .hero__slide[data-slide="3"] { animation-delay: 16.8s; }
-.hero__slide .media__img { object-position: 66% 24%; transform-origin: 62% 40%; animation: drift 27s ease-in-out infinite alternate; }
+.hero__slide .media__img { object-position: 62% 24%; }
 /* One scrim, left-weighted, so the lockup always sits on shade and the pair stays bright on the right. */
 .hero__shade {
   position: absolute; inset: 0;
@@ -55,8 +55,10 @@
 .hero__release strong { display: block; margin-top: 8px; font: 700 var(--t-h4)/1 var(--font-display); letter-spacing: var(--track-caps); color: var(--text); text-shadow: 0 2px 18px rgba(0, 0, 0, .75); }
 @media (max-width: 760px) {
   .hero__card { height: clamp(600px, calc(100svh - var(--header-h) - var(--s3)), 780px); }
-  .hero__slide .media__img { object-position: 64% 0%; }
-  .hero__shade { background: linear-gradient(180deg, rgba(13, 11, 32, .3) 0%, rgba(13, 11, 32, 0) 22%, rgba(13, 11, 32, .55) 46%, rgba(13, 11, 32, .92) 78%, rgba(13, 11, 32, .96) 100%); }
+  /* The artwork fills the top of the card at a size where Lucia and Jason are both in frame; the lockup sits below it. */
+  .hero__bg { inset: 0 0 auto 0; height: 60%; }
+  .hero__slide .media__img { object-position: 70% 0%; }
+  .hero__shade { background: linear-gradient(180deg, rgba(13, 11, 32, .3) 0%, rgba(13, 11, 32, 0) 18%, rgba(13, 11, 32, 0) 52%, var(--card) 100%); }
   .hero__presents { margin: 10px 0 var(--s2); }
   .hero__lede { margin: var(--s2) 0 var(--s3); font-size: var(--t-body); }
   .hero__release { position: static; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-top: var(--s3); text-align: left; }
@@ -96,7 +98,8 @@
 .cast__still.is-switching { opacity: 0; transform: scale(1.06); }
 .cast__video { z-index: 1; background: #000; opacity: 0; transition: opacity .5s; }
 .cast__video.is-ready { opacity: 1; }
-.cast__shade { position: absolute; inset: 0; z-index: 2; background: linear-gradient(180deg, rgba(13, 11, 32, 0) 45%, rgba(13, 11, 32, .88) 100%); pointer-events: none; }
+.cast__shade { position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background: linear-gradient(90deg, rgba(13, 11, 32, .74) 0%, rgba(13, 11, 32, .36) 42%, rgba(13, 11, 32, 0) 72%), linear-gradient(180deg, rgba(13, 11, 32, 0) 40%, rgba(13, 11, 32, .88) 100%); }
 .cast__caption { position: absolute; z-index: 3; left: clamp(20px, 3vw, 40px); right: clamp(20px, 3vw, 40px); bottom: clamp(18px, 2.6vw, 34px); display: grid; gap: 6px; justify-items: start; }
 .cast__caption p { margin: 0; }
 .cast__role { font: 700 var(--t-micro)/1 var(--font-body); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--orange); }
@@ -243,29 +246,36 @@
 .closing__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; }
 .closing .band__shade { background: radial-gradient(70% 62% at 50% 48%, rgba(13, 11, 32, .8), rgba(13, 11, 32, .3) 100%), linear-gradient(180deg, var(--night) 0%, rgba(13, 11, 32, .1) 24%, rgba(13, 11, 32, .1) 76%, var(--night) 100%); }
 
-/* =========================== THE CINEMATIC MOMENT =========================== */
+/* =========================== THE CINEMATIC MOMENTS =========================== */
 .cinema { position: relative; background: var(--ground); isolation: isolate; }
 .cinema__frame { position: relative; height: clamp(440px, 86svh, 900px); overflow: hidden; background: #000; }
+.cinema--band .cinema__frame, .cinema--finale .cinema__frame { height: auto; aspect-ratio: 1920 / 864; }
+.cinema--finale { background: #000; }
 .cinema__poster { position: absolute; inset: 0; }
 .cinema__poster .media__img { object-position: 50% 50%; animation: cinemaDrift 32s ease-in-out infinite alternate; }
 @keyframes cinemaDrift { from { transform: scale(1.02); } to { transform: scale(1.08); } }
+.cinema__poster-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .cinema__video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #000; opacity: 0; transition: opacity var(--dur-3) var(--ease); }
-.cinema.is-live .cinema__video { opacity: 1; }
+.cinema.is-live .cinema__video, .cinema.is-ended .cinema__video { opacity: 1; }
+/* The page's own ground flows into and out of the picture. */
 .cinema__shade { position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(180deg, var(--ground) 0%, rgba(13, 11, 32, 0) 16%, rgba(13, 11, 32, 0) 52%, rgba(13, 11, 32, .9) 88%, var(--ground) 100%); }
-.cinema__play { display: inline-flex; align-items: center; gap: var(--s2); padding: 0; border: 0; background: none; color: var(--text); cursor: pointer; text-align: left; }
+  background: linear-gradient(180deg, var(--ground) 0%, rgba(13, 11, 32, 0) 14%, rgba(13, 11, 32, 0) 62%, rgba(13, 11, 32, .72) 90%, var(--ground) 100%); }
+.cinema--band .cinema__shade { background: linear-gradient(180deg, var(--ground) 0%, rgba(13, 11, 32, 0) 10%, rgba(13, 11, 32, 0) 66%, rgba(13, 11, 32, .7) 92%, var(--ground) 100%); }
+.cinema--finale .cinema__shade { background: linear-gradient(180deg, var(--ground) 0%, rgba(0, 0, 0, 0) 16%); }
+.cinema--finale .cinema__bar { position: static; padding-block: var(--s3) var(--s6); background: linear-gradient(180deg, #000 0%, var(--ground) 100%); }
+.cinema__bar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; padding-bottom: clamp(16px, 2.6vw, 36px); }
+.cinema__inner { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: var(--s2) var(--s3); }
+.cinema__copy { display: grid; gap: var(--s1); justify-items: start; }
+.cinema__copy > p { margin: 0; }
+.cinema__eyebrow { font: 700 var(--t-micro)/1 var(--font-body); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--label); text-shadow: 0 1px 10px rgba(0, 0, 0, .6); }
+.cinema__credit { font: 600 var(--t-micro)/1.4 var(--font-body); letter-spacing: var(--track-ui); color: var(--text-2); text-shadow: 0 1px 10px rgba(0, 0, 0, .65); }
+.cinema__play { display: inline-flex; align-items: center; gap: var(--s2); margin-block: var(--s1); padding: 0; border: 0; background: none; color: var(--text); cursor: pointer; text-align: left; }
 .cinema__disc { display: grid; place-items: center; flex: none; width: 76px; height: 76px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .55);
   background: rgba(255, 255, 255, .14); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   transition: transform var(--dur-3) var(--ease), background var(--dur-2), color var(--dur-2), border-color var(--dur-2); }
 .cinema__disc svg { width: 26px; height: 26px; fill: currentColor; margin-left: 3px; }
 .cinema__play:hover .cinema__disc, .cinema__play:focus-visible .cinema__disc { transform: scale(1.08); background: var(--action); border-color: var(--action); color: var(--on-action); }
 .cinema__play-label { font: 700 var(--t-h3)/1 var(--font-display); letter-spacing: var(--track-caps); text-transform: uppercase; text-shadow: 0 2px 20px rgba(0, 0, 0, .6); }
-.cinema__bar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; padding-bottom: clamp(18px, 3vw, 40px); }
-.cinema__inner { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: var(--s2) var(--s3); }
-.cinema__copy { display: grid; gap: var(--s2); justify-items: start; }
-.cinema__copy > p { margin: 0; }
-.cinema__credit { font: 600 var(--t-small)/1.4 var(--font-body); color: var(--text-2); text-shadow: 0 1px 10px rgba(0, 0, 0, .65); }
-.cinema__eyebrow { font: 700 var(--t-micro)/1 var(--font-body); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--label); }
 .cinema__ui { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1); }
 .cinema__btn { display: inline-flex; align-items: center; gap: 10px; height: 44px; padding: 0 18px; border-radius: var(--r-pill); cursor: pointer; color: var(--text);
   border: 1px solid rgba(255, 255, 255, .4); background: rgba(13, 11, 32, .55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
@@ -275,16 +285,22 @@
 .cinema__btn[aria-pressed="true"]:hover { background: var(--text); }
 .cinema__btn[hidden] { display: none; }
 .cinema__icon { width: 20px; height: 20px; flex: none; }
-.cinema__icon--on, .cinema__icon--play { display: none; }
+.cinema__icon--on, .cinema__icon--play, .cinema__icon--replay { display: none; }
 .cinema__btn[aria-pressed="true"] .cinema__icon--on { display: block; }
 .cinema__btn[aria-pressed="true"] .cinema__icon--off { display: none; }
 .cinema__btn.is-paused .cinema__icon--pause { display: none; }
 .cinema__btn.is-paused .cinema__icon--play { display: block; }
-@media (max-width: 760px) {
-  .cinema__frame { height: clamp(400px, 72svh, 680px); }
+.cinema__btn.is-ended .cinema__icon--pause, .cinema__btn.is-ended .cinema__icon--play { display: none; }
+.cinema__btn.is-ended .cinema__icon--replay { display: block; }
+@media (max-width: 700px) {
+  .cinema--full .cinema__frame { height: auto; aspect-ratio: 4 / 5; max-height: 86svh; }
+  .cinema--band .cinema__frame { aspect-ratio: 4 / 3; }
+  .cinema--finale .cinema__frame { aspect-ratio: 4 / 3; }
   .cinema__disc { width: 64px; height: 64px; }
   .cinema__play-label { font-size: var(--t-h4); }
+  .cinema__btn { height: 40px; padding-inline: 14px; }
 }
+@media (max-width: 560px) { .cinema__btn[data-video] { display: none; } }
 
 /* =========================== TRAILERS AND SCREENSHOTS =========================== */
 .theatre { display: grid; gap: clamp(12px, 1.6vw, 22px); grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr; }

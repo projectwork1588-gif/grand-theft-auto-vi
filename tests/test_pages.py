@@ -569,16 +569,17 @@ def test_copy_names_jason_and_lucia_as_the_two_leads(client):
     assert "playable protagonists" not in page and "first two" not in page
 
 
-def test_cinematic_moment_sits_between_the_leads_and_the_cast(client):
+def test_first_cinematic_moment_sits_between_the_leads_and_the_cast(client):
     page = html(client, "/")
     assert page.index('id="leads"') < page.index('id="moment"') < page.index('id="cast"')
     moment = page.split('id="moment"')[1].split("</section>")[0]
     assert not re.search(r"<h[1-6]", moment)                                      # the footage is the point, no heading
     assert "<iframe" not in page.split("<dialog")[0] and "youtube" not in moment.lower().replace("rockstar", "")
     assert "cinema__poster" in moment and "rockstargames.com/VI/_next/static/media/" in moment   # an official still
-    assert "data-video=" in moment and "Watch Trailer 1" in moment                # a way into Rockstar's own player
-    assert "&copy; Rockstar Games" in moment
-    assert "<video" not in moment and "data-cinema-video" not in moment           # no native video until it is supplied
+    assert "data-video=" in moment and "Watch Official Trailer" in moment         # a way into Rockstar's own player
+    assert "&copy; Rockstar Games" in moment and "Dawn over Leonida" in moment
+    assert "<video" not in moment and "data-cinema-video" not in moment           # no native video until it is built
+    assert 'id="world"' not in page and 'id="finale"' not in page                 # the other two need their own video
 
 
 def test_policy_allows_only_the_trailer_frame_and_no_third_party_scripts(client):
@@ -589,26 +590,32 @@ def test_policy_allows_only_the_trailer_frame_and_no_third_party_scripts(client)
     assert "img-src 'self' https://www.rockstargames.com data:;" in csp and "media-src 'self';" in csp
 
 
-def test_cinematic_needs_a_real_still_and_a_real_trailer(monkeypatch, client):
+def test_first_moment_needs_a_real_still_and_a_real_trailer(monkeypatch, client):
     from app import media_slots, media_urls
     assert media_urls.youtube_id("QdBZY2fkU-0") == "QdBZY2fkU-0"
     for bad in (None, "", "short", "x" * 12, 'QdBZY2fkU-0"><script>', "../../etc/passwd"):
         assert media_urls.youtube_id(bad) is None, bad
-    monkeypatch.setitem(media_slots.CINEMATIC, "trailer", "no-such-video")
+    monkeypatch.setitem(media_slots.CINEMATICS["moment-1"], "trailer", "no-such-video")
     assert 'id="moment"' not in html(client, "/")                                  # nothing to play: the section is left out
 
 
-def test_cinematic_slots_point_at_listed_official_media():
-    from app import media_slots
-    assert media_slots.CINEMATIC["trailer"] in media_slots.VIDEO_SLUGS
-    assert media_slots.CINEMATIC["poster"] in media_slots.VIDEO_POSTER_SLUGS + media_slots.BACKDROP_SLUGS
+def test_cinematic_slots_match_the_files_the_builder_writes():
+    from app import local_media, media_slots
+    from scripts import make_cinematics
+    assert tuple(media_slots.CINEMATICS) == local_media.CINEMATIC_SLOTS == tuple(make_cinematics.MOMENTS)
+    first = media_slots.CINEMATICS["moment-1"]
+    assert first["trailer"] in media_slots.VIDEO_SLUGS and first["poster"] in media_slots.VIDEO_POSTER_SLUGS
+    for slot in media_slots.CINEMATICS.values():
+        assert slot["trailer"] in media_slots.VIDEO_SLUGS and slot["title"]
 
 
-def test_script_only_plays_the_cinematic_when_motion_is_welcome():
-    code = _script().split("function cinema()")[1].split("function regionExplorer()")[0]
-    assert "automatic = !calm" in code and "document.hidden" in code and "IntersectionObserver" in code
-    assert "video.muted = true" in code and "video.pause()" in code               # muted autoplay, paused when out of view
-    assert "data-mobile-cut" in code and "effectiveType" in code                  # phones and slow links wait or get a lighter cut
+def test_script_plays_one_moment_at_a_time_muted_and_only_when_motion_is_welcome():
+    code = _script().split("function cinemas()")[1].split("function regionExplorer()")[0]
+    assert "automatic = !calm && !slow" in code and "document.hidden" in code and "IntersectionObserver" in code
+    assert "best" in code and "p === best" in code and "tvMedia" in code          # the most visible wins; the reel and overlay count
+    assert "v.muted = true" in code and "withSound = soundOn && activated()" in code   # muted unless the visitor asked
+    assert '"ended"' in code and "Replay" in code and ".loop" not in code         # plays once, holds, replay is offered
+    assert "sessionStorage" in code and "ramp(" in code                           # the sound choice is kept for the visit, faded
     assert "youtube" not in code.lower() and "iframe" not in code.lower()          # no third-party player on the page
 
 
@@ -639,12 +646,16 @@ def test_stories_section_separates_team_stories_from_official_connections(client
     assert "badge--official" in aside and "Who knows whom" in aside and "Concept" not in aside
 
 
-def test_navigator_names_the_current_section(client):
+def test_chapter_navigation_is_a_quiet_rail_and_a_hairline(client):
     page = html(client, "/")
-    nav = page.split('class="waypoint"')[1].split("</ol>")[0]
-    assert "Jump to" in nav and "data-wp-name" in nav and "data-wp-index" in nav
-    for name in ("Welcome", "The leads", "The footage", "The cast", "Leonida", "The garage", "Stories", "Trailers"):
+    assert 'class="chapter-rail"' in page and "data-rail-list" in page and 'class="progress-hairline"' in page
+    assert "Jump to" not in page and 'class="waypoint"' not in page              # the floating pill is gone
+    for name in ("Welcome", "The leads", "Dawn over Leonida", "The cast", "Leonida", "The garage", "Stories", "Trailers"):
         assert f'data-chapter="{name}"' in page, name
+    css = _css()["site.css"]
+    assert ".chapter-rail__label" in css and "opacity: 0" in css                  # names only on hover or focus
+    code = _script().split("function chapterNav()")[1].split("function castStage()")[0]
+    assert "On this page" in code and "aria-current" in code                      # the same list is in the header menu
 
 
 def test_credits_mention_the_footage_and_only_the_fonts_in_use(client):
@@ -653,22 +664,25 @@ def test_credits_mention_the_footage_and_only_the_fonts_in_use(client):
     assert "Newsreader" not in page
 
 
-# ------------------------------------------------------------------ round 3 follow-up: timing, footage UI, images, galleries
-def test_reel_gives_every_person_enough_screen_time(client, local_clips):
+def test_reel_gives_every_person_a_natural_beat(client, local_clips):
     cast = _cast_section(html(client, "/"))
     starts = [float(x) for x in re.findall(r'data-start="([0-9.]+)"', cast)]
     ends = [float(x) for x in re.findall(r'data-end="([0-9.]+)"', cast)]
     assert len(starts) == len(ends) == 8
     for a, b in zip(starts, ends):
-        assert 3.0 <= b - a <= 5.0, (a, b)                                    # roughly 3 to 5 seconds each
+        assert 2.4 <= b - a <= 3.5, (a, b)                                    # about 2.6 to 3.1 seconds each
     assert all(ends[i] <= starts[i + 1] + 0.001 for i in range(7))           # segments are contiguous and ordered
 
 
-def test_loop_builder_timing_constants_keep_each_person_on_screen_for_seconds():
+def test_reel_builder_is_natural_speed_with_a_brief_artwork_hold():
     from scripts import make_loops
-    assert 3.0 <= make_loops.SEGMENT <= 5.0
-    assert make_loops.MOTION >= 2.0 and make_loops.MOTION < make_loops.SEGMENT   # slowed motion, then a held frame
-    assert 0 < make_loops.DISSOLVE <= 1.0                                       # a dissolve, not a hard cut
+    assert make_loops.SPEED == 1.0                                               # no slow motion, no interpolation
+    assert 1.2 <= make_loops.ART_HOLD <= 2.2 and 0 < make_loops.CLIP_TO_ART <= 0.6
+    assert 0 < make_loops.REEL_DISSOLVE <= 0.5
+    assert "minterpolate" not in open(make_loops.__file__, encoding="utf-8").read().split("def build_segment")[1]
+    for clip_seconds in (1.0, 1.5):                                              # the clips Rockstar publishes
+        total = clip_seconds - make_loops.CLIP_TO_ART + make_loops.ART_LEN
+        assert 2.4 <= total <= 3.4, total                                        # about 2.6 to 3.1 s per person
 
 
 def test_locally_built_reel_matches_the_rules_when_it_exists():
@@ -679,10 +693,13 @@ def test_locally_built_reel_matches_the_rules_when_it_exists():
     if not path.is_file():
         pytest.skip("loops are not built on this machine")
     manifest = json.loads(path.read_text(encoding="utf-8"))
+    if "speed" not in manifest:
+        pytest.skip("the reel on this machine was built by an older version")
+    assert manifest["speed"] == 1.0
     assert [s["slug"] for s in manifest["segments"]] == list(media_slots.CAST_ORDER)
     for seg in manifest["segments"]:
-        assert 3.0 <= seg["end"] - seg["start"] <= 5.0, seg
-    assert 24 <= manifest["duration"] <= 36
+        assert 2.2 <= seg["end"] - seg["start"] <= 3.4, seg
+    assert 17 <= manifest["duration"] <= 25
 
 
 def test_cast_script_seeks_one_buffered_reel_and_holds_a_chosen_person():
@@ -693,25 +710,30 @@ def test_cast_script_seeks_one_buffered_reel_and_holds_a_chosen_person():
     assert '"Replay"' in code                                                     # replay is a first-class state
 
 
-def test_native_cinematic_has_one_sound_button_and_no_third_party_player(client, local_cinematic):
+def test_native_moments_have_sound_controls_and_no_third_party_player(client, local_cinematic):
     page = html(client, "/")
-    moment = page.split('id="moment"')[1].split("</section>")[0]
-    assert "<video" in moment and 'data-cinema-video' in moment and "muted" in moment and "playsinline" in moment
-    assert 'preload="none"' in moment and 'poster="/media/cinematic/cinematic.jpg"' in moment
-    assert '<source src="/media/cinematic/cinematic-mobile.mp4" media="(max-width: 700px)"' in moment
-    assert '<source src="/media/cinematic/cinematic.mp4" type="video/mp4">' in moment
-    assert "data-cinema-sound" in moment and "Enable sound" in moment
-    assert 'aria-label="Pause the footage"' in moment and "data-mobile-cut" in moment
-    assert "<iframe" not in page.split("<dialog")[0] and "Watch Trailer 1" not in moment    # no fake play disc over real footage
-    assert "Watch the full trailer" in moment and "&copy; Rockstar Games" in moment
-    assert moment.count("<button") == 3                                           # pause, sound, and the full trailer
+    for anchor, slot in (("moment", "moment-1"), ("world", "moment-2"), ("finale", "moment-3")):
+        section = page.split(f'id="{anchor}"')[1].split("</section>")[0]
+        assert "<video" in section and "data-cinema-video" in section and "muted" in section and "playsinline" in section, slot
+        assert 'preload="none"' in section and f'poster="/media/cinematic/{slot}.jpg"' in section, slot
+        assert f'<source src="/media/cinematic/{slot}-mobile.mp4" media="(max-width: 700px)"' in section, slot
+        assert f'<source src="/media/cinematic/{slot}.mp4" type="video/mp4">' in section, slot
+        assert "data-cinema-sound" in section and "Enable sound" in section and "data-cinema-toggle" in section, slot
+        assert " loop" not in section.split("<video")[1].split(">")[0], slot  # plays once and holds its last frame
+        assert "cinema__play" not in section and "&copy; Rockstar Games" in section, slot   # no fake play disc over real footage
+    assert page.index('id="leads"') < page.index('id="moment"') < page.index('id="cast"') < page.index('id="world"') < page.index('id="leonida"')
+    assert page.index('id="media"') < page.index('id="finale"') < page.index('class="section band closing"')
+    assert "<iframe" not in page.split("<dialog")[0]
+    first = page.split('id="moment"')[1].split("</section>")[0]
+    assert "Watch Official Trailer" in first and first.count("<button") == 3     # pause, sound, and the trailer overlay
 
 
-def test_native_cinematic_reveals_only_once_playing_and_survives_a_bad_file():
-    code = _script().split("function cinema()")[1].split("function regionExplorer()")[0]
-    assert '"playing"' in code and "is-live" in code                              # the still stays until frames are moving
-    assert '"error"' in code and "state.failed = true" in code                   # a broken file leaves the still, no dead controls
-    assert 'video.preload = "auto"' in code and "video.load()" in code           # nothing downloads until it is wanted
+def test_native_moments_reveal_only_once_playing_and_survive_a_bad_file():
+    code = _script().split("function cinemas()")[1].split("function regionExplorer()")[0]
+    assert '"playing"' in code and "is-live" in code                              # the poster stays until frames are moving
+    assert '"error"' in code and "p.failed = true" in code                        # a broken file leaves the poster, no dead controls
+    assert 'video.preload = "auto"' in code or 'p.video.preload = "auto"' in code
+    assert "p.video.load()" in code                                               # nothing downloads until it is wanted
 
 
 def test_display_titles_use_the_condensed_face_and_body_stays_sans():
@@ -767,43 +789,47 @@ def test_an_explicit_cast_choice_is_never_overridden_by_the_automatic_start():
 # ------------------------------------------------------------------ design reset, Gate 2: hero, leads, cinematic, regions
 @pytest.fixture()
 def local_cinematic(app, tmp_path):
-    """A media folder with a tiny stand-in cinematic, its poster and a lighter phone cut."""
+    """A media folder with tiny stand-ins for the three moments, their posters and phone cuts."""
     folder = tmp_path / "cinematic"
     folder.mkdir()
-    for name in ("cinematic.mp4", "cinematic-mobile.mp4"):
-        (folder / name).write_bytes(b"ftypmp42")
-    (folder / "cinematic.jpg").write_bytes(b"JFIF")
+    for slot in ("moment-1", "moment-2", "moment-3"):
+        (folder / f"{slot}.mp4").write_bytes(b"ftypmp42")
+        (folder / f"{slot}-mobile.mp4").write_bytes(b"ftypmp42")
+        (folder / f"{slot}.jpg").write_bytes(b"JFIF")
     previous = app.config["MEDIA_ROOT"]
     app.config["MEDIA_ROOT"] = str(tmp_path)
     yield tmp_path
     app.config["MEDIA_ROOT"] = previous
 
 
-def test_hero_is_one_framed_card_that_keeps_the_required_identity(client):
+def test_hero_is_one_static_robbery_card_that_keeps_the_required_identity(client):
     page = html(client, "/")
     hero = page.split('id="top"')[1].split("</section>")[0]
     assert 'class="hero__card"' in hero and "hero__bg" in hero and "hero__shade" in hero
     assert "Welcome, gamers" in hero and "Team Valkyrie presents" in hero
     assert 'class="hero__gta">Grand Theft Auto</span>' in hero and 'class="hero__vi"' in hero
     assert "Start exploring" in hero and "Watch the trailer" in hero and "hero__release" in hero
-    assert "rockstargames.com/VI/_next/static/media/" in hero                    # official key art
     assert hero.count("<h1") == 1
+    assert hero.count("hero__slide") == 1 and "hero__slide--cycle" not in hero    # one image, no cycle
+    assert "Jason_and_Lucia_Robbery" in hero                                      # the owner's chosen artwork
+    assert "Jason_and_Lucia_Beach" not in page                                    # Beach is gone from the homepage
 
 
-def test_cinematic_falls_back_to_the_still_and_the_overlay_without_footage(client):
+def test_first_moment_falls_back_to_the_still_and_the_overlay_without_footage(client):
     page = html(client, "/")
     moment = page.split('id="moment"')[1].split("</section>")[0]
     assert "has-video" not in page
     assert 'class="cinema__play"' in moment and "data-title=" in moment
-    assert "Played in Rockstar's own player" in moment
+    assert "Watch Official Trailer" in moment and "Played in Rockstar" not in page
 
 
 def test_cinematic_files_are_served_with_strict_names(client, local_cinematic):
-    ok = client.get("/media/cinematic/cinematic.mp4")
+    ok = client.get("/media/cinematic/moment-1.mp4")
     assert ok.status_code == 200 and ok.headers["Content-Type"].startswith("video/mp4")
-    assert client.get("/media/cinematic/cinematic.jpg").status_code == 200
-    for bad in ("/media/cinematic/Cinematic.mp4", "/media/cinematic/cinematic.php", "/media/cinematic/../clips/x.mp4",
-                "/media/cinematic/sub/cinematic.mp4", "/media/cinematic/cinematic.json", "/media/source-videos/trailers/a.mp4"):
+    assert client.get("/media/cinematic/moment-1.jpg").status_code == 200
+    assert client.get("/media/cinematic/moment-2-mobile.mp4").status_code == 200
+    for bad in ("/media/cinematic/Moment-1.mp4", "/media/cinematic/moment-1.php", "/media/cinematic/../clips/x.mp4",
+                "/media/cinematic/sub/moment-1.mp4", "/media/cinematic/moment-1.json", "/media/source-videos/trailers/a.mp4"):
         assert client.get(bad).status_code == 404, bad
 
 
@@ -813,14 +839,16 @@ def test_cinematic_lookup_needs_the_video_and_tolerates_missing_extras(app, tmp_
     try:
         app.config["MEDIA_ROOT"] = str(tmp_path)
         with app.app_context():
-            assert local_media.cinematic() is None
+            assert local_media.cinematics() == {}
             (tmp_path / "cinematic").mkdir()
-            (tmp_path / "cinematic" / "cinematic.jpg").write_bytes(b"JFIF")
-            assert local_media.cinematic() is None                                 # a poster alone is not a cinematic
-            (tmp_path / "cinematic" / "cinematic.mp4").write_bytes(b"ftypmp42")
-            found = local_media.cinematic()
-            assert found["video"] == "cinematic/cinematic.mp4" and found["poster"] == "cinematic/cinematic.jpg"
-            assert found["mobile"] is None
+            (tmp_path / "cinematic" / "moment-2.jpg").write_bytes(b"JFIF")
+            assert local_media.cinematics() == {}                                 # a poster alone is not a moment
+            (tmp_path / "cinematic" / "moment-2.mp4").write_bytes(b"ftypmp42")
+            (tmp_path / "cinematic" / "stray.mp4").write_bytes(b"ftypmp42")        # not a known slot: ignored
+            found = local_media.cinematics()
+            assert list(found) == ["moment-2"]
+            assert found["moment-2"]["video"] == "cinematic/moment-2.mp4" and found["moment-2"]["poster"] == "cinematic/moment-2.jpg"
+            assert found["moment-2"]["mobile"] is None
     finally:
         app.config["MEDIA_ROOT"] = previous
 
@@ -840,3 +868,39 @@ def test_section_order_and_untouched_sections_survive_gate_2(client):
     order = [page.index(f'id="{name}"') for name in ("top", "leads", "moment", "cast", "leonida", "garage", "stories", "media")]
     assert order == sorted(order)
     assert page.count("data-cast-item") == 8 and 'data-showroom' in page and 'class="theatre"' in page
+
+
+def test_only_the_built_moments_appear(client, app, tmp_path):
+    previous = app.config["MEDIA_ROOT"]
+    folder = tmp_path / "cinematic"
+    folder.mkdir()
+    (folder / "moment-3.mp4").write_bytes(b"ftypmp42")
+    try:
+        app.config["MEDIA_ROOT"] = str(tmp_path)
+        page = html(client, "/")
+        assert 'id="finale"' in page and 'id="world"' not in page
+        assert 'id="moment"' in page and "data-cinema-video" not in page.split('id="moment"')[1].split("</section>")[0]
+    finally:
+        app.config["MEDIA_ROOT"] = previous
+
+
+def test_cinematic_builder_uses_the_approved_ranges_and_never_touches_the_sources():
+    import inspect
+    from scripts import make_cinematics as mc
+    m1, m2, m3 = (mc.MOMENTS[k] for k in ("moment-1", "moment-2", "moment-3"))
+    assert m1["parts"] == [(mc.TRAILER_1, 19.16, 8.26)]
+    assert m2["parts"] == [(mc.TRAILER_2, 6.35, 3.35), (mc.TRAILER_2, 138.15, 5.50)] and m2["dissolve"] == 0.4
+    assert m3["parts"] == [(mc.TRAILER_2, 152.85, 10.95)]
+    assert m2["bars"] and m3["bars"] and not m1["bars"]                          # Trailer 2 is letterboxed, Trailer 1 is not
+    assert mc.LOUDNESS["I"] == -16.0 and mc.OUT_DIR.name == "cinematic"
+    source = inspect.getsource(mc)
+    assert "unlink" not in source and "rmtree" not in source                      # it only ever writes into media/cinematic
+    graph = mc.video_graph(m2, "desktop")
+    assert "xfade=transition=fade:duration=0.4:offset=2.950" in graph and "crop=3840:1728:0:216" in graph
+
+
+def test_hero_art_is_not_repeated_in_the_closing_band(client):
+    page = html(client, "/")
+    closing = page.split('class="section band closing"')[1]
+    assert "Jason_and_Lucia_Robbery" not in closing
+

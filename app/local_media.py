@@ -1,8 +1,8 @@
 """Locally built video (media/clips/ and media/cinematic/). Both folders are Git-ignored.
 
 clips/      loops and the cast reel, built by `scripts.fetch_clips` and `scripts.make_loops`.
-cinematic/  the one full-screen cinematic: cinematic.mp4, cinematic.jpg (poster) and an optional lighter
-            cinematic-mobile.mp4. They exist only when the owner has supplied footage that is authorised for reuse.
+cinematic/  the three homepage moments built by `scripts.make_cinematics`: moment-N.mp4, moment-N.jpg (poster) and
+            moment-N-mobile.mp4 (a lighter phone cut), for N = 1, 2, 3. They exist only after that script has run.
 
 A fresh clone has none of these and the site falls back to official posters and links. Only files directly inside
 those two folders with a safe name and an .mp4 or .jpg extension are ever served.
@@ -14,7 +14,7 @@ from pathlib import Path
 from flask import current_app
 
 SAFE_NAME = re.compile(r"^(?:clips|cinematic)/[a-z0-9-]+\.(?:mp4|jpg)$")
-CINEMATIC = {"video": "cinematic/cinematic.mp4", "poster": "cinematic/cinematic.jpg", "mobile": "cinematic/cinematic-mobile.mp4"}
+CINEMATIC_SLOTS = ("moment-1", "moment-2", "moment-3")
 DEFAULT_ROOT = Path(__file__).resolve().parent.parent / "media"
 
 
@@ -38,10 +38,16 @@ def manifest():
         return None
 
 
-def cinematic():
-    """The authorised cinematic as {video, poster, mobile} paths, or None until cinematic/cinematic.mp4 exists.
+def cinematics():
+    """The built cinematic moments as {slot: {video, mobile, poster}}; a slot is present only when its video exists.
 
     The poster and the lighter phone cut are optional; a missing one is None and the page copes."""
-    if not is_servable(CINEMATIC["video"]):
-        return None
-    return {key: (path if is_servable(path) else None) for key, path in CINEMATIC.items()}
+    found = {}
+    for slot in CINEMATIC_SLOTS:
+        video = f"cinematic/{slot}.mp4"
+        if not is_servable(video):
+            continue
+        poster, mobile = f"cinematic/{slot}.jpg", f"cinematic/{slot}-mobile.mp4"
+        found[slot] = {"video": video, "poster": poster if is_servable(poster) else None,
+                       "mobile": mobile if is_servable(mobile) else None}
+    return found

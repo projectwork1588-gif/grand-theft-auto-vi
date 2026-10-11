@@ -219,15 +219,21 @@ def home():
     pick = lambda slugs: [featured[s] for s in slugs if s in featured]  # noqa: E731
     featured_all = featured
 
-    spec = media_slots.CINEMATIC
     all_videos = [m for m in pick(media_slots.VIDEO_SLUGS) if media_urls.player_src(m["embed_url"])]
-    trailer = next((m for m in all_videos if m["slug"] == spec["trailer"]), None)
-    poster = featured_all.get(spec["poster"]) or featured_all.get("shot-grassrivers-05")
-    native = local_media.cinematic()
-    cinema = {**spec, "poster": poster, "trailer": trailer, "native": native} if (native or (poster and trailer)) else None
+    natives = local_media.cinematics()
+    cinemas = {}
+    for slot, spec in media_slots.CINEMATICS.items():
+        native = natives.get(slot)
+        trailer = next((m for m in all_videos if m["slug"] == spec["trailer"]), None)
+        poster = featured_all.get(spec["poster"]) if spec.get("poster") else None
+        if spec.get("poster") and not poster:
+            poster = featured_all.get("shot-grassrivers-05")
+        # A slot shows when its video was built, or (the first slot only) as an official still with a trailer link.
+        if native or (poster and trailer):
+            cinemas[slot] = {**spec, "slot": slot, "native": native, "poster": poster, "trailer": trailer}
 
     return {
-        "cinema": cinema,
+        "cinemas": cinemas,
         "leads": leads,
         "cast": cast,
         "reel": reel,

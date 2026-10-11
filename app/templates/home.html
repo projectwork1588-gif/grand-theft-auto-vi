@@ -5,6 +5,65 @@
 {% block content %}
 {% set featured_video = videos[0] if videos else none %}
 
+{# A cinematic moment: native video (muted, scroll-triggered) over its own poster. Without a built video only the first
+   slot renders, as an official still with a link into Rockstar's own player. `variant` is full, band or finale. #}
+{% macro cinema_section(c, variant, anchor) %}
+{% if c %}
+{% set native = c.native %}
+<section class="cinema cinema--{{ variant }} chapter{% if native %} has-video{% endif %}" id="{{ anchor }}" data-chapter="{{ c.title }}"
+         aria-label="{{ c.title }}" data-cinema data-slot="{{ c.slot }}"{% if native and native.mobile %} data-mobile-cut{% endif %}>
+  <div class="cinema__frame">
+    {% if native and native.poster %}
+    <img class="cinema__poster-img" src="{{ media_file_url(native.poster) }}" alt="" decoding="async" loading="lazy">
+    {% elif c.poster %}
+    {{ picture(c.poster, fallback='', sizes='max(100vw, 178vh)', alt='', cls='cinema__poster') }}
+    {% endif %}
+    {% if native %}
+    <video class="cinema__video" data-cinema-video muted playsinline preload="none" aria-label="{{ c.title }}, official footage"
+           {% if native.poster %}poster="{{ media_file_url(native.poster) }}"{% endif %}>
+      {% if native.mobile %}<source src="{{ media_file_url(native.mobile) }}" media="(max-width: 700px)" type="video/mp4">{% endif %}
+      <source src="{{ media_file_url(native.video) }}" type="video/mp4">
+    </video>
+    {% endif %}
+    <div class="cinema__shade" aria-hidden="true"></div>
+  </div>
+  <div class="cinema__bar">
+    <div class="container--wide cinema__inner">
+      <div class="cinema__copy">
+        <p class="cinema__eyebrow">{{ c.title }}</p>
+        {% if c.trailer and not native %}
+        <button class="cinema__play" type="button" data-video="{{ player_src(c.trailer.embed_url, true) }}" data-title="{{ c.trailer.title }}">
+          <span class="cinema__disc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></span>
+          <span class="cinema__play-label">Watch Official Trailer</span>
+        </button>
+        {% endif %}
+        <p class="cinema__credit">&copy; Rockstar Games</p>
+      </div>
+      {% if native %}
+      <div class="cinema__ui">
+        <button class="cinema__btn" type="button" data-cinema-toggle aria-label="Pause the footage" hidden>
+          <svg class="cinema__icon cinema__icon--pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>
+          <svg class="cinema__icon cinema__icon--play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+          <svg class="cinema__icon cinema__icon--replay" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V2L7 6.5 12 11V8a5 5 0 11-5 5H5a7 7 0 107-8z" fill="currentColor"/></svg>
+          <span class="cinema__btn-label" data-cinema-toggle-label>Pause</span>
+        </button>
+        <button class="cinema__btn" type="button" data-cinema-sound aria-pressed="false" hidden>
+          <svg class="cinema__icon cinema__icon--off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 9l5 6M21 9l-5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <svg class="cinema__icon cinema__icon--on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 010 7M18.5 6a8.5 8.5 0 010 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <span data-cinema-sound-label>Enable sound</span>
+        </button>
+        {% if c.trailer and variant == 'full' %}
+        <button class="cinema__btn" type="button" data-video="{{ player_src(c.trailer.embed_url, true) }}" data-title="{{ c.trailer.title }}">Watch Official Trailer</button>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endmacro %}
+
+
 {# ============================== HERO ============================== #}
 {# One framed card of official key art. The identity lines are required: Welcome, gamers / Team Valkyrie presents / Grand Theft Auto VI. #}
 <section class="hero" id="top" aria-labelledby="hero-title" data-chapter="Welcome">
@@ -73,57 +132,8 @@
 </section>
 {% endif %}
 
-{# ============================== THE CINEMATIC MOMENT ============================== #}
-{# Native video when the owner has supplied authorised footage (media/cinematic/); otherwise an official still with
-   a play control that opens the trailer in Rockstar's own player. No iframe, no third-party interface on the page. #}
-{% if cinema %}
-{% set native = cinema.native %}
-<section class="cinema chapter{% if native %} has-video{% endif %}" id="moment" data-chapter="The footage" aria-label="{{ 'Grand Theft Auto VI' if native else cinema.title }}, official footage"
-         data-cinema{% if native and native.mobile %} data-mobile-cut{% endif %}>
-  <div class="cinema__frame">
-    {{ picture(cinema.poster, fallback='', sizes='max(100vw, 178vh)', alt='', cls='cinema__poster') }}
-    {% if native %}
-    <video class="cinema__video" data-cinema-video muted loop playsinline preload="none" aria-label="Grand Theft Auto VI, official footage"
-           {% if native.poster %}poster="{{ media_file_url(native.poster) }}"{% endif %}>
-      {% if native.mobile %}<source src="{{ media_file_url(native.mobile) }}" media="(max-width: 700px)" type="video/mp4">{% endif %}
-      <source src="{{ media_file_url(native.video) }}" type="video/mp4">
-    </video>
-    {% endif %}
-    <div class="cinema__shade" aria-hidden="true"></div>
-  </div>
-  <div class="cinema__bar">
-    <div class="container--wide cinema__inner">
-      <div class="cinema__copy">
-        <p class="cinema__eyebrow">{% if native %}Official footage{% else %}Official trailer{% endif %}</p>
-        {% if cinema.trailer and not native %}
-        <button class="cinema__play" type="button" data-video="{{ player_src(cinema.trailer.embed_url, true) }}" data-title="{{ cinema.trailer.title }}">
-          <span class="cinema__disc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></span>
-          <span class="cinema__play-label">Watch {{ cinema.title }}</span>
-        </button>
-        {% endif %}
-        <p class="cinema__credit"><span>{% if native %}Grand Theft Auto VI{% else %}Played in Rockstar's own player{% endif %}</span> <span aria-hidden="true">&middot;</span> <span>&copy; Rockstar Games</span></p>
-      </div>
-      {% if native %}
-      <div class="cinema__ui">
-        <button class="cinema__btn" type="button" data-cinema-toggle aria-label="Pause the footage" hidden>
-          <svg class="cinema__icon cinema__icon--pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>
-          <svg class="cinema__icon cinema__icon--play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
-          <span class="cinema__btn-label" data-cinema-toggle-label>Pause</span>
-        </button>
-        <button class="cinema__btn" type="button" data-cinema-sound aria-pressed="false" hidden>
-          <svg class="cinema__icon cinema__icon--off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 9l5 6M21 9l-5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          <svg class="cinema__icon cinema__icon--on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 010 7M18.5 6a8.5 8.5 0 010 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          <span data-cinema-sound-label>Enable sound</span>
-        </button>
-        {% if cinema.trailer %}
-        <button class="cinema__btn" type="button" data-video="{{ player_src(cinema.trailer.embed_url, true) }}" data-title="{{ cinema.trailer.title }}">Watch the full trailer</button>
-        {% endif %}
-      </div>
-      {% endif %}
-    </div>
-  </div>
-</section>
-{% endif %}
+{# ============================== MOMENT 1: DAWN OVER LEONIDA ============================== #}
+{{ cinema_section(cinemas.get('moment-1'), 'full', 'moment') }}
 
 {# ============================== CAST STAGE ============================== #}
 <section class="section section--stage chapter" id="cast" aria-labelledby="cast-title" data-chapter="The cast">
@@ -179,6 +189,9 @@
     <p class="section-more"><a class="link-arrow" href="{{ url_for('pages.characters') }}">Meet everyone</a></p>
   </div>
 </section>
+
+{# ============================== MOMENT 2: SUN, WATER, SPEED ============================== #}
+{{ cinema_section(cinemas.get('moment-2'), 'band', 'world') }}
 
 {# ============================== REGIONS ============================== #}
 <section class="section chapter" id="leonida" aria-labelledby="leonida-title" data-chapter="Leonida">
@@ -352,8 +365,11 @@
   </div>
 </section>
 
+{# ============================== MOMENT 3: LAST LIGHT ============================== #}
+{{ cinema_section(cinemas.get('moment-3'), 'finale', 'finale') }}
+
 {# ============================== CLOSING ============================== #}
-{% set closing_bg = backdrops.get('art-jason-lucia-robbery') %}
+{% set closing_bg = backdrops.get('art-jason-lucia-02') %}
 <section class="section band closing" aria-labelledby="closing-title">
   <div class="band__bg" aria-hidden="true">{{ picture(closing_bg, alt='', sizes='100vw') }}</div>
   <div class="band__shade" aria-hidden="true"></div>
@@ -368,13 +384,7 @@
 {% endblock %}
 
 {% block waypoint %}
-{# Names the current section and says what it does, so nobody has to guess what a dial means. #}
-<div class="waypoint" data-waypoint hidden>
-  <button class="waypoint__btn" type="button" aria-expanded="false" aria-controls="waypoint-list" data-wp-toggle>
-    <span class="waypoint__icon" aria-hidden="true"><i></i><i></i><i></i></span>
-    <span class="waypoint__label">Jump to</span>
-    <span class="waypoint__now"><b data-wp-index>01</b><span data-wp-name>Welcome</span></span>
-  </button>
-  <ol class="waypoint__list" id="waypoint-list" data-wp-list hidden></ol>
-</div>
+{# Desktop: a quiet rail of dots at the right edge (names appear on hover or focus). Phones: a hairline progress bar. #}
+<nav class="chapter-rail" aria-label="Sections of this page" data-rail hidden><ol data-rail-list></ol></nav>
+<div class="progress-hairline" aria-hidden="true" data-progress hidden><span></span></div>
 {% endblock %}
