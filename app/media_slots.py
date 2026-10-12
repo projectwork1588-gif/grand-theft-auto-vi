@@ -85,8 +85,12 @@ FOCUS = {
 # person on the side the text is not. main = the spread / hero picture, second = the smaller overlapping frame,
 # pos / pos2 = where the subject sits (CSS object-position) so a tall crop keeps the face.
 CHARACTER_STAGE = {
-    "jason-duval": {"main": "shot-jason-duval-01", "second": "shot-jason-duval-04", "pos": "78% 40%", "pos2": "30% 40%", "pos_m": "93% 30%", "hero_side": "left"},
-    "lucia-caminos": {"main": "shot-lucia-caminos-03", "second": "shot-lucia-caminos-10", "pos": "26% 40%", "pos2": "60% 40%", "pos_m": "10% 40%", "hero_side": "right"},
+    # pos = the spread / card crop; pos_hero, pos_t, pos_m = the full-bleed hero on desktop, tablet and phone (the head is
+    # kept whole and clear of the title); face = where the face sits in the picture, for the network and thumbnails.
+    "jason-duval": {"main": "shot-jason-duval-01", "second": "shot-jason-duval-04", "pos": "78% 40%", "pos2": "30% 40%",
+                    "pos_hero": "78% 0%", "pos_t": "74% 0%", "pos_m": "71% 0%", "hero_side": "left", "face": (0.66, 0.16)},
+    "lucia-caminos": {"main": "shot-lucia-caminos-02", "second": "shot-lucia-caminos-10", "pos": "45% 30%", "pos2": "50% 30%",
+                      "pos_hero": "20% 0%", "pos_t": "30% 0%", "pos_m": "37% 0%", "hero_side": "left", "face": (0.47, 0.36)},
     "cal-hampton": {"main": "art-cal-hampton", "second": "shot-cal-hampton-01", "pos": "50% 30%", "pos2": "50% 40%"},
     "boobie-ike": {"main": "art-boobie-ike", "second": "shot-boobie-ike-01", "pos": "50% 30%", "pos2": "50% 40%"},
     "dre-quan-priest": {"main": "art-dequan-priest", "second": "shot-dequan-priest-02", "pos": "60% 40%", "pos2": "60% 40%"},
@@ -95,6 +99,8 @@ CHARACTER_STAGE = {
     "brian-heder": {"main": "art-brian-heder", "second": "shot-brian-heder-01", "pos": "65% 40%", "pos2": "60% 40%"},
 }
 CAST_LEADS = ("jason-duval", "lucia-caminos")
+# The partner banner: both protagonists' faces large and lit, taken from Rockstar's own Jason and Lucia screenshots.
+CAST_TOGETHER = "shot-jason-and-lucia-01"
 # Opening picture of the Characters page: both leads, faces whole, space on the left for the title.
 CHARACTERS_OPENING = "art-jason-lucia-beach"
 # Names for the groups the supporting cast falls into, keyed by the people in the group. Anything not listed gets a plain title.

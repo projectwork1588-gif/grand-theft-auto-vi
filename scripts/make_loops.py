@@ -2,6 +2,7 @@
 
     python -m scripts.fetch_clips      # 1. fetch Rockstar's character clips into media/source/
     python -m scripts.make_loops       # 2. build media/clips/ (needs ffmpeg: `pip install imageio-ffmpeg` is enough)
+    python -m scripts.make_loops --posters   # only redo the per-person poster stills from the built sequences
 
 Rockstar's character clips are only 1 to 1.5 seconds long. Each person gets a short, elegant beat and no artificial
 slow motion: the clip plays at its true speed (SPEED is 1.0), dissolves over 0.4 s into the person's official artwork,
@@ -12,10 +13,13 @@ frame free for the caption. The artwork is fetched once from Rockstar's own site
 Outputs in media/clips/ (all Git-ignored, never committed):
   leonida-reel.mp4  all eight people in app.media_slots.CAST_ORDER, 0.3 s dissolves between them, about 20 s, 1600x900
   leonida-reel.jpg  poster for the reel
-  <slug>.mp4/.jpg   one sequence per person with a short dip to black at each end, for the profile pages
+  <slug>.mp4/.jpg   one sequence per person with a short dip to black at each end, for the profile pages. The .jpg is the
+                    poster: the clip's own frame at POSTER_AT, lifted towards a readable brightness (a few of the clips
+                    are very dark scenes), never the black first frame
   manifest.json     each person's [start, end) inside the reel, used by the page to keep the caption in step
 """
 import json
+import math
 import shutil
 import subprocess
 import sys
@@ -63,6 +67,10 @@ PUSH = 0.05          # total slow push-in over the artwork beat
 WIDTH, HEIGHT = 1600, 900
 SQUARE_X = WIDTH - HEIGHT   # square clips are placed flush right
 FEATHER = 140        # width of the soft edge where the square meets its extension
+
+POSTER_AT = 0.55         # seconds into the sequence: after the fade from black, before the dissolve into the artwork
+POSTER_TARGET = 84       # average luma (0 to 255) a dark poster is lifted towards
+POSTER_MAX_GAMMA = 1.9   # never lift further than this, so the picture stays natural
 
 INTERMEDIATE = ["-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-pix_fmt", "yuv420p", "-r", "30"]
 FINAL = ["-an", "-c:v", "libx264", "-preset", "slow", "-crf", "25", "-pix_fmt", "yuv420p", "-r", "30",
@@ -122,6 +130,40 @@ def compose_filter(wide):
     )
 
 
+def mean_luma(ffmpeg, video, at):
+    """Average brightness (0 to 255) of the frame at `at` seconds."""
+    raw = subprocess.run([ffmpeg, "-v", "error", "-ss", f"{at}", "-i", str(video), "-frames:v", "1",
+                          "-vf", "scale=1:1,format=gray", "-f", "rawvideo", "-"], capture_output=True, check=True).stdout
+    return raw[0] if raw else 128
+
+
+def poster_gamma(mean):
+    """Gamma that lifts an average luma of `mean` to POSTER_TARGET (1.0 when it is bright enough already)."""
+    mean = max(int(mean), 1)
+    if mean >= POSTER_TARGET:
+        return 1.0
+    return min(POSTER_MAX_GAMMA, math.log(mean / 255) / math.log(POSTER_TARGET / 255))
+
+
+def make_poster(ffmpeg, video, out):
+    gamma = poster_gamma(mean_luma(ffmpeg, video, POSTER_AT))
+    chain = [f"eq=gamma={gamma:.2f}"] if gamma > 1.0 else []
+    args = ["-vf", ",".join(chain)] if chain else []
+    run(ffmpeg, "-ss", f"{POSTER_AT}", "-i", str(video), "-frames:v", "1", *args, "-q:v", "3", str(out))
+    return gamma
+
+
+def build_posters_only():
+    ffmpeg = ffmpeg_exe()
+    for slug in CAST_ORDER:
+        video = CLIPS_DIR / f"{slug}.mp4"
+        if not video.exists():
+            print(f"  {slug}: no sequence yet (run without --posters first)")
+            continue
+        gamma = make_poster(ffmpeg, video, CLIPS_DIR / f"{slug}.jpg")
+        print(f"  poster for {slug} (lift gamma {gamma:.2f})", flush=True)
+
+
 def build_segment(ffmpeg, src, art, out, length, wide):
     """The clip at true speed, dissolving into its artwork, which holds with a very slow push-in."""
     zoom = f"(1+{PUSH}*t/{ART_LEN})"
@@ -160,7 +202,7 @@ def main():
         # Profile-page version: dips through black at both ends so it loops without a visible jump.
         run(ffmpeg, "-i", str(seg), "-vf", f"fade=t=in:st=0:d=0.3,fade=t=out:st={total_seg - 0.3:.2f}:d=0.3", *FINAL,
             str(CLIPS_DIR / f"{slug}.mp4"))
-        run(ffmpeg, "-ss", "0.5", "-i", str(seg), "-frames:v", "1", "-q:v", "3", str(CLIPS_DIR / f"{slug}.jpg"))
+        make_poster(ffmpeg, seg, CLIPS_DIR / f"{slug}.jpg")
 
     # The reel: short dissolves between people. A keyframe sits at the start of every person, so a seek is instant.
     offset = 0.0
@@ -199,4 +241,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if "--posters" in sys.argv[1:]:
+        build_posters_only()
+    else:
+        main()

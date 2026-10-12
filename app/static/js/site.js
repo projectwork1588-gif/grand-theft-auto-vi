@@ -936,15 +936,44 @@
           }
         });
       };
-      if ("IntersectionObserver" in window && targets.some(Boolean)) {
-        var seen = {};
-        var watch = new IntersectionObserver(function (entries) {
-          entries.forEach(function (e) { seen[e.target.id] = e.isIntersecting ? e.intersectionRatio : 0; });
-          var best = null;
-          Object.keys(seen).forEach(function (id) { if (seen[id] > 0 && (best === null || seen[id] > seen[best])) { best = id; } });
-          setCurrent(best || "");                         // nothing in the middle of the screen: nothing is marked
-        }, { rootMargin: "-30% 0px -35% 0px", threshold: [0, 0.1, 0.25, 0.5, 0.75, 1] });
-        targets.forEach(function (t) { if (t) { watch.observe(t); } });
+      if (targets.some(Boolean)) {
+        // The reading line sits a little above the middle of the screen. The person whose block holds it is marked; where
+        // two blocks do, the one that began last wins and, on a tie (side by side), the first. A name the visitor has
+        // just chosen stays marked until it has been on screen and has left again, so a click is never contradicted.
+        var queued = false, locked = null, lockedAt = 0, lockSeen = false;
+        var onScreen = function (t) {
+          var r = t.getBoundingClientRect();
+          return r.top < window.innerHeight * 0.75 && r.bottom > window.innerHeight * 0.25;
+        };
+        var evaluate = function () {
+          queued = false;
+          if (locked) {
+            var held = document.getElementById(locked);
+            if (held && onScreen(held)) { lockSeen = true; setCurrent(locked); return; }
+            if (held && !lockSeen && Date.now() - lockedAt < 2200) { setCurrent(locked); return; }
+            locked = null;
+          }
+          var line = window.innerHeight * 0.45, best = null, bestTop = -Infinity;
+          targets.forEach(function (t, i) {
+            if (!t) { return; }
+            var r = t.getBoundingClientRect();
+            if (r.top > line || r.bottom < line) { return; }
+            if (r.top > bestTop + 1) { bestTop = r.top; best = links[i].getAttribute("href").slice(1); }
+          });
+          if (!best) {
+            // in a gap between two people the last one stays marked; above the first, nobody is
+            var first = targets.filter(Boolean)[0];
+            if (first && first.getBoundingClientRect().top <= line) { return; }
+          }
+          setCurrent(best || "");
+        };
+        var schedule = function () { if (!queued) { queued = true; window.requestAnimationFrame(evaluate); } };
+        links.forEach(function (a) {
+          a.addEventListener("click", function () { locked = a.getAttribute("href").slice(1); lockedAt = Date.now(); lockSeen = false; schedule(); });
+        });
+        window.addEventListener("scroll", schedule, { passive: true });
+        window.addEventListener("resize", schedule);
+        evaluate();
       }
       var open = nav.querySelector("[data-open-explore]");
       if (open) {
@@ -1014,11 +1043,18 @@
     }
     players.forEach(function (p) {
       p.video.muted = true;
-      p.video.addEventListener("playing", function () { p.el.classList.add("is-live"); window.tvMedia.portrait = true; });
+      p.video.addEventListener("playing", function () { window.tvMedia.portrait = true; });
+      // The sequence dips through black for 0.3 s at both ends. The bright poster stays up until the clip has faded in,
+      // so a tile is never a black square.
+      p.video.addEventListener("timeupdate", function () {
+        if (p.video.currentTime >= 0.32 && !p.el.classList.contains("is-live")) { p.el.classList.add("is-live"); }
+      });
       p.video.addEventListener("pause", function () { window.tvMedia.portrait = anyPlaying(); });
       p.video.addEventListener("ended", function () {
-        p.done = true;                                   // it rests on its last frame, the held artwork
+        p.done = true;
         p.el.classList.add("is-rest");
+        // rest on the held artwork, not on the final black frame of the fade-out
+        try { if (p.video.duration > 0.8) { p.video.currentTime = p.video.duration - 0.6; } } catch (e) { /* not seekable */ }
         window.tvMedia.portrait = anyPlaying();
       });
     });
@@ -1036,7 +1072,7 @@
           p.ratio = entry.isIntersecting ? entry.intersectionRatio : 0;
           if (p.ratio === 0 && p.done) {                 // out of sight: arm it for the next time it is seen
             p.done = false;
-            p.el.classList.remove("is-rest");
+            p.el.classList.remove("is-rest", "is-live");   // the bright poster shows again until it plays
             try { p.video.currentTime = 0; } catch (e) { /* not ready */ }
           }
         });

@@ -10,7 +10,7 @@
 
   {# ------------------------------------------------------------------ hero: full bleed for the leads, a framed picture for everyone else #}
   <header class="p-hero p-hero--{{ 'full' if character.is_lead else 'split' }} p-hero--{{ character.hero_side }}">
-    <div class="p-hero__art">{{ shot(character.main, ('100vw' if character.is_lead else '(min-width: 1100px) 58vw, 100vw'), character.pos, eager=true, posm=(character.pos_m if character.is_lead else none)) }}</div>
+    <div class="p-hero__art">{% if character.is_lead %}{{ shot(character.main, '(min-width: 1100px) 100vw, (min-width: 761px) 180vw, 265vw', character.pos_hero, eager=true, posm=character.pos_m, post=character.pos_t) }}{% else %}{{ shot(character.main, '(min-width: 1100px) 50vw, 105vw', character.pos, eager=true) }}{% endif %}</div>
     <div class="p-hero__shade" aria-hidden="true"></div>
     <div class="p-hero__in">
       <p class="eyebrow">{% if character.number %}{{ '%02d' % character.number }} / 08 &middot; {% endif %}{{ character.role_title }}</p>
@@ -43,7 +43,7 @@
         Watch {{ character.full_name }}'s clip on rockstargames.com
       </a>
       {% endif %}
-      {% if character.second %}<div class="p-story__second">{{ shot(character.second, '(min-width: 1100px) 28vw, 70vw', character.pos2) }}</div>{% endif %}
+      {% if character.second %}<div class="p-story__second">{{ shot(character.second, '(min-width: 761px) 32vw, 120vw', character.pos2) }}</div>{% endif %}
     </div>
   </section>
 
@@ -55,7 +55,7 @@
       {% for k in character.connections %}
       <li>
         <a class="p-conn__card" href="{{ url_for('pages.character_detail', slug=k.slug) }}">
-          <span class="p-conn__face">{{ shot(k.image, '160px', k.pos) }}</span>
+          <span class="p-conn__face">{{ shot(k.image, '320px', k.pos) }}</span>
           <span class="p-conn__body"><i>{{ k.type }}</i><b>{{ k.name }}</b><span>{{ k.text }}</span></span>
         </a>
       </li>
@@ -82,11 +82,11 @@
     {% if character.prev and character.next %}
     <div class="p-next__pair">
       <a class="p-next__card" href="{{ url_for('pages.character_detail', slug=character.prev.slug) }}" rel="prev">
-        <span class="p-next__art">{{ shot(character.prev.main, '(min-width: 900px) 40vw, 100vw', character.prev.pos) }}</span>
+        <span class="p-next__art">{{ shot(character.prev.main, '(min-width: 900px) 46vw, 100vw', character.prev.pos) }}</span>
         <span class="p-next__body"><small>Previous</small><b>{{ character.prev.full_name }}</b><span>{{ character.prev.role_title }}</span></span>
       </a>
       <a class="p-next__card" href="{{ url_for('pages.character_detail', slug=character.next.slug) }}" rel="next">
-        <span class="p-next__art">{{ shot(character.next.main, '(min-width: 900px) 40vw, 100vw', character.next.pos) }}</span>
+        <span class="p-next__art">{{ shot(character.next.main, '(min-width: 900px) 46vw, 100vw', character.next.pos) }}</span>
         <span class="p-next__body"><small>Next</small><b>{{ character.next.full_name }}</b><span>{{ character.next.role_title }}</span></span>
       </a>
     </div>

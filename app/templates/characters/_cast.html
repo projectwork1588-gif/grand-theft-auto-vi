@@ -1,24 +1,31 @@
 {# Pieces shared by the Characters landing page and the character profiles (Gate 3A). #}
 
 {# An official picture with its own framing: `pos` is where the subject sits ("78% 40%" becomes data-pos="78-40", set in
-   characters.css; the site's CSP forbids inline styles), so a crop keeps the face. #}
-{% macro shot(m, sizes, pos='50% 40%', cls='', eager=false, posm=none) -%}
+   characters.css; the site's CSP forbids inline styles), so a crop keeps the face. `post` and `posm` are the framing on
+   tablets and phones. `sizes` must describe the width the picture is really drawn at (a tall crop of a 16:9 picture is
+   drawn much wider than its box), otherwise the browser picks a small file and the picture is soft. #}
+{% macro shot(m, sizes, pos='50% 40%', cls='', eager=false, posm=none, post=none) -%}
   {% if m and image_src(m.embed_url, 1920) %}
-  <img class="shot {{ cls }}" src="{{ image_src(m.embed_url, 1280) }}" srcset="{{ image_srcset(m.embed_url) }}" sizes="{{ sizes }}" alt=""
-       data-pos="{{ pos | replace('%', '') | replace(' ', '-') }}"{% if posm %} data-pos-m="{{ posm | replace('%', '') | replace(' ', '-') }}"{% endif %} {% if eager %}fetchpriority="high"{% else %}loading="lazy"{% endif %} decoding="async" referrerpolicy="no-referrer">
+  <img class="shot {{ cls }}" src="{{ image_src(m.embed_url, 1920) }}" srcset="{{ image_srcset(m.embed_url) }}" sizes="{{ sizes }}" alt=""
+       data-pos="{{ pos | replace('%', '') | replace(' ', '-') }}"{% if post %} data-pos-t="{{ post | replace('%', '') | replace(' ', '-') }}"{% endif %}{% if posm %} data-pos-m="{{ posm | replace('%', '') | replace(' ', '-') }}"{% endif %} {% if eager %}fetchpriority="high"{% else %}loading="lazy"{% endif %} decoding="async" referrerpolicy="no-referrer">
   {% endif %}
 {%- endmacro %}
 
-{# A person's motion portrait. It plays once when it comes into view (and the visitor allows motion), then rests on the
-   artwork. Only the local per-person loop is used; without it nothing is drawn. `wide` is for the 16:9 leads, otherwise
-   the square clip is shown. A plain Play button appears only when motion is switched off. #}
+{# A person's motion portrait. A bright still (the poster) is always what is seen until the clip is really playing, so a
+   paused or not-yet-loaded video can never show its black first frame. It plays once when it comes into view (and the
+   visitor allows motion), then rests on the artwork. Only the local per-person loop is used; without it nothing is drawn.
+   `wide` is for the 16:9 leads, otherwise the square clip is shown. A small round Play button, in the corner the subject
+   is not in, appears only when motion is switched off. #}
 {% macro portrait(c, wide=false, label='In motion') -%}
   {% if c.clip_video %}
-  <figure class="portrait{% if wide %} portrait--wide{% endif %}" data-portrait>
-    <video class="portrait__video" data-portrait-video data-src="{{ media_file_url(c.clip_video) }}" muted playsinline preload="none"
-           {% if c.clip_poster %}poster="{{ media_file_url(c.clip_poster) }}"{% endif %} aria-label="Short muted clip of {{ c.full_name }} from Rockstar's own footage"></video>
-    <button class="optin portrait__optin" type="button" data-motion-optin hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> Play</button>
-    <figcaption class="portrait__cap">{{ label }}</figcaption>
+  <figure class="motion-portrait{% if wide %} motion-portrait--wide{% endif %}" data-portrait>
+    <div class="motion-portrait__frame">
+      {% if c.clip_poster %}<img class="motion-portrait__poster" src="{{ media_file_url(c.clip_poster) }}" alt="" loading="lazy" decoding="async">{% endif %}
+      <video class="motion-portrait__video" data-portrait-video data-src="{{ media_file_url(c.clip_video) }}" muted playsinline preload="none"
+             {% if c.clip_poster %}poster="{{ media_file_url(c.clip_poster) }}"{% endif %} aria-label="Short muted clip of {{ c.full_name }} from Rockstar's own footage"></video>
+      <button class="motion-portrait__optin" type="button" data-motion-optin aria-label="Play the clip of {{ c.full_name }}" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button>
+    </div>
+    <figcaption class="motion-portrait__cap">{{ label }}</figcaption>
   </figure>
   {% endif %}
 {%- endmacro %}

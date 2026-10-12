@@ -139,15 +139,62 @@ def test_new_templates_use_no_inline_styles_and_no_inline_script():
 
 def test_every_framing_in_the_stage_table_has_a_css_rule():
     css = (ROOT / "app" / "static" / "css" / "characters.css").read_text(encoding="utf-8")
+    token = lambda v: v.replace("%", "").replace(" ", "-")
     for slug, spec in media_slots.CHARACTER_STAGE.items():
-        for key in ("pos", "pos2"):
-            value = spec.get(key)
-            if value:
-                token = value.replace("%", "").replace(" ", "-")
-                assert f'[data-pos="{token}"]' in css, (slug, key, token)
+        for key in ("pos", "pos2", "pos_hero"):
+            if spec.get(key):
+                assert f'[data-pos="{token(spec[key])}"]' in css, (slug, key, spec[key])
+        if spec.get("pos_t"):
+            assert f'[data-pos-t="{token(spec["pos_t"])}"]' in css, (slug, spec["pos_t"])
         if spec.get("pos_m"):
-            token = spec["pos_m"].replace("%", "").replace(" ", "-")
-            assert f'[data-pos-m="{token}"]' in css, (slug, token)
+            assert f'[data-pos-m="{token(spec["pos_m"])}"]' in css, (slug, spec["pos_m"])
+
+
+def test_lucia_leads_with_a_bright_close_picture(client):
+    page = client.get("/characters").get_data(as_text=True)
+    lucia = page.split('id="lucia-caminos"')[1].split("</article>")[0]
+    assert "Lucia_Caminos_02." in lucia                                  # the daylight picture, face large and lit
+    assert "Lucia_Caminos_03." not in lucia                              # not the dim night shot
+    assert media_slots.CHARACTER_STAGE["lucia-caminos"]["main"] == "shot-lucia-caminos-02"
+
+
+def test_partner_banner_shows_both_protagonists_from_one_official_screenshot(client):
+    page = client.get("/characters").get_data(as_text=True)
+    banner = page.split('class="together"')[1].split("</div>")[0]
+    assert "Jason_and_Lucia_01." in banner and "Jason_and_Lucia_03." not in banner
+    assert media_slots.CAST_TOGETHER == "shot-jason-and-lucia-01"
+
+
+def test_pictures_declare_the_width_they_are_really_drawn_at(client):
+    """A tall crop of a 16:9 picture is drawn much wider than its box. `sizes` that only describe the box make the browser
+    pick a small file and upscale it, which is what made the Lucia spread soft."""
+    page = client.get("/characters").get_data(as_text=True)
+    spread = page.split('id="jason-duval"')[1].split("</article>")[0]
+    assert 'sizes="(min-width: 1100px) 94vw, (min-width: 761px) 170vw, 205vw"' in spread
+    assert 'sizes="max(100vw, 185vh)"' in page.split('class="cast-open"')[1].split("</header>")[0]
+    hero = client.get("/characters/jason-duval").get_data(as_text=True).split('class="p-hero__art"')[1].split("</div>")[0]
+    assert "265vw" in hero and 'data-pos="78-0"' in hero and 'data-pos-t="74-0"' in hero and 'data-pos-m="71-0"' in hero
+
+
+def test_poster_lift_is_gentle_and_never_applied_to_a_bright_clip():
+    from scripts import make_loops
+    assert make_loops.poster_gamma(200) == 1.0 and make_loops.poster_gamma(make_loops.POSTER_TARGET) == 1.0
+    lifts = [make_loops.poster_gamma(m) for m in (70, 50, 30, 10, 1)]
+    assert lifts == sorted(lifts) and 1.0 < lifts[0] and lifts[-1] <= make_loops.POSTER_MAX_GAMMA
+    assert 0.4 <= make_loops.POSTER_AT <= 0.7        # after the fade from black, before the dissolve into the artwork
+
+
+def test_motion_portrait_keeps_the_still_until_the_clip_is_playing():
+    css = (ROOT / "app" / "static" / "css" / "characters.css").read_text(encoding="utf-8")
+    assert re.search(r"\.motion-portrait__video \{[^}]*opacity: 0", css)
+    assert re.search(r"\.motion-portrait\.is-live \.motion-portrait__video \{[^}]*opacity: 1", css)
+    script = (ROOT / "app" / "static" / "js" / "site.js").read_text(encoding="utf-8")
+    assert 'remove("is-rest", "is-live")' in script           # leaving the view brings the bright still back
+
+
+def test_lead_heroes_start_below_the_header_so_the_head_always_has_room():
+    css = (ROOT / "app" / "static" / "css" / "characters.css").read_text(encoding="utf-8")
+    assert re.search(r"\.p-hero--full \.p-hero__art \{[^}]*top: var\(--header-h\)", css)
 
 
 def test_the_cast_page_script_respects_motion_and_never_loops_a_clip():
@@ -169,3 +216,11 @@ def test_character_pages_have_one_h1_and_labelled_landmarks(client, path):
     assert len(re.findall(r"<h1[ >]", page)) == 1
     assert 'id="main"' in page and "<main" in page
     assert not re.search(r"<img(?![^>]*\balt=)", page), path               # every picture states its alt text
+
+
+def test_jump_bar_marks_the_person_being_read_and_never_contradicts_a_click():
+    script = (ROOT / "app" / "static" / "js" / "site.js").read_text(encoding="utf-8")
+    block = script.split("function castNavigation()")[1].split("var web = document.querySelector")[0]
+    assert "window.innerHeight * 0.45" in block                     # one reading line
+    assert "locked" in block and "lockSeen" in block                  # a chosen name stays marked until it has been seen and left
+    assert "requestAnimationFrame" in block and "passive: true" in block

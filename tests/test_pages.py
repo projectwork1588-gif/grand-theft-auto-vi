@@ -296,8 +296,11 @@ def test_character_profile_plays_the_local_portrait_once_when_it_exists(client, 
     page = html(client, "/characters/brian-heder")
     assert 'data-portrait-video data-src="/media/clips/brian-heder.mp4"' in page and "muted" in page
     assert 'poster="/media/clips/brian-heder.jpg"' in page and "data-motion-optin" in page
+    # the still is its own picture under the clip, so a loaded video can never show its black first frame
+    assert 'class="motion-portrait__poster" src="/media/clips/brian-heder.jpg"' in page
     assert " loop" not in page.split("data-portrait-video")[1].split("</video>")[0]        # Rockstar's clips are never looped
-    assert "<source" not in page and ' src="/media/clips/' not in page                 # nothing loads until the script asks
+    video = page.split("<video")[1].split("</video>")[0]
+    assert "<source" not in page and " src=" not in video.split(">")[0]                # the clip loads only when the script asks
     assert "p-clip-link" not in page
 
 

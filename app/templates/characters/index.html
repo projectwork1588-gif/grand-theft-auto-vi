@@ -6,12 +6,11 @@
 {% block header_class %}{% endblock %}
 {% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='css/characters.css') }}">{% endblock %}
 {% block content %}
-{% set sizes_wide = '(min-width: 1100px) 56vw, 100vw' %}
 <div class="cast-page">
 
   {# ------------------------------------------------------------------ opening #}
   <header class="cast-open">
-    <div class="cast-open__bg" aria-hidden="true">{{ shot(opening, '100vw', '0% 22%', eager=true) }}</div>
+    <div class="cast-open__bg" aria-hidden="true">{{ shot(opening, 'max(100vw, 185vh)', '0% 22%', eager=true) }}</div>
     <div class="cast-open__in">
       <p class="eyebrow">The cast</p>
       <h1>The people of Leonida</h1>
@@ -68,7 +67,7 @@
       {% for c in data %}
       <li>
         <a class="result" href="{{ url_for('pages.character_detail', slug=c.slug) }}">
-          <span class="result__art">{{ shot(c.cover, '(min-width: 900px) 30vw, 90vw', c.pos) }}</span>
+          <span class="result__art">{{ shot(c.cover, '(min-width: 900px) 52vw, 100vw', c.pos) }}</span>
           <span class="result__body">
             <span class="result__role">{{ c.role_title }}</span>
             <span class="result__name">{{ c.full_name }}</span>
@@ -94,8 +93,8 @@
     {% for c in leads %}
     <article class="spread spread--lead{% if loop.index0 == 1 %} spread--flip{% endif %}" id="{{ c.slug }}" data-spread data-name="{{ c.full_name }}">
       <div class="spread__art">
-        <a class="spread__main" href="{{ url_for('pages.character_detail', slug=c.slug) }}" tabindex="-1" aria-hidden="true">{{ shot(c.main, '(min-width: 1100px) 40vw, 100vw', c.pos, eager=(loop.first)) }}</a>
-        <div class="spread__second">{{ shot(c.second, '(min-width: 1100px) 22vw, 60vw', c.pos2) }}</div>
+        <a class="spread__main" href="{{ url_for('pages.character_detail', slug=c.slug) }}" tabindex="-1" aria-hidden="true">{{ shot(c.main, '(min-width: 1100px) 94vw, (min-width: 761px) 170vw, 205vw', c.pos, eager=(loop.first)) }}</a>
+        <div class="spread__second">{{ shot(c.second, '(min-width: 1100px) 32vw, (min-width: 761px) 56vw, 100vw', c.pos2) }}</div>
       </div>
       <div class="spread__text">
         <p class="spread__no">{{ '%02d' % c.number }} <span aria-hidden="true">&middot;</span> {{ c.role_title }}</p>
@@ -113,7 +112,7 @@
 
     {% if together %}
     <div class="together">
-      {{ shot(together, '100vw', '50% 30%') }}
+      {{ shot(together, '(min-width: 761px) 100vw, 140vw', '50% 0%', posm='24% 0%') }}
       <div class="together__in"><p class="eyebrow">Partners</p><h3>Jason and Lucia</h3><p>The two leads of the story.</p></div>
     </div>
     {% endif %}
@@ -128,7 +127,7 @@
       <div class="group__grid">
         {% for c in g.people %}
         <article class="person{% if g.single %} person--feature{% endif %}" id="{{ c.slug }}" data-spread data-name="{{ c.full_name }}">
-          <a class="person__art" href="{{ url_for('pages.character_detail', slug=c.slug) }}" tabindex="-1" aria-hidden="true">{{ shot(c.main, ('(min-width: 1100px) 56vw, 100vw' if g.single else '(min-width: 1100px) 30vw, 100vw'), c.pos) }}</a>
+          <a class="person__art" href="{{ url_for('pages.character_detail', slug=c.slug) }}" tabindex="-1" aria-hidden="true">{{ shot(c.main, '(min-width: 1100px) 62vw, (min-width: 761px) 60vw, 100vw', c.pos) }}</a>
           <div class="person__text">
             <p class="spread__no">{{ '%02d' % c.number }} <span aria-hidden="true">&middot;</span> {{ c.role_title }}</p>
             <h4 class="person__name"><a href="{{ url_for('pages.character_detail', slug=c.slug) }}">{{ c.full_name }}</a></h4>
@@ -167,7 +166,7 @@
       <a class="node{% if n.lead %} node--lead{% endif %}{% if not n.linked %} node--alone{% endif %}" href="{{ url_for('pages.character_detail', slug=n.slug) }}" data-slug="{{ n.slug }}">
         <circle class="node__ring" cx="{{ n.x }}" cy="{{ n.y }}" r="{{ 44 if n.lead else 34 }}"/>
         {% if n.image and image_src(n.image.embed_url, 320) %}
-        <image href="{{ image_src(n.image.embed_url, 320) }}" x="{{ n.x - 80 }}" y="{{ n.y - 46 }}" width="160" height="90" preserveAspectRatio="xMidYMid slice" clip-path="url(#face-{{ loop.index0 }})"/>
+        <image href="{{ image_src(n.image.embed_url, 480) }}" x="{{ (n.x - n.iw * n.fx) | round(1) }}" y="{{ (n.y - n.ih * n.fy) | round(1) }}" width="{{ n.iw }}" height="{{ n.ih }}" preserveAspectRatio="xMidYMid slice" clip-path="url(#face-{{ loop.index0 }})"/>
         {% endif %}
         <text x="{{ n.x }}" y="{{ n.y + (68 if n.lead else 58) }}" text-anchor="middle">{{ n.name }}</text>
         <title>{{ n.name }}, {{ n.role }}</title>

@@ -88,6 +88,9 @@ def _cast_entries(include_media=True):
         row["pos2"] = pick.get("pos2", "50% 40%")
         row["hero_side"] = pick.get("hero_side", "left")
         row["pos_m"] = pick.get("pos_m", pick.get("pos", "50% 40%"))
+        row["pos_t"] = pick.get("pos_t", row["pos_m"])
+        row["pos_hero"] = pick.get("pos_hero", row["pos"])
+        row["face"] = pick.get("face", (0.5, 0.35))
         row["clip_video"] = _local_clip(slug)
         row["clip_poster"] = _local_poster(slug)
         row["connections"] = _relationship_view(characters_repo.relationships_for(ids[slug]), slug, rows)
@@ -154,9 +157,11 @@ def _network(cast):
     fallback = list(media_slots.NETWORK_LAYOUT.values())
     for i, c in enumerate(cast):
         x, y = media_slots.NETWORK_LAYOUT.get(c["slug"], fallback[i % len(fallback)])
+        face = c["face"] if c["is_lead"] else (0.5, 0.4)
         nodes.append({"slug": c["slug"], "name": c["full_name"], "role": c["role_title"], "x": x, "y": y, "lead": c["is_lead"],
                       "linked": c["slug"] in linked, "image": c["second"] if not c["is_lead"] else c["main"],
-                      "pos": c["pos2"] if not c["is_lead"] else c["pos"]})
+                      "pos": c["pos2"] if not c["is_lead"] else c["pos"], "fx": face[0], "fy": face[1],
+                      "iw": 240 if c["is_lead"] else 200, "ih": 135 if c["is_lead"] else 112})
     for e in edges:
         a = next(n for n in nodes if n["slug"] == e["from"])
         b = next(n for n in nodes if n["slug"] == e["to"])
@@ -179,7 +184,7 @@ def character_index(args):
     result["groups"] = _cast_groups(cast)
     result["network"] = _network(cast)
     result["opening"] = media.by_slugs([media_slots.CHARACTERS_OPENING]).get(media_slots.CHARACTERS_OPENING)
-    result["together"] = media.by_slugs(["shot-jason-and-lucia-03"]).get("shot-jason-and-lucia-03")
+    result["together"] = media.by_slugs([media_slots.CAST_TOGETHER]).get(media_slots.CAST_TOGETHER)
     if result["mode"] == "results":
         ids = characters_repo.ids_by_slug([r["slug"] for r in result["data"]])
         by_slug = {c["slug"]: c for c in cast}
@@ -203,6 +208,8 @@ def character_detail(slug):
     character["pos2"] = entry["pos2"] if entry else "50% 40%"
     character["hero_side"] = entry["hero_side"] if entry else "left"
     character["pos_m"] = entry["pos_m"] if entry else "50% 40%"
+    character["pos_t"] = entry["pos_t"] if entry else "50% 40%"
+    character["pos_hero"] = entry["pos_hero"] if entry else "50% 40%"
     character["cover"] = character["main"]
     gallery = media.for_entity("character", character_id, limit=14)
     used = {m["slug"] for m in (character["main"], character["second"]) if m}
