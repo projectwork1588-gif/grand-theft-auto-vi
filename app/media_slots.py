@@ -99,6 +99,17 @@ CHARACTER_STAGE = {
     "brian-heder": {"main": "art-brian-heder", "second": "shot-brian-heder-01", "pos": "65% 40%", "pos2": "60% 40%"},
 }
 CAST_LEADS = ("jason-duval", "lucia-caminos")
+# Where the head sits in each second picture, for the wide crop it gets as the first item of the profile gallery
+# ("top" keeps the head at the top edge, "upper" a little below it). Defined for the Characters gallery only.
+GALLERY_FOCUS = {
+    "shot-jason-duval-04": "top", "shot-lucia-caminos-10": "upper", "shot-cal-hampton-01": "top", "shot-boobie-ike-01": "upper",
+    "shot-dequan-priest-02": "top", "shot-real-dimez-01": "upper", "shot-raul-bautista-01": "upper", "shot-brian-heder-01": "upper",
+}
+# Motion portraits on the Characters pages. Rockstar shot the two leads in 16:9 and the other six square, so each person
+# is shown in the shape the footage was shot in, never stretched into a shape it was not (the old extended widescreen
+# frame is kept only for the homepage reel). Built by `python -m scripts.make_loops --portraits`.
+PORTRAIT_SHAPE = {"jason-duval": "wide", "lucia-caminos": "wide"}      # everyone else is "square"
+PORTRAIT_POSTER_AT = 0.4          # seconds: the still is this exact frame, so the clip takes over without a visible change
 # The partner banner: both protagonists' faces large and lit, taken from Rockstar's own Jason and Lucia screenshots.
 CAST_TOGETHER = "shot-jason-and-lucia-01"
 # Opening picture of the Characters page: both leads, faces whole, space on the left for the title.

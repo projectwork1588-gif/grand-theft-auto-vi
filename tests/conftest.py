@@ -44,6 +44,28 @@ def local_clips(app, tmp_path):
 
 
 @pytest.fixture()
+def local_portraits(app, tmp_path):
+    """local_clips plus the character portraits built by `make_loops --portraits` (<slug>-portrait.mp4 and .jpg)."""
+    clips = tmp_path / "clips"
+    clips.mkdir()
+    segments, cursor = [], 0.0
+    for slug in CLIP_SLUGS:
+        for name in (f"{slug}.mp4", f"{slug}-portrait.mp4"):
+            (clips / name).write_bytes(b"ftypmp42")
+        for name in (f"{slug}.jpg", f"{slug}-portrait.jpg"):
+            (clips / name).write_bytes(b"JFIF")
+        segments.append({"slug": slug, "name": slug, "start": round(cursor, 2), "end": round(cursor + 2.9, 2)})
+        cursor += 2.9
+    (clips / "leonida-reel.mp4").write_bytes(b"ftypmp42")
+    (clips / "leonida-reel.jpg").write_bytes(b"JFIF")
+    (clips / "manifest.json").write_text(json.dumps({"duration": round(cursor + 0.5, 2), "speed": 1.0, "art_hold": 1.6, "dissolve": 0.3, "segments": segments}), encoding="utf-8")
+    previous = app.config["MEDIA_ROOT"]
+    app.config["MEDIA_ROOT"] = str(tmp_path)
+    yield tmp_path
+    app.config["MEDIA_ROOT"] = previous
+
+
+@pytest.fixture()
 def client(app):
     return app.test_client()
 

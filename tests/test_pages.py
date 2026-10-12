@@ -249,7 +249,7 @@ def test_every_official_profile_renders_with_its_connections_and_navigation(clie
                                    "real-dimez", "raul-bautista", "brian-heder"), start=1):
         page = html(client, f"/characters/{slug}")
         assert f"{number:02d} / 08" in page, slug
-        assert 'class="p-hero' in page and 'class="p-story"' in page and 'class="p-next"' in page, slug
+        assert 'class="p-hero' in page and 'class="p-story' in page and 'class="p-next"' in page, slug
         assert 'rel="prev"' in page and 'rel="next"' in page, slug
         assert 'class="p-conn' in page or "has not stated any connections" in page, slug
 
@@ -294,7 +294,8 @@ def test_character_profile_links_to_the_official_clip_without_local_files(client
 
 def test_character_profile_plays_the_local_portrait_once_when_it_exists(client, local_clips):
     page = html(client, "/characters/brian-heder")
-    assert 'data-portrait-video data-src="/media/clips/brian-heder.mp4"' in page and "muted" in page
+    assert re.search(r'data-portrait-video data-poster-at="[0-9.]+" data-src="/media/clips/brian-heder.mp4"', page) and "muted" in page
+    assert "motion-portrait--legacy" in page                                         # only the older composite exists here
     assert 'poster="/media/clips/brian-heder.jpg"' in page and "data-motion-optin" in page
     # the still is its own picture under the clip, so a loaded video can never show its black first frame
     assert 'class="motion-portrait__poster" src="/media/clips/brian-heder.jpg"' in page

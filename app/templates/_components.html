@@ -10,9 +10,9 @@
 
 {# An official image (remote, from Rockstar) over an original fallback. Safe against bad database values.
    `focus` is a framing hint: where the subject sits in the picture. #}
-{% macro picture(m, fallback='', sizes='(min-width: 900px) 33vw, 100vw', alt=none, cls='', eager=false) -%}
+{% macro picture(m, fallback='', sizes='(min-width: 900px) 33vw, 100vw', alt=none, cls='', eager=false, focus=none) -%}
   {% set src = image_src(m.embed_url, 1280) if m else none %}
-  <div class="media {{ cls }}" data-focus="{{ focus_for(m.slug) if m else 'center' }}">
+  <div class="media {{ cls }}" data-focus="{{ focus or (focus_for(m.slug) if m else 'center') }}">
     <span class="media__fallback" aria-hidden="true">{{ fallback }}</span>
     {% if src %}
       <img class="media__img" src="{{ src }}" srcset="{{ image_srcset(m.embed_url) }}" sizes="{{ sizes }}"
@@ -93,7 +93,7 @@
 
 {# A gallery that fills its rows exactly. Six or more images use four columns in runs of six (wide, one, one,
    one, one, wide); fewer use an even grid, so there is never an empty cell. Grouped for the image viewer. #}
-{% macro bento(items, labelledby='') -%}
+{% macro bento(items, labelledby='', focus_map=none) -%}
   {% set usable = [] %}
   {% for m in items %}{% if image_src(m.embed_url, 2560) %}{% set _ = usable.append(m) %}{% endif %}{% endfor %}
   {% set n = usable | length %}
@@ -104,7 +104,7 @@
     {% for m in usable[:shown] %}
     {% set wide = (mode == 'quad' and loop.index0 % 6 in (0, 5)) or (mode == 'five' and loop.first) %}
     <li class="bento__item{% if wide %} bento__item--wide{% endif %}">
-      <a href="{{ image_src(m.embed_url, 2560) }}" data-lightbox data-caption="{{ m.title }}">{{ picture(m, sizes=('(min-width: 800px) 47vw, 100vw' if wide else '(min-width: 800px) 24vw, 50vw')) }}</a>
+      <a href="{{ image_src(m.embed_url, 2560) }}" data-lightbox data-caption="{{ m.title }}">{{ picture(m, sizes=('(min-width: 800px) 47vw, 100vw' if wide else '(min-width: 800px) 24vw, 50vw'), focus=(focus_map.get(m.slug) if focus_map else none)) }}</a>
     </li>
     {% endfor %}
   </ul>

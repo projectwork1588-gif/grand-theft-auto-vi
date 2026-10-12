@@ -3,6 +3,7 @@
     python -m scripts.fetch_clips      # 1. fetch Rockstar's character clips into media/source/
     python -m scripts.make_loops       # 2. build media/clips/ (needs ffmpeg: `pip install imageio-ffmpeg` is enough)
     python -m scripts.make_loops --posters   # only redo the per-person poster stills from the built sequences
+    python -m scripts.make_loops --portraits # the Characters pages' portraits: each person in the shape it was shot in
 
 Rockstar's character clips are only 1 to 1.5 seconds long. Each person gets a short, elegant beat and no artificial
 slow motion: the clip plays at its true speed (SPEED is 1.0), dissolves over 0.4 s into the person's official artwork,
@@ -25,7 +26,7 @@ import subprocess
 import sys
 import urllib.request
 
-from app.media_slots import CAST_ORDER
+from app.media_slots import CAST_ORDER, PORTRAIT_POSTER_AT, PORTRAIT_SHAPE
 from scripts.fetch_clips import CHARACTER_CLIPS, SOURCE_DIR
 from scripts.schema_info import ROOT
 
@@ -71,6 +72,16 @@ FEATHER = 140        # width of the soft edge where the square meets its extensi
 POSTER_AT = 0.55         # seconds into the sequence: after the fade from black, before the dissolve into the artwork
 POSTER_TARGET = 84       # average luma (0 to 255) a dark poster is lifted towards
 POSTER_MAX_GAMMA = 1.9   # never lift further than this, so the picture stays natural
+
+# Character portraits (Characters pages): 16:9 leads keep the full frame, the square clips stay square. No blurred
+# extension, no black dips. The square artwork crop follows the person across the landscape picture.
+PORTRAIT_SIZE = {"wide": (1600, 900), "square": (1080, 1080)}
+PORTRAIT_FOCUS = {   # where the person sits across the 16:9 artwork (0 to 1), so a square crop keeps them whole
+    "cal-hampton": 0.46, "boobie-ike": 0.55, "dre-quan-priest": 0.58, "real-dimez": 0.50, "raul-bautista": 0.50,
+    "brian-heder": 0.70,
+}
+PORTRAIT_GRADE_TARGET = 66     # the very dark night clips are lifted gently towards this average luma while they play
+PORTRAIT_MAX_GAMMA = 1.7
 
 INTERMEDIATE = ["-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-pix_fmt", "yuv420p", "-r", "30"]
 FINAL = ["-an", "-c:v", "libx264", "-preset", "slow", "-crf", "25", "-pix_fmt", "yuv420p", "-r", "30",
@@ -164,6 +175,46 @@ def build_posters_only():
         print(f"  poster for {slug} (lift gamma {gamma:.2f})", flush=True)
 
 
+def build_portrait(ffmpeg, stem, slug):
+    """media/clips/<slug>-portrait.mp4 and .jpg: the clip at true speed in its own shape, dissolving into the artwork
+    cropped to the same shape. The .jpg is the exact frame at PORTRAIT_POSTER_AT, so the still and the clip join up."""
+    wide = PORTRAIT_SHAPE.get(slug, "square") == "wide"
+    w, h = PORTRAIT_SIZE["wide" if wide else "square"]
+    src = SOURCE_DIR / f"{stem}.mp4"
+    art = ART_DIR / f"{slug}.jpg"
+    length = duration(ffmpeg, src) / SPEED
+    mean = (mean_luma(ffmpeg, src, 0.25) + mean_luma(ffmpeg, src, 0.6)) / 2
+    if mean >= PORTRAIT_GRADE_TARGET:
+        gamma = 1.0
+    else:
+        gamma = min(PORTRAIT_MAX_GAMMA, math.log(max(mean, 1) / 255) / math.log(PORTRAIT_GRADE_TARGET / 255))
+    grade = f",eq=gamma={gamma:.2f}" if gamma > 1.0 else ""
+    x = "0" if wide else f"min(max({PORTRAIT_FOCUS[slug]}*iw-{w}/2,0),iw-{w})"
+    zoom = f"(1+{PUSH}*t/{ART_LEN})"
+    graph = (
+        f"[0:v]fps=30,scale={w}:{h}:flags=lanczos{grade},format=yuv420p[c];"
+        f"[1:v]fps=30,scale=-2:{h}:flags=lanczos,crop={w}:{h}:x='{x}':y=0,"
+        f"scale=w='trunc({w}*{zoom}/2)*2':h='trunc({h}*{zoom}/2)*2':eval=frame:flags=bicubic,crop={w}:{h},format=yuv420p[a];"
+        f"[c][a]xfade=transition=fade:duration={CLIP_TO_ART}:offset={length - CLIP_TO_ART:.3f}[v]"
+    )
+    out = CLIPS_DIR / f"{slug}-portrait.mp4"
+    run(ffmpeg, "-i", str(src), "-loop", "1", "-t", f"{ART_LEN}", "-i", str(art), "-filter_complex", graph,
+        "-map", "[v]", *FINAL, str(out))
+    run(ffmpeg, "-ss", f"{PORTRAIT_POSTER_AT}", "-i", str(out), "-frames:v", "1", "-q:v", "2", str(CLIPS_DIR / f"{slug}-portrait.jpg"))
+    return {"slug": slug, "shape": "wide" if wide else "square", "width": w, "height": h, "gamma": round(gamma, 2),
+            "length": round(length - CLIP_TO_ART + ART_LEN, 2)}
+
+
+def build_portraits_only():
+    ffmpeg = ffmpeg_exe()
+    CLIPS_DIR.mkdir(parents=True, exist_ok=True)
+    fetch_artwork()
+    for stem in SEQUENCE:
+        slug, name = SLUGS[stem]
+        info = build_portrait(ffmpeg, stem, slug)
+        print(f"  {name}: {info['shape']} {info['width']}x{info['height']}, lift gamma {info['gamma']}, {info['length']}s", flush=True)
+
+
 def build_segment(ffmpeg, src, art, out, length, wide):
     """The clip at true speed, dissolving into its artwork, which holds with a very slow push-in."""
     zoom = f"(1+{PUSH}*t/{ART_LEN})"
@@ -241,7 +292,9 @@ def main():
 
 
 if __name__ == "__main__":
-    if "--posters" in sys.argv[1:]:
+    if "--portraits" in sys.argv[1:]:
+        build_portraits_only()
+    elif "--posters" in sys.argv[1:]:
         build_posters_only()
     else:
         main()

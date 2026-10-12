@@ -224,3 +224,57 @@ def test_jump_bar_marks_the_person_being_read_and_never_contradicts_a_click():
     assert "window.innerHeight * 0.45" in block                     # one reading line
     assert "locked" in block and "lockSeen" in block                  # a chosen name stays marked until it has been seen and left
     assert "requestAnimationFrame" in block and "passive: true" in block
+
+
+# ------------------------------------------------------------------ final profile and motion polish
+def test_each_person_is_shown_in_the_shape_the_footage_was_shot_in(client, local_portraits):
+    for slug in ("jason-duval", "lucia-caminos"):
+        page = client.get(f"/characters/{slug}").get_data(as_text=True)
+        assert "motion-portrait--wide" in page and f'data-src="/media/clips/{slug}-portrait.mp4"' in page, slug
+        assert 'class="p-story p-story--wide"' in page, slug
+    for slug in ("cal-hampton", "boobie-ike", "dre-quan-priest", "real-dimez", "raul-bautista", "brian-heder"):
+        page = client.get(f"/characters/{slug}").get_data(as_text=True)
+        assert "motion-portrait--square" in page and "motion-portrait--wide" not in page, slug
+        assert f'data-src="/media/clips/{slug}-portrait.mp4"' in page and 'class="p-story p-story--square"' in page, slug
+        assert 'data-poster-at="0.4"' in page, slug                                  # the still is the frame at 0.4 s
+
+
+def test_the_landing_uses_the_same_portraits(client, local_portraits):
+    page = client.get("/characters").get_data(as_text=True)
+    assert page.count("-portrait.mp4") == 8 and page.count("motion-portrait--wide") == 2 and page.count("motion-portrait--square") == 6
+    assert "motion-portrait--legacy" not in page
+
+
+def test_the_homepage_keeps_its_own_clips(client, local_portraits):
+    home = client.get("/").get_data(as_text=True)
+    assert "-portrait" not in home                      # the homepage cast stage and reel are not touched
+
+
+def test_the_second_picture_belongs_to_the_gallery_not_to_the_motion_portrait(client):
+    for slug in ("jason-duval", "lucia-caminos", "cal-hampton"):
+        page = client.get(f"/characters/{slug}").get_data(as_text=True)
+        assert "p-story__second" not in page, slug
+        stage = media_slots.CHARACTER_STAGE[slug]
+        # the second picture is the first item of "From the footage and artwork"
+        gallery = page.split('id="gallery-title"')[1]
+        first = gallery.split("data-lightbox")[1]
+        assert first.split("</a>")[0].count("<img") >= 1, slug
+        assert stage["second"] in ("shot-jason-duval-04", "shot-lucia-caminos-10", "shot-cal-hampton-01")
+
+
+def test_portrait_builder_tables_cover_every_person():
+    from scripts import make_loops
+    squares = set(media_slots.CAST_ORDER) - set(media_slots.PORTRAIT_SHAPE)
+    assert set(media_slots.PORTRAIT_SHAPE) == set(media_slots.CAST_LEADS)
+    assert set(make_loops.PORTRAIT_FOCUS) == squares                      # each square clip has a focus for its artwork crop
+    assert all(0.2 <= v <= 0.8 for v in make_loops.PORTRAIT_FOCUS.values())
+    w, h = make_loops.PORTRAIT_SIZE["wide"]
+    assert (w, h) == (1600, 900) and make_loops.PORTRAIT_SIZE["square"][0] == make_loops.PORTRAIT_SIZE["square"][1]
+    assert make_loops.PORTRAIT_MAX_GAMMA <= 1.8                           # a lift, never a re-grade
+
+
+def test_motion_tiles_are_never_cropped_or_stretched():
+    css = (ROOT / "app" / "static" / "css" / "characters.css").read_text(encoding="utf-8")
+    assert re.search(r"\.motion-portrait__frame \{[^}]*aspect-ratio: 1;", css)
+    assert re.search(r"\.motion-portrait--wide \.motion-portrait__frame \{[^}]*aspect-ratio: 16 / 9;", css)
+    assert re.search(r"\.motion-portrait__poster, \.motion-portrait__video \{[^}]*object-fit: cover", css)

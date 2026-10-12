@@ -103,7 +103,7 @@
         <p class="spread__bio">{{ c.biography }}</p>
         {{ chips(c.connections) }}
         <div class="spread__foot">
-          {{ portrait(c, wide=true) }}
+          {{ portrait(c) }}
           <a class="pill" href="{{ url_for('pages.character_detail', slug=c.slug) }}">Read the profile</a>
         </div>
       </div>

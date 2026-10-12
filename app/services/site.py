@@ -54,6 +54,22 @@ def _local_poster(slug):
     return path if local_media.is_servable(path) else None
 
 
+def _portrait(slug):
+    """The motion portrait the Characters pages show, or None. Built by `scripts.make_loops --portraits`: each person in
+    the shape the footage was shot in (the two leads 16:9, the rest square), the still being an exact frame of the clip.
+    Until those files exist the older per-person loop is used as it always was."""
+    video = f"clips/{slug}-portrait.mp4"
+    if local_media.is_servable(video):
+        poster = f"clips/{slug}-portrait.jpg"
+        return {"video": video, "poster": poster if local_media.is_servable(poster) else None,
+                "shape": media_slots.PORTRAIT_SHAPE.get(slug, "square"), "poster_at": media_slots.PORTRAIT_POSTER_AT}
+    legacy = _local_clip(slug)
+    if legacy:
+        wide = media_slots.PORTRAIT_SHAPE.get(slug) == "wide"
+        return {"video": legacy, "poster": _local_poster(slug), "shape": "wide" if wide else "legacy", "poster_at": 0.32}
+    return None
+
+
 # ---------------------------------------------------------------- characters (Gate 3A)
 def _relationship_view(rows, me_slug, names):
     """Relationship rows from either direction as [{slug, name, type, text}] about the *other* person."""
@@ -91,8 +107,7 @@ def _cast_entries(include_media=True):
         row["pos_t"] = pick.get("pos_t", row["pos_m"])
         row["pos_hero"] = pick.get("pos_hero", row["pos"])
         row["face"] = pick.get("face", (0.5, 0.35))
-        row["clip_video"] = _local_clip(slug)
-        row["clip_poster"] = _local_poster(slug)
+        row["portrait"] = _portrait(slug)
         row["connections"] = _relationship_view(characters_repo.relationships_for(ids[slug]), slug, rows)
         row["regions"] = characters_repo.regions_for(ids[slug])
         cast.append(row)
@@ -212,13 +227,15 @@ def character_detail(slug):
     character["pos_hero"] = entry["pos_hero"] if entry else "50% 40%"
     character["cover"] = character["main"]
     gallery = media.for_entity("character", character_id, limit=14)
-    used = {m["slug"] for m in (character["main"], character["second"]) if m}
-    character["gallery"] = [m for m in gallery if m["slug"] not in used]
+    # the second picture is the first of the gallery, so it is part of a composition and never a loose attachment
+    used = {character["main"]["slug"]} if character["main"] else set()
+    first = [character["second"]] if character["second"] else []
+    used |= {m["slug"] for m in first}
+    character["gallery"] = first + [m for m in gallery if m["slug"] not in used]
     character["costars"] = characters_repo.costars_for(character_id)
     clips = {c["character_slug"]: c for c in media.character_clips()}
     character["clip"] = clips.get(slug)
-    character["clip_video"] = _local_clip(slug)
-    character["clip_poster"] = _local_poster(slug)
+    character["portrait"] = _portrait(slug)
     # connections with a face, and the people either side of them in the cast
     by_slug = {c["slug"]: c for c in cast}
     character["connections"] = []

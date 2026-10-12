@@ -42,6 +42,7 @@ def create_app(config_name=None):
         player_src=media_urls.player_src,
         status_labels=STATUS_LABELS,
         focus_for=lambda slug: media_slots.FOCUS.get(slug, "center"),
+        gallery_focus=media_slots.GALLERY_FOCUS,
     )
 
     @app.after_request

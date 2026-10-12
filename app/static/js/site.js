@@ -1046,8 +1046,9 @@
       p.video.addEventListener("playing", function () { window.tvMedia.portrait = true; });
       // The sequence dips through black for 0.3 s at both ends. The bright poster stays up until the clip has faded in,
       // so a tile is never a black square.
+      var takeover = parseFloat(p.video.getAttribute("data-poster-at")) || 0.32;   // the still is the frame at this time
       p.video.addEventListener("timeupdate", function () {
-        if (p.video.currentTime >= 0.32 && !p.el.classList.contains("is-live")) { p.el.classList.add("is-live"); }
+        if (p.video.currentTime >= takeover && !p.el.classList.contains("is-live")) { p.el.classList.add("is-live"); }
       });
       p.video.addEventListener("pause", function () { window.tvMedia.portrait = anyPlaying(); });
       p.video.addEventListener("ended", function () {
