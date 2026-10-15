@@ -12,12 +12,15 @@ python -m scripts.make_loops               # builds muted 1280x720 loops and one
 
 The site shows them when they exist and falls back to Rockstar's own posters when they do not.
 
-The Characters pages use their own portraits, built from the same source clips (`<slug>-portrait.mp4` and `.jpg`):
-each person in the shape the footage was shot in (Jason and Lucia 16:9, the other six square), with no extended
-background and no black dips. The `.jpg` is an exact frame of the clip, so the still and the clip join up.
+The Characters pages use their own sequences, built from the same source clips: each person in the shape the footage
+was shot in (Jason and Lucia 16:9, the other six square), with no extended background and no black frames.
+`<slug>-portrait.mp4/.jpg` are the landing tiles (the still is a frame of the clip); `<slug>-profile.mp4/.jpg` are the
+large picture of each profile (the sequence starts on the person's artwork, which is the `.jpg`, dissolves into the clip,
+plays it whole at true speed, and dissolves back).
 
 ```powershell
-python -m scripts.make_loops --portraits   # eight portraits, about 7 MB; the homepage reel and loops are not touched
+python -m scripts.make_loops --portraits   # both sets, about 14 MB; fetches Lucia's main artwork once; the homepage reel and loops are not touched
+python -m scripts.qa.portrait_check        # measures the built sequences (first frame, dissolves, no dips)
 python -m scripts.make_loops --posters     # only the older per-person stills (homepage), brighter
 ```
 

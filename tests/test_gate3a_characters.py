@@ -230,36 +230,65 @@ def test_jump_bar_marks_the_person_being_read_and_never_contradicts_a_click():
 def test_each_person_is_shown_in_the_shape_the_footage_was_shot_in(client, local_portraits):
     for slug in ("jason-duval", "lucia-caminos"):
         page = client.get(f"/characters/{slug}").get_data(as_text=True)
-        assert "motion-portrait--wide" in page and f'data-src="/media/clips/{slug}-portrait.mp4"' in page, slug
-        assert 'class="p-story p-story--wide"' in page, slug
+        assert "motion-portrait--wide" in page and f'data-src="/media/clips/{slug}-profile.mp4"' in page, slug
+        assert 'class="p-story p-story--wide"' in page and 'class="p-media p-media--wide"' in page, slug
     for slug in ("cal-hampton", "boobie-ike", "dre-quan-priest", "real-dimez", "raul-bautista", "brian-heder"):
         page = client.get(f"/characters/{slug}").get_data(as_text=True)
         assert "motion-portrait--square" in page and "motion-portrait--wide" not in page, slug
-        assert f'data-src="/media/clips/{slug}-portrait.mp4"' in page and 'class="p-story p-story--square"' in page, slug
-        assert 'data-poster-at="0.4"' in page, slug                                  # the still is the frame at 0.4 s
+        assert f'data-src="/media/clips/{slug}-profile.mp4"' in page, slug
+        assert 'class="p-story p-story--square"' in page and 'class="p-media p-media--square"' in page, slug
+        assert 'data-poster-at="0"' in page, slug               # the sequence starts on the still: nothing to match up
 
 
-def test_the_landing_uses_the_same_portraits(client, local_portraits):
+def test_the_landing_keeps_its_own_tiles(client, local_portraits):
     page = client.get("/characters").get_data(as_text=True)
     assert page.count("-portrait.mp4") == 8 and page.count("motion-portrait--wide") == 2 and page.count("motion-portrait--square") == 6
-    assert "motion-portrait--legacy" not in page
+    assert "-profile.mp4" not in page and "motion-portrait--legacy" not in page
+    assert 'data-poster-at="0.4"' in page                       # a tile's still is a frame of the clip
 
 
 def test_the_homepage_keeps_its_own_clips(client, local_portraits):
     home = client.get("/").get_data(as_text=True)
-    assert "-portrait" not in home                      # the homepage cast stage and reel are not touched
+    assert "-portrait" not in home and "-profile" not in home
 
 
-def test_the_second_picture_belongs_to_the_gallery_not_to_the_motion_portrait(client):
-    for slug in ("jason-duval", "lucia-caminos", "cal-hampton"):
+def test_profile_falls_back_to_the_landing_set_and_then_to_the_older_loop(client, local_clips):
+    page = client.get("/characters/cal-hampton").get_data(as_text=True)      # local_clips has only the older loops
+    assert "motion-portrait--legacy" in page and 'class="p-media p-media--square"' in page
+    assert "p-media__second" in page                                         # the layout does not depend on the footage
+
+
+def test_the_second_picture_overlaps_the_large_picture(client):
+    for slug in ("jason-duval", "lucia-caminos", "cal-hampton", "boobie-ike", "dre-quan-priest", "real-dimez", "raul-bautista", "brian-heder"):
         page = client.get(f"/characters/{slug}").get_data(as_text=True)
+        media = page.split('class="p-media p-media--')[1].split("</section>")[0]
+        assert media.index("motion-portrait__frame") < media.index('class="p-media__second"'), slug     # in front, after it
+        assert media.count("<img") >= 2, slug                                   # the large picture and the small one
         assert "p-story__second" not in page, slug
-        stage = media_slots.CHARACTER_STAGE[slug]
-        # the second picture is the first item of "From the footage and artwork"
-        gallery = page.split('id="gallery-title"')[1]
-        first = gallery.split("data-lightbox")[1]
-        assert first.split("</a>")[0].count("<img") >= 1, slug
-        assert stage["second"] in ("shot-jason-duval-04", "shot-lucia-caminos-10", "shot-cal-hampton-01")
+
+
+def test_the_gallery_does_not_repeat_the_two_pictures_above_it(client):
+    page = client.get("/characters/jason-duval").get_data(as_text=True)
+    gallery = page.split('id="gallery-title"')[1].split("</section>")[0]
+    assert "Jason_Duval_01." not in gallery and "Jason_Duval_04." not in gallery
+
+
+def test_second_picture_crop_positions_have_css_rules():
+    css = (ROOT / "app" / "static" / "css" / "characters.css").read_text(encoding="utf-8")
+    for slug, x in media_slots.SECOND_FOCUS.items():
+        window = 0.75 if slug in media_slots.CAST_LEADS else 0.45
+        p = round(max(0.0, min(1.0, (x - window / 2) / (1 - window))) * 100)
+        assert f'.shot[data-pos="{p}-50"]' in css, (slug, p)
+
+
+def test_overlap_geometry_is_in_css():
+    css = (ROOT / "app" / "static" / "css" / "characters.css").read_text(encoding="utf-8")
+    second = re.search(r"\.p-media__second \{([^}]*)\}", css).group(1)
+    assert "position: absolute" in second and "right: calc(-1 * var(--ov-x))" in second and "bottom: calc(-1 * var(--ov-y))" in second
+    assert "width: 46%" in second and "z-index: 2" in second and "box-shadow" in second and "border-radius" in second
+    assert re.search(r"\.p-media \{[^}]*margin: 0 var\(--ov-x\) calc\(var\(--ov-y\) \+ 26px\) 0", css)   # the overhang has room
+    assert "width: 44%" in css and "width: 42%" in css                    # tablet and phone proportions
+    assert re.search(r"\.p-media--square \.p-media__second \{[^}]*aspect-ratio: 4 / 5", css)
 
 
 def test_portrait_builder_tables_cover_every_person():
@@ -278,3 +307,26 @@ def test_motion_tiles_are_never_cropped_or_stretched():
     assert re.search(r"\.motion-portrait__frame \{[^}]*aspect-ratio: 1;", css)
     assert re.search(r"\.motion-portrait--wide \.motion-portrait__frame \{[^}]*aspect-ratio: 16 / 9;", css)
     assert re.search(r"\.motion-portrait__poster, \.motion-portrait__video \{[^}]*object-fit: cover", css)
+
+
+def test_profile_sequence_constants_match_the_approved_pacing():
+    from scripts import make_loops
+    assert make_loops.PORTRAIT_DISSOLVE == 0.5 and make_loops.PORTRAIT_HOLD == 2.0 and make_loops.PROFILE_INTRO == 0.3
+    assert make_loops.SPEED == 1.0                                          # never slowed down or sped up
+    assert set(make_loops.PROFILE_ART) <= set(media_slots.CAST_ORDER)
+    assert make_loops.profile_art("lucia-caminos").name == "lucia-caminos-main.jpg"
+    assert make_loops.profile_art("jason-duval").name == "jason-duval.jpg"
+
+
+def test_locally_built_profile_sequences_have_the_approved_length_when_they_exist():
+    from scripts import make_loops
+    ffmpeg = make_loops.ffmpeg_exe()
+    built = [slug for slug in media_slots.CAST_ORDER if (make_loops.CLIPS_DIR / f"{slug}-profile.mp4").exists()]
+    if not built:
+        pytest.skip("the profile sequences have not been built on this machine")
+    stems = {slug: stem for stem, (slug, _n) in make_loops.SLUGS.items()}
+    for slug in built:
+        clip = make_loops.duration(ffmpeg, make_loops.SOURCE_DIR / f"{stems[slug]}.mp4")
+        total = make_loops.duration(ffmpeg, make_loops.CLIPS_DIR / f"{slug}-profile.mp4")
+        expected = clip + make_loops.PROFILE_INTRO + make_loops.PORTRAIT_DISSOLVE + make_loops.PORTRAIT_HOLD
+        assert abs(total - expected) < 0.15, (slug, total, expected)

@@ -4,6 +4,7 @@
     python -m scripts.make_loops       # 2. build media/clips/ (needs ffmpeg: `pip install imageio-ffmpeg` is enough)
     python -m scripts.make_loops --posters   # only redo the per-person poster stills from the built sequences
     python -m scripts.make_loops --portraits # the Characters pages' portraits: each person in the shape it was shot in
+                                             # (a listing set and a profile set; also fetches Lucia's main artwork once)
 
 Rockstar's character clips are only 1 to 1.5 seconds long. Each person gets a short, elegant beat and no artificial
 slow motion: the clip plays at its true speed (SPEED is 1.0), dissolves over 0.4 s into the person's official artwork,
@@ -14,6 +15,9 @@ frame free for the caption. The artwork is fetched once from Rockstar's own site
 Outputs in media/clips/ (all Git-ignored, never committed):
   leonida-reel.mp4  all eight people in app.media_slots.CAST_ORDER, 0.3 s dissolves between them, about 20 s, 1600x900
   leonida-reel.jpg  poster for the reel
+  <slug>-portrait.mp4/.jpg   the Characters landing tiles: the clip in its own shape, dissolving into the artwork
+  <slug>-profile.mp4/.jpg    the large picture of "The story so far" on each profile: it starts on the artwork (the .jpg
+                    is that very frame), dissolves into the clip, plays it whole at true speed, dissolves back
   <slug>.mp4/.jpg   one sequence per person with a short dip to black at each end, for the profile pages. The .jpg is the
                     poster: the clip's own frame at POSTER_AT, lifted towards a readable brightness (a few of the clips
                     are very dark scenes), never the black first frame
@@ -80,6 +84,12 @@ PORTRAIT_FOCUS = {   # where the person sits across the 16:9 artwork (0 to 1), s
     "cal-hampton": 0.46, "boobie-ike": 0.55, "dre-quan-priest": 0.58, "real-dimez": 0.50, "raul-bautista": 0.50,
     "brian-heder": 0.70,
 }
+PORTRAIT_DISSOLVE = 0.5        # dissolve from the clip back into the artwork
+PORTRAIT_HOLD = 2.0            # how long the artwork then rests (with a very slow push-in)
+PROFILE_INTRO = 0.3            # dissolve from the artwork into the clip's first frame (profile sequences only)
+# The picture each person rests on in the profile sequence is their main artwork on the page. Only Lucia's differs from
+# the older ARTWORK table (which the homepage reel keeps): her main picture is Lucia_Caminos_02.
+PROFILE_ART = {"lucia-caminos": "Lucia_Caminos_02.16n.5umvlu_48.jpg"}
 PORTRAIT_GRADE_TARGET = 66     # the very dark night clips are lifted gently towards this average luma while they play
 PORTRAIT_MAX_GAMMA = 1.7
 
@@ -175,44 +185,115 @@ def build_posters_only():
         print(f"  poster for {slug} (lift gamma {gamma:.2f})", flush=True)
 
 
-def build_portrait(ffmpeg, stem, slug):
-    """media/clips/<slug>-portrait.mp4 and .jpg: the clip at true speed in its own shape, dissolving into the artwork
-    cropped to the same shape. The .jpg is the exact frame at PORTRAIT_POSTER_AT, so the still and the clip join up."""
+def profile_art(slug):
+    """The artwork a person rests on: their main picture on the page (a separate file only where it differs)."""
+    own = ART_DIR / f"{slug}-main.jpg"
+    return own if slug in PROFILE_ART else ART_DIR / f"{slug}.jpg"
+
+
+def fetch_profile_art():
+    """Download the one main artwork that is not in ARTWORK (host and type checked, skipped when already there)."""
+    for slug, name in PROFILE_ART.items():
+        target = ART_DIR / f"{slug}-main.jpg"
+        if target.exists() and target.stat().st_size > 50_000:
+            continue
+        ART_DIR.mkdir(parents=True, exist_ok=True)
+        url = f"{ART_BASE}{name}?akim=1&imdensity=1&imwidth=1920"
+        request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (TeamValkyrie fan project)"})
+        with urllib.request.urlopen(request, timeout=60) as response:
+            if "image/jpeg" not in response.headers.get("Content-Type", ""):
+                sys.exit(f"Unexpected content type for {url}")
+            target.write_bytes(response.read())
+        print(f"  fetched main artwork for {slug}", flush=True)
+
+
+def _grade(ffmpeg, src):
+    """The gentle lift for a very dark clip, as an ffmpeg filter fragment ('' when the clip is bright enough)."""
+    mean = (mean_luma(ffmpeg, src, 0.25) + mean_luma(ffmpeg, src, 0.6)) / 2
+    if mean >= PORTRAIT_GRADE_TARGET:
+        return "", 1.0
+    gamma = min(PORTRAIT_MAX_GAMMA, math.log(max(mean, 1) / 255) / math.log(PORTRAIT_GRADE_TARGET / 255))
+    return (f",eq=gamma={gamma:.2f}" if gamma > 1.0 else ""), gamma
+
+
+def _art_crop(slug, w, h, wide):
+    """Filter fragment that fits the 16:9 artwork to the clip's own shape around the person."""
+    x = "0" if wide else f"min(max({PORTRAIT_FOCUS[slug]}*iw-{w}/2,0),iw-{w})"
+    return f"scale=-2:{h}:flags=lanczos,crop={w}:{h}:x='{x}':y=0"
+
+
+def build_profile(ffmpeg, stem, slug):
+    """media/clips/<slug>-profile.mp4 and .jpg for the large picture on a profile page.
+
+    It starts on the person's artwork (the .jpg is exactly that first frame), dissolves for PROFILE_INTRO into the
+    clip's first frame, plays the whole clip at true speed, then dissolves for PORTRAIT_DISSOLVE back into the artwork
+    while the clip's last frame is held, and rests on the artwork for PORTRAIT_HOLD with a very slow push-in. The clip is
+    never sped up, slowed down, interpolated or trimmed, and there is no black frame anywhere."""
     wide = PORTRAIT_SHAPE.get(slug, "square") == "wide"
     w, h = PORTRAIT_SIZE["wide" if wide else "square"]
     src = SOURCE_DIR / f"{stem}.mp4"
-    art = ART_DIR / f"{slug}.jpg"
     length = duration(ffmpeg, src) / SPEED
-    mean = (mean_luma(ffmpeg, src, 0.25) + mean_luma(ffmpeg, src, 0.6)) / 2
-    if mean >= PORTRAIT_GRADE_TARGET:
-        gamma = 1.0
-    else:
-        gamma = min(PORTRAIT_MAX_GAMMA, math.log(max(mean, 1) / 255) / math.log(PORTRAIT_GRADE_TARGET / 255))
-    grade = f",eq=gamma={gamma:.2f}" if gamma > 1.0 else ""
-    x = "0" if wide else f"min(max({PORTRAIT_FOCUS[slug]}*iw-{w}/2,0),iw-{w})"
-    zoom = f"(1+{PUSH}*t/{ART_LEN})"
+    grade, gamma = _grade(ffmpeg, src)
+    outro = PORTRAIT_DISSOLVE + PORTRAIT_HOLD
+    zoom = f"(1+{PUSH}*t/{outro})"
+    cfr = "setpts=PTS-STARTPTS,fps=30"
     graph = (
-        f"[0:v]fps=30,scale={w}:{h}:flags=lanczos{grade},format=yuv420p[c];"
-        f"[1:v]fps=30,scale=-2:{h}:flags=lanczos,crop={w}:{h}:x='{x}':y=0,"
+        f"[0:v]fps=30,scale={w}:{h}:flags=lanczos{grade},format=yuv420p,"
+        f"tpad=start_mode=clone:start_duration={PROFILE_INTRO}:stop_mode=clone:stop_duration={PORTRAIT_DISSOLVE + 0.2},{cfr}[c];"
+        f"[1:v]fps=30,{_art_crop(slug, w, h, wide)},format=yuv420p,split[ai][ao];"
+        f"[ai]trim=duration={PROFILE_INTRO},{cfr}[a1];"
+        f"[ao]scale=w='trunc({w}*{zoom}/2)*2':h='trunc({h}*{zoom}/2)*2':eval=frame:flags=bicubic,crop={w}:{h},"
+        f"trim=duration={outro},{cfr}[a2];"
+        f"[a1][c]xfade=transition=fade:duration={PROFILE_INTRO}:offset=0[r1];"
+        f"[r1]{cfr}[r2];"
+        f"[r2][a2]xfade=transition=fade:duration={PORTRAIT_DISSOLVE}:offset={length + PROFILE_INTRO:.3f}[v]"
+    )
+    out = CLIPS_DIR / f"{slug}-profile.mp4"
+    run(ffmpeg, "-i", str(src), "-loop", "1", "-t", f"{outro + PROFILE_INTRO + 1:.1f}", "-i", str(profile_art(slug)),
+        "-filter_complex", graph, "-map", "[v]", *FINAL, str(out))
+    run(ffmpeg, "-i", str(out), "-frames:v", "1", "-q:v", "2", str(CLIPS_DIR / f"{slug}-profile.jpg"))
+    return {"slug": slug, "shape": "wide" if wide else "square", "gamma": round(gamma, 2),
+            "length": round(length + PROFILE_INTRO + PORTRAIT_DISSOLVE + PORTRAIT_HOLD, 2), "clip": round(length, 2)}
+
+
+def build_portrait(ffmpeg, stem, slug):
+    """media/clips/<slug>-portrait.mp4 and .jpg (the Characters landing tiles): the clip at true speed in its own
+    shape, dissolving into the artwork cropped to the same shape. The .jpg is the exact frame at PORTRAIT_POSTER_AT,
+    so the still and the clip join up."""
+    wide = PORTRAIT_SHAPE.get(slug, "square") == "wide"
+    w, h = PORTRAIT_SIZE["wide" if wide else "square"]
+    src = SOURCE_DIR / f"{stem}.mp4"
+    art = profile_art(slug)
+    length = duration(ffmpeg, src) / SPEED
+    grade, gamma = _grade(ffmpeg, src)
+    hold = PORTRAIT_DISSOLVE + PORTRAIT_HOLD
+    zoom = f"(1+{PUSH}*t/{hold})"
+    graph = (
+        # the clip's last frame is held a little past the dissolve so the dissolve always completes
+        f"[0:v]fps=30,scale={w}:{h}:flags=lanczos{grade},format=yuv420p,tpad=stop_mode=clone:stop_duration=0.2[c];"
+        f"[1:v]fps=30,{_art_crop(slug, w, h, wide)},"
         f"scale=w='trunc({w}*{zoom}/2)*2':h='trunc({h}*{zoom}/2)*2':eval=frame:flags=bicubic,crop={w}:{h},format=yuv420p[a];"
-        f"[c][a]xfade=transition=fade:duration={CLIP_TO_ART}:offset={length - CLIP_TO_ART:.3f}[v]"
+        f"[c][a]xfade=transition=fade:duration={PORTRAIT_DISSOLVE}:offset={length - PORTRAIT_DISSOLVE:.3f}[v]"
     )
     out = CLIPS_DIR / f"{slug}-portrait.mp4"
-    run(ffmpeg, "-i", str(src), "-loop", "1", "-t", f"{ART_LEN}", "-i", str(art), "-filter_complex", graph,
+    run(ffmpeg, "-i", str(src), "-loop", "1", "-t", f"{hold}", "-i", str(art), "-filter_complex", graph,
         "-map", "[v]", *FINAL, str(out))
     run(ffmpeg, "-ss", f"{PORTRAIT_POSTER_AT}", "-i", str(out), "-frames:v", "1", "-q:v", "2", str(CLIPS_DIR / f"{slug}-portrait.jpg"))
     return {"slug": slug, "shape": "wide" if wide else "square", "width": w, "height": h, "gamma": round(gamma, 2),
-            "length": round(length - CLIP_TO_ART + ART_LEN, 2)}
+            "length": round(length - PORTRAIT_DISSOLVE + hold, 2)}
 
 
 def build_portraits_only():
     ffmpeg = ffmpeg_exe()
     CLIPS_DIR.mkdir(parents=True, exist_ok=True)
     fetch_artwork()
+    fetch_profile_art()
     for stem in SEQUENCE:
         slug, name = SLUGS[stem]
-        info = build_portrait(ffmpeg, stem, slug)
-        print(f"  {name}: {info['shape']} {info['width']}x{info['height']}, lift gamma {info['gamma']}, {info['length']}s", flush=True)
+        tile = build_portrait(ffmpeg, stem, slug)
+        prof = build_profile(ffmpeg, stem, slug)
+        print(f"  {name}: {tile['shape']}, lift gamma {tile['gamma']}; tile {tile['length']}s, profile {prof['length']}s "
+              f"(clip {prof['clip']}s whole)", flush=True)
 
 
 def build_segment(ffmpeg, src, art, out, length, wide):

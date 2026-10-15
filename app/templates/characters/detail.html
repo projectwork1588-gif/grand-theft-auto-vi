@@ -21,7 +21,7 @@
   </header>
 
   {# ------------------------------------------------------------------ the story, with the motion portrait #}
-  <section class="p-story p-story--{{ character.portrait.shape if character.portrait else 'none' }}" aria-labelledby="story-title">
+  <section class="p-story p-story--{{ character.shape }}" aria-labelledby="story-title">
     <div class="p-story__text">
       <h2 id="story-title" class="p-label">The story so far</h2>
       <p class="p-story__bio">{{ character.biography }}</p>
@@ -34,16 +34,22 @@
       </dl>
       {% if character.source_url and character.source_url.startswith('https://') %}<p class="p-source"><a href="{{ character.source_url }}" target="_blank" rel="noopener noreferrer">Read it on rockstargames.com</a></p>{% endif %}
     </div>
-    {% if character.portrait %}
-    <div class="p-story__media">{{ portrait(character, label='In motion') }}</div>
-    {% elif character.clip and image_src(character.clip.embed_url, 1280) %}
+    {# the large picture (the clip, resting on the artwork) with the second picture layered in front of its lower-right #}
     <div class="p-story__media">
-      <a class="p-clip-link" href="{{ character.clip.source_url }}" target="_blank" rel="noopener noreferrer">
-        <span class="play-btn__disc" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
-        Watch {{ character.full_name }}'s clip on rockstargames.com
-      </a>
+      <div class="p-media p-media--{{ character.shape }}">
+        {% if character.portrait %}
+          {{ portrait(character, label='In motion') }}
+        {% else %}
+        <figure class="motion-portrait motion-portrait--{{ character.shape }}"><div class="motion-portrait__frame">{{ shot(character.main, '(min-width: 1100px) 50vw, 100vw', character.pos) }}</div></figure>
+        {% endif %}
+        {% if character.second %}
+        <div class="p-media__second">{{ shot(character.second, '(min-width: 1100px) 28vw, 70vw', character.second_pos) }}</div>
+        {% endif %}
+      </div>
+      {% if not character.portrait and character.clip and image_src(character.clip.embed_url, 1280) %}
+      <p class="p-media__link"><a class="p-clip-link" href="{{ character.clip.source_url }}" target="_blank" rel="noopener noreferrer">Watch {{ character.full_name }}'s clip on rockstargames.com</a></p>
+      {% endif %}
     </div>
-    {% endif %}
   </section>
 
   {# ------------------------------------------------------------------ connections, with faces #}
@@ -72,7 +78,7 @@
   {% if character.gallery | length >= 2 %}
   <section class="p-gallery" aria-labelledby="gallery-title">
     <h2 id="gallery-title" class="p-label">From the footage and artwork</h2>
-    {{ bento(character.gallery, 'gallery-title', focus_map=gallery_focus) }}
+    {{ bento(character.gallery, 'gallery-title') }}
   </section>
   {% endif %}
 

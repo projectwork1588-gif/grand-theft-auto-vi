@@ -54,15 +54,23 @@ def _local_poster(slug):
     return path if local_media.is_servable(path) else None
 
 
-def _portrait(slug):
-    """The motion portrait the Characters pages show, or None. Built by `scripts.make_loops --portraits`: each person in
-    the shape the footage was shot in (the two leads 16:9, the rest square), the still being an exact frame of the clip.
-    Until those files exist the older per-person loop is used as it always was."""
+def _portrait(slug, variant="listing"):
+    """The motion portrait the Characters pages show, or None. Built by `scripts.make_loops --portraits`, each person in
+    the shape the footage was shot in (the two leads 16:9, the rest square). Two sets exist: "listing" (the landing
+    tiles; the still is a frame of the clip) and "profile" (the large picture of a profile; the still is the artwork,
+    which is the first frame, so the clip dissolves in from it). Missing files fall back to the other set, then to the
+    older per-person loop, which is used as it always was."""
+    shape = media_slots.PORTRAIT_SHAPE.get(slug, "square")
+    if variant == "profile":
+        video = f"clips/{slug}-profile.mp4"
+        if local_media.is_servable(video):
+            poster = f"clips/{slug}-profile.jpg"
+            return {"video": video, "poster": poster if local_media.is_servable(poster) else None, "shape": shape, "poster_at": 0}
     video = f"clips/{slug}-portrait.mp4"
     if local_media.is_servable(video):
         poster = f"clips/{slug}-portrait.jpg"
         return {"video": video, "poster": poster if local_media.is_servable(poster) else None,
-                "shape": media_slots.PORTRAIT_SHAPE.get(slug, "square"), "poster_at": media_slots.PORTRAIT_POSTER_AT}
+                "shape": shape, "poster_at": media_slots.PORTRAIT_POSTER_AT}
     legacy = _local_clip(slug)
     if legacy:
         wide = media_slots.PORTRAIT_SHAPE.get(slug) == "wide"
@@ -227,15 +235,18 @@ def character_detail(slug):
     character["pos_hero"] = entry["pos_hero"] if entry else "50% 40%"
     character["cover"] = character["main"]
     gallery = media.for_entity("character", character_id, limit=14)
-    # the second picture is the first of the gallery, so it is part of a composition and never a loose attachment
-    used = {character["main"]["slug"]} if character["main"] else set()
-    first = [character["second"]] if character["second"] else []
-    used |= {m["slug"] for m in first}
-    character["gallery"] = first + [m for m in gallery if m["slug"] not in used]
+    used = {m["slug"] for m in (character["main"], character["second"]) if m}
+    character["gallery"] = [m for m in gallery if m["slug"] not in used]
+    # the second picture overlaps the large picture; this is where the person sits across it, as a crop position
+    shape = "wide" if character["is_lead"] else "square"
+    window = 0.75 if shape == "wide" else 0.45
+    x = media_slots.SECOND_FOCUS.get(slug, 0.5)
+    character["second_pos"] = f"{round(max(0.0, min(1.0, (x - window / 2) / (1 - window))) * 100)}% 50%"
+    character["shape"] = shape
     character["costars"] = characters_repo.costars_for(character_id)
     clips = {c["character_slug"]: c for c in media.character_clips()}
     character["clip"] = clips.get(slug)
-    character["portrait"] = _portrait(slug)
+    character["portrait"] = _portrait(slug, "profile")
     # connections with a face, and the people either side of them in the cast
     by_slug = {c["slug"]: c for c in cast}
     character["connections"] = []

@@ -81,5 +81,5 @@ def test_every_token_used_by_components_is_defined():
     local = {"--r-chip"}  # custom properties a component sets for itself
     undefined = {u for u in used if u not in defined and u not in local}
     # properties set inline by templates or JS (focus points, progress) are allowed
-    undefined -= {"--p", "--progress", "--x", "--y", "--auto-ms", "--z", "--tx", "--ty"}   # set per element: layer travel
+    undefined -= {"--p", "--progress", "--x", "--y", "--auto-ms", "--z", "--tx", "--ty", "--ov-x", "--ov-y"}   # set per element: layer travel; the overlap of the second picture
     assert not undefined, f"undefined custom properties: {sorted(undefined)}"

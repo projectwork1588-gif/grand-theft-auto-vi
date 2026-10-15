@@ -99,11 +99,11 @@ CHARACTER_STAGE = {
     "brian-heder": {"main": "art-brian-heder", "second": "shot-brian-heder-01", "pos": "65% 40%", "pos2": "60% 40%"},
 }
 CAST_LEADS = ("jason-duval", "lucia-caminos")
-# Where the head sits in each second picture, for the wide crop it gets as the first item of the profile gallery
-# ("top" keeps the head at the top edge, "upper" a little below it). Defined for the Characters gallery only.
-GALLERY_FOCUS = {
-    "shot-jason-duval-04": "top", "shot-lucia-caminos-10": "upper", "shot-cal-hampton-01": "top", "shot-boobie-ike-01": "upper",
-    "shot-dequan-priest-02": "top", "shot-real-dimez-01": "upper", "shot-raul-bautista-01": "upper", "shot-brian-heder-01": "upper",
+# Where the person sits across each second picture (0 = left edge, 1 = right edge). The second picture overlaps the large
+# one on the profile pages as a 4:3 (beside a 16:9 clip) or 4:5 (beside a square clip) crop, centred on this point.
+SECOND_FOCUS = {
+    "jason-duval": 0.43, "lucia-caminos": 0.50, "cal-hampton": 0.71, "boobie-ike": 0.56,
+    "dre-quan-priest": 0.83, "real-dimez": 0.50, "raul-bautista": 0.83, "brian-heder": 0.55,
 }
 # Motion portraits on the Characters pages. Rockstar shot the two leads in 16:9 and the other six square, so each person
 # is shown in the shape the footage was shot in, never stretched into a shape it was not (the old extended widescreen
