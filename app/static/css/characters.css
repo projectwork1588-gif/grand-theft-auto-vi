@@ -7,11 +7,21 @@
 .shot { display: block; width: 100%; height: 100%; object-fit: cover; }
 /* where the subject sits in each picture (data-pos on the image; data-pos-m is the phone framing) */
 .shot[data-pos="0-22"] { object-position: 0% 22%; }
-.shot[data-pos="22-50"] { object-position: 22% 50%; }
+/* the second pictures' crops, to the nearest tenth */
+.shot[data-pos="0-50"] { object-position: 0% 50%; }
+.shot[data-pos="10-50"] { object-position: 10% 50%; }
+.shot[data-pos="20-50"] { object-position: 20% 50%; }
+.shot[data-pos="30-50"] { object-position: 30% 50%; }
+.shot[data-pos="40-50"] { object-position: 40% 50%; }
 .shot[data-pos="50-50"] { object-position: 50% 50%; }
+.shot[data-pos="60-50"] { object-position: 60% 50%; }
+.shot[data-pos="70-50"] { object-position: 70% 50%; }
+.shot[data-pos="80-50"] { object-position: 80% 50%; }
+.shot[data-pos="90-50"] { object-position: 90% 50%; }
+.shot[data-pos="100-50"] { object-position: 100% 50%; }
+.shot[data-pos="22-50"] { object-position: 22% 50%; }
 .shot[data-pos="59-50"] { object-position: 59% 50%; }
 .shot[data-pos="88-50"] { object-position: 88% 50%; }
-.shot[data-pos="100-50"] { object-position: 100% 50%; }
 .shot[data-pos="61-50"] { object-position: 61% 50%; }
 .shot[data-pos="20-0"] { object-position: 20% 0%; }
 .shot[data-pos="45-30"] { object-position: 45% 30%; }
@@ -39,6 +49,10 @@
 .cast-open__in { width: min(var(--max-wide), 100% - 2 * var(--gutter)); margin: 0 auto; padding: calc(var(--header-h) + var(--s6)) 0 clamp(36px, 7vh, 80px); }
 .cast-open h1 { max-width: 12ch; margin: var(--s2) 0 var(--s2); font: 700 var(--t-h1)/.92 var(--font-display); letter-spacing: var(--track-caps); text-transform: uppercase; }
 .cast-open__lede { max-width: 28ch; margin: 0; font: 500 var(--t-lead)/1.5 var(--font-text); }
+
+/* the Explore results come first on the screen: a shorter opening */
+.cast-page--results .cast-open { min-height: min(56svh, 520px); }
+.cast-page--results .cast-open h1 { font-size: var(--t-h2); }
 
 /* ---------- jump navigation ---------- */
 .cast-nav { position: sticky; top: var(--header-h); z-index: 30; background: rgba(18, 16, 42, .88); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
@@ -127,6 +141,7 @@
    but paused video can never show its black first frame. The caption sits below the picture, never over the subject. */
 .motion-portrait { position: relative; margin: 0; width: 120px; display: grid; gap: 7px; }
 .motion-portrait--wide { width: 232px; }
+.spread__foot .motion-portrait--wide { width: 272px; }
 /* the box has the footage's own shape, so nothing is cropped and nothing is stretched */
 .motion-portrait__frame { position: relative; aspect-ratio: 1; border-radius: var(--r-tile); overflow: hidden; background: var(--card); border: 1px solid var(--line-strong); }
 .motion-portrait--wide .motion-portrait__frame { aspect-ratio: 16 / 9; }
@@ -148,13 +163,21 @@
 .group__grid { display: grid; gap: var(--s4) clamp(20px, 2.4vw, 36px); align-items: start; }
 .group--2 .group__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 /* one feature the height of two stacked rows: nothing hangs below its neighbour */
-.group--3 .group__grid { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-items: stretch; }
+.group--3 .group__grid { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); align-items: stretch; }
 .group--3 .person:first-child { grid-row: 1 / span 2; grid-template-rows: minmax(0, 1fr) auto; align-content: stretch; }
-.group--3 .person:first-child .person__art { aspect-ratio: auto; min-height: 280px; }
-.group--3 .person:not(:first-child) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: var(--s3); }
+.group--3 .person:first-child .person__media { display: grid; grid-template-columns: minmax(0, 1fr); min-height: 300px; }
+.group--3 .person:first-child .person__art { aspect-ratio: auto; height: 100%; }
+.group--3 .person:not(:first-child) { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); align-items: start; gap: var(--s4); }
 .group--3 .person:not(:first-child) .person__art { aspect-ratio: 4 / 3; }
 .person { display: grid; gap: var(--s2); align-content: start; }
+/* the picture, with the person's clip layered over its lower-left (the same language as the profile pages) */
+.person__media { position: relative; margin-bottom: 46px; min-width: 0; }
 .person__art { display: block; aspect-ratio: 16 / 10; border-radius: var(--r-card); overflow: hidden; background: var(--card); box-shadow: 0 36px 80px -50px #000; }
+/* large enough to read the footage: a small thumbnail makes true-speed footage look hurried */
+.person__media .motion-portrait { position: absolute; left: 16px; bottom: -34px; z-index: 2; width: clamp(160px, 42%, 250px); display: block; }
+.person__media .motion-portrait__frame { border-radius: var(--r-tile); box-shadow: 0 0 0 4px var(--ground), 0 24px 40px -18px #000; }
+.person__media .motion-portrait__cap { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.person__media .motion-portrait__optin { left: 10px; bottom: 10px; width: 40px; height: 40px; }
 .person__name { margin: 6px 0 6px; font: 700 var(--t-h2)/.95 var(--font-display); letter-spacing: var(--track-caps); text-transform: uppercase; }
 .person__sum { margin: 0 0 var(--s2); font: 500 var(--t-body)/1.5 var(--font-text); }
 .person .chips { margin-bottom: var(--s2); }
@@ -162,7 +185,8 @@
 .pill--small { height: 38px; padding: 0 18px; margin-top: 0; }
 .person--feature { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: center; gap: 0 clamp(20px, 2.4vw, 36px); }
 .group--single .group__grid { grid-template-columns: minmax(0, 1fr); }
-.person--feature .person__art { grid-column: 1 / span 7; aspect-ratio: 16 / 9; }
+.person--feature .person__media { grid-column: 1 / span 7; }
+.person--feature .person__art { aspect-ratio: 16 / 9; }
 .person--feature .person__text { grid-column: 8 / span 5; }
 
 /* ---------- the relationship network ---------- */
@@ -285,7 +309,8 @@
   .spread__second { bottom: -5%; }
   .group--3 .group__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
   .group--3 .person:first-child { grid-row: auto; grid-column: 1 / span 2; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); grid-template-rows: auto; align-items: center; gap: var(--s3); }
-  .group--3 .person:first-child .person__art { aspect-ratio: 16 / 10; min-height: 0; }
+  .group--3 .person:first-child .person__media { display: block; min-height: 0; }
+  .group--3 .person:first-child .person__art { aspect-ratio: 16 / 10; min-height: 0; height: auto; }
   .group--3 .person:not(:first-child) { grid-template-columns: minmax(0, 1fr); align-items: start; }
   .group--3 .person:not(:first-child) .person__art { aspect-ratio: 16 / 10; }
   .together { aspect-ratio: 2.2 / 1; }
@@ -333,7 +358,7 @@
   .group--3 .person:first-child { grid-column: auto; grid-template-columns: minmax(0, 1fr); }
   .group--2 .person:nth-child(2) { margin-top: 0; }
   .person--feature { display: grid; grid-template-columns: 1fr; }
-  .person--feature .person__art, .person--feature .person__text { grid-column: auto; }
+  .person--feature .person__media, .person--feature .person__text { grid-column: auto; }
   .together { margin-inline: 0; aspect-ratio: 6 / 5; max-height: none; }
   .together__in { padding-bottom: var(--s3); }
   .results__list { grid-template-columns: 1fr; }
@@ -356,3 +381,6 @@
 @media (prefers-reduced-motion: reduce) {
   html.motion-on .cast-open__bg .shot { animation-duration: 42s !important; animation-iteration-count: infinite !important; }
 }
+
+/* when the browser refuses to start a clip by itself the still stays and its own Play button shows */
+.motion-portrait.is-blocked .motion-portrait__optin[hidden] { display: grid; }

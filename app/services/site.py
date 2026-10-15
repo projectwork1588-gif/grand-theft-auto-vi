@@ -54,23 +54,16 @@ def _local_poster(slug):
     return path if local_media.is_servable(path) else None
 
 
-def _portrait(slug, variant="listing"):
-    """The motion portrait the Characters pages show, or None. Built by `scripts.make_loops --portraits`, each person in
-    the shape the footage was shot in (the two leads 16:9, the rest square). Two sets exist: "listing" (the landing
-    tiles; the still is a frame of the clip) and "profile" (the large picture of a profile; the still is the artwork,
-    which is the first frame, so the clip dissolves in from it). Missing files fall back to the other set, then to the
-    older per-person loop, which is used as it always was."""
+def _portrait(slug):
+    """The motion sequence the Characters pages show (landing tiles and profiles alike), or None. Built by
+    `scripts.make_loops --portraits`, each person in the shape the footage was shot in (the two leads 16:9, the rest
+    square). It starts on the person's artwork (the still is that very frame), dissolves into the clip, plays it whole at
+    true speed and dissolves back. Missing files fall back to the older per-person loop, used as it always was."""
     shape = media_slots.PORTRAIT_SHAPE.get(slug, "square")
-    if variant == "profile":
-        video = f"clips/{slug}-profile.mp4"
-        if local_media.is_servable(video):
-            poster = f"clips/{slug}-profile.jpg"
-            return {"video": video, "poster": poster if local_media.is_servable(poster) else None, "shape": shape, "poster_at": 0}
-    video = f"clips/{slug}-portrait.mp4"
+    video = f"clips/{slug}-profile.mp4"
     if local_media.is_servable(video):
-        poster = f"clips/{slug}-portrait.jpg"
-        return {"video": video, "poster": poster if local_media.is_servable(poster) else None,
-                "shape": shape, "poster_at": media_slots.PORTRAIT_POSTER_AT}
+        poster = f"clips/{slug}-profile.jpg"
+        return {"video": video, "poster": poster if local_media.is_servable(poster) else None, "shape": shape, "poster_at": 0}
     legacy = _local_clip(slug)
     if legacy:
         wide = media_slots.PORTRAIT_SHAPE.get(slug) == "wide"
@@ -164,6 +157,15 @@ def _cast_groups(cast):
     alone = [c for c in supporting if c["slug"] not in used]
     for c in alone:
         groups.append({"title": None, "kicker": "No stated connections yet", "people": [c], "single": True})
+    # where to cut each card's picture so the person stays in it: the card's width over the picture's 16:9 is the share of
+    # the picture that shows (about 1.0 for a feature, 0.9 for a pair, 0.72 for a stacked card, 0.47 for the tall one)
+    for g in groups:
+        n = len(g["people"])
+        for i, c in enumerate(g["people"]):
+            window = 1.0 if n == 1 else (0.9 if n == 2 else (0.47 if i == 0 else 0.72))
+            x = media_slots.SECOND_FOCUS.get(c["slug"], 0.5)
+            p = max(0.0, min(1.0, (x - window / 2) / (1 - window))) if window < 1 else 0.5
+            c["card_pos"] = f"{int(round(p * 10)) * 10}% 50%"
     return groups
 
 
@@ -184,7 +186,8 @@ def _network(cast):
         nodes.append({"slug": c["slug"], "name": c["full_name"], "role": c["role_title"], "x": x, "y": y, "lead": c["is_lead"],
                       "linked": c["slug"] in linked, "image": c["second"] if not c["is_lead"] else c["main"],
                       "pos": c["pos2"] if not c["is_lead"] else c["pos"], "fx": face[0], "fy": face[1],
-                      "iw": 240 if c["is_lead"] else 200, "ih": 135 if c["is_lead"] else 112})
+                      "iw": 240 if c["is_lead"] else 200, "ih": 135 if c["is_lead"] else 112,
+                      "side": "right" if c["slug"] in media_slots.NETWORK_NAME_RIGHT else "below"})
     for e in edges:
         a = next(n for n in nodes if n["slug"] == e["from"])
         b = next(n for n in nodes if n["slug"] == e["to"])
@@ -246,7 +249,7 @@ def character_detail(slug):
     character["costars"] = characters_repo.costars_for(character_id)
     clips = {c["character_slug"]: c for c in media.character_clips()}
     character["clip"] = clips.get(slug)
-    character["portrait"] = _portrait(slug, "profile")
+    character["portrait"] = _portrait(slug)
     # connections with a face, and the people either side of them in the cast
     by_slug = {c["slug"]: c for c in cast}
     character["connections"] = []

@@ -16,10 +16,10 @@
    clip, is what is seen until the clip is really playing, so a paused or not-yet-loaded video can never show a black
    frame. The clip plays once when it comes into view (and the visitor allows motion), then rests on the artwork. A
    small round Play button, in the corner the subject is not in, appears only when motion is switched off. #}
-{% macro portrait(c, label='In motion') -%}
+{% macro portrait(c, label='In motion', tile=false) -%}
   {% set pr = c.portrait %}
   {% if pr %}
-  <figure class="motion-portrait motion-portrait--{{ pr.shape }}" data-portrait>
+  <figure class="motion-portrait motion-portrait--{{ pr.shape }}{% if tile %} motion-portrait--tile{% endif %}" data-portrait>
     <div class="motion-portrait__frame">
       {% if pr.poster %}<img class="motion-portrait__poster" src="{{ media_file_url(pr.poster) }}" alt="" loading="lazy" decoding="async">{% endif %}
       <video class="motion-portrait__video" data-portrait-video data-poster-at="{{ pr.poster_at }}" data-src="{{ media_file_url(pr.video) }}" muted playsinline preload="none"

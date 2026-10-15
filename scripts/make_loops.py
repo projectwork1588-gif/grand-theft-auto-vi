@@ -3,8 +3,8 @@
     python -m scripts.fetch_clips      # 1. fetch Rockstar's character clips into media/source/
     python -m scripts.make_loops       # 2. build media/clips/ (needs ffmpeg: `pip install imageio-ffmpeg` is enough)
     python -m scripts.make_loops --posters   # only redo the per-person poster stills from the built sequences
-    python -m scripts.make_loops --portraits # the Characters pages' portraits: each person in the shape it was shot in
-                                             # (a listing set and a profile set; also fetches Lucia's main artwork once)
+    python -m scripts.make_loops --portraits # the Characters pages' sequences: each person in the shape it was shot in
+                                             # (one set for the landing tiles and the profiles; fetches Lucia's artwork once)
 
 Rockstar's character clips are only 1 to 1.5 seconds long. Each person gets a short, elegant beat and no artificial
 slow motion: the clip plays at its true speed (SPEED is 1.0), dissolves over 0.4 s into the person's official artwork,
@@ -15,9 +15,9 @@ frame free for the caption. The artwork is fetched once from Rockstar's own site
 Outputs in media/clips/ (all Git-ignored, never committed):
   leonida-reel.mp4  all eight people in app.media_slots.CAST_ORDER, 0.3 s dissolves between them, about 20 s, 1600x900
   leonida-reel.jpg  poster for the reel
-  <slug>-portrait.mp4/.jpg   the Characters landing tiles: the clip in its own shape, dissolving into the artwork
-  <slug>-profile.mp4/.jpg    the large picture of "The story so far" on each profile: it starts on the artwork (the .jpg
-                    is that very frame), dissolves into the clip, plays it whole at true speed, dissolves back
+  <slug>-profile.mp4/.jpg    the Characters pages (landing tiles and the large picture of "The story so far" on each
+                    profile): it starts on the artwork (the .jpg is that very frame), dissolves into the clip, plays
+                    it whole at true speed, dissolves back and rests
   <slug>.mp4/.jpg   one sequence per person with a short dip to black at each end, for the profile pages. The .jpg is the
                     poster: the clip's own frame at POSTER_AT, lifted towards a readable brightness (a few of the clips
                     are very dark scenes), never the black first frame
@@ -30,7 +30,7 @@ import subprocess
 import sys
 import urllib.request
 
-from app.media_slots import CAST_ORDER, PORTRAIT_POSTER_AT, PORTRAIT_SHAPE
+from app.media_slots import CAST_ORDER, PORTRAIT_SHAPE
 from scripts.fetch_clips import CHARACTER_CLIPS, SOURCE_DIR
 from scripts.schema_info import ROOT
 
@@ -96,6 +96,9 @@ PORTRAIT_MAX_GAMMA = 1.7
 INTERMEDIATE = ["-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-pix_fmt", "yuv420p", "-r", "30"]
 FINAL = ["-an", "-c:v", "libx264", "-preset", "slow", "-crf", "25", "-pix_fmt", "yuv420p", "-r", "30",
          "-profile:v", "high", "-movflags", "+faststart"]
+
+# the Characters sequences are shown at 130 to 700 CSS pixels: a slightly stronger compression keeps each file light
+PROFILE_FINAL = [("27" if a == "25" else a) for a in FINAL]
 
 
 def ffmpeg_exe():
@@ -250,37 +253,10 @@ def build_profile(ffmpeg, stem, slug):
     )
     out = CLIPS_DIR / f"{slug}-profile.mp4"
     run(ffmpeg, "-i", str(src), "-loop", "1", "-t", f"{outro + PROFILE_INTRO + 1:.1f}", "-i", str(profile_art(slug)),
-        "-filter_complex", graph, "-map", "[v]", *FINAL, str(out))
+        "-filter_complex", graph, "-map", "[v]", *PROFILE_FINAL, str(out))
     run(ffmpeg, "-i", str(out), "-frames:v", "1", "-q:v", "2", str(CLIPS_DIR / f"{slug}-profile.jpg"))
     return {"slug": slug, "shape": "wide" if wide else "square", "gamma": round(gamma, 2),
             "length": round(length + PROFILE_INTRO + PORTRAIT_DISSOLVE + PORTRAIT_HOLD, 2), "clip": round(length, 2)}
-
-
-def build_portrait(ffmpeg, stem, slug):
-    """media/clips/<slug>-portrait.mp4 and .jpg (the Characters landing tiles): the clip at true speed in its own
-    shape, dissolving into the artwork cropped to the same shape. The .jpg is the exact frame at PORTRAIT_POSTER_AT,
-    so the still and the clip join up."""
-    wide = PORTRAIT_SHAPE.get(slug, "square") == "wide"
-    w, h = PORTRAIT_SIZE["wide" if wide else "square"]
-    src = SOURCE_DIR / f"{stem}.mp4"
-    art = profile_art(slug)
-    length = duration(ffmpeg, src) / SPEED
-    grade, gamma = _grade(ffmpeg, src)
-    hold = PORTRAIT_DISSOLVE + PORTRAIT_HOLD
-    zoom = f"(1+{PUSH}*t/{hold})"
-    graph = (
-        # the clip's last frame is held a little past the dissolve so the dissolve always completes
-        f"[0:v]fps=30,scale={w}:{h}:flags=lanczos{grade},format=yuv420p,tpad=stop_mode=clone:stop_duration=0.2[c];"
-        f"[1:v]fps=30,{_art_crop(slug, w, h, wide)},"
-        f"scale=w='trunc({w}*{zoom}/2)*2':h='trunc({h}*{zoom}/2)*2':eval=frame:flags=bicubic,crop={w}:{h},format=yuv420p[a];"
-        f"[c][a]xfade=transition=fade:duration={PORTRAIT_DISSOLVE}:offset={length - PORTRAIT_DISSOLVE:.3f}[v]"
-    )
-    out = CLIPS_DIR / f"{slug}-portrait.mp4"
-    run(ffmpeg, "-i", str(src), "-loop", "1", "-t", f"{hold}", "-i", str(art), "-filter_complex", graph,
-        "-map", "[v]", *FINAL, str(out))
-    run(ffmpeg, "-ss", f"{PORTRAIT_POSTER_AT}", "-i", str(out), "-frames:v", "1", "-q:v", "2", str(CLIPS_DIR / f"{slug}-portrait.jpg"))
-    return {"slug": slug, "shape": "wide" if wide else "square", "width": w, "height": h, "gamma": round(gamma, 2),
-            "length": round(length - PORTRAIT_DISSOLVE + hold, 2)}
 
 
 def build_portraits_only():
@@ -290,10 +266,8 @@ def build_portraits_only():
     fetch_profile_art()
     for stem in SEQUENCE:
         slug, name = SLUGS[stem]
-        tile = build_portrait(ffmpeg, stem, slug)
-        prof = build_profile(ffmpeg, stem, slug)
-        print(f"  {name}: {tile['shape']}, lift gamma {tile['gamma']}; tile {tile['length']}s, profile {prof['length']}s "
-              f"(clip {prof['clip']}s whole)", flush=True)
+        info = build_profile(ffmpeg, stem, slug)
+        print(f"  {name}: {info['shape']}, lift gamma {info['gamma']}, {info['length']}s (the clip's {info['clip']}s whole)", flush=True)
 
 
 def build_segment(ffmpeg, src, art, out, length, wide):

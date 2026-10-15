@@ -109,7 +109,6 @@ SECOND_FOCUS = {
 # is shown in the shape the footage was shot in, never stretched into a shape it was not (the old extended widescreen
 # frame is kept only for the homepage reel). Built by `python -m scripts.make_loops --portraits`.
 PORTRAIT_SHAPE = {"jason-duval": "wide", "lucia-caminos": "wide"}      # everyone else is "square"
-PORTRAIT_POSTER_AT = 0.4          # seconds: the still is this exact frame, so the clip takes over without a visible change
 # The partner banner: both protagonists' faces large and lit, taken from Rockstar's own Jason and Lucia screenshots.
 CAST_TOGETHER = "shot-jason-and-lucia-01"
 # Opening picture of the Characters page: both leads, faces whole, space on the left for the title.
@@ -119,7 +118,9 @@ CAST_GROUP_TITLES = {
     frozenset({"boobie-ike", "dre-quan-priest", "real-dimez"}): "Only Raw Records",
 }
 # Where each person sits on the relationship network (a 1200 x 560 canvas). Leads in the middle, the rest around them.
+# People drawn in a column have their name beside the picture instead of under it, so no line ever crosses a name.
+NETWORK_NAME_RIGHT = frozenset({"boobie-ike", "dre-quan-priest", "real-dimez"})
 NETWORK_LAYOUT = {
     "jason-duval": (410, 250), "lucia-caminos": (790, 250), "brian-heder": (150, 110), "cal-hampton": (150, 390),
-    "boobie-ike": (880, 100), "dre-quan-priest": (1060, 250), "real-dimez": (900, 420), "raul-bautista": (560, 450),
+    "boobie-ike": (930, 100), "dre-quan-priest": (930, 285), "real-dimez": (930, 470), "raul-bautista": (560, 450),
 }

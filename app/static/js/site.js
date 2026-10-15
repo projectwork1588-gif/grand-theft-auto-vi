@@ -928,6 +928,7 @@
       var targets = links.map(function (a) { return document.getElementById(a.getAttribute("href").slice(1)); });
       var list = nav.querySelector("ol");
       var setCurrent = function (id) {
+        if (!id && list && list.scrollLeft > 0) { list.scrollTo({ left: 0, behavior: reduceMotion ? "auto" : "smooth" }); }   // nobody marked: the bar goes back to its start
         links.forEach(function (a) {
           var on = a.getAttribute("href") === "#" + id;
           if (on) { a.setAttribute("aria-current", "true"); } else { a.removeAttribute("aria-current"); }
@@ -1003,19 +1004,23 @@
     }
   })();
 
-  // ---- Motion portraits: each person's clip plays once when it is in view, then rests on the artwork --------------
-  // Rockstar's clips are one to one and a half seconds, so they are never looped. One plays at a time (the most visible),
-  // only when the visitor allows motion and nothing else is playing; leaving the view re-arms it for the next visit.
+  // ---- Motion portraits: each person's sequence plays once when it is in view, then rests on the artwork -----------
+  // A sequence is one file: the artwork, a dissolve into the clip, the whole clip at true speed, a dissolve back, the
+  // artwork held. It starts on its own still, so there is nothing to match up. One plays at a time and, once started, it
+  // is never cut short by another tile coming into view (the next one waits its turn). If the visitor scrolls away or
+  // the tab is hidden mid-way it stops and goes back to the artwork, so a half-dissolved frame is never left on screen.
+  // A finished sequence stays at rest on the artwork for the rest of the visit.
   (function portraits() {
     var tiles = [].slice.call(document.querySelectorAll("[data-portrait]"));
     if (!tiles.length) { return; }
     window.tvMedia = window.tvMedia || { cast: false, cinema: false, modal: false };
     var players = tiles.map(function (el) {
       var video = el.querySelector("[data-portrait-video]");
-      return { el: el, video: video, src: video && video.getAttribute("data-src"), ratio: 0, loaded: false, done: false };
+      return { el: el, video: video, src: video && video.getAttribute("data-src"), ratio: 0, since: 0, loaded: false, done: false, blocked: false };
     }).filter(function (p) { return p.video && p.src; });
     if (!players.length) { return; }
 
+    var DWELL = 380;                               // ms a tile must stay at least half in view before its sequence starts
     function eligible() {
       return motionAllowed() && !document.hidden && !window.tvMedia.cinema && !window.tvMedia.cast && !window.tvMedia.modal;
     }
@@ -1026,39 +1031,71 @@
       p.video.src = p.src;
       p.video.load();
     }
-    function start(p) {
-      if (!p.video.paused || p.done) { return; }
-      load(p);
-      var promise = p.video.play();
-      if (promise && typeof promise.catch === "function") { promise.catch(function () { /* the poster stays */ }); }
+    function toArtwork(p) {                       // stop and go back to the artwork
+      p.video.pause();
+      try { p.video.currentTime = 0; } catch (e) { /* not ready */ }
+      p.el.classList.remove("is-live", "is-rest");
     }
-    function anyPlaying() { return players.some(function (q) { return !q.video.paused; }); }
+    function start(p) {
+      load(p);
+      if (p.video.readyState < 4) { return; }     // wait until the whole sequence can play straight through without stalling
+      var promise = p.video.play();
+      if (promise && typeof promise.catch === "function") {
+        promise.catch(function (err) {
+          if (err && err.name === "NotAllowedError") { p.blocked = true; p.el.classList.add("is-blocked"); }   // the still stays, a Play button shows
+        });
+      }
+    }
+    function finish(p) {                           // it has played to the end: rest on the artwork
+      if (p.done) { return; }
+      p.done = true;
+      p.el.classList.add("is-rest");
+      // rest on the held artwork (older loops end on a black fade-out frame, so step back from the end)
+      try { if (p.video.duration > 0.8) { p.video.currentTime = p.video.duration - 0.6; } } catch (e) { /* not seekable */ }
+    }
     function reconcile() {
-      var best = null;
-      players.forEach(function (p) { if (eligible() && p.ratio >= 0.5 && !p.done && (!best || p.ratio > best.ratio)) { best = p; } });
+      var playing = null, best = null;
+      players.forEach(function (p) { if (p.video.ended) { finish(p); } });   // (the pause event arrives before ended)
       players.forEach(function (p) {
-        if (p === best) { start(p); } else if (!p.video.paused) { p.video.pause(); }
+        if (p.video.paused || p.done) { return; }
+        if (!eligible() || p.ratio < 0.15) { toArtwork(p); } else { playing = p; }
       });
-      window.tvMedia.portrait = anyPlaying();
+      if (!playing && eligible()) {
+        // a tile starts once it has been comfortably in view for a moment, so scrolling past does not start and stop clips;
+        // of those, the one nearest the reading line goes first and the others wait their turn
+        var now = Date.now(), line = window.innerHeight * 0.45, bestGap = Infinity, waiting = false;
+        players.forEach(function (p) {
+          if (p.done || p.blocked || p.ratio < 0.5) { return; }
+          if (now - p.since < DWELL) { waiting = true; return; }
+          var r = p.el.getBoundingClientRect(), gap = Math.abs((r.top + r.bottom) / 2 - line);
+          if (gap < bestGap) { bestGap = gap; best = p; }
+        });
+        if (best) { start(best); } else if (waiting) { window.setTimeout(reconcile, DWELL + 20); }
+      }
+      window.tvMedia.portrait = players.some(function (p) { return !p.video.paused; });
     }
     players.forEach(function (p) {
       p.video.muted = true;
-      p.video.addEventListener("playing", function () { window.tvMedia.portrait = true; });
-      // The sequence dips through black for 0.3 s at both ends. The bright poster stays up until the clip has faded in,
-      // so a tile is never a black square.
       var at = parseFloat(p.video.getAttribute("data-poster-at"));
-      var takeover = isNaN(at) ? 0.32 : at;     // the still is the frame at this time (0: the clip starts on the still)
+      var takeover = isNaN(at) ? 0.32 : at;       // the video time at which the clip's own picture replaces the still
+      p.video.addEventListener("playing", function () {
+        if (takeover === 0) { p.el.classList.add("is-live"); }   // the sequence starts on its still: nothing to wait for
+        window.tvMedia.portrait = true;
+      });
       p.video.addEventListener("timeupdate", function () {
-        if (p.video.currentTime >= takeover && !p.el.classList.contains("is-live")) { p.el.classList.add("is-live"); }
+        if (takeover > 0 && p.video.currentTime >= takeover && !p.el.classList.contains("is-live")) { p.el.classList.add("is-live"); }
       });
-      p.video.addEventListener("pause", function () { window.tvMedia.portrait = anyPlaying(); });
+      p.video.addEventListener("pause", reconcile);
+      p.video.addEventListener("canplay", reconcile);
+      p.video.addEventListener("canplaythrough", reconcile);
       p.video.addEventListener("ended", function () {
-        p.done = true;
-        p.el.classList.add("is-rest");
-        // rest on the held artwork, not on the final black frame of the fade-out
-        try { if (p.video.duration > 0.8) { p.video.currentTime = p.video.duration - 0.6; } } catch (e) { /* not seekable */ }
-        window.tvMedia.portrait = anyPlaying();
+        finish(p);
+        reconcile();                               // the next one waiting may start now
       });
+      var button = p.el.querySelector("[data-motion-optin]");
+      if (button) {
+        button.addEventListener("click", function () { p.blocked = false; p.el.classList.remove("is-blocked"); start(p); });
+      }
     });
     if ("IntersectionObserver" in window) {
       var near = new IntersectionObserver(function (entries) {
@@ -1070,16 +1107,14 @@
       var see = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
           var p = players.filter(function (q) { return q.el === entry.target; })[0];
-          if (!p) { return; }
-          p.ratio = entry.isIntersecting ? entry.intersectionRatio : 0;
-          if (p.ratio === 0 && p.done) {                 // out of sight: arm it for the next time it is seen
-            p.done = false;
-            p.el.classList.remove("is-rest", "is-live");   // the bright poster shows again until it plays
-            try { p.video.currentTime = 0; } catch (e) { /* not ready */ }
+          if (p) {
+            var before = p.ratio >= 0.5;
+            p.ratio = entry.isIntersecting ? entry.intersectionRatio : 0;
+            if (p.ratio >= 0.5 && !before) { p.since = Date.now(); }
           }
         });
         reconcile();
-      }, { threshold: [0, 0.25, 0.5, 0.75, 1] });
+      }, { threshold: [0, 0.15, 0.3, 0.5, 0.75, 1] });
       players.forEach(function (p) { near.observe(p.el); see.observe(p.el); });
     }
     document.addEventListener("visibilitychange", reconcile);

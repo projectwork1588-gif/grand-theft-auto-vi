@@ -45,14 +45,14 @@ def local_clips(app, tmp_path):
 
 @pytest.fixture()
 def local_portraits(app, tmp_path):
-    """local_clips plus what `make_loops --portraits` builds: <slug>-portrait.* (landing tiles) and <slug>-profile.*."""
+    """local_clips plus what `make_loops --portraits` builds: <slug>-profile.* (landing tiles and profiles)."""
     clips = tmp_path / "clips"
     clips.mkdir()
     segments, cursor = [], 0.0
     for slug in CLIP_SLUGS:
-        for name in (f"{slug}.mp4", f"{slug}-portrait.mp4", f"{slug}-profile.mp4"):
+        for name in (f"{slug}.mp4", f"{slug}-profile.mp4"):
             (clips / name).write_bytes(b"ftypmp42")
-        for name in (f"{slug}.jpg", f"{slug}-portrait.jpg", f"{slug}-profile.jpg"):
+        for name in (f"{slug}.jpg", f"{slug}-profile.jpg"):
             (clips / name).write_bytes(b"JFIF")
         segments.append({"slug": slug, "name": slug, "start": round(cursor, 2), "end": round(cursor + 2.9, 2)})
         cursor += 2.9

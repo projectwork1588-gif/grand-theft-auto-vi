@@ -189,7 +189,7 @@ def test_motion_portrait_keeps_the_still_until_the_clip_is_playing():
     assert re.search(r"\.motion-portrait__video \{[^}]*opacity: 0", css)
     assert re.search(r"\.motion-portrait\.is-live \.motion-portrait__video \{[^}]*opacity: 1", css)
     script = (ROOT / "app" / "static" / "js" / "site.js").read_text(encoding="utf-8")
-    assert 'remove("is-rest", "is-live")' in script           # leaving the view brings the bright still back
+    assert 'classList.remove("is-live", "is-rest")' in script         # leaving the view brings the artwork back
 
 
 def test_lead_heroes_start_below_the_header_so_the_head_always_has_room():
@@ -240,11 +240,12 @@ def test_each_person_is_shown_in_the_shape_the_footage_was_shot_in(client, local
         assert 'data-poster-at="0"' in page, slug               # the sequence starts on the still: nothing to match up
 
 
-def test_the_landing_keeps_its_own_tiles(client, local_portraits):
+def test_the_landing_tiles_use_the_same_sequences_as_the_profiles(client, local_portraits):
+    """One pipeline: a person's tile on the landing page and their profile play the same file, so the pacing cannot differ."""
     page = client.get("/characters").get_data(as_text=True)
-    assert page.count("-portrait.mp4") == 8 and page.count("motion-portrait--wide") == 2 and page.count("motion-portrait--square") == 6
-    assert "-profile.mp4" not in page and "motion-portrait--legacy" not in page
-    assert 'data-poster-at="0.4"' in page                       # a tile's still is a frame of the clip
+    assert page.count("-profile.mp4") == 8 and page.count("motion-portrait--wide") == 2 and page.count("motion-portrait--square") == 6
+    assert page.count("motion-portrait--tile") == 6 and "-portrait.mp4" not in page and "motion-portrait--legacy" not in page
+    assert page.count('data-poster-at="0"') == 8
 
 
 def test_the_homepage_keeps_its_own_clips(client, local_portraits):
@@ -252,7 +253,7 @@ def test_the_homepage_keeps_its_own_clips(client, local_portraits):
     assert "-portrait" not in home and "-profile" not in home
 
 
-def test_profile_falls_back_to_the_landing_set_and_then_to_the_older_loop(client, local_clips):
+def test_pages_fall_back_to_the_older_loop_until_the_sequences_are_built(client, local_clips):
     page = client.get("/characters/cal-hampton").get_data(as_text=True)      # local_clips has only the older loops
     assert "motion-portrait--legacy" in page and 'class="p-media p-media--square"' in page
     assert "p-media__second" in page                                         # the layout does not depend on the footage
@@ -330,3 +331,40 @@ def test_locally_built_profile_sequences_have_the_approved_length_when_they_exis
         total = make_loops.duration(ffmpeg, make_loops.CLIPS_DIR / f"{slug}-profile.mp4")
         expected = clip + make_loops.PROFILE_INTRO + make_loops.PORTRAIT_DISSOLVE + make_loops.PORTRAIT_HOLD
         assert abs(total - expected) < 0.15, (slug, total, expected)
+
+
+def test_supporting_cards_layer_the_clip_over_their_picture(client):
+    page = client.get("/characters").get_data(as_text=True)
+    cards = page.split('class="tier tier--crew"')[1].split('class="web"')[0]
+    assert cards.count('class="person__media"') == 6
+    for chunk in cards.split('class="person__media"')[1:]:
+        assert chunk.index("person__art") < chunk.index("motion-portrait--tile") if "motion-portrait--tile" in chunk else True
+
+
+def test_the_landing_has_one_motion_controller_with_a_dwell_and_no_cut_off():
+    script = (ROOT / "app" / "static" / "js" / "site.js").read_text(encoding="utf-8")
+    block = script.split("(function portraits() {")[1].split("// ---- Short muted loops")[0]
+    assert "DWELL" in block and "finish(p)" in block and "toArtwork(p)" in block
+    assert "is-blocked" in block and "NotAllowedError" in block
+    assert block.count(".loop") == 0 and " loop" not in block.replace("loops", "")
+
+
+def test_the_network_names_never_sit_under_a_line():
+    assert media_slots.NETWORK_NAME_RIGHT <= set(media_slots.NETWORK_LAYOUT)
+    xs = {media_slots.NETWORK_LAYOUT[s][0] for s in media_slots.NETWORK_NAME_RIGHT}
+    assert len(xs) == 1                                                     # one column, so its lines are vertical
+
+
+def test_one_sequence_set_and_a_stronger_compression_for_the_characters_pages():
+    from scripts import make_loops
+    assert not hasattr(make_loops, "build_portrait")                      # the landing no longer has its own, different build
+    assert "27" in make_loops.PROFILE_FINAL and "25" in make_loops.FINAL    # light files; the homepage reel keeps its own quality
+    assert make_loops.SPEED == 1.0
+
+
+def test_motion_controller_waits_for_the_whole_sequence_and_the_nav_resets():
+    script = (ROOT / "app" / "static" / "js" / "site.js").read_text(encoding="utf-8")
+    block = script.split("(function portraits() {")[1].split("// ---- Short muted loops")[0]
+    assert "readyState < 4" in block and "canplaythrough" in block
+    nav = script.split("function castNavigation()")[1].split("var web = document.querySelector")[0]
+    assert "list.scrollTo({ left: 0" in nav

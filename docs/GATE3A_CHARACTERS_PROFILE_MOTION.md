@@ -34,8 +34,8 @@ Each profile sequence (`media/clips/<slug>-profile.mp4`) is built by `python -m 
 Total: 3.8 s for a 1.0 s clip, 4.3 s for a 1.5 s clip. There is no black frame and no blurred extension. Very dark clips
 (Boobie, Dre'Quan, Real Dimez, Lucia) are lifted gently (gamma at most 1.7).
 
-The landing tiles keep their own sequences (`<slug>-portrait.mp4`: a frame of the clip as the still) with the same
-0.5 s dissolve and 2 s hold.
+The landing tiles play the very same file (since the motion audit, see `GATE3A_CHARACTERS_MOTION_AUDIT.md`), so a person's
+landing and profile motion cannot differ.
 
 ### Checked, not assumed
 
@@ -53,5 +53,5 @@ The landing tiles keep their own sequences (`<slug>-portrait.mp4`: a frame of th
     python -m scripts.make_loops --portraits
 
 It fetches Lucia's main artwork (`Lucia_Caminos_02`) once into the Git-ignored `media/source/art/` and writes the
-landing and profile sets (about 14 MB). Until the files exist the pages fall back to the landing set, then to the older
+eight sequences (about 9 MB). Until the files exist the pages fall back to the landing set, then to the older
 per-person loops, and the layout is unchanged.

@@ -6,7 +6,7 @@
 {% block header_class %}{% endblock %}
 {% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='css/characters.css') }}">{% endblock %}
 {% block content %}
-<div class="cast-page">
+<div class="cast-page{% if mode == 'results' %} cast-page--results{% endif %}">
 
   {# ------------------------------------------------------------------ opening #}
   <header class="cast-open">
@@ -127,7 +127,10 @@
       <div class="group__grid">
         {% for c in g.people %}
         <article class="person{% if g.single %} person--feature{% endif %}" id="{{ c.slug }}" data-spread data-name="{{ c.full_name }}">
-          <a class="person__art" href="{{ url_for('pages.character_detail', slug=c.slug) }}" tabindex="-1" aria-hidden="true">{{ shot(c.main, '(min-width: 1100px) 62vw, (min-width: 761px) 60vw, 100vw', c.pos) }}</a>
+          <div class="person__media">
+            <a class="person__art" href="{{ url_for('pages.character_detail', slug=c.slug) }}" tabindex="-1" aria-hidden="true">{{ shot(c.second or c.main, '(min-width: 1100px) 62vw, (min-width: 761px) 60vw, 100vw', c.card_pos) }}</a>
+            {{ portrait(c, tile=true) }}
+          </div>
           <div class="person__text">
             <p class="spread__no">{{ '%02d' % c.number }} <span aria-hidden="true">&middot;</span> {{ c.role_title }}</p>
             <h4 class="person__name"><a href="{{ url_for('pages.character_detail', slug=c.slug) }}">{{ c.full_name }}</a></h4>
@@ -135,8 +138,7 @@
             {% if g.single %}<p class="spread__bio">{{ c.biography }}</p>{% endif %}
             {{ chips(c.connections) }}
             <div class="person__foot">
-              {{ portrait(c) }}
-              <a class="pill pill--small" href="{{ url_for('pages.character_detail', slug=c.slug) }}">Profile</a>
+              <a class="pill pill--small" href="{{ url_for('pages.character_detail', slug=c.slug) }}">Read the profile</a>
             </div>
           </div>
         </article>
@@ -168,7 +170,8 @@
         {% if n.image and image_src(n.image.embed_url, 320) %}
         <image href="{{ image_src(n.image.embed_url, 480) }}" x="{{ (n.x - n.iw * n.fx) | round(1) }}" y="{{ (n.y - n.ih * n.fy) | round(1) }}" width="{{ n.iw }}" height="{{ n.ih }}" preserveAspectRatio="xMidYMid slice" clip-path="url(#face-{{ loop.index0 }})"/>
         {% endif %}
-        <text x="{{ n.x }}" y="{{ n.y + (68 if n.lead else 58) }}" text-anchor="middle">{{ n.name }}</text>
+        {% if n.side == 'right' %}<text x="{{ n.x + 52 }}" y="{{ n.y + 7 }}" text-anchor="start">{{ n.name }}</text>
+        {% else %}<text x="{{ n.x }}" y="{{ n.y + (68 if n.lead else 58) }}" text-anchor="middle">{{ n.name }}</text>{% endif %}
         <title>{{ n.name }}, {{ n.role }}</title>
       </a>
       {% endfor %}
