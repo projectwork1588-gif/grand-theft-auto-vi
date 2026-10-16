@@ -3,7 +3,8 @@
     python -m scripts.fetch_clips      # 1. fetch Rockstar's character clips into media/source/
     python -m scripts.make_loops       # 2. build media/clips/ (needs ffmpeg: `pip install imageio-ffmpeg` is enough)
     python -m scripts.make_loops --posters   # only redo the per-person poster stills from the built sequences
-    python -m scripts.make_loops --stills    # the still frames (media_slots.LOCAL_STILLS) the Real Dimez and Dre'Quan pages use
+    python -m scripts.make_loops --stills    # the still frames (media_slots.LOCAL_STILLS) the Real Dimez and Dre'Quan pages use, and
+                                             # Real Dimez's landing tile, which rests on one of them (media_slots.LANDING_REST)
     python -m scripts.make_loops --portraits # the Characters pages' sequences: each person in the shape it was shot in
                                              # (one set for the landing tiles and the profiles; fetches Lucia's artwork once)
 
@@ -31,7 +32,7 @@ import subprocess
 import sys
 import urllib.request
 
-from app.media_slots import CAST_ORDER, LOCAL_STILLS, PORTRAIT_SHAPE
+from app.media_slots import CAST_ORDER, LANDING_REST, LOCAL_STILLS, PORTRAIT_SHAPE
 from scripts.fetch_clips import CHARACTER_CLIPS, SOURCE_DIR
 from scripts.schema_info import ROOT
 
@@ -226,13 +227,17 @@ def _art_crop(slug, w, h, wide):
     return f"scale=-2:{h}:flags=lanczos,crop={w}:{h}:x='{x}':y=0"
 
 
-def build_profile(ffmpeg, stem, slug):
+def build_profile(ffmpeg, stem, slug, rest=None):
     """media/clips/<slug>-profile.mp4 and .jpg for the large picture on a profile page.
 
     It starts on the person's artwork (the .jpg is exactly that first frame), dissolves for PROFILE_INTRO into the
     clip's first frame, plays the whole clip at true speed, then dissolves for PORTRAIT_DISSOLVE back into the artwork
     while the clip's last frame is held, and rests on the artwork for PORTRAIT_HOLD with a very slow push-in. The clip is
-    never sped up, slowed down, interpolated or trimmed, and there is no black frame anywhere."""
+    never sped up, slowed down, interpolated or trimmed, and there is no black frame anywhere.
+
+    `rest` names a still in media/clips/ (media_slots.LOCAL_STILLS) to start and rest on instead of the artwork, and the
+    result is written as <slug>-landing.mp4/.jpg: the Characters landing tile of a person whose artwork is already the large
+    picture beside it (media_slots.LANDING_REST). The timing is exactly the profile's."""
     wide = PORTRAIT_SHAPE.get(slug, "square") == "wide"
     w, h = PORTRAIT_SIZE["wide" if wide else "square"]
     src = SOURCE_DIR / f"{stem}.mp4"
@@ -244,7 +249,7 @@ def build_profile(ffmpeg, stem, slug):
     graph = (
         f"[0:v]fps=30,scale={w}:{h}:flags=lanczos{grade},format=yuv420p,"
         f"tpad=start_mode=clone:start_duration={PROFILE_INTRO}:stop_mode=clone:stop_duration={PORTRAIT_DISSOLVE + 0.2},{cfr}[c];"
-        f"[1:v]fps=30,{_art_crop(slug, w, h, wide)},format=yuv420p,split[ai][ao];"
+        f"[1:v]fps=30,{_art_crop(slug, w, h, wide) if not rest else f'scale={w}:{h}:flags=lanczos'},format=yuv420p,split[ai][ao];"
         f"[ai]trim=duration={PROFILE_INTRO},{cfr}[a1];"
         f"[ao]scale=w='trunc({w}*{zoom}/2)*2':h='trunc({h}*{zoom}/2)*2':eval=frame:flags=bicubic,crop={w}:{h},"
         f"trim=duration={outro},{cfr}[a2];"
@@ -252,10 +257,12 @@ def build_profile(ffmpeg, stem, slug):
         f"[r1]{cfr}[r2];"
         f"[r2][a2]xfade=transition=fade:duration={PORTRAIT_DISSOLVE}:offset={length + PROFILE_INTRO:.3f}[v]"
     )
-    out = CLIPS_DIR / f"{slug}-profile.mp4"
-    run(ffmpeg, "-i", str(src), "-loop", "1", "-t", f"{outro + PROFILE_INTRO + 1:.1f}", "-i", str(profile_art(slug)),
+    name = f"{slug}-landing" if rest else f"{slug}-profile"
+    out = CLIPS_DIR / f"{name}.mp4"
+    art = CLIPS_DIR / f"{rest}.jpg" if rest else profile_art(slug)
+    run(ffmpeg, "-i", str(src), "-loop", "1", "-t", f"{outro + PROFILE_INTRO + 1:.1f}", "-i", str(art),
         "-filter_complex", graph, "-map", "[v]", *PROFILE_FINAL, str(out))
-    run(ffmpeg, "-i", str(out), "-frames:v", "1", "-q:v", "2", str(CLIPS_DIR / f"{slug}-profile.jpg"))
+    run(ffmpeg, "-i", str(out), "-frames:v", "1", "-q:v", "2", str(CLIPS_DIR / f"{name}.jpg"))
     return {"slug": slug, "shape": "wide" if wide else "square", "gamma": round(gamma, 2),
             "length": round(length + PROFILE_INTRO + PORTRAIT_DISSOLVE + PORTRAIT_HOLD, 2), "clip": round(length, 2)}
 
@@ -275,6 +282,10 @@ def build_stills():
             graph = f"select=eq(n\\,{spec['frame']}),{crop}scale={width}:-2:flags=lanczos{grade},format=yuvj420p"
             run(ffmpeg, "-i", str(src), "-vf", graph, "-frames:v", "1", "-q:v", "2", str(CLIPS_DIR / f"{name}{suffix}.jpg"))
         print(f"  {name}: frame {spec['frame']} of {spec['clip']}, lift gamma {gamma:.2f}", flush=True)
+    for slug, rest in LANDING_REST.items():
+        stem = STEM_BY_SLUG[slug]
+        info = build_profile(ffmpeg, stem, slug, rest=rest)
+        print(f"  {slug}-landing: rests on {rest}, lift gamma {info['gamma']}, {info['length']}s (the clip's {info['clip']}s whole)", flush=True)
 
 
 def build_portraits_only():

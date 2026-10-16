@@ -135,6 +135,10 @@ LOCAL_STILL_PICKS = {
     "real-dimez": {"second": ("real-dimez-duo", "50% 0%", "wide")},
     "dre-quan-priest": {"second": ("dre-quan-priest-studio", "50% 0%", "tall")},
 }
+# The landing tile of a person whose artwork is already the large picture beside it rests on a still frame of their own clip
+# instead (slug -> a LOCAL_STILLS name), so the tile and the picture are not the same picture. The sequence is the profile's,
+# with the artwork replaced: media/clips/<slug>-landing.mp4 and .jpg. The profile keeps its artwork sequence.
+LANDING_REST = {"real-dimez": "real-dimez-duo"}
 # Profiles that end after their connections: no "From the footage and artwork" gallery (Real Dimez, whose official pictures
 # are few and mostly of other people). Jason and Lucia keep theirs.
 NO_GALLERY = frozenset({"real-dimez"})

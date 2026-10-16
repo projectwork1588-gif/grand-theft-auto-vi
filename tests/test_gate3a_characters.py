@@ -254,6 +254,31 @@ def test_real_dimez_overlap_falls_back_to_the_duo_alone(client):
     assert "DreQuan_Priest" not in media
 
 
+def test_real_dimez_landing_tile_rests_on_the_footage_not_the_artwork(client, local_portraits):
+    """The tile beside the large artwork must not rest on that artwork: it uses its own sequence, the profile keeps the artwork one."""
+    (local_portraits / "clips" / "real-dimez-landing.mp4").write_bytes(b"ftypmp42")
+    (local_portraits / "clips" / "real-dimez-landing.jpg").write_bytes(b"JFIF")
+    landing = client.get("/characters").get_data(as_text=True)
+    tile = landing.split('id="real-dimez"')[1].split("</article>")[0]
+    assert "/media/clips/real-dimez-landing.mp4" in tile and "/media/clips/real-dimez-landing.jpg" in tile
+    assert "real-dimez-profile" not in tile
+    for slug in ("cal-hampton", "boobie-ike", "dre-quan-priest", "raul-bautista", "brian-heder"):      # nobody else changed
+        other = landing.split(f'id="{slug}"')[1].split("</article>")[0]
+        assert f"/media/clips/{slug}-profile.mp4" in other and "-landing" not in other, slug
+    profile = client.get("/characters/real-dimez").get_data(as_text=True)
+    assert "/media/clips/real-dimez-profile.mp4" in profile and "real-dimez-landing" not in profile   # the profile keeps the artwork sequence
+
+
+def test_real_dimez_landing_tile_falls_back_to_the_profile_sequence(client, local_portraits):
+    tile = client.get("/characters").get_data(as_text=True).split('id="real-dimez"')[1].split("</article>")[0]
+    assert "/media/clips/real-dimez-profile.mp4" in tile and "real-dimez-landing" not in tile
+
+
+def test_the_landing_rest_still_is_a_footage_frame_of_the_duo():
+    assert media_slots.LANDING_REST == {"real-dimez": "real-dimez-duo"}
+    assert media_slots.LOCAL_STILLS["real-dimez-duo"]["clip"] == "Real_Dimez_Video_Clip"
+
+
 def test_real_dimez_has_no_gallery_and_nobody_else_lost_theirs(client):
     page = client.get("/characters/real-dimez").get_data(as_text=True)
     assert 'id="gallery-title"' not in page and "From the footage and artwork" not in page and "p-gallery" not in page

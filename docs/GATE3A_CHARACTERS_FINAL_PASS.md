@@ -95,3 +95,11 @@ the 16 playback contexts. See the review pack.
 * The frames are built locally, like the sequences: `python -m scripts.make_loops --stills` (media/clips/, Git-ignored, graded like the
   clips that play on the same pages: gamma 1.7). Until they exist the pages show what 852dd2c showed (Dre'Quan: a tall cut of his
   pool-bar screenshot; Real Dimez: the duo artwork alone). `shot` draws such a frame from `media/clips/` (`m.local`).
+
+## Real Dimez landing tile (the last fix)
+
+The IN MOTION tile beside Real Dimez's large artwork on `/characters` used to start and end on that same artwork. It now has its
+own sequence, `media/clips/real-dimez-landing.mp4` / `.jpg`: the still frame of the duo's clip (`real-dimez-duo`, frame 10), a 0.3 s
+dissolve into the clip, the clip whole at 1.00x, a 0.5 s dissolve back, and a 2.0 s hold on the still (3.8 s, the profile's timing).
+`media_slots.LANDING_REST` names the still, `make_loops.build_profile(..., rest=...)` builds it and `site._landing_portrait()` picks
+it for the landing page only. The profile keeps its artwork sequence. Built by `python -m scripts.make_loops --stills`.

@@ -54,6 +54,18 @@ def _local_poster(slug):
     return path if local_media.is_servable(path) else None
 
 
+def _landing_portrait(slug):
+    """The Characters landing tile: the profile's sequence, except where the person's artwork is already the large picture
+    beside the tile (media_slots.LANDING_REST): then the tile starts and rests on a frame of their own clip
+    (`<slug>-landing.mp4`, built by `scripts.make_loops --stills`). Until that exists it is the profile sequence as before."""
+    if slug in media_slots.LANDING_REST:
+        video, poster = f"clips/{slug}-landing.mp4", f"clips/{slug}-landing.jpg"
+        if local_media.is_servable(video):
+            shape = media_slots.PORTRAIT_SHAPE.get(slug, "square")
+            return {"video": video, "poster": poster if local_media.is_servable(poster) else None, "shape": shape, "poster_at": 0}
+    return _portrait(slug)
+
+
 def _portrait(slug):
     """The motion sequence the Characters pages show (landing tiles and profiles alike), or None. Built by
     `scripts.make_loops --portraits`, each person in the shape the footage was shot in (the two leads 16:9, the rest
@@ -176,7 +188,7 @@ def _cast_entries(include_media=True):
                 row[key] = None
         _apply_local_stills(row, slug)
         row["avatar"] = _avatar(slug, stage_media)
-        row["portrait"] = _portrait(slug)
+        row["portrait"] = _landing_portrait(slug)
         row["connections"] = _relationship_view(characters_repo.relationships_for(ids[slug]), slug, rows)
         row["regions"] = characters_repo.regions_for(ids[slug])
         cast.append(row)
