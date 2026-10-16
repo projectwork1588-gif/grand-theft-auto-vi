@@ -1,43 +1,66 @@
-{# Pieces shared by the Garage landing page and the vehicle pages (Gate 3B). #}
+{# Pieces shared by the Garage page and the vehicle pages (Gate 3B). #}
 
-{# One of Rockstar's own pictures, cut around its subject. `p` comes from services.site._garage_picture: the media row, what the
-   picture shows, and where to cut it on wide screens (data-px, data-py) and phones (data-pxn, data-pyn). The site's CSP forbids
-   inline styles, so garage.css has one rule for every value on the grid the service uses. `sizes` must describe the width the
-   picture is really drawn at. A picture that is only decoration beside a heading keeps decorative=true (an empty alt). #}
-{% macro gshot(p, sizes, eager=false, cls='', decorative=true, lazy=true) -%}
+{# One of Rockstar's own pictures, cut around its subject. `p` comes from services.site._garage_picture: the media row, what the picture
+   shows, and one cut per named shape (`cut`): where to place it on wide screens (data-px, data-py) and on phones (data-pxn, data-pyn).
+   A vehicle with one picture draws it closer for its tile (data-zoom). The site's CSP forbids inline styles, so garage.css has one rule
+   for every value on the grids the service uses. `sizes` must describe the width the picture is really drawn at. A picture that is only
+   decoration beside a heading keeps decorative=true (an empty alt). #}
+{% macro gshot(p, sizes, eager=false, cls='', decorative=true, lazy=true, cut=none) -%}
   {% if p and image_src(p.m.embed_url, 1920) %}
-  {% set at = p.pos.replace('%', '').split(' ') %}{% set an = p.posn.replace('%', '').split(' ') %}
+  {% set cutting = p.cuts[cut] if (cut and p.cuts and cut in p.cuts) else (p.pos, p.posn) %}
+  {% set at = cutting[0].replace('%', '').split(' ') %}{% set an = cutting[1].replace('%', '').split(' ') %}
   <img class="gshot {{ cls }}" src="{{ image_src(p.m.embed_url, 1920) }}" srcset="{{ image_srcset(p.m.embed_url) }}" sizes="{{ sizes }}"
-       alt="{{ '' if decorative else p.alt }}" data-px="{{ at[0] }}" data-py="{{ at[1] }}" data-pxn="{{ an[0] }}" data-pyn="{{ an[1] }}"
+       alt="{{ '' if decorative else p.alt }}" data-px="{{ at[0] }}" data-py="{{ at[1] }}" data-pxn="{{ an[0] }}" data-pyn="{{ an[1] }}"{% if p.zoom %} data-zoom="{{ p.zoom }}"{% endif %}
        {% if eager %}fetchpriority="high"{% elif lazy %}loading="lazy"{% endif %} decoding="async" referrerpolicy="no-referrer">
   {% endif %}
 {%- endmacro %}
 
-{# A vehicle in the showroom grid: the whole card is one link. `size` sets how much of the row it takes (see garage_layout). #}
-{% macro gcard(v, index, eager=false) -%}
-  <article class="gcard gcard--{{ v.size }} reveal">
-    <a class="gcard__link" href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}">
-      <span class="gcard__art">{{ gshot(v.card, '(min-width: 900px) ' ~ ('92vw' if v.size == 'feature' else ('56vw' if v.size == 'wide' else '46vw')) ~ ', ' ~ ('100vw' if v.size == 'feature' else '(min-width: 680px) 48vw, 100vw'), eager=eager) }}</span>
-      <span class="gcard__shade" aria-hidden="true"></span>
-      <span class="gcard__body">
-        <span class="gcard__cat">{{ v.category_name }}</span>
-        <h3 class="gcard__name">{{ v.name }}</h3>
-        <span class="gcard__make">{{ v.manufacturer or 'Manufacturer not stated' }}{% if v.images %} <i aria-hidden="true">&middot;</i> {{ v.images }} official image{{ '' if v.images == 1 else 's' }}{% endif %}</span>
-        {% if v.size == 'feature' %}<span class="gcard__sum">{{ v.summary }}</span>{% endif %}
+{# The vehicle's name as the Garage sets it: the maker small, the model large. #}
+{% macro nameplate(v, tag='h2', cls='') -%}
+  <{{ tag }} class="plate {{ cls }}">{% if v.make_line %}<span class="plate__make">{{ v.make_line }}</span> {% endif %}<span class="plate__model{% if v.model_line | length > 11 %} plate__model--long{% endif %}">{{ v.model_line }}</span></{{ tag }}>
+{%- endmacro %}
+
+{# A vehicle in the showroom mosaic: the whole tile is one link. `span` is how many of the row's twelve columns it takes. #}
+{% macro tile(v, span) -%}
+  <article class="tile tile--s{{ span }} reveal" data-vehicle="{{ v.slug }}">
+    <a class="tile__link" href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}">
+      <span class="tile__art">{{ gshot(v.card, ('(min-width: 900px) ' ~ (span * 7) ~ 'vw, 100vw'), cut='card') }}</span>
+      <span class="tile__grade" aria-hidden="true"></span>
+      <span class="tile__no" aria-hidden="true">{{ '%02d' % v.number }}</span>
+      {% if v.theme %}<span class="tile__theme">{{ v.theme }}</span>{% endif %}
+      <span class="tile__body">
+        {% if v.make_line %}<span class="tile__make">{{ v.make_line }}</span>{% endif %}
+        <h3 class="tile__model">{{ v.model_line }}</h3>
+        <span class="tile__cat">{{ v.category_name }}</span>
       </span>
-      <span class="gcard__go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span class="tile__go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
     </a>
   </article>
 {%- endmacro %}
 
-{# The smaller card under "More from the garage": the picture, then the words beneath it, so the title is always readable. #}
-{% macro gtile(v) -%}
-  <a class="gtile" href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}">
-    <span class="gtile__art">{{ gshot(v.card, '(min-width: 1100px) 22vw, (min-width: 560px) 44vw, 74vw') }}</span>
-    <span class="gtile__body">
-      <span class="gtile__cat">{{ v.category_name }}</span>
-      <span class="gtile__name">{{ v.name }}</span>
-      <span class="gtile__make">{{ v.manufacturer or 'Manufacturer not stated' }}</span>
-    </span>
+{# The controller: every machine in a row, the one on show lit. On the Garage page script turns the links into a selector (click, tap,
+   arrows, Home and End); on a vehicle page they are plain links to every machine. #}
+{% macro rail(items, current=none, stage=false) -%}
+  <nav class="rail{% if stage %} rail--stage{% endif %}" aria-label="{{ 'Choose a machine' if stage else 'All machines' }}"{% if stage %} data-lineup{% endif %}>
+    <ol class="rail__list">
+      {% for v in items %}
+      <li><a class="rail__item" href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}"{% if stage %} data-pick="{{ v.slug }}" aria-controls="scene-{{ v.slug }}"{% endif %}{% if v.slug == current %} aria-current="true"{% endif %}>
+        <span class="rail__thumb" aria-hidden="true">{{ gshot(v.thumb, '160px', cut='thumb') }}</span>
+        <span class="rail__no" aria-hidden="true">{{ '%02d' % v.number }}</span>
+        <span class="rail__name">{{ v.name }}</span>
+        <span class="rail__cat">{{ v.category_name }}</span>
+      </a></li>
+      {% endfor %}
+    </ol>
+  </nav>
+{%- endmacro %}
+
+{# The panel for "previous" and "next" on a vehicle page: the picture, with the name over its darkened foot. #}
+{% macro neighbour(v, label, rel) -%}
+  <a class="neighbour neighbour--{{ rel }}" href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}" rel="{{ rel }}" data-vehicle="{{ v.slug }}">
+    <span class="neighbour__art">{{ gshot(v.card, '(min-width: 900px) 50vw, 100vw', cut='card') }}</span>
+    <span class="neighbour__grade" aria-hidden="true"></span>
+    <span class="neighbour__body"><span class="neighbour__label">{{ label }}</span><span class="neighbour__name">{{ v.name }}</span><span class="neighbour__cat">{{ v.category_name }}</span></span>
+    <span class="neighbour__go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
   </a>
 {%- endmacro %}

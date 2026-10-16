@@ -1,96 +1,102 @@
 {% extends "base.html" %}
 {% from "_components.html" import badge %}
-{% from "vehicles/_garage.html" import gshot, gtile %}
+{% from "vehicles/_garage.html" import gshot, nameplate, rail, neighbour %}
 {% block title %}{{ vehicle.name }}{% endblock %}
 {% block description %}{{ vehicle.summary }}{% endblock %}
 {% block header_class %}{% endblock %}
 {% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='css/garage.css') }}"><script src="{{ url_for('static', filename='js/garage.js') }}" defer></script>{% endblock %}
 {% block content %}
-<article class="garage garage--vehicle">
+<article class="garage garage--vehicle story--{{ vehicle.story }}" data-vehicle="{{ vehicle.slug }}">
 
-  {# ---------------------------------------------------------------- the opening picture #}
-  <header class="vhero vhero--{{ vehicle.side }} vhero--{{ vehicle.vpos }}">
-    <div class="vhero__art">{{ gshot(vehicle.hero, '100vw', eager=true, decorative=false) }}</div>
-    <div class="vhero__shade" aria-hidden="true"></div>
-    <div class="vhero__copy">
+  {# ---------------------------------------------------------------- the entrance: one whole picture, the name set large beside it #}
+  <header class="vopen vopen--{{ vehicle.side }} vopen--{{ vehicle.vpos }}">
+    <div class="vopen__art">{{ gshot(vehicle.hero, '100vw', eager=true, decorative=false, cut='hero') }}</div>
+    <div class="vopen__grade" aria-hidden="true"></div>
+    <p class="vopen__numeral" aria-hidden="true">{{ '%02d' % vehicle.number }}</p>
+    <div class="vopen__copy">
       <nav class="vcrumb" aria-label="Breadcrumb">
-        <a href="{{ url_for('pages.vehicles') }}">The garage</a><span aria-hidden="true">/</span><a href="{{ url_for('pages.vehicles', category=vehicle.category_slug) }}#showroom">{{ vehicle.category_name }}</a>
+        <a href="{{ url_for('pages.vehicles') }}">The Garage</a><span aria-hidden="true">/</span><a href="{{ url_for('pages.vehicles', category=vehicle.category_slug) }}#showroom">{{ vehicle.category_name }}</a>
       </nav>
-      <h1 class="vhero__name">{{ vehicle.name }}</h1>
-      {% if vehicle.manufacturer %}<p class="vhero__make">{{ vehicle.manufacturer }}</p>{% endif %}
-      <p class="vhero__sum">{{ vehicle.summary }}</p>
-      <a class="vhero__cue" href="#overview">The vehicle <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      <p class="vopen__kicker"><span>{{ '%02d' % vehicle.number }}</span>{{ vehicle.theme }}</p>
+      {{ nameplate(vehicle, 'h1', 'vopen__plate') }}
+      <p class="vopen__sum">{{ vehicle.summary }}</p>
+      <a class="vopen__cue" href="#machine">The machine <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
     </div>
   </header>
 
-  {# ---------------------------------------------------------------- the vehicle: the database description, and what is verified #}
-  <section class="vover" id="overview" aria-labelledby="overview-title">
-    <div class="container--wide vover__in">
-      <div class="vover__text">
-        <p class="eyebrow">The vehicle</p>
-        <h2 id="overview-title" class="visually-hidden">About the {{ vehicle.name }}</h2>
-        <p class="vover__lede">{{ vehicle.description }}</p>
-      </div>
-      <dl class="vplate" aria-label="Verified details">
+  {# ---------------------------------------------------------------- the machine: the database description, set large, and the few verified details #}
+  <section class="vintro" id="machine" aria-labelledby="machine-title">
+    <div class="container--wide vintro__in">
+      <h2 id="machine-title" class="visually-hidden">About the {{ vehicle.name }}</h2>
+      <p class="vintro__lede">{{ vehicle.description }}</p>
+      <dl class="vcredits" aria-label="Details">
         {% if vehicle.manufacturer %}<div><dt>Maker</dt><dd>{{ vehicle.manufacturer }}</dd></div>{% endif %}
-        <div><dt>Category</dt><dd><a href="{{ url_for('pages.vehicles', category=vehicle.category_slug) }}#showroom">{{ vehicle.category_name }}</a></dd></div>
-        <div><dt>Official images</dt><dd>{{ vehicle.images }}</dd></div>
-        <div><dt>Specifications</dt><dd>Not published by Rockstar</dd></div>
-        <div class="vplate__source"><dt>Source</dt><dd>{{ badge(vehicle.content_status) }}{% if vehicle.source_url %} <a href="{{ vehicle.source_url }}" target="_blank" rel="noopener noreferrer">rockstargames.com</a>{% endif %}{% if vehicle.source_note %}<small>{{ vehicle.source_note }}</small>{% endif %}</dd></div>
+        <div><dt>Type</dt><dd><a href="{{ url_for('pages.vehicles', category=vehicle.category_slug) }}#showroom">{{ vehicle.category_name }}</a></dd></div>
+        {% if vehicle.source_url %}<div><dt>Source</dt><dd><a href="{{ vehicle.source_url }}" target="_blank" rel="noopener noreferrer">rockstargames.com</a></dd></div>{% endif %}
       </dl>
     </div>
   </section>
 
-  {# ---------------------------------------------------------------- the showcase: Rockstar's other pictures of it (never the one above) #}
-  {% if vehicle.gallery | length >= 2 %}
-  <section class="showcase" id="showcase" aria-labelledby="showcase-title" data-viewer>
+  {# ---------------------------------------------------------------- the showcase: Rockstar's other pictures, set to suit how many there are (never the one that opens the page) #}
+  {% set g = vehicle.gallery %}
+  {% if vehicle.story in ('mosaic', 'mosaic-flip') %}
+  <section class="vshow vshow--{{ vehicle.story }}" aria-label="More pictures of the {{ vehicle.name }}">
     <div class="container--wide">
-      <header class="showcase__head">
-        <p class="eyebrow">The showcase</p>
-        <h2 id="showcase-title">More of the {{ vehicle.name }}</h2>
-      </header>
+      <ul class="mos" data-gallery>
+        <li class="mos__a"><a href="{{ image_src(g[0].m.embed_url, 2560) }}" data-lightbox data-caption="{{ g[0].alt }}"><span class="mos__art">{{ gshot(g[0], '(min-width: 900px) 56vw, 100vw', decorative=false, cut='large') }}</span><span class="mos__cap">{{ g[0].alt }}</span></a></li>
+        <li class="mos__b"><a href="{{ image_src(g[1].m.embed_url, 2560) }}" data-lightbox data-caption="{{ g[1].alt }}"><span class="mos__art">{{ gshot(g[1], '(min-width: 900px) 38vw, 100vw', decorative=false, cut='small') }}</span><span class="mos__cap">{{ g[1].alt }}</span></a></li>
+        <li class="mos__c"><a href="{{ image_src(g[2].m.embed_url, 2560) }}" data-lightbox data-caption="{{ g[2].alt }}"><span class="mos__art">{{ gshot(g[2], '(min-width: 900px) 38vw, 100vw', decorative=false, cut='small') }}</span><span class="mos__cap">{{ g[2].alt }}</span></a></li>
+      </ul>
+    </div>
+  </section>
+  {% elif vehicle.story == 'panorama' %}
+  <section class="vshow vshow--panorama" aria-label="More pictures of the {{ vehicle.name }}">
+    <div class="container--wide">
+      <ul class="pano" data-gallery>
+        <li class="pano__a"><a href="{{ image_src(g[0].m.embed_url, 2560) }}" data-lightbox data-caption="{{ g[0].alt }}"><span class="pano__art">{{ gshot(g[0], '(min-width: 900px) 92vw, 100vw', decorative=false, cut='wide') }}</span><span class="mos__cap">{{ g[0].alt }}</span></a></li>
+        <li class="pano__b"><a href="{{ image_src(g[1].m.embed_url, 2560) }}" data-lightbox data-caption="{{ g[1].alt }}"><span class="pano__art">{{ gshot(g[1], '(min-width: 900px) 46vw, 100vw', decorative=false, cut='large') }}</span><span class="mos__cap">{{ g[1].alt }}</span></a></li>
+        <li class="pano__c"><a href="{{ image_src(g[2].m.embed_url, 2560) }}" data-lightbox data-caption="{{ g[2].alt }}"><span class="pano__art">{{ gshot(g[2], '(min-width: 900px) 46vw, 100vw', decorative=false, cut='large') }}</span><span class="mos__cap">{{ g[2].alt }}</span></a></li>
+      </ul>
+    </div>
+  </section>
+  {% elif vehicle.story == 'viewer' and g | length >= 2 %}
+  <section class="vshow vshow--viewer" aria-label="More pictures of the {{ vehicle.name }}" data-viewer>
+    <div class="container--wide">
       <div class="viewer">
         <div class="viewer__frame">
           <ul class="viewer__slides">
-            {% for g in vehicle.gallery %}
-            <li class="viewer__slide{% if loop.first %} is-active{% endif %}" data-slide{% if not loop.first %} hidden{% endif %}>{{ gshot(g, '(min-width: 1100px) 78vw, 100vw', decorative=false, eager=loop.first) }}</li>
+            {% for p in g %}
+            <li class="viewer__slide{% if loop.first %} is-active{% endif %}" data-slide{% if not loop.first %} hidden{% endif %}>{{ gshot(p, '(min-width: 1100px) 78vw, 100vw', decorative=false, eager=loop.first, cut='viewer') }}</li>
             {% endfor %}
           </ul>
-          <button class="viewer__open" type="button" data-open aria-label="View this image larger"></button>
-          <button class="viewer__nav viewer__nav--prev" type="button" data-prev aria-label="Previous image"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-          <button class="viewer__nav viewer__nav--next" type="button" data-next aria-label="Next image"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-          <p class="viewer__count" aria-hidden="true"><span data-index>1</span> / {{ vehicle.gallery | length }}</p>
+          <button class="viewer__open" type="button" data-open aria-label="View this picture larger"></button>
+          <button class="viewer__nav viewer__nav--prev" type="button" data-prev aria-label="Previous picture"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button class="viewer__nav viewer__nav--next" type="button" data-next aria-label="Next picture"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <p class="viewer__count" aria-hidden="true"><span data-index>1</span> / {{ g | length }}</p>
         </div>
-        <p class="viewer__caption" data-caption aria-hidden="true">{{ vehicle.gallery[0].alt }}</p>
-        <ul class="viewer__thumbs" aria-label="Choose an image">
-          {% for g in vehicle.gallery %}
-          <li><a href="{{ image_src(g.m.embed_url, 2560) }}" data-thumb aria-label="Image {{ loop.index }} of {{ vehicle.gallery | length }}: {{ g.alt }}"{% if loop.first %} aria-current="true"{% endif %}>{{ gshot(g, '(min-width: 900px) 20vw, 28vw', cls='viewer__thumb', lazy=false) }}</a></li>
+        <p class="viewer__caption" data-caption aria-hidden="true">{{ g[0].alt }}</p>
+        <ul class="viewer__thumbs" aria-label="Choose a picture">
+          {% for p in g %}
+          <li><a href="{{ image_src(p.m.embed_url, 2560) }}" data-thumb aria-label="Picture {{ loop.index }} of {{ g | length }}: {{ p.alt }}"{% if loop.first %} aria-current="true"{% endif %}>{{ gshot(p, '(min-width: 900px) 20vw, 28vw', cls='viewer__thumb', lazy=false, cut='thumb') }}</a></li>
           {% endfor %}
         </ul>
         <ul data-gallery hidden>
-          {% for g in vehicle.gallery %}<li><a href="{{ image_src(g.m.embed_url, 2560) }}" data-lightbox data-caption="{{ g.alt }}">{{ g.alt }}</a></li>{% endfor %}
+          {% for p in g %}<li><a href="{{ image_src(p.m.embed_url, 2560) }}" data-lightbox data-caption="{{ p.alt }}">{{ p.alt }}</a></li>{% endfor %}
         </ul>
       </div>
     </div>
   </section>
-  {% elif vehicle.gallery | length == 1 %}
-  <section class="showcase showcase--single" aria-labelledby="showcase-title">
+  {% elif vehicle.story == 'scene' and vehicle.scene %}
+  <section class="vshow vshow--scene" aria-label="Where Rockstar shows it">
     <div class="container--wide">
-      <header class="showcase__head"><p class="eyebrow">The showcase</p><h2 id="showcase-title">More of the {{ vehicle.name }}</h2></header>
-      <figure class="single"><div class="single__art">{{ gshot(vehicle.gallery[0], '(min-width: 1100px) 78vw, 100vw', decorative=false) }}</div><figcaption>{{ vehicle.gallery[0].alt }}</figcaption></figure>
-    </div>
-  </section>
-  {% else %}
-  <section class="showcase showcase--none" aria-labelledby="showcase-title">
-    <div class="container--wide">
-      <h2 id="showcase-title" class="eyebrow">The showcase</h2>
-      <p class="showcase__none">{% if vehicle.images == 1 %}Rockstar has published one official image of this vehicle so far: it is the picture above.{% else %}Rockstar has not published more pictures of this vehicle yet.{% endif %}</p>
-      <p class="showcase__link"><a class="link-arrow" href="https://www.rockstargames.com/VI/media/screenshots" target="_blank" rel="noopener noreferrer">Rockstar&rsquo;s screenshots</a></p>
+      <ul class="scenefig" data-gallery>
+        <li><a href="{{ image_src(vehicle.scene.m.embed_url, 2560) }}" data-lightbox data-caption="{{ vehicle.scene.alt }}"><span class="scenefig__art">{{ gshot(vehicle.scene, '(min-width: 900px) 92vw, 100vw', decorative=false, cut='wide') }}</span><span class="mos__cap">{{ vehicle.scene.caption }}</span></a></li>
+      </ul>
     </div>
   </section>
   {% endif %}
 
-  {# ---------------------------------------------------------------- the connected world: only what the database actually records #}
+  {# ---------------------------------------------------------------- the connected world: only what the database records #}
   {% if vehicle.missions or vehicle.locations %}
   <section class="vworld" aria-labelledby="world-title">
     <div class="container--wide">
@@ -112,17 +118,19 @@
   </section>
   {% endif %}
 
-  {# ---------------------------------------------------------------- the rest of the garage #}
-  {% if vehicle.more %}
-  <section class="vmore" aria-labelledby="more-title">
+  {# ---------------------------------------------------------------- the rest of the garage: the machines either side, then all of them #}
+  {% if vehicle.next %}
+  <section class="vnext" aria-label="More machines">
     <div class="container--wide">
-      <div class="vmore__head">
-        <div><p class="eyebrow">The garage</p><h2 id="more-title">More machines</h2></div>
-        <a class="link-arrow" href="{{ url_for('pages.vehicles') }}">Back to the garage</a>
+      <div class="vnext__pair">
+        {{ neighbour(vehicle.previous, 'Previous', 'prev') }}
+        {{ neighbour(vehicle.next, 'Next', 'next') }}
       </div>
-      <ul class="vmore__grid">
-        {% for o in vehicle.more %}<li>{{ gtile(o) }}</li>{% endfor %}
-      </ul>
+      <div class="vnext__all">
+        <p class="eyebrow">All machines</p>
+        {{ rail(vehicle.rail, vehicle.slug) }}
+      </div>
+      <p class="credit">Screenshots &copy; Rockstar Games, shown from Rockstar&rsquo;s own site. Rockstar has not published specifications for the {{ vehicle.name }}. <a href="{{ url_for('pages.vehicles') }}">Back to the Garage</a></p>
     </div>
   </section>
   {% endif %}

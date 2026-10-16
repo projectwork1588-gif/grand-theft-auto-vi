@@ -3,22 +3,22 @@
 # ------------------------------------------------------------------ vehicles
 def test_vehicle_list_is_paginated_and_database_driven(client):
     body = client.get("/api/v1/vehicles").get_json()
-    assert body["pagination"] == {"page": 1, "per_page": 9, "total": 13, "pages": 2}   # 8 concept + 5 official
+    assert body["pagination"] == {"page": 1, "per_page": 9, "total": 15, "pages": 2}   # 8 concept + 7 official
     assert [v["name"] for v in body["data"]][:3] == ["'67 Vapid Dominator Buggy", "'95 Grotti Cheetah", "Bruiser V8"]
     assert {"slug", "name", "manufacturer", "summary", "content_status", "category_slug", "category_name"} == set(body["data"][0])
 
 
 def test_vehicle_filters_search_sort_and_pagination(client):
     boats = client.get("/api/v1/vehicles?category=boat").get_json()
-    assert boats["pagination"]["total"] == 3 and {v["category_slug"] for v in boats["data"]} == {"boat"}
+    assert boats["pagination"]["total"] == 4 and {v["category_slug"] for v in boats["data"]} == {"boat"}
     assert [v["slug"] for v in client.get("/api/v1/vehicles?q=airboat").get_json()["data"]] == ["swampfox-airboat"]
     assert [v["slug"] for v in client.get("/api/v1/vehicles?q=halcyon").get_json()["data"]] == ["bruiser-v8", "meridian-sedan"]  # manufacturer search
     desc = client.get("/api/v1/vehicles?sort=name_desc&per_page=2").get_json()
     assert [v["name"] for v in desc["data"]] == ["Zephyr 250", "Vapid Stanier"]
     page3 = client.get("/api/v1/vehicles?per_page=5&page=3").get_json()
-    assert page3["pagination"]["pages"] == 3 and len(page3["data"]) == 3
+    assert page3["pagination"]["pages"] == 3 and len(page3["data"]) == 5
     official = client.get("/api/v1/vehicles?status=official&sort=featured").get_json()
-    assert [v["slug"] for v in official["data"]] == ["grotti-cheetah", "vapid-dominator-buggy", "shitzu-squalo", "vapid-stanier", "vapid-ganado"]
+    assert [v["slug"] for v in official["data"]] == ["grotti-cheetah", "vapid-dominator-buggy", "shitzu-squalo", "vapid-stanier", "vapid-ganado", "dinka-enduro", "crest-kayak"]
     assert client.get("/api/v1/vehicles?status=demo").get_json()["pagination"]["total"] == 8
     by_category = client.get("/api/v1/vehicles?sort=category&per_page=50").get_json()["data"]
     assert [v["category_name"] for v in by_category] == sorted(v["category_name"] for v in by_category)
@@ -38,16 +38,16 @@ def test_vehicle_detail_has_related_records(client):
     assert body["missions"][0]["usage_note"] == "Primary transport"
     assert [l["slug"] for l in body["locations"]] == ["heron-reach-dock"]
     assert body["locations"][0]["region_slug"] == "grassrivers"
-    assert [v["slug"] for v in body["same_category"]] == ["shitzu-squalo", "tidewalker-skiff"]
+    assert [v["slug"] for v in body["same_category"]] == ["crest-kayak", "shitzu-squalo", "tidewalker-skiff"]
     assert "vehicle_id" not in body and "category_id" not in body
 
 
 def test_vehicle_categories_endpoint_counts_with_group_by(client):
     data = client.get("/api/v1/vehicle-categories").get_json()["data"]
-    assert len(data) == 6 and sum(c["vehicle_count"] for c in data) == 13
-    assert {c["slug"]: c["vehicle_count"] for c in data}["boat"] == 3
+    assert len(data) == 6 and sum(c["vehicle_count"] for c in data) == 15
+    assert {c["slug"]: c["vehicle_count"] for c in data}["boat"] == 4
     official = client.get("/api/v1/vehicle-categories?status=official").get_json()["data"]
-    assert sum(c["vehicle_count"] for c in official) == 5 and {c["slug"]: c["vehicle_count"] for c in official}["motorcycle"] == 0
+    assert sum(c["vehicle_count"] for c in official) == 7 and {c["slug"]: c["vehicle_count"] for c in official}["motorcycle"] == 1
     assert client.get("/api/v1/vehicle-categories?status=bogus").status_code == 400
 
 

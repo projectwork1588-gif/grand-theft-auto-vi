@@ -81,7 +81,7 @@ export default async function (b) {
   await b.open(BASE + "/vehicles", 1500);
   await record("04-showroom-filters-desktop", 1440, 900, async () => {
     await b.eval(`document.getElementById("showroom").scrollIntoView(); true`); await b.sleep(900);
-    await b.eval(`document.querySelector('.gcats a[href*="category=boat"]').click(); true`); await b.sleep(2200);
+    await b.eval(`document.querySelector('.ctl__cats a[href*="category=boat"]').click(); true`); await b.sleep(2200);
     await b.eval(`document.querySelector('.gresult__clear').click(); true`); await b.sleep(2000);
   });
   await b.open(BASE + "/vehicles/vapid-stanier", 2500);
@@ -96,7 +96,7 @@ export default async function (b) {
   await b.open(BASE + "/vehicles", 2500);
   await record("06-choose-a-vehicle-transition-desktop", 1440, 900, async () => {
     await b.sleep(800);
-    await b.eval(`document.querySelector('.stage__panel.is-active .gbtn').click(); true`);
+    await b.eval(`document.querySelector('.scene.is-active .gbtn').click(); true`);
     await b.sleep(2600);
   });
   await b.open(BASE + "/vehicles", 2500);

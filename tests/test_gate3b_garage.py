@@ -1,4 +1,4 @@
-"""Gate 3B: the Garage. The showroom is the database (official vehicles only, real search, category, sort and pagination),
+"""Gate 3B (second pass): the Garage. The collection is the database (official vehicles only, real search, category, sort and pagination),
 the pictures are Rockstar's own screenshots chosen by hand, and nothing about a vehicle is stated that Rockstar has not."""
 import re
 from pathlib import Path
@@ -10,7 +10,9 @@ from app import media_slots
 from app.services import site
 
 ROOT = Path(__file__).resolve().parent.parent
-OFFICIAL = ["grotti-cheetah", "vapid-dominator-buggy", "shitzu-squalo", "vapid-stanier", "vapid-ganado"]
+OFFICIAL = ["grotti-cheetah", "vapid-dominator-buggy", "shitzu-squalo", "vapid-stanier", "vapid-ganado", "dinka-enduro", "crest-kayak"]
+NAMES = ["&#39;95 Grotti Cheetah", "&#39;67 Vapid Dominator Buggy", "Shitzu Squalo", "Vapid Stanier", "Vapid Ganado Retro Build",
+         "Dinka Enduro Motorcycle", "Crest Kayak"]
 
 
 def html(client, path):
@@ -19,47 +21,75 @@ def html(client, path):
     return response.get_data(as_text=True)
 
 
-# ------------------------------------------------------------------ the layout planner
-@pytest.mark.parametrize("count", range(0, 14))
-def test_every_row_of_the_showroom_grid_is_full(count):
-    sizes = site.garage_layout(count)
-    assert len(sizes) == count
-    span = {"feature": 12, "half": 6, "wide": 7, "narrow": 5}
-    row = 0
-    for size in sizes:
-        row += span[size]
-        if row == 12:
-            row = 0
-        assert row < 12 or row == 0
-    assert row == 0, (count, sizes)          # the last row ends exactly at the edge: no hole in the grid
+def tile_models(page):
+    return re.findall(r'<h3 class="tile__model">([^<]+)</h3>', page)
 
 
-def test_the_grid_varies_instead_of_repeating_one_card():
-    sizes = site.garage_layout(5)
-    assert sizes[0] == "feature" and len(set(sizes)) >= 3
+def css():
+    return (ROOT / "app" / "static" / "css" / "garage.css").read_text(encoding="utf-8")
+
+
+# ------------------------------------------------------------------ the arrangement of the collection
+@pytest.mark.parametrize("count", range(0, 16))
+def test_every_row_of_the_collection_is_full_and_counts_add_up(count):
+    rows = site.garage_rows(count)
+    assert sum(len(r) for r in rows) == count
+    for row in rows:
+        assert sum(row) == 12, (count, rows)                  # each row ends exactly at the edge: no hole in the mosaic
+
+
+def test_the_mosaic_varies_instead_of_repeating_one_card():
+    rows = site.garage_rows(7)
+    assert rows[0] == [8, 4] and len({tuple(r) for r in rows}) == 3
+
+
+def test_the_name_is_split_into_maker_and_model():
+    assert site.split_name("'95 Grotti Cheetah", "Grotti") == ("'95 Grotti", "Cheetah")
+    assert site.split_name("Vapid Ganado Retro Build", "Vapid") == ("Vapid", "Ganado Retro Build")
+    assert site.split_name("Crest Kayak", "Crest") == ("Crest", "Kayak")
+    assert site.split_name("Mystery", None) == ("", "Mystery")
+    assert site.split_name("Vapid", "Vapid") == ("", "Vapid")          # nothing left for the model: the name stays whole
 
 
 # ------------------------------------------------------------------ the pictures
 def test_every_vehicle_picture_is_described_and_positioned():
     for name, spec in media_slots.GARAGE_FRAMES.items():
-        assert name.startswith("vehicle-") and len(spec["alt"]) > 20 and spec["alt"][0].isupper(), name
+        assert len(spec["alt"]) > 20 and spec["alt"][0].isupper(), name
         assert all(0 <= v <= 1 for v in spec["face"] + spec["phone"]), name
-        assert not re.search(r"horsepower|mph|km/h|top speed|rare|limited", spec["alt"], re.I), name     # a description, not a claim
+        assert not re.search(r"horsepower|mph|km/h|top speed|rare|limited", spec["alt"], re.I), name
 
 
-def test_the_chosen_pictures_belong_to_their_vehicle():
+def test_every_pick_is_described_and_belongs_to_its_vehicle():
     for slug, pick in media_slots.GARAGE_PICKS.items():
         for role in ("stage", "card"):
-            assert pick[role] in media_slots.GARAGE_FRAMES, (slug, role)
-            assert pick[role].startswith(f"vehicle-{slug}-"), (slug, role)        # never another vehicle's picture
+            assert pick[role] in media_slots.GARAGE_FRAMES and pick[role].startswith("vehicle-"), (slug, role)
+            assert pick[role].split("vehicle-")[1].startswith(slug.split("-")[-1]) or slug in pick[role], (slug, role)
         assert pick["side"] in ("left", "right") and pick["vpos"] in ("top", "bottom")
+        assert pick["story"] in ("mosaic", "mosaic-flip", "viewer", "panorama", "scene", "none")
+        assert pick["stage"] not in pick["gallery"]                      # the showcase never repeats the opening picture
+        for g in pick["gallery"]:
+            assert g in media_slots.GARAGE_FRAMES
+    assert set(media_slots.GARAGE_PICKS) == set(OFFICIAL)
+
+
+def test_vehicles_with_several_pictures_open_on_a_different_one_from_their_tile():
+    for slug, pick in media_slots.GARAGE_PICKS.items():
+        if pick["story"] in ("mosaic", "mosaic-flip", "viewer", "panorama"):
+            assert pick["stage"] != pick["card"], slug
+        elif pick["stage"] == pick["card"]:
+            assert pick.get("card_zoom"), slug                               # one picture: the tile draws it closer, so it is not a copy
+
+
+def test_atmosphere_pictures_name_no_vehicle():
+    for slug, caption in media_slots.GARAGE_MOMENTS:
+        assert slug in media_slots.GARAGE_FRAMES
+        assert not re.search(r"Cheetah|Dominator|Squalo|Stanier|Ganado|Enduro|Kayak", caption), caption        # Rockstar's set title, never a model
 
 
 def test_every_picture_the_database_attaches_to_an_official_vehicle_is_described(app):
     from app.repositories import media, vehicles
     with app.app_context():
-        ids = vehicles.ids_by_slug(OFFICIAL)
-        for slug, vehicle_id in ids.items():
+        for slug, vehicle_id in vehicles.ids_by_slug(OFFICIAL).items():
             frames = media.for_entity("vehicle", vehicle_id, limit=24)
             assert frames, slug
             for m in frames:
@@ -67,32 +97,52 @@ def test_every_picture_the_database_attaches_to_an_official_vehicle_is_described
 
 
 def test_every_cut_position_the_pages_use_is_in_the_stylesheet(client):
-    css = (ROOT / "app" / "static" / "css" / "garage.css").read_text(encoding="utf-8")
+    sheet = css()
     seen = set()
     for path in ["/vehicles"] + [f"/vehicles/{s}" for s in OFFICIAL]:
         page = html(client, path)
-        seen |= set(re.findall(r'data-(px|py|pxn|pyn)="(\d+)"', page))
+        seen |= set(re.findall(r'data-(px|py|pxn|pyn|zoom)="([\d.]+)"', page))
     assert seen
     for attr, value in seen:
-        assert f'.gshot[data-{attr}="{value}"]' in css, (attr, value)
+        assert f'.gshot[data-{attr}="{value}"]' in sheet, (attr, value)
 
 
 def test_the_pages_never_use_inline_styles(client):
     for path in ["/vehicles"] + [f"/vehicles/{s}" for s in OFFICIAL]:
-        assert " style=" not in html(client, path), path        # the CSP forbids them
+        assert " style=" not in html(client, path), path
+
+
+# ------------------------------------------------------------------ the data: two more official vehicles, plain copy
+def test_the_two_new_vehicles_are_official_and_sourced(app):
+    from app.db import query_all
+    with app.app_context():
+        rows = {r["slug"]: r for r in query_all("SELECT slug, name, manufacturer, content_status, source_url, summary, description FROM vehicles WHERE vehicle_id > 13")}
+    assert set(rows) == {"dinka-enduro", "crest-kayak"}
+    for r in rows.values():
+        assert r["content_status"] == "official" and r["source_url"].startswith("https://www.rockstargames.com/")
+        assert not re.search(r"horsepower|top speed|mph|km/h|\d+ hp|price|rare", r["summary"] + r["description"], re.I), r["slug"]
+    assert rows["dinka-enduro"]["name"] == "Dinka Enduro Motorcycle" and rows["crest-kayak"]["name"] == "Crest Kayak"
+
+
+def test_the_api_serves_the_new_vehicles_unchanged_in_shape(client):
+    data = client.get("/api/v1/vehicles?status=official&per_page=50").get_json()
+    assert data["pagination"]["total"] == 7 and {v["slug"] for v in data["data"]} == set(OFFICIAL)
+    one = client.get("/api/v1/vehicles/crest-kayak").get_json()
+    assert one["name"] == "Crest Kayak" and one["category_slug"] == "boat" and one["content_status"] == "official"
 
 
 # ------------------------------------------------------------------ the opening
-def test_the_opening_shows_one_machine_and_a_lineup_of_five(client):
+def test_the_opening_shows_one_machine_and_a_lineup_of_seven(client):
     page = html(client, "/vehicles")
-    stage = page.split('data-stage')[1].split("</section>")[0]
-    assert stage.count("data-panel=") == 5 and stage.count("data-pick=") == 5
-    panels = re.findall(r'<article class="stage__panel[^"]*" id="stage-([a-z-]+)" data-panel="[a-z-]+"( hidden)?>', stage)
+    stage = page.split("data-stage")[1].split("</section>")[0]
+    assert stage.count("data-panel=") == 7 and stage.count("data-pick=") == 7
+    panels = re.findall(r'<article class="scene[^"]*" id="scene-([a-z-]+)" data-panel="[a-z-]+" data-vehicle="[a-z-]+"( hidden)?>', stage)
     assert [p[0] for p in panels] == OFFICIAL
-    assert [bool(p[1]) for p in panels] == [False, True, True, True, True]          # only the first is on show; the rest load on demand
-    assert stage.count('fetchpriority="high"') == 1                                  # one picture is urgent
-    assert 'aria-current="true"' in stage and "<h1" in page and page.count("<h1") == 1
-    assert "autoplay" not in stage.lower() and "<video" not in stage                  # nothing starts moving by itself
+    assert [bool(p[1]) for p in panels] == [False] + [True] * 6        # only the first is on show; the rest load on demand
+    assert stage.count('fetchpriority="high"') == 1
+    assert 'aria-current="true"' in stage and page.count("<h1") == 1
+    assert "<video" not in stage and "autoplay" not in stage.lower()
+    assert "data-ctl hidden" in stage                                  # the arrows exist only when script can make them work
 
 
 def test_each_lineup_link_works_without_script(client):
@@ -101,52 +151,59 @@ def test_each_lineup_link_works_without_script(client):
         assert f'href="/vehicles/{slug}" data-pick="{slug}"' in page
 
 
-def test_the_page_transition_is_off_for_reduced_motion():
-    css = (ROOT / "app" / "static" / "css" / "garage.css").read_text(encoding="utf-8")
-    block = css.split("@media (prefers-reduced-motion: no-preference) {")[1].split(chr(10) + "}" + chr(10))[0]
-    assert "@view-transition { navigation: auto; }" in block and "view-transition-name: vehicle-art" in block
-    assert css.count("@view-transition") == 1 and css.index("@view-transition") > css.index("prefers-reduced-motion: no-preference")
-
-
-def test_the_script_does_not_advance_the_opening_by_itself():
+def test_the_script_never_advances_the_opening_by_itself():
     js = (ROOT / "app" / "static" / "js" / "garage.js").read_text(encoding="utf-8")
     assert "setInterval" not in js and "autoplay" not in js.lower()
-    assert "decode()" in js                                                            # a picture is ready before its panel is shown
-    css = (ROOT / "app" / "static" / "css" / "garage.css").read_text(encoding="utf-8")
-    assert "infinite" not in css                                                       # no loop anywhere
+    assert "decode()" in js and "pageswap" in js
+    assert "infinite" not in css()
 
 
-# ------------------------------------------------------------------ the showroom
-def test_showroom_cards_use_the_planned_sizes_and_link_to_the_vehicle(client):
+def test_the_page_transition_and_depth_effects_are_off_for_reduced_motion():
+    sheet = css()
+    block = sheet.split("@view-transition")[0].rsplit("@media (prefers-reduced-motion: no-preference) {", 1)[1]
+    assert block.strip() == "" and "view-transition-name: vehicle-art" in sheet.split("@view-transition")[1]
+    assert "prefers-reduced-motion: no-preference" in sheet.split("translate: calc(var(--mx")[0].rsplit("@media", 1)[1]       # the pointer drift
+    assert "prefers-reduced-motion: reduce" in sheet and ".scene, .viewer__slide { transition: opacity .25s linear" in sheet
+
+
+# ------------------------------------------------------------------ the collection
+def test_the_collection_uses_the_planned_arrangement_and_links_each_tile(client):
     page = html(client, "/vehicles")
-    sizes = re.findall(r'class="gcard gcard--([a-z]+) reveal"', page)
-    assert sizes == site.garage_layout(5)
+    spans = re.findall(r'class="tile tile--s(\d+) reveal"', page)
+    assert [int(s) for s in spans] == [s for row in site.garage_rows(7) for s in row]
     for slug in OFFICIAL:
-        assert f'class="gcard__link" href="/vehicles/{slug}"' in page
+        assert f'class="tile__link" href="/vehicles/{slug}"' in page
+    assert tile_models(page)[:2] == ["Cheetah", "Dominator Buggy"]
+
+
+def test_the_headline_counts_the_collection_and_does_not_overclaim(client):
+    page = html(client, "/vehicles")
+    assert "Seven machines of Leonida" in page
+    for phrase in ("Every Machine", "Every machine", "What the pictures are", "Not published by Rockstar", "official image"):
+        assert phrase not in page, phrase
 
 
 def test_filters_keep_each_other_in_the_links(client):
     page = html(client, "/vehicles?q=vapid&sort=name_desc")
     href = re.search(r'href="([^"]*category=boat[^"]*)"', page).group(1)
     assert "q=vapid" in href and "sort=name_desc" in href and href.endswith("#showroom")
-    all_link = re.search(r'<nav class="gcats"[^>]*>\s*<a href="([^"]+)"', page).group(1)
+    all_link = re.search(r'<nav class="ctl__cats"[^>]*>\s*<a href="([^"]+)"', page).group(1)
     assert "q=vapid" in all_link and "category=" not in all_link
 
 
-def test_the_result_line_and_clear_link_describe_the_filters(client):
+def test_the_result_line_only_appears_when_filtering(client):
+    assert 'class="gresult" role="status" aria-live="polite" hidden' in html(client, "/vehicles")
     page = html(client, "/vehicles?category=boat&q=squalo")
     line = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", page.split('class="gresult"')[1].split("</p>")[0]))
-    assert "1 machine in Boats matching" in line and "Clear filters" in line
-    assert "Clear filters" not in html(client, "/vehicles")
+    assert "1 machine in Boats matching" in line and "Clear" in line and " hidden" not in page.split('class="gresult"')[1].split(">")[0]
 
 
-def test_every_sort_option_orders_the_cards(client):
-    names = lambda path: re.findall(r'<h3 class="gcard__name">([^<]+)</h3>', html(client, path))
-    featured = names("/vehicles")
-    assert names("/vehicles?sort=featured") == featured
-    assert names("/vehicles?sort=name_asc") == sorted(featured, key=lambda n: n.replace("&#39;", "'").lower()) or names("/vehicles?sort=name_asc")[0].startswith("&#39;67")
-    assert names("/vehicles?sort=name_desc") == list(reversed(names("/vehicles?sort=name_asc")))
-    assert sorted(names("/vehicles?sort=category")) == sorted(featured)
+def test_every_sort_option_orders_the_tiles(client):
+    featured = tile_models(html(client, "/vehicles"))
+    assert tile_models(html(client, "/vehicles?sort=featured")) == featured
+    asc = tile_models(html(client, "/vehicles?sort=name_asc"))
+    assert tile_models(html(client, "/vehicles?sort=name_desc")) == list(reversed(asc))
+    assert sorted(tile_models(html(client, "/vehicles?sort=category"))) == sorted(featured)
     page = html(client, "/vehicles?sort=name_desc")
     assert '<option value="name_desc" selected>' in page
     for value in ("featured", "name_asc", "name_desc", "category"):
@@ -154,24 +211,25 @@ def test_every_sort_option_orders_the_cards(client):
 
 
 def test_search_is_a_real_query_not_a_filter_on_the_page(client):
-    names = lambda path: re.findall(r'<h3 class="gcard__name">([^<]+)</h3>', html(client, path))
-    assert names("/vehicles?q=grotti") == ["&#39;95 Grotti Cheetah"]
-    assert names("/vehicles?q=retro") == ["Vapid Ganado Retro Build"]
-    assert names("/vehicles?q=%25") == []                          # a percent sign is text, not a wildcard
-    assert names("/vehicles?q=%27%3B+DROP+TABLE+vehicles%3B--") == []
-    assert len(names("/vehicles")) == 5                           # and nothing was dropped
+    assert tile_models(html(client, "/vehicles?q=grotti")) == ["Cheetah"]
+    assert tile_models(html(client, "/vehicles?q=kayak")) == ["Kayak"]
+    assert tile_models(html(client, "/vehicles?q=%25")) == []                 # a percent sign is text, not a wildcard
+    assert tile_models(html(client, "/vehicles?q=%27%3B+DROP+TABLE+vehicles%3B--")) == []
+    assert len(tile_models(html(client, "/vehicles"))) == 7                   # and nothing was dropped
+    assert len(tile_models(html(client, "/vehicles?category=boat"))) == 2     # the Squalo and the Kayak
+    assert tile_models(html(client, "/vehicles?category=motorcycle")) == ["Enduro Motorcycle"]
 
 
 def test_an_empty_search_shows_a_clear_way_back(client):
     page = html(client, "/vehicles?q=zzzz&category=boat")
-    assert "Nothing in the garage matches that" in page and "gcard__name" not in page
+    assert "No machine matches that" in page and "tile__model" not in page
     assert 'href="/vehicles#showroom"' in page and "No machines" in page
 
 
 def test_pagination_still_works_when_there_are_more_vehicles_than_a_page(client):
     page = html(client, "/vehicles?per_page=2&page=2")
     assert 'aria-label="Pagination"' in page and 'rel="prev"' in page and 'rel="next"' in page
-    assert len(re.findall(r'class="gcard gcard--', page)) == 2
+    assert len(re.findall(r'class="tile tile--s', page)) == 2
 
 
 def test_a_bad_sort_or_page_is_refused_not_ignored(client):
@@ -180,77 +238,104 @@ def test_a_bad_sort_or_page_is_refused_not_ignored(client):
 
 
 def test_the_public_garage_never_lists_a_concept_vehicle(client):
-    page = html(client, "/vehicles?status=demo&q=concept")
-    assert "gcard__name" not in page or "Corvina" not in page
+    assert "Corvina" not in html(client, "/vehicles?status=demo&q=concept")
     assert "Corvina" not in html(client, "/vehicles")
+
+
+def test_the_customs_band_names_no_model_and_shows_only_on_the_whole_collection(client):
+    page = html(client, "/vehicles")
+    band = page.split('class="customs"')[1].split("</section>")[0]
+    assert band.count("<figure>") == 4 and "Rideout Customs Mod Shop" in band and "One-Eyed Willie" in band
+    assert not re.search(r"Cheetah|Dominator|Squalo|Stanier|Ganado|Enduro|Kayak", band)
+    assert 'class="customs"' not in html(client, "/vehicles?category=boat") and 'class="customs"' not in html(client, "/vehicles?q=vapid")
 
 
 # ------------------------------------------------------------------ the vehicle pages
 @pytest.mark.parametrize("slug", OFFICIAL)
-def test_every_vehicle_page_has_its_own_opening_and_never_repeats_it(client, slug):
+def test_every_vehicle_page_has_its_own_entrance_and_never_repeats_it(client, slug):
     page = html(client, f"/vehicles/{slug}")
-    hero = page.split('<header class="vhero')[1].split("</header>")[0]
-    hero_file = re.search(r"static/media/([A-Za-z0-9_.~-]+\.jpg)", hero).group(1)
-    assert '<h1 class="vhero__name">' in hero
-    showcase = page.split('class="vover"')[1].split('class="vmore"')[0]
-    assert hero_file not in showcase, slug                                 # the showcase never repeats the opening picture
-    assert page.count('class="gtile"') == 4 and f'href="/vehicles/{slug}"' not in page.split('class="vmore"')[1]
+    opening = page.split('<header class="vopen')[1].split("</header>")[0]
+    assert '<h1 class="plate vopen__plate">' in opening
+    hero_file = re.search(r"static/media/([A-Za-z0-9_.~-]+\.jpg)", opening).group(1)
+    body = page.split('id="machine"')[1].split('class="vnext"')[0]
+    assert hero_file not in body, slug                                     # the showcase never repeats the opening picture
+    assert page.count('class="neighbour ') == 2 and page.count("rail__item") == 7
 
 
-def test_vehicle_pages_state_only_what_is_recorded(client):
+def test_each_vehicle_is_set_the_way_its_pictures_want_to_be_seen(client):
+    stories = {slug: re.search(r'class="garage garage--vehicle story--([a-z-]+)"', html(client, f"/vehicles/{slug}")).group(1) for slug in OFFICIAL}
+    assert stories == {"grotti-cheetah": "mosaic", "vapid-dominator-buggy": "viewer", "shitzu-squalo": "panorama", "vapid-stanier": "mosaic-flip",
+                       "vapid-ganado": "none", "dinka-enduro": "scene", "crest-kayak": "scene"}
+    assert len(set(stories.values())) >= 5                                 # not one template with five backgrounds
+
+
+def test_vehicle_pages_state_only_what_is_recorded_and_do_not_apologise(client):
     for slug in OFFICIAL:
         page = html(client, f"/vehicles/{slug}")
-        assert "Not published by Rockstar" in page and "badge--official" in page
         assert not re.search(r"horsepower|top speed|0-60|\bmph\b|\bkm/h\b|\bbhp\b|\$\d", page, re.I), slug
+        assert "Not published by Rockstar" not in page and "Specifications" not in page and "has published one official image" not in page
         assert "Where it appears" not in page                              # no mission or place is recorded for these, so none is shown
+        assert 'href="https://www.rockstargames.com/' in page and "Rockstar has not published specifications" in page   # said once, quietly, in the credit line
 
 
-def test_a_vehicle_with_four_pictures_gets_a_viewer_and_one_with_one_does_not(client):
-    squalo = html(client, "/vehicles/shitzu-squalo")
-    assert "data-viewer" in squalo and squalo.count("data-slide") == 3 and squalo.count("data-thumb") == 3
-    assert 'aria-label="Previous image"' in squalo and 'aria-label="Next image"' in squalo and 'aria-label="View this image larger"' in squalo
-    ganado = html(client, "/vehicles/vapid-ganado")
-    assert "data-viewer" not in ganado and "showcase--none" in ganado and "one official image" in ganado
+def test_a_vehicle_with_one_picture_has_no_gallery_and_no_empty_frame(client):
+    page = html(client, "/vehicles/vapid-ganado")
+    assert "story--none" in page and "vshow" not in page and "data-viewer" not in page and "data-lightbox" not in page
 
 
 def test_the_viewer_markup_works_without_script(client):
-    page = html(client, "/vehicles/vapid-stanier")
+    page = html(client, "/vehicles/vapid-dominator-buggy")
     thumbs = re.findall(r'<a href="(https://www\.rockstargames\.com/[^"]+)" data-thumb', page)
-    assert len(thumbs) == 3 and all("imwidth=2560" in t for t in thumbs)       # each thumbnail links to the full picture
+    assert len(thumbs) == 3 and all("imwidth=2560" in t for t in thumbs)
     slides = page.split('class="viewer__slides"')[1].split("</ul>")[0]
-    assert slides.count(" hidden") == 2                                          # only the first is shown before script runs
+    assert slides.count(" hidden") == 2
+    thumbnails = page.split('class="viewer__thumbs"')[1].split("</ul>")[0]
+    assert "loading=" not in thumbnails and thumbnails.count("<img") == 3          # the thumbnails are never lazy, so none is ever an empty frame
+
+
+def test_the_scene_pictures_are_captioned_with_rockstars_own_set_title(client):
+    for slug in ("dinka-enduro", "crest-kayak"):
+        page = html(client, f"/vehicles/{slug}")
+        assert "scenefig" in page and "Jason&#39;s Safehouse Vehicles" in page
 
 
 def test_connected_world_lists_missions_and_places_with_their_labels(client, app):
-    """No official vehicle is tied to a mission yet, so the section is hidden; given data it shows it, labelled."""
     with app.test_request_context("/vehicles/vapid-stanier"):
         vehicle = site.vehicle_detail("vapid-stanier")
         vehicle["missions"] = [{"slug": "ridge-run", "title": "Ridge Run", "mission_type": "activity", "content_status": "demo", "usage_note": "Time-trial car"}]
         vehicle["locations"] = [{"slug": "kalaga-ridge-lookout", "name": "Kalaga Ridge Lookout", "content_status": "official", "region_slug": "mount-kalaga", "region_name": "Mount Kalaga"}]
         page = render_template("vehicles/detail.html", vehicle=vehicle)
     assert "The connected world" in page and "Ridge Run" in page and "Time-trial car" in page and "Kalaga Ridge Lookout" in page
-    assert page.count("badge--demo") == 1                                         # the Team Valkyrie story is labelled, the official place is not
+    assert page.count("badge--demo") == 1
 
 
-def test_more_machines_are_readable_cards_not_oversized_headings():
-    css = (ROOT / "app" / "static" / "css" / "garage.css").read_text(encoding="utf-8")
-    name = re.search(r"\.gtile__name \{([^}]*)\}", css).group(1)
-    assert "var(--t-h4)" in name and "--t-h1" not in name and "--t-display" not in name
-    assert re.search(r"\.gtile__art \{[^}]*aspect-ratio: 16 / 10", css)
+def test_next_and_previous_wrap_round_the_collection(client):
+    first = html(client, "/vehicles/grotti-cheetah")
+    assert 'rel="prev" data-vehicle="crest-kayak"' in first and 'rel="next" data-vehicle="vapid-dominator-buggy"' in first
+    last = html(client, "/vehicles/crest-kayak")
+    assert 'rel="next" data-vehicle="grotti-cheetah"' in last
+
+
+def test_related_panels_are_readable_not_oversized_headings():
+    sheet = css()
+    name = re.search(r"\.neighbour__name \{([^}]*)\}", sheet).group(1)
+    assert "var(--t-h3)" in name and "--t-h1" not in name and "--t-display" not in name
+    tile = re.search(r"\.tile__model \{([^}]*)\}", sheet).group(1)
+    assert "var(--t-h3)" in tile
 
 
 # ------------------------------------------------------------------ nothing else is touched
 def test_garage_styles_only_define_garage_selectors():
-    css = re.sub(r"/\*.*?\*/", "", (ROOT / "app" / "static" / "css" / "garage.css").read_text(encoding="utf-8"), flags=re.S)
-    own = ("garage", "stage", "lineup", "gshot", "gbtn", "ggrid", "gcard", "gtile", "gtools", "gcats", "gresult", "gempty", "gnote", "showroom",
-           "vhero", "vcrumb", "vover", "vplate", "showcase", "viewer", "single", "vworld", "vmore")
-    for selector in re.findall(r"(?:^|\})\s*([^{}@]+?)\s*\{", css):
+    text = re.sub(r"/\*.*?\*/", "", css(), flags=re.S)
+    own = ("garage", "cine", "scene", "rail", "gshot", "gbtn", "plate", "coll", "ctl", "gresult", "mosaic", "mrow", "tile", "customs", "gempty", "credit",
+           "vopen", "vcrumb", "vintro", "vcredits", "vshow", "mos", "pano", "scenefig", "viewer", "vworld", "vnext", "neighbour", "story", "vehicle")
+    for selector in re.findall(r"(?:^|\})\s*([^{}@]+?)\s*\{", text):
         for part in selector.split(","):
             part = part.strip().replace("html.motion-on ", "")
-            if part in ("from", "to") or part.startswith("::view-transition"):      # keyframe steps, the page-change transition
+            if part in ("from", "to") or part.startswith("::view-transition") or part.startswith("[data-vehicle"):
                 continue
             first = re.search(r"[.#]([a-z_-]+)", part)
-            assert first and first.group(1).split("__")[0].split("--")[0] in own, part.strip()
+            assert first and first.group(1).split("__")[0].split("--")[0] in own, part
 
 
 def test_other_sections_do_not_load_the_garage_assets(client):
@@ -259,6 +344,6 @@ def test_other_sections_do_not_load_the_garage_assets(client):
         assert "garage.css" not in page and "garage.js" not in page, path
 
 
-def test_the_homepage_vehicle_showcase_is_unchanged_in_structure(client):
+def test_the_homepage_vehicle_showcase_still_renders(client):
     page = html(client, "/")
     assert 'class="slide"' in page and "showroom__item" in page

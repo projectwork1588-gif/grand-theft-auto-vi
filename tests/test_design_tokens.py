@@ -78,7 +78,7 @@ def test_every_token_used_by_components_is_defined():
     used = set()
     for name in COMPONENT_FILES:
         used |= set(re.findall(r"var\((--[\w-]+)", read(name)))
-    local = {"--r-chip", "--edge", "--g-gap", "--h", "--lineup-h", "--px", "--py", "--pxn", "--pyn"}  # custom properties a component sets for itself
+    local = {"--r-chip", "--edge", "--g-gap", "--h", "--lineup-h", "--px", "--py", "--pxn", "--pyn", "--tint", "--from", "--mx", "--my", "--z"}  # custom properties a component sets for itself
     undefined = {u for u in used if u not in defined and u not in local}
     # properties set inline by templates or JS (focus points, progress) are allowed
     undefined -= {"--p", "--progress", "--x", "--y", "--auto-ms", "--z", "--tx", "--ty", "--ov-x", "--ov-y", "--px", "--py", "--pxn", "--pyn"}   # set per element: layer travel; the overlap of the second picture

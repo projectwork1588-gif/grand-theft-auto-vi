@@ -17,9 +17,9 @@ def count(cur, table):
 
 def test_exact_row_counts(cur):
     expected = {"regions": 6, "locations": 8, "characters": 11, "character_relationships": 8, "character_regions": 3,
-                "vehicle_categories": 6, "vehicles": 13, "missions": 5, "mission_characters": 10,
-                "mission_vehicles": 8, "mission_locations": 8, "media_assets": 107,
-                "media_characters": 59, "media_regions": 36, "media_vehicles": 17, "media_locations": 0, "users": 0}
+                "vehicle_categories": 6, "vehicles": 15, "missions": 5, "mission_characters": 10,
+                "mission_vehicles": 8, "mission_locations": 8, "media_assets": 114,
+                "media_characters": 59, "media_regions": 36, "media_vehicles": 21, "media_locations": 0, "users": 0}
     for table, n in expected.items():
         assert count(cur, table) == n, table
 
@@ -53,10 +53,10 @@ def test_missions_and_locations_are_all_concept_records(cur):
         assert cur.fetchone()["n"] == 0, table
 
 
-def test_official_vehicles_are_exactly_the_five_rockstar_shows(cur):
+def test_official_vehicles_are_exactly_the_seven_rockstar_shows(cur):
     cur.execute("SELECT slug, source_url FROM vehicles WHERE content_status = 'official' ORDER BY vehicle_id")
     rows = cur.fetchall()
-    assert [r["slug"] for r in rows] == ["grotti-cheetah", "vapid-dominator-buggy", "shitzu-squalo", "vapid-stanier", "vapid-ganado"]
+    assert [r["slug"] for r in rows] == ["grotti-cheetah", "vapid-dominator-buggy", "shitzu-squalo", "vapid-stanier", "vapid-ganado", "dinka-enduro", "crest-kayak"]
     assert all(r["source_url"].startswith("https://www.rockstargames.com/VI/") for r in rows)
     cur.execute("SELECT COUNT(*) AS n FROM vehicles WHERE content_status = 'demo'")
     assert cur.fetchone()["n"] == 8
@@ -66,7 +66,8 @@ def test_every_official_vehicle_has_official_images_and_concept_vehicles_have_no
     cur.execute("SELECT v.slug, COUNT(mv.media_id) AS n FROM vehicles v LEFT JOIN media_vehicles mv ON mv.vehicle_id = v.vehicle_id "
                 "WHERE v.content_status = 'official' GROUP BY v.vehicle_id, v.slug")
     counts = {r["slug"]: r["n"] for r in cur.fetchall()}
-    assert counts == {"grotti-cheetah": 4, "vapid-dominator-buggy": 4, "shitzu-squalo": 4, "vapid-stanier": 4, "vapid-ganado": 1}
+    assert counts == {"grotti-cheetah": 4, "vapid-dominator-buggy": 4, "shitzu-squalo": 4, "vapid-stanier": 4, "vapid-ganado": 1,
+                      "dinka-enduro": 2, "crest-kayak": 2}                       # each has its own picture and the shared safehouse scene
     cur.execute("SELECT COUNT(*) AS n FROM media_vehicles mv JOIN vehicles v ON v.vehicle_id = mv.vehicle_id WHERE v.content_status <> 'official'")
     assert cur.fetchone()["n"] == 0
 

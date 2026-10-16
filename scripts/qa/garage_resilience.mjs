@@ -5,7 +5,7 @@ import { mkdirSync } from "node:fs";
 
 const BASE = process.env.GARAGE_BASE || "http://127.0.0.1:5057";
 const OUT = process.env.GARAGE_OUT || "review/garage-resilience/";
-const ROUTES = ["/vehicles", "/vehicles?category=boat&sort=name_desc", "/vehicles?q=zzzz", "/vehicles/grotti-cheetah", "/vehicles/vapid-dominator-buggy", "/vehicles/shitzu-squalo", "/vehicles/vapid-stanier", "/vehicles/vapid-ganado"];
+const ROUTES = ["/vehicles", "/vehicles?category=boat&sort=name_desc", "/vehicles?q=zzzz", "/vehicles/grotti-cheetah", "/vehicles/vapid-dominator-buggy", "/vehicles/shitzu-squalo", "/vehicles/vapid-stanier", "/vehicles/vapid-ganado", "/vehicles/dinka-enduro", "/vehicles/crest-kayak"];
 let failures = 0;
 const check = (name, ok, detail = "") => { console.log((ok ? "PASS  " : "FAIL  ") + name + (detail ? "  (" + detail + ")" : "")); if (!ok) { failures++; } };
 
@@ -38,20 +38,20 @@ export default async function (b) {
   await b.send("Emulation.setScriptExecutionDisabled", { value: true });
   await b.send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
   await b.open(BASE + "/vehicles", 1500);
-  const nojs = await b.eval(`({ visible: [...document.querySelectorAll("[data-panel]")].filter(p => !p.hidden).length, links: [...document.querySelectorAll("[data-pick]")].map(a => a.getAttribute("href")), cards: document.querySelectorAll(".gcard").length, form: document.querySelector(".gtools").method + " " + document.querySelector(".gtools").getAttribute("action"), cats: document.querySelectorAll(".gcats a").length })`);
-  check("without script: one machine on show, the lineup is five links, the showroom is a form and links", nojs.visible === 1 && nojs.links.length === 5 && nojs.cards === 5 && /get/i.test(nojs.form) && nojs.cats === 6, JSON.stringify(nojs));
+  const nojs = await b.eval(`({ visible: [...document.querySelectorAll("[data-panel]")].filter(p => !p.hidden).length, links: [...document.querySelectorAll("[data-pick]")].map(a => a.getAttribute("href")), cards: document.querySelectorAll(".tile").length, form: document.querySelector(".ctl__form").method + " " + document.querySelector(".ctl__form").getAttribute("action"), cats: document.querySelectorAll(".ctl__cats a").length })`);
+  check("without script: one machine on show, the lineup is seven links, the showroom is a form and links", nojs.visible === 1 && nojs.links.length === 7 && nojs.cards === 7 && /get/i.test(nojs.form) && nojs.cats === 7, JSON.stringify(nojs));
   await b.shot(OUT + "no-script-vehicles.jpg");
-  await b.open(BASE + "/vehicles/vapid-stanier", 1500);
-  const nojs2 = await b.eval(`({ slides: [...document.querySelectorAll("[data-slide]")].filter(s => !s.hidden).length, thumbs: [...document.querySelectorAll("[data-thumb]")].map(a => a.getAttribute("href").includes("imwidth=2560")).every(Boolean), more: document.querySelectorAll(".gtile").length })`);
-  check("without script: the showcase shows its first picture and every thumbnail links to the full picture", nojs2.slides === 1 && nojs2.thumbs && nojs2.more === 4, JSON.stringify(nojs2));
+  await b.open(BASE + "/vehicles/vapid-dominator-buggy", 1500);
+  const nojs2 = await b.eval(`({ slides: [...document.querySelectorAll("[data-slide]")].filter(s => !s.hidden).length, thumbs: [...document.querySelectorAll("[data-thumb]")].map(a => a.getAttribute("href").includes("imwidth=2560")).every(Boolean), more: document.querySelectorAll(".neighbour").length })`);
+  check("without script: the showcase shows its first picture and every thumbnail links to the full picture", nojs2.slides === 1 && nojs2.thumbs && nojs2.more === 2, JSON.stringify(nojs2));
   await b.shot(OUT + "no-script-vehicle.jpg", { full: true });
   await b.send("Emulation.setScriptExecutionDisabled", { value: false });
 
   // ---- 3. reduced motion: no movement, a short plain fade
   await b.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
   await b.open(BASE + "/vehicles", 1500);
-  const calm = await b.eval(`(() => { const p = document.querySelector('[data-panel="grotti-cheetah"]'); const c = getComputedStyle(p); const img = getComputedStyle(p.querySelector("img")); const copy = getComputedStyle(p.querySelector(".stage__name"));
-    return { fade: c.transitionDuration, prop: c.transitionProperty, imgT: img.transform, copyT: copy.transform, imgDur: img.transitionDuration, anim: getComputedStyle(document.querySelector(".stage__title")).animationDuration }; })()`);
+  const calm = await b.eval(`(() => { const p = document.querySelector('[data-panel="grotti-cheetah"]'); const c = getComputedStyle(p); const img = getComputedStyle(p.querySelector("img")); const copy = getComputedStyle(p.querySelector(".plate"));
+    return { fade: c.transitionDuration, prop: c.transitionProperty, imgT: img.transform, copyT: copy.transform, imgDur: img.transitionDuration, anim: getComputedStyle(document.querySelector(".cine__head")).animationDuration }; })()`);
   check("reduced motion: the picture does not zoom or the words rise", calm.imgT === "none" && calm.copyT === "none", JSON.stringify(calm));
   check("reduced motion: only a short opacity fade remains", /0\.25s/.test(calm.fade) && /opacity/.test(calm.prop), calm.fade + " " + calm.prop);
   await b.eval(`document.querySelector('[data-pick="shitzu-squalo"]').click(); true`);
@@ -62,12 +62,12 @@ export default async function (b) {
   // ---- 4. Rockstar's image server unreachable: the pages stay readable
   await b.send("Network.setBlockedURLs", { urls: ["https://www.rockstargames.com/*"] });
   await b.open(BASE + "/vehicles", 1800);
-  const dark = await b.eval(`({ h1: document.querySelector("h1").textContent, name: document.querySelector(".stage__panel.is-active .stage__name").textContent, cards: [...document.querySelectorAll(".gcard__name")].length, overflow: document.documentElement.scrollWidth > innerWidth })`);
-  check("images blocked: the opening, the names and the showroom are still there", dark.h1 === "Machines of Leonida" && dark.cards === 5 && !dark.overflow, JSON.stringify(dark));
+  const dark = await b.eval(`({ h1: document.querySelector("h1").textContent, name: document.querySelector(".scene.is-active .plate").textContent, cards: [...document.querySelectorAll(".tile__model")].length, overflow: document.documentElement.scrollWidth > innerWidth })`);
+  check("images blocked: the opening, the names and the showroom are still there", dark.h1 === "Machines of Leonida" && dark.cards === 7 && !dark.overflow, JSON.stringify(dark));
   await b.shot(OUT + "images-blocked-vehicles.jpg");
   await b.open(BASE + "/vehicles/vapid-stanier", 1800);
   await b.shot(OUT + "images-blocked-vehicle.jpg", { full: true });
-  check("images blocked: a vehicle page keeps its text, plate and links", await b.eval(`!!document.querySelector(".vhero__name") && !!document.querySelector(".vplate") && document.querySelectorAll(".gtile").length === 4`));
+  check("images blocked: a vehicle page keeps its text, plate and links", await b.eval(`!!document.querySelector(".vopen__plate") && !!document.querySelector(".vcredits") && document.querySelectorAll(".neighbour").length === 2`));
   await b.send("Network.setBlockedURLs", { urls: [] });
 
   console.log(failures ? "\n" + failures + " FAILED" : "\nall passed");

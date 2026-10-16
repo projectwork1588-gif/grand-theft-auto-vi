@@ -20,7 +20,7 @@ def test_query_runs_and_returns_rows(cur, sql):
 
 def test_query_results_are_sensible(cur):
     cur.execute(QUERIES[2])  # vehicles per category
-    assert sum(r["vehicles"] for r in cur.fetchall()) == 13
+    assert sum(r["vehicles"] for r in cur.fetchall()) == 15
     cur.execute(QUERIES[5])  # port-gellhorn missions
     assert {r["title"] for r in cur.fetchall()} == {"Harbour Lights"}
     cur.execute(QUERIES[6])  # characters in no mission
@@ -30,7 +30,7 @@ def test_query_results_are_sensible(cur):
 def test_official_vehicle_image_query(cur):
     cur.execute(QUERIES[13])
     rows = cur.fetchall()
-    assert [r["images"] for r in rows] == [4, 4, 4, 4, 1] and rows[-1]["name"] == "Vapid Ganado Retro Build"
+    assert sorted(r["images"] for r in rows) == [1, 2, 2, 4, 4, 4, 4] and {r["name"]: r["images"] for r in rows}["Vapid Ganado Retro Build"] == 1
 
 
 def test_gate3a_cast_queries(cur):

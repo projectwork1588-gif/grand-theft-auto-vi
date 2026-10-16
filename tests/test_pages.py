@@ -26,7 +26,7 @@ def results(text):
 
 
 def garage_names(text):
-    return re.findall(r'<h3 class="gcard__name">([^<]+)</h3>', text)
+    return re.findall(r'<h3 class="tile__model">([^<]+)</h3>', text)
 
 
 def visible_text(page):
@@ -316,40 +316,38 @@ def test_landing_portraits_are_wired_for_the_motion_policy(client, local_clips):
 # ------------------------------------------------------------------ vehicles
 def test_garage_shows_only_official_vehicles_with_official_images(client):
     page = html(client, "/vehicles")
-    assert garage_names(page) == ["&#39;95 Grotti Cheetah", "&#39;67 Vapid Dominator Buggy", "Shitzu Squalo",
-                                  "Vapid Stanier", "Vapid Ganado Retro Build"]
+    assert garage_names(page) == ["Cheetah", "Dominator Buggy", "Squalo", "Stanier", "Ganado Retro Build", "Enduro Motorcycle", "Kayak"]
     for concept in ("Corvina GT", "Bruiser V8", "Meridian Sedan", "Swampfox Airboat", "Tidewalker Skiff", "Zephyr 250"):
         assert concept not in page, concept            # concept vehicles are not in the public garage
     assert "badge--demo" not in page and "Fictional demo" not in page and "vehicles.svg" not in page
-    assert page.count("rockstargames.com/VI/_next/static/media/") >= 5 and "ULTIMATE_EDITION_GROTTI_CHEETAH" in page
-    assert page.count('class="gcard ') == 5 and "product" not in page.lower()
+    assert page.count("rockstargames.com/VI/_next/static/media/") >= 7 and "ULTIMATE_EDITION_GROTTI_CHEETAH" in page
+    assert page.count('class="tile tile--') == 7 and "product" not in page.lower()
 
 
 def test_garage_filters_search_sorting_and_pagination(client):
     listed = lambda path: garage_names(html(client, path))
-    assert listed("/vehicles?category=boat") == ["Shitzu Squalo"]
-    assert listed("/vehicles?category=motorcycle") == []                      # empty categories give an empty state, not an error
-    assert "Nothing in the garage matches that" in html(client, "/vehicles?category=motorcycle")
-    assert listed("/vehicles?q=stanier") == ["Vapid Stanier"]
-    assert listed("/vehicles?q=vapid&sort=name_desc") == ["Vapid Stanier", "Vapid Ganado Retro Build", "&#39;67 Vapid Dominator Buggy"]
+    assert listed("/vehicles?category=boat") == ["Squalo", "Kayak"]
+    assert listed("/vehicles?category=muscle") == ["Ganado Retro Build"]
+    assert "No machine matches that" in html(client, "/vehicles?q=nothingatall")
+    assert listed("/vehicles?q=stanier") == ["Stanier"]
+    assert listed("/vehicles?q=vapid&sort=name_desc") == ["Stanier", "Ganado Retro Build", "Dominator Buggy"]
     assert listed("/vehicles?status=demo") == listed("/vehicles")             # the public garage ignores attempts to list concept vehicles
     two = html(client, "/vehicles?per_page=2&page=2")
     assert 'aria-label="Pagination"' in two and 'rel="prev"' in two and 'rel="next"' in two
     page = html(client, "/vehicles")
-    for chip in ("Sports", "Off-road", "Boats", "Sedans", "Muscle"):
-        assert f">{chip} <small>1</small>" in page, chip
-    assert "Motorcycles" not in page                                         # no official motorcycle, so no empty chip
+    for chip in ("Sports", "Off-road", "Sedans", "Muscle"):
+        assert f">{chip}<small>1</small>" in page, chip
+    assert ">Boats<small>2</small>" in page and ">Motorcycles<small>1</small>" in page
 
 
 def test_official_vehicle_detail_page(client):
     page = html(client, "/vehicles/shitzu-squalo")
-    assert '<h1 class="vhero__name">Shitzu Squalo</h1>' in page and "badge--official" in page
+    assert '<h1 class="plate vopen__plate">' in page and "badge--official" not in page
     assert "https://www.rockstargames.com/VI/editions" in page                # source link
-    assert "The showcase" in page and page.count("data-lightbox") == 3         # the four pictures, less the one that opens the page
-    assert "More machines" in page and 'href="/vehicles/vapid-stanier"' in page
+    assert page.count("data-lightbox") == 3                                    # the four pictures, less the one that opens the page
+    assert 'href="/vehicles/vapid-stanier"' in page and "All machines" in page
     assert "ULTIMATE_EDITION_SQUALO_01" in page and "Fictional" not in page
-    assert "Not published by Rockstar" in page                                 # said plainly where Rockstar is silent
-    assert not re.search(r"horsepower|top speed|0-60|mph|km/h|bhp", page, re.I)      # and nothing is invented
+    assert not re.search(r"horsepower|top speed|0-60|mph|km/h|bhp", page, re.I)      # and nothing is invented
 
 
 def test_concept_vehicles_have_no_public_page(client):
@@ -842,7 +840,7 @@ def test_display_titles_use_the_condensed_face_and_body_stays_sans():
     wanted = {
         "components.css": (".key-card__title",),
         "pages.css": (".hero__vi", ".regions__name", ".cast__name", ".page-hero h1"),
-        "garage.css": (".stage__name", ".vhero__name", ".gcard__name", ".gtile__name"),
+        "garage.css": (".plate__model", ".tile__model", ".neighbour__name"),
     }
     for sheet, selectors in wanted.items():
         for selector in selectors:

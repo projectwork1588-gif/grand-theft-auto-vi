@@ -23,7 +23,17 @@ export default async function (b) {
       await b.eval(`Promise.all([...document.images].filter((i) => i.getClientRects().length).map((i) => i.decode().catch(() => {}))).then(() => true)`);
       await b.eval("window.scrollTo(0, 0); true"); await b.sleep(900);
       if (MODES.includes("first")) { await b.shot(`${OUT}${w}-${name(route)}-first.jpg`); }
-      if (MODES.includes("full")) { await b.shot(`${OUT}${w}-${name(route)}-full.jpg`, { full: true }); }
+      if (MODES.includes("full")) {
+        // a full-page capture asks the browser to paint far below the fold at once, and large pictures can come back unpainted: so the window is made as tall as
+        // the page for the capture, every picture is in view, painted, and then checked
+        const tall = Math.min(await b.eval("document.documentElement.scrollHeight"), 9000);
+        await b.send("Emulation.setDeviceMetricsOverride", { width: w, height: tall, deviceScaleFactor: 1, mobile: w < 700 });
+        await b.sleep(1200);
+        await b.eval(`Promise.all([...document.images].filter((i) => i.getClientRects().length).map((i) => i.decode().catch(() => {}))).then(() => true)`);
+        await b.sleep(900);
+        await b.shot(`${OUT}${w}-${name(route)}-full.jpg`, { full: true });
+        await b.send("Emulation.setDeviceMetricsOverride", { width: w, height: H[w] || 900, deviceScaleFactor: 1, mobile: w < 700 });
+      }
     }
     console.log(w, "done", await b.eval(`document.documentElement.scrollWidth > document.documentElement.clientWidth`) ? "OVERFLOW" : "no overflow");
   }

@@ -35,8 +35,8 @@ export default async function (b) {
     await key("Escape", "Escape", 27); await b.sleep(500);
 
     // ---- related-vehicle cards
-    await b.eval(`document.querySelector(".vmore").scrollIntoView(); true`); await b.sleep(600);
-    const r = await b.eval(`(() => { const e = document.querySelector(".vmore").getBoundingClientRect(); return { x: 0, y: e.top + scrollY, width: innerWidth, height: e.height }; })()`);
+    await b.eval(`document.querySelector(".vnext").scrollIntoView(); true`); await b.sleep(600);
+    const r = await b.eval(`(() => { const e = document.querySelector(".vnext").getBoundingClientRect(); return { x: 0, y: e.top + scrollY, width: innerWidth, height: e.height }; })()`);
     await b.shot(`${OUT}${w}-related-cards.jpg`, { clip: r });
 
     // ---- the showroom in use
@@ -51,7 +51,7 @@ export default async function (b) {
     await b.eval(`document.querySelector('[data-pick="grotti-cheetah"]').focus(); true`);
     await key("ArrowRight", "ArrowRight", 39); await b.sleep(900);
     await b.shot(`${OUT}${w}-focus-lineup.jpg`);
-    await b.eval(`document.getElementById("showroom").scrollIntoView(); document.querySelector(".gcard__link").focus(); true`); await b.sleep(600);
+    await b.eval(`document.getElementById("showroom").scrollIntoView(); document.querySelector(".tile__link").focus(); true`); await b.sleep(600);
     await b.shot(`${OUT}${w}-focus-card.jpg`);
     console.log(w, "done");
   }

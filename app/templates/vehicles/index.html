@@ -1,109 +1,120 @@
 {% extends "base.html" %}
 {% from "_components.html" import pager %}
-{% from "vehicles/_garage.html" import gshot, gcard %}
+{% from "vehicles/_garage.html" import gshot, nameplate, tile, rail %}
 {% block title %}Garage{% endblock %}
-{% block description %}The machines of Leonida: every vehicle Rockstar has shown from Grand Theft Auto VI, with its official screenshots.{% endblock %}
+{% block description %}Machines of Leonida: the vehicles Rockstar has shown from Grand Theft Auto VI, in its own screenshots.{% endblock %}
 {% block header_class %}{% endblock %}
 {% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='css/garage.css') }}"><script src="{{ url_for('static', filename='js/garage.js') }}" defer></script>{% endblock %}
 {% block content %}
+{% set words = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve'] %}
 <div class="garage">
 
   {# ---------------------------------------------------------------- the opening: one machine at a time, the whole lineup beneath #}
-  <section class="stage" data-stage aria-labelledby="garage-title">
-    <div class="stage__panels">
+  <section class="cine" data-stage data-vehicle="{{ stage[0].slug if stage else "" }}" aria-labelledby="garage-title">
+    <div class="cine__panels">
       {% for v in stage %}
-      <article class="stage__panel stage__panel--{{ v.side }} stage__panel--{{ v.vpos }}{% if loop.first %} is-active{% endif %}" id="stage-{{ v.slug }}" data-panel="{{ v.slug }}"{% if not loop.first %} hidden{% endif %}>
-        <div class="stage__art">{{ gshot(v.stage, '100vw', eager=loop.first) }}</div>
-        <div class="stage__shade" aria-hidden="true"></div>
-        <div class="stage__copy">
-          <p class="stage__eyebrow"><span>{{ '%02d' % loop.index }}</span> {{ v.category_name }}</p>
-          <h2 class="stage__name">{{ v.name }}</h2>
-          <p class="stage__make">{{ v.manufacturer or 'Manufacturer not stated' }}</p>
-          <p class="stage__sum">{{ v.summary }}</p>
-          <p class="stage__actions"><a class="gbtn" href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}">Open the {{ v.name }}</a>{% if v.images %}<span class="stage__count">{{ v.images }} official image{{ '' if v.images == 1 else 's' }}</span>{% endif %}</p>
+      <article class="scene scene--{{ v.side }} scene--{{ v.vpos }}{% if loop.first %} is-active{% endif %}" id="scene-{{ v.slug }}" data-panel="{{ v.slug }}" data-vehicle="{{ v.slug }}"{% if not loop.first %} hidden{% endif %}>
+        <div class="scene__art">{{ gshot(v.stage, '100vw', eager=loop.first, cut='stage') }}</div>
+        <div class="scene__grade" aria-hidden="true"></div>
+        <p class="scene__numeral" aria-hidden="true">{{ '%02d' % v.number }}</p>
+        <div class="scene__copy">
+          <p class="scene__kicker"><span>{{ '%02d' % v.number }}</span>{% if v.theme %}{{ v.theme }}{% endif %}<i aria-hidden="true"></i>{{ v.category_name }}</p>
+          {{ nameplate(v, 'h2', 'scene__plate') }}
+          <p class="scene__actions"><a class="gbtn" href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}" aria-label="Explore the {{ v.name }}">Explore<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a></p>
         </div>
       </article>
       {% endfor %}
     </div>
-    <div class="stage__title"><p class="eyebrow">The garage</p><h1 id="garage-title">Machines of Leonida</h1></div>
-    <nav class="stage__lineup" aria-label="The lineup" data-lineup>
-      <ol>
-        {% for v in stage %}
-        <li><a href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}" data-pick="{{ v.slug }}" aria-controls="stage-{{ v.slug }}"{% if loop.first %} aria-current="true"{% endif %}>
-          <span class="lineup__thumb">{{ gshot(v.thumb, '(min-width: 900px) 17vw, 40vw') }}</span>
-          <span class="lineup__no" aria-hidden="true">{{ '%02d' % loop.index }}</span>
-          <span class="lineup__name">{{ v.name }}</span>
-          <span class="lineup__cat">{{ v.category_name }}</span>
-        </a></li>
-        {% endfor %}
-      </ol>
-    </nav>
+    <div class="cine__console">
+      <div class="cine__head">
+        <div class="cine__title"><p class="eyebrow">The Garage</p><h1 id="garage-title">Machines of Leonida</h1></div>
+        <div class="cine__ctl" data-ctl hidden>
+          <button class="cine__arrow" type="button" data-step="-1" aria-label="Previous machine"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <p class="cine__count" aria-hidden="true"><b data-count>01</b> / {{ '%02d' % stage | length }}</p>
+          <button class="cine__arrow" type="button" data-step="1" aria-label="Next machine"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+      </div>
+      {{ rail(stage, stage[0].slug if stage else none, stage=true) }}
+    </div>
     <p class="visually-hidden" role="status" aria-live="polite" data-stage-live></p>
   </section>
 
-  {# ---------------------------------------------------------------- the showroom: the database, browsed #}
-  <section class="showroom" id="showroom" aria-labelledby="showroom-title">
+  {# ---------------------------------------------------------------- the collection: the database, browsed #}
+  <section class="coll" id="showroom" aria-labelledby="coll-title">
     <div class="container--wide">
-      <header class="showroom__head">
-        <p class="eyebrow">The showroom</p>
-        <h2 id="showroom-title">Every machine Rockstar has shown</h2>
-        <p>{{ total_all }} vehicle{{ '' if total_all == 1 else 's' }} so far, each with its official screenshots. Rockstar has not published specifications, so none are listed.</p>
+      <header class="coll__head">
+        <div>
+          <p class="eyebrow">The collection</p>
+          <h2 id="coll-title">{{ words[total_all] if total_all < words | length else total_all }} machine{{ '' if total_all == 1 else 's' }} of Leonida</h2>
+        </div>
+        <p class="coll__lede">Golden-hour coupes, mud-caked buggies and a sunset kayak, each in Rockstar&rsquo;s own screenshots.</p>
       </header>
 
-      <form class="gtools" method="get" action="{{ url_for('pages.vehicles') }}#showroom" role="search" aria-label="Search and sort the garage" data-tools>
-        <label class="gtools__search"><span class="visually-hidden">Search vehicles by name or maker</span>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          <input type="search" name="q" value="{{ filters.q or '' }}" placeholder="Search by name or maker" maxlength="100" autocomplete="off" enterkeyhint="search">
-        </label>
-        <label class="gtools__sort"><span>Sort</span>
-          <select name="sort" data-autosubmit>
-            {% for value, label in sorts %}<option value="{{ value }}"{% if filters.sort == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
-          </select>
-        </label>
-        {% if filters.category %}<input type="hidden" name="category" value="{{ filters.category }}">{% endif %}
-        <button class="gbtn gbtn--quiet" type="submit">Search</button>
-      </form>
+      <div class="ctl">
+        {% if categories | length > 1 %}
+        <nav class="ctl__cats" aria-label="Vehicle categories">
+          <a href="{{ url_for('pages.vehicles', q=filters.q, sort=(filters.sort if filters.sort != 'featured' else none)) }}#showroom"{% if not filters.category %} aria-current="true"{% endif %}>All</a>
+          {% for c in categories %}
+          <a href="{{ url_for('pages.vehicles', category=c.slug, q=filters.q, sort=(filters.sort if filters.sort != 'featured' else none)) }}#showroom"{% if filters.category == c.slug %} aria-current="true"{% endif %}>{{ c.name }}<small>{{ c.vehicle_count }}</small></a>
+          {% endfor %}
+        </nav>
+        {% endif %}
+        <form class="ctl__form" method="get" action="{{ url_for('pages.vehicles') }}#showroom" role="search" aria-label="Search and sort the collection">
+          <label class="ctl__search"><span class="visually-hidden">Search by name or maker</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <input type="search" name="q" value="{{ filters.q or '' }}" placeholder="Search" maxlength="100" autocomplete="off" enterkeyhint="search">
+            <button type="submit" class="ctl__go" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </label>
+          <label class="ctl__sort"><span class="visually-hidden">Sort</span>
+            <select name="sort" data-autosubmit aria-label="Sort the collection">
+              {% for value, label in sorts %}<option value="{{ value }}"{% if filters.sort == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+          </label>
+          {% if filters.category %}<input type="hidden" name="category" value="{{ filters.category }}">{% endif %}
+        </form>
+      </div>
 
-      {% if categories | length > 1 %}
-      <nav class="gcats" aria-label="Vehicle categories">
-        <a href="{{ url_for('pages.vehicles', q=filters.q, sort=(filters.sort if filters.sort != 'featured' else none)) }}#showroom"{% if not filters.category %} aria-current="true"{% endif %}>All <small>{{ total_all }}</small></a>
-        {% for c in categories %}
-        <a href="{{ url_for('pages.vehicles', category=c.slug, q=filters.q, sort=(filters.sort if filters.sort != 'featured' else none)) }}#showroom"{% if filters.category == c.slug %} aria-current="true"{% endif %}>{{ c.name }} <small>{{ c.vehicle_count }}</small></a>
-        {% endfor %}
-      </nav>
-      {% endif %}
-
-      <p class="gresult" role="status" aria-live="polite">
+      <p class="gresult" role="status" aria-live="polite"{% if not active %} hidden{% endif %}>
         {% if pagination.total %}<b>{{ pagination.total }}</b> {{ 'machine' if pagination.total == 1 else 'machines' }}{% else %}No machines{% endif %}
         {% if category_name %} in <b>{{ category_name }}</b>{% endif %}{% if filters.q %} matching <b>&ldquo;{{ filters.q }}&rdquo;</b>{% endif %}
-        {% if active %}<a class="gresult__clear" href="{{ url_for('pages.vehicles') }}#showroom">Clear filters</a>{% endif %}
+        {% if active %}<a class="gresult__clear" href="{{ url_for('pages.vehicles') }}#showroom">Clear</a>{% endif %}
       </p>
 
       {% if data %}
-      <div class="ggrid" data-count="{{ data | length }}">
-        {% for v in data %}{{ gcard(v, loop.index) }}{% endfor %}
+      <div class="mosaic" data-count="{{ data | length }}">
+        {% for row in showroom %}
+        <div class="mrow mrow--{{ row.tone }}">
+          {% for cell in row.cells %}{{ tile(cell.v, cell.span) }}{% endfor %}
+        </div>
+        {% if moments and loop.index0 == moments_after %}
+        <section class="customs" aria-labelledby="customs-title">
+          <header class="customs__head">
+            <p class="eyebrow">Customs and classics</p>
+            <h2 id="customs-title">Built in the mod shop</h2>
+            <p>Gold wheels, electric green and a row of classics: more machines from Rockstar&rsquo;s own screenshots, shown without a name because Rockstar gives none.</p>
+            <a class="link-arrow" href="https://www.rockstargames.com/VI/media/screenshots" target="_blank" rel="noopener noreferrer">On rockstargames.com</a>
+          </header>
+          <ul class="customs__grid">
+            {% for m in moments %}
+            <li class="customs__cell customs__cell--{{ loop.index }}">
+              <figure><div class="customs__art">{{ gshot(m, '(min-width: 900px) 34vw, 100vw', cut=('wide' if loop.index <= 2 else 'small')) }}</div><figcaption>{{ m.caption }}</figcaption></figure>
+            </li>
+            {% endfor %}
+          </ul>
+        </section>
+        {% endif %}
+        {% endfor %}
       </div>
       {{ pager(pagination) }}
       {% else %}
       <div class="gempty">
-        <h3>Nothing in the garage matches that</h3>
-        <p>{% if filters.q %}No vehicle name, maker or summary contains &ldquo;{{ filters.q }}&rdquo;{% if category_name %} in {{ category_name }}{% endif %}.{% else %}There is no vehicle in that category yet.{% endif %} Try a shorter word, or start again.</p>
-        <a class="gbtn" href="{{ url_for('pages.vehicles') }}#showroom">Show the whole garage</a>
+        <h3>No machine matches that</h3>
+        <p>{% if filters.q %}Nothing is named or made &ldquo;{{ filters.q }}&rdquo;{% if category_name %} in {{ category_name }}{% endif %}. Try a shorter word.{% else %}There is nothing in that category yet.{% endif %}</p>
+        <a class="gbtn" href="{{ url_for('pages.vehicles') }}#showroom">Show the whole collection</a>
       </div>
       {% endif %}
-    </div>
-  </section>
 
-  <section class="gnote" aria-labelledby="gnote-title">
-    <div class="container--wide gnote__in">
-      <div>
-        <p class="eyebrow">Sources</p>
-        <h2 id="gnote-title">What the pictures are</h2>
-      </div>
-      <div class="gnote__text">
-      <p>Every picture in the garage is one of Rockstar&rsquo;s own published screenshots, shown from Rockstar&rsquo;s servers and credited to Rockstar Games. Vehicle names are the ones Rockstar gives them. Nothing about performance, price or availability is stated because none has been published.</p>
-      <a class="link-arrow gnote__link" href="https://www.rockstargames.com/VI/media/screenshots" target="_blank" rel="noopener noreferrer">See them all on rockstargames.com</a>
-      </div>
+      <p class="credit">Screenshots &copy; Rockstar Games, shown from Rockstar&rsquo;s own site. Names are Rockstar&rsquo;s; Rockstar has not published specifications.</p>
     </div>
   </section>
 </div>

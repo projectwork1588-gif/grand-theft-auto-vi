@@ -204,16 +204,46 @@ GARAGE_FRAMES = {
     "vehicle-vapid-stanier-02": {"face": (0.45, 0.45), "phone": (0.45, 0.45), "alt": "Two occupants seen through the sedan's windscreen, lit in purple and pink"},
     "vehicle-vapid-stanier-03": {"face": (0.50, 0.60), "phone": (0.50, 0.60), "alt": "Side of the sedan: a wheel, the chrome mirror and the Stanier script on the door"},
     "vehicle-vapid-stanier-04": {"face": (0.64, 0.45), "phone": (0.70, 0.45), "alt": "The sedan's tail fin and round red brake light under a night sky with palms"},
-    "vehicle-vapid-ganado-01": {"face": (0.45, 0.68), "phone": (0.66, 0.66), "alt": "Yellow retro pickup with red racing stripes on a coast road, the sea behind it"},
+    "vehicle-vapid-ganado-01": {"face": (0.50, 0.65), "phone": (0.66, 0.66), "alt": "Yellow retro pickup with red racing stripes on a coast road, the sea behind it"},
+    "vehicle-dinka-enduro-01": {"face": (0.55, 0.52), "phone": (0.55, 0.52), "alt": "Green trail bike with knobby tyres parked side-on against a teal corrugated shutter"},
+    "vehicle-crest-kayak-01": {"face": (0.62, 0.50), "phone": (0.60, 0.50), "alt": "A paddler in an orange kayak on glowing water at sunset, a wooden pier behind"},
+    "garage-jasons-safehouse": {"face": (0.50, 0.55), "phone": (0.40, 0.62), "alt": "A stilt house at the water's edge with a pickup, a motorcycle and a kayak outside it"},
+    "garage-rideout-customs-01": {"face": (0.66, 0.62), "phone": (0.66, 0.62), "alt": "A gold-green lowrider with gold wheels, lit by a glowing orange ring"},
+    "garage-one-eyed-willies-01": {"face": (0.62, 0.52), "phone": (0.62, 0.52), "alt": "A bright green 4x4 on oversized tyres in a burst of green light"},
+    "garage-classic-cars-02": {"face": (0.60, 0.50), "phone": (0.60, 0.50), "alt": "The rear of a turquoise coupe with a dark stripe, a small wing and chrome wheels"},
+    "garage-classic-cars-04": {"face": (0.50, 0.55), "phone": (0.50, 0.55), "alt": "A red and white race car with a number on its door, open cockpit, seen close up"},
 }
-# Which picture each vehicle uses where (slugs of its media_assets rows):
-#   stage  the opening showroom on the Garage page, and the top of the vehicle's own page
-#   card   its card in the showroom grid (a different picture from the stage wherever it has more than one)
-#   side   which side the words sit on, opposite the vehicle (left or right); vpos "top" puts them above a long, low car
+# How each vehicle is presented (slugs of its media_assets rows; the vehicle's pages follow this, so each is art-directed on its own):
+#   stage      the opening picture on the Garage page and the top of the vehicle's own page: a whole vehicle where the picture allows
+#   card       its tile in the showroom (a different picture from the stage wherever the vehicle has more than one)
+#   card_zoom  (zoom, x, y): for a vehicle with one picture, its tile is that picture drawn closer on (x, y), so it is not a copy
+#   side       which side the words sit on, opposite the vehicle (left or right); vpos "top" puts them above a long, low car
+#   theme      a few words for the mood of the picture (what it shows, not a claim about the vehicle)
+#   story      the showcase on its page: "mosaic" (one large picture and two beside it), "mosaic-flip" (the same, mirrored),
+#              "viewer" (one large picture, thumbnails, previous and next), "panorama" (one wide picture, two beneath it),
+#              "scene" (one wide picture from the same Rockstar set), or "none" (a vehicle with one picture: the opening is all of it)
+#   gallery    the showcase pictures, in order (never the stage picture)
+#   scene      the shared picture of a "scene" showcase, and the caption it carries
 GARAGE_PICKS = {
-    "grotti-cheetah": {"stage": "vehicle-grotti-cheetah-02", "card": "vehicle-grotti-cheetah-01", "side": "left", "vpos": "bottom"},
-    "vapid-dominator-buggy": {"stage": "vehicle-vapid-dominator-buggy-01", "card": "vehicle-vapid-dominator-buggy-02", "side": "right", "vpos": "bottom"},
-    "shitzu-squalo": {"stage": "vehicle-shitzu-squalo-01", "card": "vehicle-shitzu-squalo-02", "side": "right", "vpos": "bottom"},
-    "vapid-stanier": {"stage": "vehicle-vapid-stanier-04", "card": "vehicle-vapid-stanier-01", "side": "left", "vpos": "bottom"},
-    "vapid-ganado": {"stage": "vehicle-vapid-ganado-01", "card": "vehicle-vapid-ganado-01", "side": "left", "vpos": "top"},
+    "grotti-cheetah": {"stage": "vehicle-grotti-cheetah-01", "card": "vehicle-grotti-cheetah-02", "side": "right", "vpos": "bottom", "theme": "Golden hour",
+                       "story": "mosaic", "gallery": ["vehicle-grotti-cheetah-02", "vehicle-grotti-cheetah-03", "vehicle-grotti-cheetah-04"]},
+    "vapid-dominator-buggy": {"stage": "vehicle-vapid-dominator-buggy-01", "card": "vehicle-vapid-dominator-buggy-02", "side": "right", "vpos": "bottom", "theme": "Mud and mist",
+                              "story": "viewer", "gallery": ["vehicle-vapid-dominator-buggy-02", "vehicle-vapid-dominator-buggy-03", "vehicle-vapid-dominator-buggy-04"]},
+    "shitzu-squalo": {"stage": "vehicle-shitzu-squalo-01", "card": "vehicle-shitzu-squalo-02", "side": "right", "vpos": "bottom", "theme": "Dusk on the bay",
+                      "story": "panorama", "gallery": ["vehicle-shitzu-squalo-02", "vehicle-shitzu-squalo-03", "vehicle-shitzu-squalo-04"]},
+    "vapid-stanier": {"stage": "vehicle-vapid-stanier-01", "card": "vehicle-vapid-stanier-04", "side": "left", "vpos": "top", "theme": "Neon night",
+                      "story": "mosaic-flip", "gallery": ["vehicle-vapid-stanier-02", "vehicle-vapid-stanier-03", "vehicle-vapid-stanier-04"]},
+    "vapid-ganado": {"stage": "vehicle-vapid-ganado-01", "card": "vehicle-vapid-ganado-01", "card_zoom": (1.5, 0.80, 0.66), "side": "left", "vpos": "top", "theme": "Coast road",
+                     "story": "none", "gallery": []},
+    "dinka-enduro": {"stage": "vehicle-dinka-enduro-01", "card": "vehicle-dinka-enduro-01", "card_zoom": (1.45, 0.50, 0.40), "side": "left", "vpos": "bottom", "theme": "Garage door",
+                     "story": "scene", "gallery": [], "scene": ("garage-jasons-safehouse", "From Rockstar's Jason's Safehouse Vehicles screenshots")},
+    "crest-kayak": {"stage": "vehicle-crest-kayak-01", "card": "vehicle-crest-kayak-01", "card_zoom": (1.4, 0.62, 0.40), "side": "left", "vpos": "bottom", "theme": "Sunset paddle",
+                    "story": "scene", "gallery": [], "scene": ("garage-jasons-safehouse", "From Rockstar's Jason's Safehouse Vehicles screenshots")},
 }
+# The Garage's pictures of machines Rockstar does not name: its own set titles are the captions, and nothing more is claimed.
+GARAGE_MOMENTS = (
+    ("garage-rideout-customs-01", "Rideout Customs Mod Shop"),
+    ("garage-one-eyed-willies-01", "One-Eyed Willie's Mod Shop"),
+    ("garage-classic-cars-02", "Classic Car Collection"),
+    ("garage-classic-cars-04", "Classic Car Collection"),
+)

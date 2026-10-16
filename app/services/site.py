@@ -344,48 +344,77 @@ def character_detail(slug):
 
 
 # ---------------------------------------------------------------- vehicles (public garage = official only)
-# The Garage (Gate 3B). The pictures are chosen by hand in media_slots.GARAGE_PICKS / GARAGE_FRAMES; everything else is the
-# database: the vehicles, their categories, their descriptions and sources, the missions and places they are tied to.
+# The Garage (Gate 3B, second pass). The pictures and how each vehicle is presented are chosen by hand in media_slots.GARAGE_PICKS /
+# GARAGE_FRAMES; everything else is the database: the vehicles, their categories, descriptions and sources, the missions and places
+# they are tied to.
 GARAGE_SORTS = (("featured", "Featured"), ("name_asc", "Name A to Z"), ("name_desc", "Name Z to A"), ("category", "Category"))
-# Box proportions each kind of card is drawn in (wide screens, then phones), used to cut every picture around its subject
-_CARD_ASPECT = {"feature": (2.2, 1.45), "half": (1.5, 1.3), "wide": (1.5, 1.3), "narrow": (1.0, 1.3)}
-_STAGE_ASPECT = (1.7, 1.15)
-_HERO_ASPECT = (1.7, 1.05)
-_VIEWER_ASPECT = (16 / 9, 16 / 9)
-_THUMB_ASPECT = (16 / 9, 16 / 9)
+_ROW_CYCLE = ((8, 4), (4, 4, 4), (5, 7), (7, 5))
+_ROW_TONE = {(8, 4): "tall", (4, 4, 4): "mid", (5, 7): "low", (7, 5): "low", (6, 6): "mid", (12,): "wide"}
+_ROW_HEIGHT = {"tall": 540, "mid": 390, "low": 440, "wide": 420}
+_GRID_WIDTH = 1328
+_STAGE_SHAPE = {"stage": (1.6, 1.3)}
+_HERO_SHAPE = {"hero": (1.7, 1.15)}
+_THUMB_SHAPE = {"thumb": (1.6, 1.6)}
+_GALLERY_SHAPES = {"large": (1.5, 1.3), "wide": (2.3, 1.5), "small": (1.25, 1.3), "viewer": (16 / 9, 4 / 3), "thumb": (1.6, 1.6)}
 
 
-def garage_layout(count):
-    """The size of each card in the showroom grid: a feature, a pair, a wide and a narrow, a narrow and a wide, then round
-    again. Few vehicles get a hand-set arrangement, and a last card with no partner always spans the row, so no row has a hole."""
-    fixed = {0: [], 1: ["feature"], 2: ["wide", "narrow"], 3: ["feature", "half", "half"], 4: ["wide", "narrow", "narrow", "wide"]}
-    if count in fixed:
-        return fixed[count]
-    rows = (("feature",), ("half", "half"), ("wide", "narrow"), ("narrow", "wide"))
-    sizes, left, i = [], count, 0
+def garage_rows(count):
+    """The showroom's arrangement as rows of column spans out of 12: a large and a narrow, three equal, a narrow and a large, a large and a
+    narrow, then round again. A last row with too few left becomes two halves, three thirds or one full-width panel, so no row has a hole."""
+    if count == 2:
+        return [[7, 5]]
+    if count == 3:
+        return [[4, 4, 4]]
+    rows, left, i = [], count, 0
     while left > 0:
-        row = rows[i % len(rows)]
+        row = _ROW_CYCLE[i % len(_ROW_CYCLE)]
         i += 1
-        take = min(len(row), left)
-        sizes += ["feature"] if take == 1 and len(row) > 1 else list(row[:take])
-        left -= take
-    return sizes
+        if left >= len(row):
+            rows.append(list(row))
+            left -= len(row)
+        else:
+            rows.append([12] if left == 1 else ([6, 6] if left == 2 else [4, 4, 4]))
+            left = 0
+    return rows
 
 
-def _garage_picture(m, aspects):
-    """A frame ready for the `gshot` macro: the media row, what it shows, and where to cut it on wide and narrow screens."""
+def _cell_shape(span, tone):
+    """The box a showroom tile is drawn in (wide screens, then phones), so its picture is cut around its subject."""
+    return {"card": ((span / 12 * _GRID_WIDTH - 20) / _ROW_HEIGHT[tone], 1.3)}
+
+
+def _garage_picture(m, shapes, zoom=None):
+    """A frame ready for the `gshot` macro: the media row, what it shows, and one cut per named shape (where to place it on wide
+    screens and on phones). `zoom` = (scale, x, y) draws it closer on (x, y)."""
     if not m:
         return None
     spec = media_slots.GARAGE_FRAMES.get(m["slug"], {})
     face = spec.get("face", (0.5, 0.5))
     phone = spec.get("phone", face)
-    return {"m": m, "slug": m["slug"], "alt": spec.get("alt") or m["title"],
-            "pos": frame_pos(m["slug"], aspects[0], ay=0.5, face=face),
-            "posn": frame_pos(m["slug"], aspects[1], ay=0.5, face=phone)}
+    if zoom:
+        face = phone = (zoom[1], zoom[2])
+    cuts = {name: (frame_pos(m["slug"], a[0], ay=0.5, face=face), frame_pos(m["slug"], a[1], ay=0.5, face=phone)) for name, a in shapes.items()}
+    first = next(iter(cuts.values()))
+    return {"m": m, "slug": m["slug"], "alt": spec.get("alt") or m["title"], "pos": first[0], "posn": first[1], "cuts": cuts,
+            "zoom": f"{zoom[0]:.2f}".rstrip("0").rstrip(".") if zoom else None}
 
 
-def _garage_cards(rows, size_for=None):
-    """Each vehicle with the pictures the Garage pages draw it with."""
+def split_name(name, maker):
+    """A vehicle's name as (the part up to and including its maker, the model): "'95 Grotti Cheetah" -> ("'95 Grotti", "Cheetah"). The model is
+    set large on the Garage pages. A name that does not contain its maker is all model."""
+    if maker:
+        at = name.find(maker)
+        if at >= 0 and name[at + len(maker):].strip():
+            return name[:at + len(maker)].strip(), name[at + len(maker):].strip()
+    return "", name
+
+
+def _all_official():
+    return vehicles.list_vehicles({"status": "official", "sort": "featured", "per_page": "50"})["data"]
+
+
+def _garage_entries(rows, shapes_for=None):
+    """Each vehicle with the pictures the Garage pages draw it with. `shapes_for(index)` gives the box of its showroom tile."""
     ids = vehicles_repo.ids_by_slug([r["slug"] for r in rows])
     counts = media.counts("vehicle", ids.values())
     wanted = set()
@@ -394,35 +423,58 @@ def _garage_cards(rows, size_for=None):
         wanted.update(pick[k] for k in ("stage", "card") if pick.get(k))
     frames = media.by_slugs(wanted)
     covers = media.covers("vehicle", ids.values())
-    sizes = size_for or ["half"] * len(rows)
-    cards = []
-    for r, size in zip(rows, sizes):
+    order = [r["slug"] for r in _all_official()]
+    entries = []
+    for index, r in enumerate(rows):
         pick = media_slots.GARAGE_PICKS.get(r["slug"], {})
         fallback = covers.get(ids.get(r["slug"]))
         card = frames.get(pick.get("card")) or fallback
         stage = frames.get(pick.get("stage")) or fallback
-        cards.append({**r, "size": size, "images": counts.get(ids.get(r["slug"]), 0),
-                      "card": _garage_picture(card, _CARD_ASPECT[size]), "stage": _garage_picture(stage, _STAGE_ASPECT),
-                      "thumb": _garage_picture(stage, _THUMB_ASPECT),
-                      "side": pick.get("side", "left"), "vpos": pick.get("vpos", "bottom")})
-    return cards
+        shapes = shapes_for(index) if shapes_for else {"card": (1.5, 1.3)}
+        make_line, model_line = split_name(r["name"], r.get("manufacturer"))
+        entries.append({**r, "make_line": make_line, "model_line": model_line, "number": (order.index(r["slug"]) + 1) if r["slug"] in order else index + 1, "images": counts.get(ids.get(r["slug"]), 0),
+                        "card": _garage_picture(card, shapes, pick.get("card_zoom")), "stage": _garage_picture(stage, _STAGE_SHAPE),
+                        "thumb": _garage_picture(stage, _THUMB_SHAPE), "side": pick.get("side", "left"), "vpos": pick.get("vpos", "bottom"),
+                        "theme": pick.get("theme", "")})
+    return entries
 
 
 def vehicle_index(args):
     forced = {"sort": "featured", **args.to_dict(), "status": "official"}
     result = vehicles.list_vehicles(forced)
     result["filters"].pop("status", None)
-    result["data"] = _garage_cards(result["data"], garage_layout(len(result["data"])))
-    # the opening showroom always shows the whole garage, whatever the showroom below is filtered to
-    everyone = vehicles.list_vehicles({"status": "official", "sort": "featured", "per_page": "50"})
-    result["stage"] = _garage_cards(everyone["data"])
-    result["total_all"] = everyone["pagination"]["total"]
+    rows = garage_rows(len(result["data"]))
+    cells = [(span, _ROW_TONE[tuple(row)]) for row in rows for span in row]
+    entries = _garage_entries(result["data"], lambda i: _cell_shape(*cells[i]))
+    result["data"] = entries
+    result["showroom"], k = [], 0
+    for row in rows:
+        result["showroom"].append({"tone": _ROW_TONE[tuple(row)], "cells": [{"span": span, "v": entries[k + j]} for j, span in enumerate(row)]})
+        k += len(row)
+    # the opening always shows the whole garage, whatever the showroom below is filtered to
+    everyone = _all_official()
+    result["stage"] = _garage_entries(everyone)
+    result["total_all"] = len(everyone)
     result["categories"] = [c for c in vehicles_repo.categories_with_counts("official") if c["vehicle_count"]]
     result["sorts"] = GARAGE_SORTS
     f = result["filters"]
     result["active"] = bool(f.get("q") or f.get("category") or f.get("sort") not in (None, "featured"))
     result["category_name"] = next((c["name"] for c in result["categories"] if c["slug"] == f.get("category")), None)
+    # the customs and classics band belongs to the whole garage, not to a search or a category
+    plain = not (f.get("q") or f.get("category")) and result["pagination"]["page"] == 1
+    result["moments"] = _garage_moments() if plain and len(rows) >= 2 else []
+    result["moments_after"] = min(1, len(rows) - 1)
     return result
+
+
+def _garage_moments():
+    frames = media.by_slugs({slug for slug, _ in media_slots.GARAGE_MOMENTS})
+    out = []
+    for slug, caption in media_slots.GARAGE_MOMENTS:
+        picture = _garage_picture(frames.get(slug), {"wide": (1.7, 1.4), "tall": (0.9, 1.3), "small": (1.5, 1.4)})
+        if picture:
+            out.append({**picture, "caption": caption})
+    return out
 
 
 def vehicle_detail(slug):
@@ -433,16 +485,31 @@ def vehicle_detail(slug):
     frames = media.for_entity("vehicle", vehicle_id, limit=24)
     by_slug = {m["slug"]: m for m in frames}
     hero = by_slug.get(pick.get("stage")) or (frames[0] if frames else None)
-    vehicle["hero"] = _garage_picture(hero, _HERO_ASPECT)
+    vehicle["hero"] = _garage_picture(hero, _HERO_SHAPE)
     vehicle["side"], vehicle["vpos"] = pick.get("side", "left"), pick.get("vpos", "bottom")
+    vehicle["theme"] = pick.get("theme", "")
+    vehicle["make_line"], vehicle["model_line"] = split_name(vehicle["name"], vehicle.get("manufacturer"))
     vehicle["images"] = len(frames)
     # the showcase never repeats the picture that opens the page
-    rest = [m for m in frames if not hero or m["slug"] != hero["slug"]]
-    vehicle["gallery"] = [{**_garage_picture(m, _VIEWER_ASPECT), "thumb_pos": _garage_picture(m, _THUMB_ASPECT)["pos"]} for m in rest]
-    others = vehicles.list_vehicles({"status": "official", "sort": "featured", "per_page": "50"})["data"]
-    others = [o for o in others if o["slug"] != slug]
-    others.sort(key=lambda o: o["category_slug"] != vehicle["category_slug"])        # the same kind of machine first
-    vehicle["more"] = _garage_cards(others[:4], ["half"] * len(others[:4]))
+    wanted = [by_slug[g] for g in pick.get("gallery", []) if g in by_slug and by_slug[g] is not hero]
+    rest = wanted or [m for m in frames if not hero or m["slug"] != hero["slug"] and m["slug"] != pick.get("scene", ("",))[0]]
+    story = pick.get("story") or ("viewer" if len(rest) >= 2 else ("none" if not rest else "scene"))
+    if story in ("mosaic", "mosaic-flip") and len(rest) != 3:
+        story = "viewer" if len(rest) >= 2 else ("none" if not rest else "scene")
+    vehicle["story"] = story
+    vehicle["gallery"] = [_garage_picture(m, _GALLERY_SHAPES) for m in rest]
+    scene = pick.get("scene")
+    scene_row = media.by_slugs([scene[0]]).get(scene[0]) if scene else None
+    vehicle["scene"] = {**_garage_picture(scene_row, _GALLERY_SHAPES), "caption": scene[1]} if scene_row else None
+    if story == "scene" and not vehicle["scene"]:
+        vehicle["story"] = "none"
+    entries = _garage_entries(_all_official(), lambda i: {"card": (1.9, 1.3)})
+    me = next((i for i, e in enumerate(entries) if e["slug"] == slug), 0)
+    vehicle["rail"] = entries
+    vehicle["number"] = entries[me]["number"] if entries else 1
+    vehicle["total"] = len(entries)
+    vehicle["previous"] = entries[(me - 1) % len(entries)] if len(entries) > 1 else None
+    vehicle["next"] = entries[(me + 1) % len(entries)] if len(entries) > 1 else None
     vehicle["cover"] = frames[0] if frames else None
     return vehicle
 

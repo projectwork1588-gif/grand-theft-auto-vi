@@ -112,7 +112,7 @@ Sound: autoplay with sound is blocked by browsers, so the footage starts muted a
 | Vehicle categories | Judged from Rockstar's own screenshots where its page does not state a type (for example the Shitzu Squalo). Each such record says so in its source note. |
 | Character clip files | **Used locally**, as short muted loops, and never committed (see above). The 4K trailers are not downloaded. |
 
-## Inventory (107 rows)
+## Inventory (114 rows)
 
 | ID | Slug | Type | Source page | Remote reference | Linked to | Usage | Approval |
 |----|------|------|-------------|------------------|-----------|-------|----------|
@@ -223,8 +223,24 @@ Sound: autoplay with sound is blocked by browsers, so the footage starts muted a
 | 105 | `shot-mount-kalaga-05` | screenshot | /VI/media/screenshots | `…/media/Mount_Kalaga_National_Park_05.0_~vto-o2zxok.jpg` | Mount Kalaga | embed_permitted | approved |
 | 106 | `shot-mount-kalaga-06` | screenshot | /VI/media/screenshots | `…/media/Mount_Kalaga_National_Park_06.166ouq5pjd7h0.jpg` | Mount Kalaga | embed_permitted | approved |
 | 107 | `reel-leonida` | video | /VI/media/videos | `local: media/clips/leonida-reel.mp4` (Git-ignored) | none | permission_required | pending_review |
+| 108 | `vehicle-dinka-enduro-01` | screenshot | /VI/media/screenshots | `…/media/ULTIMATE_EDITION_SAFEHOUSE_VEHICLES_02.0-2n5rm9n8.rq.jpg` | Dinka Enduro Motorcycle | embed_permitted | approved |
+| 109 | `vehicle-crest-kayak-01` | screenshot | /VI/media/screenshots | `…/media/ULTIMATE_EDITION_SAFEHOUSE_VEHICLES_03.0c9.qtpdi.tf..jpg` | Crest Kayak | embed_permitted | approved |
+| 110 | `garage-jasons-safehouse` | screenshot | /VI/media/screenshots | `…/media/ULTIMATE_EDITION_SAFEHOUSE_VEHICLES_01.0wv6pw3t-mky3.jpg` | Dinka Enduro Motorcycle, Crest Kayak (scene; no vehicle named) | embed_permitted | approved |
+| 111 | `garage-rideout-customs-01` | screenshot | /VI/media/screenshots | `…/media/ULTIMATE_EDITION_RIDEOUT_CUSTOMS_01.065-ms8~k8vbq.jpg` | none (atmosphere; car not named) | embed_permitted | approved |
+| 112 | `garage-one-eyed-willies-01` | screenshot | /VI/media/screenshots | `…/media/ULTIMATE_EDITION_ONE_EYED_WILLIE_01.0n7-__or5f.b6.jpg` | none (atmosphere; truck not named) | embed_permitted | approved |
+| 113 | `garage-classic-cars-02` | screenshot | /VI/media/screenshots | `…/media/ULTIMATE_EDITION_WYMAN_CAR_COLLECTION_02.0_biiqjqkpg2b.jpg` | none (atmosphere; car not named) | embed_permitted | approved |
+| 114 | `garage-classic-cars-04` | screenshot | /VI/media/screenshots | `…/media/ULTIMATE_EDITION_WYMAN_CAR_COLLECTION_04.05ku1csui.4h6.jpg` | none (atmosphere; car not named) | embed_permitted | approved |
 
 Attribution for every row: *Copyright Rockstar Games / Take-Two Interactive.*
+
+## Garage research (Gate 3B, 2026-10-16)
+
+Rockstar's screenshots page (https://www.rockstargames.com/VI/media/screenshots) lists 166 pictures. All were reviewed as 360 px thumbnails.
+Vehicles Rockstar names: the five already registered, plus the **Dinka Enduro Motorcycle** and **Crest Kayak** (titles of two pictures in its
+"Jason's Safehouse Vehicles" set), now rows 108 and 109 and the two newest official vehicles. Pictures that show cars Rockstar does not
+name (the Rideout Customs and One-Eyed Willie's mod shops, the Classic Car Collection, the safehouse scene) are rows 110 to 114 and are used as
+atmosphere only. The two trailers (media/source-videos/trailers) were sampled every two seconds: their vehicles are unnamed, small and
+people-centred, so no frame was used. Not used: location shots with unnamed vehicles (Leonida Keys, Grassrivers, Mount Kalaga, Ambrosia).
 
 ## Adding a new asset (checklist)
 
