@@ -377,6 +377,8 @@
 .p-source a { color: var(--text-2); }
 .p-story__media { min-width: 0; }
 .p-media { --ov-x: clamp(16px, 3vw, 42px); --ov-y: clamp(26px, 3.4vw, 50px); position: relative; margin: 0 var(--ov-x) calc(var(--ov-y) + 26px) 0; }
+/* no second picture (Real Dimez): nothing overhangs, so the large picture takes the whole column and keeps room for its caption */
+.p-media[data-solo] { margin: 0 0 26px; }
 .p-media .motion-portrait { width: 100%; display: block; }
 .p-media .motion-portrait__frame { border-radius: var(--r-card); box-shadow: 0 34px 80px -46px #000; }
 .p-media .motion-portrait__cap { position: absolute; left: 2px; top: calc(100% + 10px); }

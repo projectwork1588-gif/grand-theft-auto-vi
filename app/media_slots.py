@@ -106,7 +106,7 @@ IMAGE_FACE = {
 #   main   the artwork the motion sequence rests on, and so the large picture of "The story so far"
 #   hero   the full-bleed picture opening the profile (never the same picture as `main`)
 #   card   the large picture on the landing page (the two leads' spread, a supporting person's card)
-#   second the smaller picture layered in front of `main` on the profile
+#   second the smaller picture layered in front of `main` on the profile (None: the large picture stands alone)
 #   shape  "wide" (4:3) or "tall" (4:5): the shape of that second picture
 CHARACTER_STAGE = {
     "jason-duval": {"main": "shot-jason-duval-01", "hero": "shot-jason-duval-02", "card": "shot-jason-duval-02", "second": "shot-jason-duval-04", "shape": "wide"},
@@ -114,14 +114,20 @@ CHARACTER_STAGE = {
     "cal-hampton": {"main": "art-cal-hampton", "hero": "shot-cal-hampton-01", "card": "shot-cal-hampton-01", "second": "shot-cal-hampton-02", "shape": "tall"},
     "brian-heder": {"main": "art-brian-heder", "hero": "shot-brian-heder-02", "card": "shot-brian-heder-01", "second": "shot-brian-heder-01", "shape": "tall"},
     "boobie-ike": {"main": "art-boobie-ike", "hero": "shot-boobie-ike-01", "card": "shot-boobie-ike-02", "second": "shot-boobie-ike-02", "shape": "tall"},
-    "dre-quan-priest": {"main": "art-dequan-priest", "hero": "shot-dequan-priest-02", "card": "shot-dequan-priest-02", "second": "shot-dequan-priest-01", "shape": "wide"},
-    # Real Dimez is a duo (Bae-Luxe, braids, 'BL' chain; Roxy, curls, 'ROXY' chain). The hero is the official artwork of both, so
-    # the title says what the picture shows; the sequence also rests on it (the one deliberate repeat). The one official screenshot that shows both women clearly is the one with
-    # Dre'Quan Priest between them (the label that signed them), so it is the second picture and the landing card; it is cut
-    # wide (4:3) so both women stay in it. The hero is Roxy alone, the large picture the full-length artwork of both.
-    "real-dimez": {"main": "art-real-dimez", "hero": "art-real-dimez", "card": "shot-dequan-priest-01", "second": "shot-dequan-priest-01", "shape": "wide", "side": "left", "duo": True},
+    "dre-quan-priest": {"main": "art-dequan-priest", "hero": "shot-dequan-priest-02", "card": "shot-dequan-priest-02", "second": "shot-dequan-priest-02", "shape": "tall"},
+    # Dre'Quan Priest: the only official picture of him on his own is the pool-bar screenshot, so the hero is its wide frame and
+    # the overlapping picture is a tall cut of the same screenshot around him (the one deliberate repeat on his page); the
+    # screenshot with Bae-Luxe and Roxy beside him is never used on his profile.
+    # Real Dimez is a duo (Bae-Luxe, braids, 'BL' chain; Roxy, curls, 'ROXY' chain). The hero and the large picture are the
+    # official artwork of both; the sequence also rests on it. No official screenshot shows both women clearly without someone
+    # else (the one with Dre'Quan Priest between them) or at a size that reads, so the story has no overlapping picture
+    # (`second` is None) rather than one of the wrong subject. The group screenshot stays the landing card.
+    "real-dimez": {"main": "art-real-dimez", "hero": "art-real-dimez", "card": "shot-dequan-priest-01", "second": None, "shape": "wide", "side": "left", "duo": True},
     "raul-bautista": {"main": "art-raul-bautista", "hero": "shot-raul-bautista-02", "card": "shot-raul-bautista-01", "second": "shot-raul-bautista-01", "shape": "tall"},
 }
+# Profiles that end after their connections: no "From the footage and artwork" gallery (Real Dimez, whose official pictures
+# are few and mostly of other people). Jason and Lucia keep theirs.
+NO_GALLERY = frozenset({"real-dimez"})
 # Portraits (the relationship network, the connection cards on the profiles, the phone list): a head cut from Rockstar's own
 # character artwork. `heads` are read by eye from the pictures at full resolution, one per face: (x, y, h) = the middle of the
 # whole head (hair or hat to chin) as a fraction of the picture's width and height, and its height as a fraction of the

@@ -36,7 +36,7 @@
     </div>
     {# the large picture (the clip, resting on the artwork) with the second picture layered in front of its lower-right #}
     <div class="p-story__media">
-      <div class="p-media p-media--{{ character.shape }}">
+      <div class="p-media p-media--{{ character.shape }}"{% if not character.second %} data-solo{% endif %}>
         {% if character.portrait %}
           {{ portrait(character, label='In motion') }}
         {% else %}

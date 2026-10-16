@@ -70,3 +70,15 @@ the 16 playback contexts. See the review pack.
   bright and wide enough for a hero, and the screenshot with Dre'Quan between them would make him the subject.
 * **Brian's 2.91 s.** The old instrumentation attached its listeners after playback had begun (the first event it saw was at
   video time 0.92 s), so the wall time was measured from mid-clip. It now listens on `document` from document start.
+
+## Final cleanup (profile content and focus)
+
+* **Dre'Quan Priest.** The overlapping picture in "The story so far" is now a tall cut of his own official solo screenshot
+  (`shot-dequan-priest-02`, blue jacket at the pool bar), not the one with Bae-Luxe and Roxy beside him. His hero is the wide frame
+  of the same screenshot, the one deliberate repeat on his page: no other official picture shows him alone.
+* **Real Dimez.** The overlapping picture is gone (`second` is `None` in `media_slots.CHARACTER_STAGE`); the large picture is the
+  official artwork of both women, with the layout's room for the overhang removed (`.p-media[data-solo]`). The only other pictures are
+  the screenshot with Dre'Quan between them, a single woman, and a crowd scene where the women are small.
+* **Gallery.** "From the footage and artwork" is off for Real Dimez (`media_slots.NO_GALLERY`); Jason and Lucia keep it.
+* Tests: `test_overlap_pictures_keep_the_profiles_subject`, `test_dre_quans_story_shows_him_not_the_duo`,
+  `test_real_dimez_story_has_the_duo_alone_and_no_gallery`, `test_jason_and_lucia_keep_their_gallery`.

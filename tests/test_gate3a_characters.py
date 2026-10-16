@@ -153,7 +153,7 @@ def test_every_framing_lands_on_the_css_grid():
 def test_every_picture_the_pages_use_has_a_face_position():
     wanted = set()
     for pick in media_slots.CHARACTER_STAGE.values():
-        wanted.update(pick[k] for k in ("hero", "card", "second"))
+        wanted.update(pick[k] for k in ("hero", "card", "second") if pick[k])
     assert wanted <= set(media_slots.IMAGE_FACE), sorted(wanted - set(media_slots.IMAGE_FACE))
 
 
@@ -177,8 +177,42 @@ def test_no_profile_repeats_its_hero_in_the_story_or_the_overlap():
     for slug, pick in media_slots.CHARACTER_STAGE.items():
         if slug != "real-dimez":                                     # the one deliberate repeat: the duo's hero is the artwork of both
             assert pick["hero"] != pick["main"], slug                # the hero and the large picture below it differ
-        assert pick["hero"] != pick["second"], slug                    # and so do the hero and the overlapping picture
-        assert pick["main"] != pick["second"], slug
+        if slug != "dre-quan-priest":                                # his one official solo picture: wide in the hero, a tall cut in the overlap
+            assert pick["hero"] != pick["second"], slug              # and so do the hero and the overlapping picture
+        assert pick["main"] != pick["second"] or pick["second"] is None, slug
+
+
+def test_overlap_pictures_keep_the_profiles_subject():
+    """The overlapping picture never belongs to someone else's profile: Dre'Quan's is a cut of his own solo screenshot, and
+    Real Dimez has none rather than the screenshot that has Dre'Quan between the women."""
+    stage = media_slots.CHARACTER_STAGE
+    assert stage["dre-quan-priest"]["second"] == "shot-dequan-priest-02" and stage["dre-quan-priest"]["shape"] == "tall"
+    assert stage["real-dimez"]["second"] is None
+    for slug, pick in stage.items():
+        if pick["second"]:
+            assert not (slug != "dre-quan-priest" and "dequan" in pick["second"]), slug
+    assert stage["real-dimez"]["main"] == stage["real-dimez"]["hero"] == "art-real-dimez"
+
+
+def test_dre_quans_story_shows_him_not_the_duo(client):
+    page = client.get("/characters/dre-quan-priest").get_data(as_text=True)
+    media = page.split('class="p-media p-media--')[1].split("</section>")[0]
+    assert "p-media__second--tall" in media and "DreQuan_Priest_02" in media and "DreQuan_Priest_01" not in media
+    assert "Real_Dimez" not in media and "art-real-dimez" not in media
+
+
+def test_real_dimez_story_has_the_duo_alone_and_no_gallery(client):
+    page = client.get("/characters/real-dimez").get_data(as_text=True)
+    media = page.split('class="p-media p-media--')[1].split("</section>")[0]
+    assert "data-solo" in page.split('class="p-media p-media--')[1][:40] and 'class="p-media__second' not in media
+    assert "DreQuan_Priest" not in media and "Dre_Quan" not in media
+    assert 'id="gallery-title"' not in page and "From the footage and artwork" not in page and "p-gallery" not in page
+
+
+def test_jason_and_lucia_keep_their_gallery(client):
+    for slug in ("jason-duval", "lucia-caminos"):
+        page = client.get(f"/characters/{slug}").get_data(as_text=True)
+        assert 'id="gallery-title"' in page and "From the footage and artwork" in page, slug
 
 
 def test_lucia_leads_with_a_distinct_lit_close_picture(client):
@@ -304,7 +338,7 @@ def test_pages_fall_back_to_the_older_loop_until_the_sequences_are_built(client,
 
 
 def test_the_second_picture_overlaps_the_large_picture(client):
-    for slug in ("jason-duval", "lucia-caminos", "cal-hampton", "boobie-ike", "dre-quan-priest", "real-dimez", "raul-bautista", "brian-heder"):
+    for slug in ("jason-duval", "lucia-caminos", "cal-hampton", "boobie-ike", "dre-quan-priest", "raul-bautista", "brian-heder"):
         page = client.get(f"/characters/{slug}").get_data(as_text=True)
         media = page.split('class="p-media p-media--')[1].split("</section>")[0]
         assert media.index("motion-portrait__frame") < media.index('class="p-media__second '), slug     # in front, after it

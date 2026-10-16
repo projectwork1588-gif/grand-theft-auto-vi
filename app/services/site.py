@@ -121,7 +121,7 @@ def _cast_entries(include_media=True):
     ids = {slug: rows[slug]["character_id"] for slug in rows}
     wanted = set()
     for pick in media_slots.CHARACTER_STAGE.values():
-        wanted.update(pick[k] for k in ("main", "hero", "card", "second"))
+        wanted.update(pick[k] for k in ("main", "hero", "card", "second") if pick[k])
     wanted.update(spec["media"] for spec in media_slots.AVATARS.values())
     stage_media = media.by_slugs(wanted)
     cast = []
@@ -142,7 +142,7 @@ def _cast_entries(include_media=True):
             row["pos_hero_n"] = frame_pos(hero, 0.75, ay=0.30)
             row["pos_card"] = frame_pos(card, 0.8)                      # the leads' tall spread picture
             row["pos_card_n"] = frame_pos(card, 0.8)
-            row["pos_second"] = frame_pos(second, 4 / 3 if pick["shape"] == "wide" else 0.8)
+            row["pos_second"] = frame_pos(second, 4 / 3 if pick["shape"] == "wide" else 0.8) if second else None
             row["pos_next"] = frame_pos(hero, 2.2, ay=0.4)
             row["pos_next_n"] = frame_pos(hero, 2.0, ay=0.4)
             row["pos_result"] = frame_pos(card, 1.6)
@@ -282,7 +282,7 @@ def character_detail(slug):
     character["cover"] = character["hero"] or character["main"]
     gallery = media.for_entity("character", character_id, limit=14)
     used = {m["slug"] for m in (character["main"], character["hero"], character["second"]) if m}
-    character["gallery"] = [m for m in gallery if m["slug"] not in used]
+    character["gallery"] = [] if slug in media_slots.NO_GALLERY else [m for m in gallery if m["slug"] not in used]
     character["costars"] = characters_repo.costars_for(character_id)
     clips = {c["character_slug"]: c for c in media.character_clips()}
     character["clip"] = clips.get(slug)
