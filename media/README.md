@@ -20,6 +20,7 @@ that very frame), dissolves into the clip, plays it whole at true speed, dissolv
 ```powershell
 python -m scripts.make_loops --portraits   # eight sequences, about 9 MB; fetches Lucia's main artwork once; the homepage reel and loops are not touched
 python -m scripts.qa.portrait_check        # decodes them and measures first frame, dissolves and dips
+python -m scripts.make_loops --stills      # the still frames the Real Dimez and Dre'Quan Priest profiles use (media_slots.LOCAL_STILLS), cut from their clips
 python -m scripts.make_loops --posters     # only the older per-person stills (homepage), brighter
 ```
 

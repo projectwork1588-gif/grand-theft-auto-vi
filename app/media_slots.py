@@ -115,15 +115,25 @@ CHARACTER_STAGE = {
     "brian-heder": {"main": "art-brian-heder", "hero": "shot-brian-heder-02", "card": "shot-brian-heder-01", "second": "shot-brian-heder-01", "shape": "tall"},
     "boobie-ike": {"main": "art-boobie-ike", "hero": "shot-boobie-ike-01", "card": "shot-boobie-ike-02", "second": "shot-boobie-ike-02", "shape": "tall"},
     "dre-quan-priest": {"main": "art-dequan-priest", "hero": "shot-dequan-priest-02", "card": "shot-dequan-priest-02", "second": "shot-dequan-priest-02", "shape": "tall"},
-    # Dre'Quan Priest: the only official picture of him on his own is the pool-bar screenshot, so the hero is its wide frame and
-    # the overlapping picture is a tall cut of the same screenshot around him (the one deliberate repeat on his page); the
-    # screenshot with Bae-Luxe and Roxy beside him is never used on his profile.
-    # Real Dimez is a duo (Bae-Luxe, braids, 'BL' chain; Roxy, curls, 'ROXY' chain). The hero and the large picture are the
-    # official artwork of both; the sequence also rests on it. No official screenshot shows both women clearly without someone
-    # else (the one with Dre'Quan Priest between them) or at a size that reads, so the story has no overlapping picture
-    # (`second` is None) rather than one of the wrong subject. The group screenshot stays the landing card.
-    "real-dimez": {"main": "art-real-dimez", "hero": "art-real-dimez", "card": "shot-dequan-priest-01", "second": None, "shape": "wide", "side": "left", "duo": True},
+    # Dre'Quan Priest and Real Dimez take their overlapping picture (and Real Dimez its landing picture) from LOCAL_STILLS when
+    # those frames have been built; the entries here are what shows until then: Dre'Quan's tall cut of his pool-bar screenshot,
+    # and for Real Dimez the artwork of both women and no overlap. The screenshot with Dre'Quan between the women is used
+    # for neither person.
+    "real-dimez": {"main": "art-real-dimez", "hero": "art-real-dimez", "card": "art-real-dimez", "second": None, "shape": "wide", "side": "left", "duo": True},
     "raul-bautista": {"main": "art-raul-bautista", "hero": "shot-raul-bautista-02", "card": "shot-raul-bautista-01", "second": "shot-raul-bautista-01", "shape": "tall"},
+}
+# Still frames cut from Rockstar's own character clips (python -m scripts.make_loops --stills), graded like the sequences that play
+# on the same pages. `frame` is the 0-based frame of the clip (30 per second) and `crop` an optional (x, y, w, h) in the 2160 px
+# source. Both women of Real Dimez are in every frame from 8 to 22 and nobody else is; the Dre'Quan frame is cut tall around him,
+# in the recording studio, so it is a different scene from his pool-bar hero.
+LOCAL_STILLS = {
+    "real-dimez-duo": {"clip": "Real_Dimez_Video_Clip", "frame": 10},
+    "dre-quan-priest-studio": {"clip": "DreQuan_Priest_Video_Clip", "frame": 13, "crop": (720, 0, 1296, 1620)},
+}
+# Where a profile uses one: role -> (still, position on the grid the pages use, shape of the overlapping picture)
+LOCAL_STILL_PICKS = {
+    "real-dimez": {"second": ("real-dimez-duo", "50% 0%", "wide")},
+    "dre-quan-priest": {"second": ("dre-quan-priest-studio", "50% 0%", "tall")},
 }
 # Profiles that end after their connections: no "From the footage and artwork" gallery (Real Dimez, whose official pictures
 # are few and mostly of other people). Jason and Lucia keep theirs.

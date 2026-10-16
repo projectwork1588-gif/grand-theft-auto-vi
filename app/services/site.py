@@ -115,6 +115,31 @@ def _avatar(slug, media_rows):
     return {"media": media_rows.get(spec["media"]), "heads": spec["heads"], "head": media_slots.AVATAR_HEAD, "bg": spec.get("bg"), "duo": len(spec["heads"]) > 1}
 
 
+def _local_still(name):
+    """A frame cut from Rockstar's own clip by `scripts.make_loops --stills`, as a picture the `shot` macro can draw, or None
+    until it has been built."""
+    path = f"clips/{name}.jpg"
+    if not local_media.is_servable(path):
+        return None
+    small = f"clips/{name}-800.jpg"
+    return {"slug": name, "embed_url": None, "local": path, "local_small": small if local_media.is_servable(small) else None}
+
+
+def _apply_local_stills(row, slug):
+    """Swap in the built still frames where media_slots.LOCAL_STILL_PICKS names them; otherwise the official pictures chosen
+    in CHARACTER_STAGE stay."""
+    for role, (name, pos, shape) in media_slots.LOCAL_STILL_PICKS.get(slug, {}).items():
+        still = _local_still(name)
+        if not still:
+            continue
+        row[role] = still
+        if role == "card":
+            row["pos_card"] = row["pos_card_n"] = row["pos_result"] = pos
+        else:
+            row["pos_second"] = pos
+            row["second_shape"] = shape
+
+
 def _cast_entries(include_media=True):
     """The eight official characters in CHARACTERS_ORDER, each with its pictures, crops, motion sequence and connections."""
     rows = {r["slug"]: r for r in characters_repo.featured_official(50)}
@@ -149,6 +174,7 @@ def _cast_entries(include_media=True):
         else:
             for key in ("main", "hero", "card", "second"):
                 row[key] = None
+        _apply_local_stills(row, slug)
         row["avatar"] = _avatar(slug, stage_media)
         row["portrait"] = _portrait(slug)
         row["connections"] = _relationship_view(characters_repo.relationships_for(ids[slug]), slug, rows)

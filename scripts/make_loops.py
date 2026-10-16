@@ -3,6 +3,7 @@
     python -m scripts.fetch_clips      # 1. fetch Rockstar's character clips into media/source/
     python -m scripts.make_loops       # 2. build media/clips/ (needs ffmpeg: `pip install imageio-ffmpeg` is enough)
     python -m scripts.make_loops --posters   # only redo the per-person poster stills from the built sequences
+    python -m scripts.make_loops --stills    # the still frames (media_slots.LOCAL_STILLS) the Real Dimez and Dre'Quan pages use
     python -m scripts.make_loops --portraits # the Characters pages' sequences: each person in the shape it was shot in
                                              # (one set for the landing tiles and the profiles; fetches Lucia's artwork once)
 
@@ -30,7 +31,7 @@ import subprocess
 import sys
 import urllib.request
 
-from app.media_slots import CAST_ORDER, PORTRAIT_SHAPE
+from app.media_slots import CAST_ORDER, LOCAL_STILLS, PORTRAIT_SHAPE
 from scripts.fetch_clips import CHARACTER_CLIPS, SOURCE_DIR
 from scripts.schema_info import ROOT
 
@@ -259,6 +260,23 @@ def build_profile(ffmpeg, stem, slug):
             "length": round(length + PROFILE_INTRO + PORTRAIT_DISSOLVE + PORTRAIT_HOLD, 2), "clip": round(length, 2)}
 
 
+def build_stills():
+    """media/clips/<name>.jpg (1600 px) and <name>-800.jpg for each entry of media_slots.LOCAL_STILLS: one frame of the
+    official clip at full resolution, lifted like the sequence that plays on the same page, never retouched otherwise."""
+    ffmpeg = ffmpeg_exe()
+    CLIPS_DIR.mkdir(parents=True, exist_ok=True)
+    for name, spec in LOCAL_STILLS.items():
+        src = SOURCE_DIR / f"{spec['clip']}.mp4"
+        if not src.exists():
+            sys.exit(f"Missing {src.name}. Run: python -m scripts.fetch_clips")
+        grade, gamma = _grade(ffmpeg, src)
+        crop = "crop={}:{}:{}:{},".format(*spec["crop"][2:], *spec["crop"][:2]) if spec.get("crop") else ""
+        for width, suffix in ((1600, ""), (800, "-800")):
+            graph = f"select=eq(n\\,{spec['frame']}),{crop}scale={width}:-2:flags=lanczos{grade},format=yuvj420p"
+            run(ffmpeg, "-i", str(src), "-vf", graph, "-frames:v", "1", "-q:v", "2", str(CLIPS_DIR / f"{name}{suffix}.jpg"))
+        print(f"  {name}: frame {spec['frame']} of {spec['clip']}, lift gamma {gamma:.2f}", flush=True)
+
+
 def build_portraits_only():
     ffmpeg = ffmpeg_exe()
     CLIPS_DIR.mkdir(parents=True, exist_ok=True)
@@ -347,7 +365,9 @@ def main():
 
 
 if __name__ == "__main__":
-    if "--portraits" in sys.argv[1:]:
+    if "--stills" in sys.argv[1:]:
+        build_stills()
+    elif "--portraits" in sys.argv[1:]:
         build_portraits_only()
     elif "--posters" in sys.argv[1:]:
         build_posters_only()

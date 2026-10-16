@@ -82,3 +82,16 @@ the 16 playback contexts. See the review pack.
 * **Gallery.** "From the footage and artwork" is off for Real Dimez (`media_slots.NO_GALLERY`); Jason and Lucia keep it.
 * Tests: `test_overlap_pictures_keep_the_profiles_subject`, `test_dre_quans_story_shows_him_not_the_duo`,
   `test_real_dimez_story_has_the_duo_alone_and_no_gallery`, `test_jason_and_lucia_keep_their_gallery`.
+
+## Three image corrections (after the owner's review of 852dd2c)
+
+* **Real Dimez, /characters.** The large picture is the official artwork of both women (`art-real-dimez`), not the screenshot with
+  Dre'Quan between them. A frame of the duo's own clip was tried first and is stronger on a desktop, but Bae-Luxe stands at the very
+  left edge of every frame of that clip, which is where the IN MOTION tile sits, so at 820 and 390 px the tile hides her.
+* **Real Dimez, profile.** The overlapping picture is back: frame 10 (0-based, 0.33 s) of `Real_Dimez_Video_Clip.mp4`, both women and
+  nobody else, shown 4:3 (`real-dimez-duo.jpg`). Real Dimez still has no "From the footage and artwork" gallery.
+* **Dre'Quan Priest.** The overlapping picture is frame 13 (0.43 s) of `DreQuan_Priest_Video_Clip.mp4` cut 4:5 around him
+  (`dre-quan-priest-studio.jpg`): the recording studio, the Manatees jersey, a different scene from the pool-bar hero.
+* The frames are built locally, like the sequences: `python -m scripts.make_loops --stills` (media/clips/, Git-ignored, graded like the
+  clips that play on the same pages: gamma 1.7). Until they exist the pages show what 852dd2c showed (Dre'Quan: a tall cut of his
+  pool-bar screenshot; Real Dimez: the duo artwork alone). `shot` draws such a frame from `media/clips/` (`m.local`).

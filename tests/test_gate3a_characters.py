@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 
 import pytest
+from scripts.fetch_clips import CHARACTER_CLIPS
 
 from app import media_slots
 from app.repositories import characters as repo
@@ -183,36 +184,91 @@ def test_no_profile_repeats_its_hero_in_the_story_or_the_overlap():
 
 
 def test_overlap_pictures_keep_the_profiles_subject():
-    """The overlapping picture never belongs to someone else's profile: Dre'Quan's is a cut of his own solo screenshot, and
-    Real Dimez has none rather than the screenshot that has Dre'Quan between the women."""
+    """What shows until the still frames are built, and what the frames are: nobody's overlap is someone else's picture."""
     stage = media_slots.CHARACTER_STAGE
     assert stage["dre-quan-priest"]["second"] == "shot-dequan-priest-02" and stage["dre-quan-priest"]["shape"] == "tall"
-    assert stage["real-dimez"]["second"] is None
+    assert stage["real-dimez"]["second"] is None                                      # no overlap until the duo frame exists
     for slug, pick in stage.items():
-        if pick["second"]:
-            assert not (slug != "dre-quan-priest" and "dequan" in pick["second"]), slug
-    assert stage["real-dimez"]["main"] == stage["real-dimez"]["hero"] == "art-real-dimez"
+        for role in ("card", "second"):
+            if pick[role] and slug != "dre-quan-priest":
+                assert "dequan" not in pick[role], (slug, role)                       # the group screenshot is nobody's picture
+    assert stage["real-dimez"]["main"] == stage["real-dimez"]["hero"] == stage["real-dimez"]["card"] == "art-real-dimez"
+    picks = media_slots.LOCAL_STILL_PICKS
+    assert picks["real-dimez"]["second"][0] == "real-dimez-duo" and picks["real-dimez"]["second"][2] == "wide"
+    assert picks["dre-quan-priest"]["second"][0] == "dre-quan-priest-studio" and picks["dre-quan-priest"]["second"][2] == "tall"
+    for name in (v[0] for roles in picks.values() for v in roles.values()):
+        spec = media_slots.LOCAL_STILLS[name]
+        assert spec["clip"] in CHARACTER_CLIPS and 0 <= spec["frame"] < 30 and (spec["crop"][0] + spec["crop"][2] <= 2160 if "crop" in spec else True)
+    assert media_slots.LOCAL_STILLS["real-dimez-duo"]["clip"] == "Real_Dimez_Video_Clip"      # frames of the duo's own clip only
+    assert media_slots.LOCAL_STILLS["dre-quan-priest-studio"]["clip"] == "DreQuan_Priest_Video_Clip"
 
 
-def test_dre_quans_story_shows_him_not_the_duo(client):
+@pytest.fixture()
+def local_stills(app, tmp_path):
+    """A media folder holding stand-ins for the frames `make_loops --stills` builds."""
+    clips = tmp_path / "clips"
+    clips.mkdir()
+    for name in media_slots.LOCAL_STILLS:
+        (clips / f"{name}.jpg").write_bytes(b"JFIF")
+        (clips / f"{name}-800.jpg").write_bytes(b"JFIF")
+    previous = app.config["MEDIA_ROOT"]
+    app.config["MEDIA_ROOT"] = str(tmp_path)
+    yield tmp_path
+    app.config["MEDIA_ROOT"] = previous
+
+
+def _story_media(page):
+    return page.split('class="p-media p-media--')[1].split("</section>")[0]
+
+
+def test_dre_quans_overlap_is_a_different_picture_from_his_hero(client, local_stills):
     page = client.get("/characters/dre-quan-priest").get_data(as_text=True)
-    media = page.split('class="p-media p-media--')[1].split("</section>")[0]
+    hero = page.split('<header class="p-hero')[1].split("</header>")[0]
+    media = _story_media(page)
+    assert "DreQuan_Priest_02" in hero                                                  # the pool-bar screenshot opens the page
+    assert "p-media__second--tall" in media and "/media/clips/dre-quan-priest-studio.jpg" in media
+    assert "DreQuan_Priest_02" not in media and "DreQuan_Priest_01" not in media        # and is not repeated in the story
+    assert "Real_Dimez" not in media and "real-dimez" not in media
+
+
+def test_dre_quans_story_shows_him_not_the_duo_before_the_frames_exist(client):
+    media = _story_media(client.get("/characters/dre-quan-priest").get_data(as_text=True))
     assert "p-media__second--tall" in media and "DreQuan_Priest_02" in media and "DreQuan_Priest_01" not in media
-    assert "Real_Dimez" not in media and "art-real-dimez" not in media
+    assert "Real_Dimez" not in media
 
 
-def test_real_dimez_story_has_the_duo_alone_and_no_gallery(client):
+def test_real_dimez_keeps_its_overlap_with_both_women(client, local_stills):
     page = client.get("/characters/real-dimez").get_data(as_text=True)
-    media = page.split('class="p-media p-media--')[1].split("</section>")[0]
+    media = _story_media(page)
+    assert 'class="p-media p-media--square" data-solo' not in page and "data-solo" not in media[:60]
+    assert 'class="p-media__second p-media__second--wide"' in media and "/media/clips/real-dimez-duo.jpg" in media
+    assert media.index("motion-portrait__frame") < media.index('class="p-media__second ')       # in front of the large picture
+    assert "Real_Dimez_landscape" not in media.split('class="p-media__second')[1]               # the overlap is the frame, not the artwork again
+    assert "DreQuan_Priest" not in media
+
+
+def test_real_dimez_overlap_falls_back_to_the_duo_alone(client):
+    page = client.get("/characters/real-dimez").get_data(as_text=True)
+    media = _story_media(page)
     assert "data-solo" in page.split('class="p-media p-media--')[1][:40] and 'class="p-media__second' not in media
-    assert "DreQuan_Priest" not in media and "Dre_Quan" not in media
+    assert "DreQuan_Priest" not in media
+
+
+def test_real_dimez_has_no_gallery_and_nobody_else_lost_theirs(client):
+    page = client.get("/characters/real-dimez").get_data(as_text=True)
     assert 'id="gallery-title"' not in page and "From the footage and artwork" not in page and "p-gallery" not in page
-
-
-def test_jason_and_lucia_keep_their_gallery(client):
     for slug in ("jason-duval", "lucia-caminos"):
-        page = client.get(f"/characters/{slug}").get_data(as_text=True)
-        assert 'id="gallery-title"' in page and "From the footage and artwork" in page, slug
+        assert 'id="gallery-title"' in client.get(f"/characters/{slug}").get_data(as_text=True), slug
+
+
+def test_the_landing_picture_of_real_dimez_is_the_duo_without_dre_quan(client, local_portraits):
+    page = client.get("/characters").get_data(as_text=True)
+    article = page.split('id="real-dimez"')[1].split("</article>")[0]
+    art = article.split('class="person__art"')[1].split("</a>")[0]
+    assert "Real_Dimez_landscape" in art and "DreQuan_Priest" not in art
+    assert "motion-portrait" in article                                                 # the IN MOTION tile is unchanged
+
+
 
 
 def test_lucia_leads_with_a_distinct_lit_close_picture(client):
