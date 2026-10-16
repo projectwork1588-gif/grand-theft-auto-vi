@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_components.html" import option, results_line, pager %}
-{% from "characters/_cast.html" import shot, portrait, chips %}
+{% from "characters/_cast.html" import shot, portrait, chips, avatar %}
 {% block title %}Characters{% endblock %}
 {% block description %}Jason Duval, Lucia Caminos and the six people around them in Grand Theft Auto VI: who they are, how they connect and what Rockstar has shown of them.{% endblock %}
 {% block header_class %}{% endblock %}
@@ -10,7 +10,7 @@
 
   {# ------------------------------------------------------------------ opening #}
   <header class="cast-open">
-    <div class="cast-open__bg" aria-hidden="true">{{ shot(opening, 'max(100vw, 185vh)', '0% 22%', eager=true) }}</div>
+    <div class="cast-open__bg" aria-hidden="true">{{ shot(opening, 'max(100vw, 185vh)', '0% 20%', eager=true) }}</div>
     <div class="cast-open__in">
       <p class="eyebrow">The cast</p>
       <h1>The people of Leonida</h1>
@@ -45,6 +45,7 @@
         </label>
         <label>Sort by
           <select name="sort">
+            {{ option('cast', 'Cast order', filters.sort) }}
             {{ option('name_asc', 'Name A to Z', filters.sort) }}
             {{ option('name_desc', 'Name Z to A', filters.sort) }}
             {{ option('newest', 'Newest first', filters.sort) }}
@@ -93,8 +94,8 @@
     {% for c in leads %}
     <article class="spread spread--lead{% if loop.index0 == 1 %} spread--flip{% endif %}" id="{{ c.slug }}" data-spread data-name="{{ c.full_name }}">
       <div class="spread__art">
-        <a class="spread__main" href="{{ url_for('pages.character_detail', slug=c.slug) }}" tabindex="-1" aria-hidden="true">{{ shot(c.main, '(min-width: 1100px) 94vw, (min-width: 761px) 170vw, 205vw', c.pos, eager=(loop.first)) }}</a>
-        <div class="spread__second">{{ shot(c.second, '(min-width: 1100px) 32vw, (min-width: 761px) 56vw, 100vw', c.pos2) }}</div>
+        <a class="spread__main" href="{{ url_for('pages.character_detail', slug=c.slug) }}" tabindex="-1" aria-hidden="true">{{ shot(c.card, '(min-width: 1100px) 94vw, (min-width: 761px) 170vw, 205vw', c.pos_card, eager=(loop.first)) }}</a>
+        <div class="spread__second">{{ shot(c.second, '(min-width: 1100px) 32vw, (min-width: 761px) 56vw, 100vw', c.pos_second) }}</div>
       </div>
       <div class="spread__text">
         <p class="spread__no">{{ '%02d' % c.number }} <span aria-hidden="true">&middot;</span> {{ c.role_title }}</p>
@@ -112,7 +113,7 @@
 
     {% if together %}
     <div class="together">
-      {{ shot(together, '(min-width: 761px) 100vw, 140vw', '50% 0%', posm='24% 0%') }}
+      {{ shot(together, '(min-width: 761px) 100vw, 140vw', '50% 0%', posn='24% 0%') }}
       <div class="together__in"><p class="eyebrow">Partners</p><h3>Jason and Lucia</h3><p>The two leads of the story.</p></div>
     </div>
     {% endif %}
@@ -128,7 +129,7 @@
         {% for c in g.people %}
         <article class="person{% if g.single %} person--feature{% endif %}" id="{{ c.slug }}" data-spread data-name="{{ c.full_name }}">
           <div class="person__media">
-            <a class="person__art" href="{{ url_for('pages.character_detail', slug=c.slug) }}" tabindex="-1" aria-hidden="true">{{ shot(c.second or c.main, '(min-width: 1100px) 62vw, (min-width: 761px) 60vw, 100vw', c.card_pos) }}</a>
+            <a class="person__art" href="{{ url_for('pages.character_detail', slug=c.slug) }}" tabindex="-1" aria-hidden="true">{{ shot(c.card or c.main, '(min-width: 1100px) 62vw, (min-width: 761px) 60vw, 100vw', c.pos_card, posn=c.pos_card_n) }}</a>
             {{ portrait(c, tile=true) }}
           </div>
           <div class="person__text">
@@ -154,9 +155,6 @@
     <h2 id="web-title">The connections Rockstar has stated</h2>
     <p class="web__lede">Every line is a row in our relationship table, drawn from Rockstar's own words. {% if network.unlinked %}{{ network.unlinked | join(' and ') }} {{ 'has' if network.unlinked | length == 1 else 'have' }} no stated connection yet.{% endif %}</p>
     <svg class="web__svg" data-network viewBox="0 0 1200 560" role="group" aria-label="Connections between the eight characters">
-      <defs>
-        {% for n in network.nodes %}<clipPath id="face-{{ loop.index0 }}"><circle cx="{{ n.x }}" cy="{{ n.y }}" r="{{ 41 if n.lead else 31 }}"/></clipPath>{% endfor %}
-      </defs>
       {% for e in network.edges %}
       <g class="edge" data-from="{{ e.from }}" data-to="{{ e.to }}">
         <line x1="{{ e.x1 }}" y1="{{ e.y1 }}" x2="{{ e.x2 }}" y2="{{ e.y2 }}"/>
@@ -166,19 +164,26 @@
       {% endfor %}
       {% for n in network.nodes %}
       <a class="node{% if n.lead %} node--lead{% endif %}{% if not n.linked %} node--alone{% endif %}" href="{{ url_for('pages.character_detail', slug=n.slug) }}" data-slug="{{ n.slug }}">
-        <circle class="node__ring" cx="{{ n.x }}" cy="{{ n.y }}" r="{{ 44 if n.lead else 34 }}"/>
-        {% if n.image and image_src(n.image.embed_url, 320) %}
-        <image href="{{ image_src(n.image.embed_url, 480) }}" x="{{ (n.x - n.iw * n.fx) | round(1) }}" y="{{ (n.y - n.ih * n.fy) | round(1) }}" width="{{ n.iw }}" height="{{ n.ih }}" preserveAspectRatio="xMidYMid slice" clip-path="url(#face-{{ loop.index0 }})"/>
-        {% endif %}
-        {% if n.side == 'right' %}<text x="{{ n.x + 52 }}" y="{{ n.y + 7 }}" text-anchor="start">{{ n.name }}</text>
-        {% else %}<text x="{{ n.x }}" y="{{ n.y + (68 if n.lead else 58) }}" text-anchor="middle">{{ n.name }}</text>{% endif %}
+        <circle class="node__hit" cx="{{ n.x }}" cy="{{ n.y }}" r="{{ n.d * 0.62 if n.duo else n.d / 2 + 6 }}"/>
+        {{ avatar(n.avatar, n.d, 'nw-' ~ loop.index, lead=n.lead, x=n.x, y=n.y) }}
+        {% if n.side == 'right' %}<text x="{{ n.x + (n.d * 0.725 + 16 if n.duo else n.d / 2 + 14) }}" y="{{ n.y + 7 }}" text-anchor="start">{{ n.name }}</text>
+        {% else %}<text x="{{ n.x }}" y="{{ n.y + n.d / 2 + 24 }}" text-anchor="middle">{{ n.name }}</text>{% endif %}
         <title>{{ n.name }}, {{ n.role }}</title>
       </a>
       {% endfor %}
     </svg>
     <ul class="web__list">
       {% for e in network.edges %}
-      <li><b>{{ e.from_name }} <span aria-hidden="true">&rarr;</span> {{ e.to_name }}</b><span>{{ e.type }}</span><em>{{ e.text }}</em></li>
+      <li>
+        <div class="web__faces">{{ avatar(e.from_avatar, 44, 'wl-' ~ loop.index ~ 'a') }}{{ avatar(e.to_avatar, 44, 'wl-' ~ loop.index ~ 'b') }}</div>
+        <div class="web__row"><b>{{ e.from_name }} <span aria-hidden="true">&rarr;</span> {{ e.to_name }}</b><span>{{ e.type }}</span><em>{{ e.text }}</em></div>
+      </li>
+      {% endfor %}
+      {% for n in network.nodes if not n.linked %}
+      <li class="web__alone">
+        <div class="web__faces">{{ avatar(n.avatar, 44, 'wa-' ~ loop.index) }}</div>
+        <div class="web__row"><b>{{ n.name }}</b><span>No stated connection yet</span><em>Rockstar has not stated one, so none is drawn.</em></div>
+      </li>
       {% endfor %}
     </ul>
     <p class="web__legend"><span class="web__key web__key--lead"></span> The leads <span class="web__key web__key--line"></span> A relationship Rockstar states <span class="web__key web__key--dim"></span> No stated connection yet</p>

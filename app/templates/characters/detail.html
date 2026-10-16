@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_components.html" import bento %}
-{% from "characters/_cast.html" import shot, portrait %}
+{% from "characters/_cast.html" import shot, portrait, avatar %}
 {% block title %}{{ character.full_name }}{% endblock %}
 {% block description %}{{ character.summary }}{% endblock %}
 {% block header_class %}{% endblock %}
@@ -8,9 +8,9 @@
 {% block content %}
 <article class="profile-page{% if character.is_lead %} profile-page--lead{% endif %}">
 
-  {# ------------------------------------------------------------------ hero: full bleed for the leads, a framed picture for everyone else #}
-  <header class="p-hero p-hero--{{ 'full' if character.is_lead else 'split' }} p-hero--{{ character.hero_side }}">
-    <div class="p-hero__art">{% if character.is_lead %}{{ shot(character.main, '(min-width: 1100px) 100vw, (min-width: 761px) 180vw, 265vw', character.pos_hero, eager=true, posm=character.pos_m, post=character.pos_t) }}{% else %}{{ shot(character.main, '(min-width: 1100px) 50vw, 105vw', character.pos, eager=true) }}{% endif %}</div>
+  {# ------------------------------------------------------------------ hero: full bleed for all eight; the words sit on the side the person is not #}
+  <header class="p-hero p-hero--full p-hero--{{ character.hero_side }}">
+    <div class="p-hero__art">{{ shot(character.hero or character.main, '(min-width: 1100px) 100vw, (min-width: 761px) 180vw, 265vw', character.pos_hero, eager=true, posn=character.pos_hero_n) }}</div>
     <div class="p-hero__shade" aria-hidden="true"></div>
     <div class="p-hero__in">
       <p class="eyebrow">{% if character.number %}{{ '%02d' % character.number }} / 08 &middot; {% endif %}{{ character.role_title }}</p>
@@ -40,10 +40,10 @@
         {% if character.portrait %}
           {{ portrait(character, label='In motion') }}
         {% else %}
-        <figure class="motion-portrait motion-portrait--{{ character.shape }}"><div class="motion-portrait__frame">{{ shot(character.main, '(min-width: 1100px) 50vw, 100vw', character.pos) }}</div></figure>
+        <figure class="motion-portrait motion-portrait--{{ character.shape }}"><div class="motion-portrait__frame">{{ shot(character.main, '(min-width: 1100px) 50vw, 100vw', '50% 50%') }}</div></figure>
         {% endif %}
         {% if character.second %}
-        <div class="p-media__second">{{ shot(character.second, '(min-width: 1100px) 28vw, 70vw', character.second_pos) }}</div>
+        <div class="p-media__second p-media__second--{{ character.second_shape }}">{{ shot(character.second, '(min-width: 1100px) 28vw, 70vw', character.pos_second) }}</div>
         {% endif %}
       </div>
       {% if not character.portrait and character.clip and image_src(character.clip.embed_url, 1280) %}
@@ -60,7 +60,7 @@
       {% for k in character.connections %}
       <li>
         <a class="p-conn__card" href="{{ url_for('pages.character_detail', slug=k.slug) }}">
-          <span class="p-conn__face">{{ shot(k.image, '320px', k.pos) }}</span>
+          <span class="p-conn__face">{{ avatar(k.avatar, 88, 'cn-' ~ loop.index, lead=(k.slug in ('jason-duval', 'lucia-caminos'))) }}</span>
           <span class="p-conn__body"><i>{{ k.type }}</i><b>{{ k.name }}</b><span>{{ k.text }}</span></span>
         </a>
       </li>
@@ -87,11 +87,11 @@
     {% if character.prev and character.next %}
     <div class="p-next__pair">
       <a class="p-next__card" href="{{ url_for('pages.character_detail', slug=character.prev.slug) }}" rel="prev">
-        <span class="p-next__art">{{ shot(character.prev.main, '(min-width: 900px) 46vw, 100vw', character.prev.pos) }}</span>
+        <span class="p-next__art">{{ shot(character.prev.hero or character.prev.main, '(min-width: 900px) 46vw, 100vw', character.prev.pos_next, posn=character.prev.pos_next_n) }}</span>
         <span class="p-next__body"><small>Previous</small><b>{{ character.prev.full_name }}</b><span>{{ character.prev.role_title }}</span></span>
       </a>
       <a class="p-next__card" href="{{ url_for('pages.character_detail', slug=character.next.slug) }}" rel="next">
-        <span class="p-next__art">{{ shot(character.next.main, '(min-width: 900px) 46vw, 100vw', character.next.pos) }}</span>
+        <span class="p-next__art">{{ shot(character.next.hero or character.next.main, '(min-width: 900px) 46vw, 100vw', character.next.pos_next, posn=character.next.pos_next_n) }}</span>
         <span class="p-next__body"><small>Next</small><b>{{ character.next.full_name }}</b><span>{{ character.next.role_title }}</span></span>
       </a>
     </div>

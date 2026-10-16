@@ -137,25 +137,68 @@ def test_new_templates_use_no_inline_styles_and_no_inline_script():
         assert not re.search(r"\son[a-z]+\s*=", source), name
 
 
-def test_every_framing_in_the_stage_table_has_a_css_rule():
+def test_every_framing_lands_on_the_css_grid():
+    """Crops are computed from the faces (media_slots.IMAGE_FACE) and must land on the grid characters.css has rules for
+    (X in steps of 2, Y in steps of 5), because the CSP forbids inline styles."""
+    from app.services import site
     css = (ROOT / "app" / "static" / "css" / "characters.css").read_text(encoding="utf-8")
-    token = lambda v: v.replace("%", "").replace(" ", "-")
-    for slug, spec in media_slots.CHARACTER_STAGE.items():
-        for key in ("pos", "pos2", "pos_hero"):
-            if spec.get(key):
-                assert f'[data-pos="{token(spec[key])}"]' in css, (slug, key, spec[key])
-        if spec.get("pos_t"):
-            assert f'[data-pos-t="{token(spec["pos_t"])}"]' in css, (slug, spec["pos_t"])
-        if spec.get("pos_m"):
-            assert f'[data-pos-m="{token(spec["pos_m"])}"]' in css, (slug, spec["pos_m"])
+    for slug in media_slots.IMAGE_FACE:
+        for aspect in (0.75, 0.8, 1.25, 1.6, 2.1, 4 / 3, 16 / 9):
+            x, y = (int(v.strip("%")) for v in site.frame_pos(slug, aspect).split())
+            assert x % 2 == 0 and y % 5 == 0 and 0 <= x <= 100 and 0 <= y <= 100, (slug, aspect, x, y)
+            assert f'.shot[data-px="{x}"]' in css and f'.shot[data-py="{y}"]' in css, (slug, aspect, x, y)
+            assert f'.shot[data-pxn="{x}"]' in css and f'.shot[data-pyn="{y}"]' in css, (slug, aspect, x, y)
 
 
-def test_lucia_leads_with_a_bright_close_picture(client):
+def test_every_picture_the_pages_use_has_a_face_position():
+    wanted = set()
+    for pick in media_slots.CHARACTER_STAGE.values():
+        wanted.update(pick[k] for k in ("hero", "card", "second"))
+    assert wanted <= set(media_slots.IMAGE_FACE), sorted(wanted - set(media_slots.IMAGE_FACE))
+
+
+def test_a_head_is_never_cropped_out():
+    """In every box the pages use, the face is inside the visible part of its picture."""
+    from app.services import site
+    for slug, (fx, fy) in media_slots.IMAGE_FACE.items():
+        for aspect in (0.75, 0.8, 1.25, 1.6, 2.1, 4 / 3):
+            x, y = (int(v.strip("%")) / 100 for v in site.frame_pos(slug, aspect).split())
+            if aspect >= 16 / 9:
+                window = (16 / 9) / aspect
+                top = (1 - window) * y
+                assert top - 0.02 <= fy <= top + window + 0.02, (slug, aspect)
+            else:
+                window = aspect / (16 / 9)
+                left = (1 - window) * x
+                assert left - 0.02 <= fx <= left + window + 0.02, (slug, aspect)
+
+
+def test_no_profile_repeats_its_hero_in_the_story_or_the_overlap():
+    for slug, pick in media_slots.CHARACTER_STAGE.items():
+        assert pick["hero"] != pick["main"], slug                      # the hero and the large picture below it differ
+        assert pick["hero"] != pick["second"], slug                    # and so do the hero and the overlapping picture
+        assert pick["main"] != pick["second"], slug
+
+
+def test_lucia_leads_with_a_distinct_lit_close_picture(client):
     page = client.get("/characters").get_data(as_text=True)
     lucia = page.split('id="lucia-caminos"')[1].split("</article>")[0]
-    assert "Lucia_Caminos_02." in lucia                                  # the daylight picture, face large and lit
-    assert "Lucia_Caminos_03." not in lucia                              # not the dim night shot
+    assert "Lucia_Caminos_01." in lucia and "Lucia_Caminos_02." not in lucia     # the spread is not the pool artwork her tile rests on
     assert media_slots.CHARACTER_STAGE["lucia-caminos"]["main"] == "shot-lucia-caminos-02"
+
+
+def test_leads_landing_picture_is_not_the_artwork_their_tile_rests_on():
+    for slug in media_slots.CAST_LEADS:
+        pick = media_slots.CHARACTER_STAGE[slug]
+        assert pick["card"] != pick["main"], slug
+
+
+def test_hero_images_are_full_bleed_for_all_eight(client):
+    for slug in media_slots.CHARACTERS_ORDER:
+        page = client.get(f"/characters/{slug}").get_data(as_text=True)
+        assert 'class="p-hero p-hero--full p-hero--' in page and "p-hero--split" not in page, slug
+        hero = page.split('class="p-hero__art"')[1].split("</div>")[0]
+        assert "data-px=" in hero and "data-pxn=" in hero, slug
 
 
 def test_partner_banner_shows_both_protagonists_from_one_official_screenshot(client):
@@ -173,7 +216,7 @@ def test_pictures_declare_the_width_they_are_really_drawn_at(client):
     assert 'sizes="(min-width: 1100px) 94vw, (min-width: 761px) 170vw, 205vw"' in spread
     assert 'sizes="max(100vw, 185vh)"' in page.split('class="cast-open"')[1].split("</header>")[0]
     hero = client.get("/characters/jason-duval").get_data(as_text=True).split('class="p-hero__art"')[1].split("</div>")[0]
-    assert "265vw" in hero and 'data-pos="78-0"' in hero and 'data-pos-t="74-0"' in hero and 'data-pos-m="71-0"' in hero
+    assert "265vw" in hero and "data-px=" in hero and "data-pxn=" in hero
 
 
 def test_poster_lift_is_gentle_and_never_applied_to_a_bright_clip():
@@ -263,7 +306,7 @@ def test_the_second_picture_overlaps_the_large_picture(client):
     for slug in ("jason-duval", "lucia-caminos", "cal-hampton", "boobie-ike", "dre-quan-priest", "real-dimez", "raul-bautista", "brian-heder"):
         page = client.get(f"/characters/{slug}").get_data(as_text=True)
         media = page.split('class="p-media p-media--')[1].split("</section>")[0]
-        assert media.index("motion-portrait__frame") < media.index('class="p-media__second"'), slug     # in front, after it
+        assert media.index("motion-portrait__frame") < media.index('class="p-media__second '), slug     # in front, after it
         assert media.count("<img") >= 2, slug                                   # the large picture and the small one
         assert "p-story__second" not in page, slug
 
@@ -274,14 +317,6 @@ def test_the_gallery_does_not_repeat_the_two_pictures_above_it(client):
     assert "Jason_Duval_01." not in gallery and "Jason_Duval_04." not in gallery
 
 
-def test_second_picture_crop_positions_have_css_rules():
-    css = (ROOT / "app" / "static" / "css" / "characters.css").read_text(encoding="utf-8")
-    for slug, x in media_slots.SECOND_FOCUS.items():
-        window = 0.75 if slug in media_slots.CAST_LEADS else 0.45
-        p = round(max(0.0, min(1.0, (x - window / 2) / (1 - window))) * 100)
-        assert f'.shot[data-pos="{p}-50"]' in css, (slug, p)
-
-
 def test_overlap_geometry_is_in_css():
     css = (ROOT / "app" / "static" / "css" / "characters.css").read_text(encoding="utf-8")
     second = re.search(r"\.p-media__second \{([^}]*)\}", css).group(1)
@@ -289,7 +324,8 @@ def test_overlap_geometry_is_in_css():
     assert "width: 46%" in second and "z-index: 2" in second and "box-shadow" in second and "border-radius" in second
     assert re.search(r"\.p-media \{[^}]*margin: 0 var\(--ov-x\) calc\(var\(--ov-y\) \+ 26px\) 0", css)   # the overhang has room
     assert "width: 44%" in css and "width: 42%" in css                    # tablet and phone proportions
-    assert re.search(r"\.p-media--square \.p-media__second \{[^}]*aspect-ratio: 4 / 5", css)
+    assert re.search(r"\.p-media--square \.p-media__second--tall \{[^}]*aspect-ratio: 4 / 5", css)
+    assert re.search(r"\.p-media--square \.p-media__second--wide \{[^}]*aspect-ratio: 4 / 3", css)   # the duo's wide second picture
 
 
 def test_portrait_builder_tables_cover_every_person():
@@ -368,3 +404,85 @@ def test_motion_controller_waits_for_the_whole_sequence_and_the_nav_resets():
     assert "readyState < 4" in block and "canplaythrough" in block
     nav = script.split("function castNavigation()")[1].split("var web = document.querySelector")[0]
     assert "list.scrollTo({ left: 0" in nav
+
+
+# ------------------------------------------------------------------ the final cast order
+ORDER = ["jason-duval", "lucia-caminos", "cal-hampton", "brian-heder", "boobie-ike", "dre-quan-priest", "real-dimez", "raul-bautista"]
+RING = {  # slug: (previous, next): the owner's circular order
+    "jason-duval": ("raul-bautista", "lucia-caminos"), "lucia-caminos": ("jason-duval", "cal-hampton"),
+    "cal-hampton": ("lucia-caminos", "brian-heder"), "brian-heder": ("cal-hampton", "boobie-ike"),
+    "boobie-ike": ("brian-heder", "dre-quan-priest"), "dre-quan-priest": ("boobie-ike", "real-dimez"),
+    "real-dimez": ("dre-quan-priest", "raul-bautista"), "raul-bautista": ("real-dimez", "jason-duval"),
+}
+
+
+def test_the_canonical_order_is_one_tuple_and_the_homepage_keeps_its_own():
+    assert list(media_slots.CHARACTERS_ORDER) == ORDER
+    assert media_slots.CAST_ORDER != media_slots.CHARACTERS_ORDER          # the homepage reel is not touched
+    assert set(media_slots.CAST_ORDER) == set(media_slots.CHARACTERS_ORDER)
+
+
+def test_previous_and_next_follow_the_circular_order_on_every_profile(client):
+    for slug, (previous, following) in RING.items():
+        page = client.get(f"/characters/{slug}").get_data(as_text=True)
+        nxt = page.split('class="p-next"')[1].split("</section>")[0]
+        prev_link = re.search(r'<a class="p-next__card" href="/characters/([a-z-]+)" rel="prev"', nxt)
+        next_link = re.search(r'<a class="p-next__card" href="/characters/([a-z-]+)" rel="next"', nxt)
+        assert prev_link and prev_link.group(1) == previous, (slug, "prev")
+        assert next_link and next_link.group(1) == following, (slug, "next")
+        assert f"<small>Previous</small><b>" in nxt and "<small>Next</small><b>" in nxt
+
+
+def test_the_footer_list_and_the_numbers_follow_the_order(client):
+    for number, slug in enumerate(ORDER, start=1):
+        page = client.get(f"/characters/{slug}").get_data(as_text=True)
+        assert f"{number:02d} / 08" in page, slug
+        nav = page.split('aria-label="All eight characters"')[1].split("</nav>")[0]
+        assert re.findall(r'href="/characters/([a-z-]+)"', nav) == ORDER, slug
+        assert re.findall(r"<span>(\d\d)</span>", nav) == [f"{i:02d}" for i in range(1, 9)], slug
+
+
+def test_the_landing_jump_bar_cards_and_explore_default_follow_the_order(client):
+    page = client.get("/characters").get_data(as_text=True)
+    nav = page.split("data-cast-nav")[1].split("</nav>")[0]
+    assert re.findall(r'href="#([a-z-]+)"', nav)[:8] == ORDER
+    assert re.findall(r'<span class="cast-nav__no">(\d\d)</span>', nav) == [f"{i:02d}" for i in range(1, 9)]
+    cards = re.findall(r'<article class="(?:spread|person)[^"]*" id="([a-z-]+)"', page)
+    assert cards == ORDER
+    results_page = client.get("/characters?sort=cast&per_page=50").get_data(as_text=True)
+    assert re.findall(r'href="/characters/([a-z-]+)"', results_page.split('class="results__list"')[1].split("</ul>")[0]) == ORDER
+    assert '<option value="cast" selected>' in results_page                  # the default choice in the Explore form
+    assert '<option value="cast" selected>' in page
+
+
+def test_the_api_keeps_its_alphabetical_default_and_offers_the_cast_order(client):
+    names = [c["slug"] for c in client.get("/api/v1/characters").get_json()["data"]]
+    assert names == sorted(names, key=lambda s: client.get(f"/api/v1/characters/{s}").get_json()["full_name"])
+    assert [c["slug"] for c in client.get("/api/v1/characters?sort=cast&per_page=50").get_json()["data"]] == ORDER
+    assert client.get("/api/v1/characters?sort=cast&include=original&per_page=50").get_json()["data"][-3]["slug"] in {
+        "delia-marsh", "nico-brandt", "tomas-reyes-hall"}               # originals come after the cast
+
+
+# ------------------------------------------------------------------ relationship network portraits
+def test_every_node_has_a_portrait_and_the_duo_has_two_circles(client):
+    page = client.get("/characters").get_data(as_text=True)
+    svg = page.split("data-network")[1].split('class="web__list"')[0]
+    for slug in ORDER:
+        node = re.search(rf'<a class="node[^"]*" href="/characters/{slug}".*?</a>', svg, re.S).group(0)
+        assert "<image " in node and "Jason_and_Lucia" in node or "<image " in node, slug
+        assert node.count("av__ring") == (2 if slug == "real-dimez" else 1), slug
+    assert set(media_slots.AVATARS) == set(media_slots.CHARACTERS_ORDER)
+    assert len(media_slots.AVATARS["real-dimez"]["faces"]) == 2
+
+
+def test_portraits_come_from_the_artwork_not_scene_screenshots():
+    for slug, spec in media_slots.AVATARS.items():
+        assert spec["media"].startswith("art-"), slug                       # one lighting and one style for all eight
+        assert 0.1 <= spec["hh"] <= 0.3 and all(0 < x < 1 and 0 < y < 1 for x, y in spec["faces"]), slug
+
+
+def test_the_phone_list_shows_the_portraits_and_the_person_without_a_stated_connection(client):
+    page = client.get("/characters").get_data(as_text=True)
+    items = page.split('class="web__list"')[1].split("</ul>")[0]
+    assert items.count('class="web__faces"') == 6                           # five relationships and Raul
+    assert "Raul Bautista" in items and "No stated connection yet" in items

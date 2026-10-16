@@ -5,38 +5,157 @@
 
 .cast-page, .profile-page { --sticky-top: var(--header-h); }
 .shot { display: block; width: 100%; height: 100%; object-fit: cover; }
-/* where the subject sits in each picture (data-pos on the image; data-pos-m is the phone framing) */
-.shot[data-pos="0-22"] { object-position: 0% 22%; }
-/* the second pictures' crops, to the nearest tenth */
-.shot[data-pos="0-50"] { object-position: 0% 50%; }
-.shot[data-pos="10-50"] { object-position: 10% 50%; }
-.shot[data-pos="20-50"] { object-position: 20% 50%; }
-.shot[data-pos="30-50"] { object-position: 30% 50%; }
-.shot[data-pos="40-50"] { object-position: 40% 50%; }
-.shot[data-pos="50-50"] { object-position: 50% 50%; }
-.shot[data-pos="60-50"] { object-position: 60% 50%; }
-.shot[data-pos="70-50"] { object-position: 70% 50%; }
-.shot[data-pos="80-50"] { object-position: 80% 50%; }
-.shot[data-pos="90-50"] { object-position: 90% 50%; }
-.shot[data-pos="100-50"] { object-position: 100% 50%; }
-.shot[data-pos="22-50"] { object-position: 22% 50%; }
-.shot[data-pos="59-50"] { object-position: 59% 50%; }
-.shot[data-pos="88-50"] { object-position: 88% 50%; }
-.shot[data-pos="61-50"] { object-position: 61% 50%; }
-.shot[data-pos="20-0"] { object-position: 20% 0%; }
-.shot[data-pos="45-30"] { object-position: 45% 30%; }
-.shot[data-pos="50-0"] { object-position: 50% 0%; }
-.shot[data-pos="78-0"] { object-position: 78% 0%; }
-.shot[data-pos="10-40"] { object-position: 10% 40%; }
-.shot[data-pos="26-40"] { object-position: 26% 40%; }
-.shot[data-pos="30-40"] { object-position: 30% 40%; }
-.shot[data-pos="40-40"] { object-position: 40% 40%; }
-.shot[data-pos="50-30"] { object-position: 50% 30%; }
-.shot[data-pos="50-40"] { object-position: 50% 40%; }
-.shot[data-pos="60-40"] { object-position: 60% 40%; }
-.shot[data-pos="65-40"] { object-position: 65% 40%; }
-.shot[data-pos="78-40"] { object-position: 78% 40%; }
-.shot[data-pos="93-30"] { object-position: 93% 30%; }
+/* Where the subject sits in each picture. The service computes a crop from the face's position (media_slots.IMAGE_FACE) and
+   writes it as data-px / data-py (data-pxn / data-pyn is the tablet and phone framing). Inline styles are forbidden by the CSP,
+   so this is the one grid of rules every crop lands on: X in steps of 2, Y in steps of 5. */
+.shot { object-position: var(--px, 50%) var(--py, 50%); }
+.shot[data-px="0"] { --px: 0%; }
+.shot[data-px="2"] { --px: 2%; }
+.shot[data-px="4"] { --px: 4%; }
+.shot[data-px="6"] { --px: 6%; }
+.shot[data-px="8"] { --px: 8%; }
+.shot[data-px="10"] { --px: 10%; }
+.shot[data-px="12"] { --px: 12%; }
+.shot[data-px="14"] { --px: 14%; }
+.shot[data-px="16"] { --px: 16%; }
+.shot[data-px="18"] { --px: 18%; }
+.shot[data-px="20"] { --px: 20%; }
+.shot[data-px="22"] { --px: 22%; }
+.shot[data-px="24"] { --px: 24%; }
+.shot[data-px="26"] { --px: 26%; }
+.shot[data-px="28"] { --px: 28%; }
+.shot[data-px="30"] { --px: 30%; }
+.shot[data-px="32"] { --px: 32%; }
+.shot[data-px="34"] { --px: 34%; }
+.shot[data-px="36"] { --px: 36%; }
+.shot[data-px="38"] { --px: 38%; }
+.shot[data-px="40"] { --px: 40%; }
+.shot[data-px="42"] { --px: 42%; }
+.shot[data-px="44"] { --px: 44%; }
+.shot[data-px="46"] { --px: 46%; }
+.shot[data-px="48"] { --px: 48%; }
+.shot[data-px="50"] { --px: 50%; }
+.shot[data-px="52"] { --px: 52%; }
+.shot[data-px="54"] { --px: 54%; }
+.shot[data-px="56"] { --px: 56%; }
+.shot[data-px="58"] { --px: 58%; }
+.shot[data-px="60"] { --px: 60%; }
+.shot[data-px="62"] { --px: 62%; }
+.shot[data-px="64"] { --px: 64%; }
+.shot[data-px="66"] { --px: 66%; }
+.shot[data-px="68"] { --px: 68%; }
+.shot[data-px="70"] { --px: 70%; }
+.shot[data-px="72"] { --px: 72%; }
+.shot[data-px="74"] { --px: 74%; }
+.shot[data-px="76"] { --px: 76%; }
+.shot[data-px="78"] { --px: 78%; }
+.shot[data-px="80"] { --px: 80%; }
+.shot[data-px="82"] { --px: 82%; }
+.shot[data-px="84"] { --px: 84%; }
+.shot[data-px="86"] { --px: 86%; }
+.shot[data-px="88"] { --px: 88%; }
+.shot[data-px="90"] { --px: 90%; }
+.shot[data-px="92"] { --px: 92%; }
+.shot[data-px="94"] { --px: 94%; }
+.shot[data-px="96"] { --px: 96%; }
+.shot[data-px="98"] { --px: 98%; }
+.shot[data-px="100"] { --px: 100%; }
+.shot[data-py="0"] { --py: 0%; }
+.shot[data-py="5"] { --py: 5%; }
+.shot[data-py="10"] { --py: 10%; }
+.shot[data-py="15"] { --py: 15%; }
+.shot[data-py="20"] { --py: 20%; }
+.shot[data-py="25"] { --py: 25%; }
+.shot[data-py="30"] { --py: 30%; }
+.shot[data-py="35"] { --py: 35%; }
+.shot[data-py="40"] { --py: 40%; }
+.shot[data-py="45"] { --py: 45%; }
+.shot[data-py="50"] { --py: 50%; }
+.shot[data-py="55"] { --py: 55%; }
+.shot[data-py="60"] { --py: 60%; }
+.shot[data-py="65"] { --py: 65%; }
+.shot[data-py="70"] { --py: 70%; }
+.shot[data-py="75"] { --py: 75%; }
+.shot[data-py="80"] { --py: 80%; }
+.shot[data-py="85"] { --py: 85%; }
+.shot[data-py="90"] { --py: 90%; }
+.shot[data-py="95"] { --py: 95%; }
+.shot[data-py="100"] { --py: 100%; }
+@media (max-width: 900px) {
+  .shot[data-pxn] { object-position: var(--pxn, 50%) var(--pyn, 50%); }
+.shot[data-pxn="0"] { --pxn: 0%; }
+.shot[data-pxn="2"] { --pxn: 2%; }
+.shot[data-pxn="4"] { --pxn: 4%; }
+.shot[data-pxn="6"] { --pxn: 6%; }
+.shot[data-pxn="8"] { --pxn: 8%; }
+.shot[data-pxn="10"] { --pxn: 10%; }
+.shot[data-pxn="12"] { --pxn: 12%; }
+.shot[data-pxn="14"] { --pxn: 14%; }
+.shot[data-pxn="16"] { --pxn: 16%; }
+.shot[data-pxn="18"] { --pxn: 18%; }
+.shot[data-pxn="20"] { --pxn: 20%; }
+.shot[data-pxn="22"] { --pxn: 22%; }
+.shot[data-pxn="24"] { --pxn: 24%; }
+.shot[data-pxn="26"] { --pxn: 26%; }
+.shot[data-pxn="28"] { --pxn: 28%; }
+.shot[data-pxn="30"] { --pxn: 30%; }
+.shot[data-pxn="32"] { --pxn: 32%; }
+.shot[data-pxn="34"] { --pxn: 34%; }
+.shot[data-pxn="36"] { --pxn: 36%; }
+.shot[data-pxn="38"] { --pxn: 38%; }
+.shot[data-pxn="40"] { --pxn: 40%; }
+.shot[data-pxn="42"] { --pxn: 42%; }
+.shot[data-pxn="44"] { --pxn: 44%; }
+.shot[data-pxn="46"] { --pxn: 46%; }
+.shot[data-pxn="48"] { --pxn: 48%; }
+.shot[data-pxn="50"] { --pxn: 50%; }
+.shot[data-pxn="52"] { --pxn: 52%; }
+.shot[data-pxn="54"] { --pxn: 54%; }
+.shot[data-pxn="56"] { --pxn: 56%; }
+.shot[data-pxn="58"] { --pxn: 58%; }
+.shot[data-pxn="60"] { --pxn: 60%; }
+.shot[data-pxn="62"] { --pxn: 62%; }
+.shot[data-pxn="64"] { --pxn: 64%; }
+.shot[data-pxn="66"] { --pxn: 66%; }
+.shot[data-pxn="68"] { --pxn: 68%; }
+.shot[data-pxn="70"] { --pxn: 70%; }
+.shot[data-pxn="72"] { --pxn: 72%; }
+.shot[data-pxn="74"] { --pxn: 74%; }
+.shot[data-pxn="76"] { --pxn: 76%; }
+.shot[data-pxn="78"] { --pxn: 78%; }
+.shot[data-pxn="80"] { --pxn: 80%; }
+.shot[data-pxn="82"] { --pxn: 82%; }
+.shot[data-pxn="84"] { --pxn: 84%; }
+.shot[data-pxn="86"] { --pxn: 86%; }
+.shot[data-pxn="88"] { --pxn: 88%; }
+.shot[data-pxn="90"] { --pxn: 90%; }
+.shot[data-pxn="92"] { --pxn: 92%; }
+.shot[data-pxn="94"] { --pxn: 94%; }
+.shot[data-pxn="96"] { --pxn: 96%; }
+.shot[data-pxn="98"] { --pxn: 98%; }
+.shot[data-pxn="100"] { --pxn: 100%; }
+.shot[data-pyn="0"] { --pyn: 0%; }
+.shot[data-pyn="5"] { --pyn: 5%; }
+.shot[data-pyn="10"] { --pyn: 10%; }
+.shot[data-pyn="15"] { --pyn: 15%; }
+.shot[data-pyn="20"] { --pyn: 20%; }
+.shot[data-pyn="25"] { --pyn: 25%; }
+.shot[data-pyn="30"] { --pyn: 30%; }
+.shot[data-pyn="35"] { --pyn: 35%; }
+.shot[data-pyn="40"] { --pyn: 40%; }
+.shot[data-pyn="45"] { --pyn: 45%; }
+.shot[data-pyn="50"] { --pyn: 50%; }
+.shot[data-pyn="55"] { --pyn: 55%; }
+.shot[data-pyn="60"] { --pyn: 60%; }
+.shot[data-pyn="65"] { --pyn: 65%; }
+.shot[data-pyn="70"] { --pyn: 70%; }
+.shot[data-pyn="75"] { --pyn: 75%; }
+.shot[data-pyn="80"] { --pyn: 80%; }
+.shot[data-pyn="85"] { --pyn: 85%; }
+.shot[data-pyn="90"] { --pyn: 90%; }
+.shot[data-pyn="95"] { --pyn: 95%; }
+.shot[data-pyn="100"] { --pyn: 100%; }
+}
 
 /* ---------- opening ---------- */
 .cast-open { position: relative; min-height: min(100svh, 900px); display: grid; align-items: end; overflow: hidden; isolation: isolate; }
@@ -199,17 +318,23 @@
 .web__svg .edge text { font: 700 var(--t-micro) var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; fill: var(--official);
   paint-order: stroke; stroke: var(--ground-2); stroke-width: 7px; stroke-linejoin: round; }
 .web__svg .node { cursor: pointer; }
-.web__svg .node__ring { fill: var(--card); stroke: rgba(255, 255, 255, .35); stroke-width: 2.5; transition: stroke var(--dur-2) var(--ease); }
-.web__svg .node--lead .node__ring { stroke: var(--action); }
+.web__svg .node__hit { fill: transparent; }
+.av__ring { fill: none; stroke: rgba(255, 255, 255, .4); stroke-width: 3; transition: stroke var(--dur-2) var(--ease); }
+.av__back { fill: var(--ground-2); }
+.av--lead .av__ring { stroke: var(--action); }
+.web__svg .node:hover .av__ring, .web__svg .node:focus-visible .av__ring { stroke: var(--label); }
 .web__svg .node text { font: 700 var(--t-lead) var(--font-display); letter-spacing: var(--track-ui); text-transform: uppercase; fill: var(--text);
   paint-order: stroke; stroke: var(--ground-2); stroke-width: 7px; stroke-linejoin: round; }
 .web__svg .node--alone { opacity: .58; }
-.web__svg .node:hover .node__ring, .web__svg .node:focus-visible .node__ring { stroke: var(--label); }
 .web__svg.is-focus .edge { opacity: .25; }
 .web__svg.is-focus .edge.is-on { opacity: 1; }
 .web__svg.is-focus .edge.is-on line { stroke-width: 3.5; stroke-opacity: 1; }
 .web__list { list-style: none; margin: 0; padding: 0; display: none; gap: var(--s1); }
-.web__list li { display: grid; gap: 4px; padding: var(--s2); border: 1px solid var(--line); border-radius: var(--r-tile); background: var(--card); }
+.web__list li { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: var(--s2); padding: var(--s2); border: 1px solid var(--line); border-radius: var(--r-tile); background: var(--card); }
+.web__faces { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 4px; width: 64px; }
+.web__alone { opacity: .72; }
+.web__faces .av { display: block; }
+.web__row { display: grid; gap: 4px; }
 .web__list b { font: 700 var(--t-lead)/1.1 var(--font-display); letter-spacing: var(--track-caps); text-transform: uppercase; }
 .web__list span { font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--official); }
 .web__list em { font-style: normal; color: var(--text-2); font-size: var(--t-small); }
@@ -234,14 +359,6 @@
 .p-hero__lede { margin: 0; max-width: 34ch; font: 500 var(--t-lead)/1.5 var(--font-text); }
 .p-hero--full.p-hero--right .p-hero__lede { margin-left: auto; }
 .p-hero__alias { margin: var(--s2) 0 0; font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--label); }
-/* everyone else: the picture is framed, so a centred subject is never covered by the title */
-.p-hero--split { min-height: 0; padding: calc(var(--header-h) + var(--s5)) 0 var(--s5); background: radial-gradient(80% 70% at 75% 30%, rgba(255, 95, 150, .12), transparent 70%); }
-.p-hero--split .p-hero__art { position: static; z-index: auto; grid-column: 2; grid-row: 1; width: 100%; aspect-ratio: 16 / 10; border-radius: var(--r-card); overflow: hidden; box-shadow: 0 50px 100px -50px #000; }
-.p-hero--split { grid-template-columns: minmax(var(--gutter), 1fr) minmax(0, calc(var(--max-wide) * .38)) minmax(0, calc(var(--max-wide) * .62)) minmax(var(--gutter), 1fr); gap: 0 clamp(20px, 3vw, 48px); align-items: center; }
-.p-hero--split .p-hero__in { grid-column: 2; grid-row: 1; width: auto; margin: 0; padding: 0; }
-.p-hero--split .p-hero__art { grid-column: 3; }
-.p-hero--split .p-hero__shade { display: none; }
-.p-hero--split h1 { font-size: var(--t-h1); max-width: 12ch; }
 .p-label { margin: 0 0 var(--s2); font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--label); }
 .p-story, .p-connections, .p-gallery, .p-next { width: min(var(--max-wide), 100% - 2 * var(--gutter)); margin: clamp(56px, 7vw, 112px) auto 0; }
 /* the words on one side, the large picture on the other with a second picture layered in front of its lower-right */
@@ -267,13 +384,16 @@
 .p-media__second { position: absolute; right: calc(-1 * var(--ov-x)); bottom: calc(-1 * var(--ov-y)); z-index: 2; width: 46%; aspect-ratio: 4 / 3;
   border-radius: var(--r-tile); overflow: hidden; background: var(--card);
   box-shadow: 0 0 0 4px var(--ground), 0 32px 58px -22px rgba(0, 0, 0, .85); }
-.p-media--square .p-media__second { aspect-ratio: 4 / 5; }
+.p-media--square .p-media__second--tall { aspect-ratio: 4 / 5; }
+/* a wide second picture beside a square clip (the duo, Real Dimez) gets more width so both faces stay readable */
+.p-media--square .p-media__second--wide { width: 58%; aspect-ratio: 4 / 3; }
 .p-media__link { margin: var(--s2) 0 0; }
 .p-clip-link { display: inline-flex; align-items: center; gap: var(--s2); text-decoration: none; font-weight: 700; }
 .p-conn { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--s2); }
 .p-conn__card { display: grid; grid-template-columns: 88px 1fr; gap: var(--s2); align-items: center; padding: var(--s2); border: 1px solid var(--line); border-radius: var(--r-card); background: var(--card); text-decoration: none; transition: border-color var(--dur-2) var(--ease), transform var(--dur-2) var(--ease); }
 .p-conn__card:hover, .p-conn__card:focus-visible { border-color: var(--action); transform: translateY(-2px); }
-.p-conn__face { width: 88px; height: 88px; border-radius: 50%; overflow: hidden; background: var(--ground-2); }
+.p-conn__face { width: 88px; height: 88px; display: block; }
+.p-conn__face .av { display: block; }
 .p-conn__body { display: grid; gap: 4px; }
 .p-conn__body i { font-style: normal; font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--official); }
 .p-conn__body b { font: 700 var(--t-h4)/1.05 var(--font-display); letter-spacing: var(--track-caps); text-transform: uppercase; }
@@ -314,14 +434,9 @@
   .group--3 .person:not(:first-child) { grid-template-columns: minmax(0, 1fr); align-items: start; }
   .group--3 .person:not(:first-child) .person__art { aspect-ratio: 16 / 10; }
   .together { aspect-ratio: 2.2 / 1; }
-  .shot[data-pos-t="30-0"] { object-position: 30% 0%; }
-  .shot[data-pos-t="74-0"] { object-position: 74% 0%; }
   .explore__form { grid-template-columns: 1fr 1fr; }
   .explore__form label:first-child { grid-column: 1 / span 2; }
   .results__list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .p-hero--split { display: block; padding-top: calc(var(--header-h) + var(--s4)); }
-  .p-hero--split .p-hero__in, .p-hero--split .p-hero__art { width: min(var(--max-wide), 100% - 2 * var(--gutter)); margin-inline: auto; }
-  .p-hero--split .p-hero__in { margin-top: var(--s4); }
   .p-story, .p-story--wide, .p-story--square, .p-story--legacy { grid-template-columns: minmax(0, 1fr); }
   .p-story--wide .p-story__media { max-width: 680px; }
   .p-story--square .p-story__media, .p-story--legacy .p-story__media { max-width: 440px; }
@@ -334,9 +449,6 @@
   .p-story--wide .p-story__media, .p-story--square .p-story__media, .p-story--legacy .p-story__media { max-width: none; }
 }
 @media (max-width: 760px) {
-  .shot[data-pos-m="37-0"] { object-position: 37% 0%; }
-  .shot[data-pos-m="71-0"] { object-position: 71% 0%; }
-  .shot[data-pos-m="24-0"] { object-position: 24% 0%; }
   .cast-open { min-height: 92svh; }
   .cast-open__bg { inset: 0 0 auto 0; height: 62%; }
   .cast-open__bg .shot { object-position: 53% 10% !important; }

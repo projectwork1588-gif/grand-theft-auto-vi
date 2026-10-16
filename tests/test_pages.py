@@ -199,10 +199,11 @@ def test_characters_search_filter_sort_pagination(client):
     assert results(html(client, "/characters?q=lucia")) == ["Lucia Caminos"]
     assert results(html(client, "/characters?q=gator")) == []                       # an original character's alias finds nothing
     assert results(html(client, "/characters?region=vice-city")) == ["Boobie Ike"]
-    assert results(html(client, "/characters?region=leonida-keys")) == ["Brian Heder", "Jason Duval"]
+    assert results(html(client, "/characters?region=leonida-keys")) == ["Jason Duval", "Brian Heder"]      # the cast order
     assert results(html(client, "/characters?sort=name_desc&per_page=2")) == ["Real Dimez", "Raul Bautista"]
     everyone = results(html(client, "/characters?sort=name_asc&per_page=50"))
     assert len(everyone) == 8 and everyone[0] == "Boobie Ike"
+    assert results(html(client, "/characters?sort=cast&per_page=50")) == EIGHT
     page2 = html(client, "/characters?per_page=3&page=3&sort=name_asc")
     assert 'aria-label="Pagination"' in page2 and 'rel="prev"' in page2 and 'rel="next"' not in page2
     assert "sort=name_asc" in page2                                           # filters survive in the pager links
@@ -245,8 +246,8 @@ def test_character_detail_official_profile(client):
 
 
 def test_every_official_profile_renders_with_its_connections_and_navigation(client):
-    for number, slug in enumerate(("jason-duval", "lucia-caminos", "cal-hampton", "boobie-ike", "dre-quan-priest",
-                                   "real-dimez", "raul-bautista", "brian-heder"), start=1):
+    for number, slug in enumerate(("jason-duval", "lucia-caminos", "cal-hampton", "brian-heder", "boobie-ike", "dre-quan-priest",
+                                   "real-dimez", "raul-bautista"), start=1):
         page = html(client, f"/characters/{slug}")
         assert f"{number:02d} / 08" in page, slug
         assert 'class="p-hero' in page and 'class="p-story' in page and 'class="p-next"' in page, slug
@@ -264,12 +265,13 @@ def test_dre_quan_and_real_dimez_are_connected_on_both_profiles(client):
 def test_the_network_is_drawn_from_the_relationship_table(client, app_context):
     from app.repositories import characters as repo
     page = html(client, "/characters")
-    svg = page.split('data-network')[1].split("</svg>")[0]
+    svg = page.split('data-network')[1].split('class="web__list"')[0]
     rows = repo.official_relationships(limit=50)
     assert len(rows) == 5 and page.count('<g class="edge"') == 5
     for row in rows:
         assert f'data-from="{row["from_slug"]}" data-to="{row["to_slug"]}"' in svg, row
     assert len(re.findall(r'<a class="node[ "]', svg)) == 8 and "node--alone" in svg                   # Raul has no stated connection yet
+    assert svg.count('class="av ') + svg.count('class="av"') == 8 and svg.count("av__ring") == 9      # eight portraits, the duo has two circles
     assert "Raul Bautista has no stated connection yet" in page
 
 

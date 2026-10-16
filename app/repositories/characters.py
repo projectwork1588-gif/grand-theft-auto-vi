@@ -4,6 +4,7 @@ import logging
 from mysql.connector import errors
 
 from ..db import query_all, query_one
+from ..media_slots import CHARACTERS_ORDER
 
 log = logging.getLogger(__name__)
 
@@ -14,6 +15,7 @@ SORT_ORDERS = {
     "name_asc": "c.full_name ASC, c.character_id ASC",
     "name_desc": "c.full_name DESC, c.character_id ASC",
     "newest": "c.created_at DESC, c.character_id DESC",
+    "cast": "",      # the cast order of the Characters pages (media_slots.CHARACTERS_ORDER); built in _order_by
 }
 
 _FROM = """
@@ -21,6 +23,16 @@ _FROM = """
     LEFT JOIN locations l ON l.location_id = c.home_location_id
     LEFT JOIN regions r ON r.region_id = l.region_id
 """
+
+
+def _order_by(sort):
+    """ORDER BY text and its bound parameters. `sort` is one of SORT_ORDERS' keys, never user text. The cast order lists the
+    eight official characters in the final presentation order, anyone else after them."""
+    if sort == "cast":
+        marks = ", ".join(["%s"] * len(CHARACTERS_ORDER))
+        field = f"FIELD(c.slug, {marks})"
+        return f"({field} = 0), {field}, c.character_id ASC", list(CHARACTERS_ORDER) * 2
+    return SORT_ORDERS[sort], []
 
 
 def _where(q_like, status, region, include_original=False, via_regions=True):
@@ -61,13 +73,14 @@ def search(q_like, status, region, sort, limit, offset, include_original=False):
 
 def _search(q_like, status, region, sort, limit, offset, include_original, via_regions):
     where, params = _where(q_like, status, region, include_original, via_regions)
+    order, order_params = _order_by(sort)
     total = query_one("SELECT COUNT(*) AS n" + _FROM + where, params)["n"]
     rows = query_all(
         """SELECT c.slug, c.full_name, c.alias, c.role_title, c.summary, c.content_status,
                   l.slug AS home_location_slug, l.name AS home_location_name,
                   r.slug AS region_slug, r.name AS region_name"""
-        + _FROM + where + " ORDER BY " + SORT_ORDERS[sort] + " LIMIT %s OFFSET %s",
-        params + [limit, offset],
+        + _FROM + where + " ORDER BY " + order + " LIMIT %s OFFSET %s",
+        params + order_params + [limit, offset],
     )
     return rows, total
 

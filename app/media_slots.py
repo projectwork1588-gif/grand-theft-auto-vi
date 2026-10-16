@@ -18,7 +18,7 @@ BACKDROP_CLOSING = "art-jason-lucia-02"   # not the hero artwork
 
 # One explicit playlist order for the cast. The homepage name list, the reel's segments and the loop builder
 # (scripts/make_loops.py) all read this tuple, never the database's row order.
-CAST_ORDER = (
+CAST_ORDER = (       # the HOMEPAGE order. The Characters pages use CHARACTERS_ORDER below.
     "jason-duval", "lucia-caminos", "cal-hampton", "boobie-ike",
     "dre-quan-priest", "real-dimez", "raul-bautista", "brian-heder",
 )
@@ -81,29 +81,58 @@ FOCUS = {
     "vehicle-grotti-cheetah-02": "center",
 }
 
-# The Characters pages (Gate 3A). Slugs of media_assets rows, chosen by eye from the contact sheet: whole faces, and the
-# person on the side the text is not. main = the spread / hero picture, second = the smaller overlapping frame,
-# pos / pos2 = where the subject sits (CSS object-position) so a tall crop keeps the face.
-CHARACTER_STAGE = {
-    # pos = the spread / card crop; pos_hero, pos_t, pos_m = the full-bleed hero on desktop, tablet and phone (the head is
-    # kept whole and clear of the title); face = where the face sits in the picture, for the network and thumbnails.
-    "jason-duval": {"main": "shot-jason-duval-01", "second": "shot-jason-duval-04", "pos": "78% 40%", "pos2": "30% 40%",
-                    "pos_hero": "78% 0%", "pos_t": "74% 0%", "pos_m": "71% 0%", "hero_side": "left", "face": (0.66, 0.16)},
-    "lucia-caminos": {"main": "shot-lucia-caminos-02", "second": "shot-lucia-caminos-10", "pos": "45% 30%", "pos2": "50% 30%",
-                      "pos_hero": "20% 0%", "pos_t": "30% 0%", "pos_m": "37% 0%", "hero_side": "left", "face": (0.47, 0.36)},
-    "cal-hampton": {"main": "art-cal-hampton", "second": "shot-cal-hampton-01", "pos": "50% 30%", "pos2": "50% 40%"},
-    "boobie-ike": {"main": "art-boobie-ike", "second": "shot-boobie-ike-01", "pos": "50% 30%", "pos2": "50% 40%"},
-    "dre-quan-priest": {"main": "art-dequan-priest", "second": "shot-dequan-priest-02", "pos": "60% 40%", "pos2": "60% 40%"},
-    "real-dimez": {"main": "art-real-dimez", "second": "shot-real-dimez-01", "pos": "40% 40%", "pos2": "50% 30%"},
-    "raul-bautista": {"main": "art-raul-bautista", "second": "shot-raul-bautista-01", "pos": "50% 30%", "pos2": "50% 30%"},
-    "brian-heder": {"main": "art-brian-heder", "second": "shot-brian-heder-01", "pos": "65% 40%", "pos2": "60% 40%"},
-}
+# The Characters section's one cast order (the owner's final order). The landing page, the jump bar, the numbering, the
+# Explore default, the previous/next cards and the footer links all read this tuple and nothing else. It is a presentation
+# order only: who is related to whom comes from character_relationships. (CAST_ORDER above belongs to the homepage reel.)
+CHARACTERS_ORDER = (
+    "jason-duval", "lucia-caminos", "cal-hampton", "brian-heder",
+    "boobie-ike", "dre-quan-priest", "real-dimez", "raul-bautista",
+)
 CAST_LEADS = ("jason-duval", "lucia-caminos")
-# Where the person sits across each second picture (0 = left edge, 1 = right edge). The second picture overlaps the large
-# one on the profile pages as a 4:3 (beside a 16:9 clip) or 4:5 (beside a square clip) crop, centred on this point.
-SECOND_FOCUS = {
-    "jason-duval": 0.43, "lucia-caminos": 0.50, "cal-hampton": 0.71, "boobie-ike": 0.56,
-    "dre-quan-priest": 0.83, "real-dimez": 0.50, "raul-bautista": 0.83, "brian-heder": 0.55,
+
+# Where the face (or, for a duo, the middle of the pair) sits in each picture, as fractions of its width and height, read
+# from the pictures themselves. Every crop on the Characters pages is computed from these, so a head is never cut off.
+IMAGE_FACE = {
+    "shot-jason-duval-01": (0.66, 0.14), "shot-jason-duval-02": (0.37, 0.22), "shot-jason-duval-04": (0.31, 0.12),
+    "shot-lucia-caminos-01": (0.60, 0.22), "shot-lucia-caminos-02": (0.48, 0.27), "shot-lucia-caminos-10": (0.54, 0.27),
+    "shot-cal-hampton-01": (0.69, 0.15), "shot-cal-hampton-02": (0.49, 0.15),
+    "shot-brian-heder-01": (0.52, 0.20), "shot-brian-heder-02": (0.58, 0.17),
+    "shot-boobie-ike-01": (0.41, 0.15), "shot-boobie-ike-02": (0.32, 0.12),
+    "shot-dequan-priest-01": (0.535, 0.10), "shot-dequan-priest-02": (0.73, 0.14),
+    "shot-real-dimez-01": (0.47, 0.20), "shot-real-dimez-02": (0.45, 0.20),
+    "shot-raul-bautista-01": (0.62, 0.30), "shot-raul-bautista-02": (0.52, 0.16),
+}
+# Each person's pictures on the Characters pages (slugs of media_assets rows):
+#   main   the artwork the motion sequence rests on, and so the large picture of "The story so far"
+#   hero   the full-bleed picture opening the profile (never the same picture as `main`)
+#   card   the large picture on the landing page (the two leads' spread, a supporting person's card)
+#   second the smaller picture layered in front of `main` on the profile
+#   shape  "wide" (4:3) or "tall" (4:5): the shape of that second picture
+CHARACTER_STAGE = {
+    "jason-duval": {"main": "shot-jason-duval-01", "hero": "shot-jason-duval-02", "card": "shot-jason-duval-02", "second": "shot-jason-duval-04", "shape": "wide"},
+    "lucia-caminos": {"main": "shot-lucia-caminos-02", "hero": "shot-lucia-caminos-01", "card": "shot-lucia-caminos-01", "second": "shot-lucia-caminos-10", "shape": "wide"},
+    "cal-hampton": {"main": "art-cal-hampton", "hero": "shot-cal-hampton-01", "card": "shot-cal-hampton-01", "second": "shot-cal-hampton-02", "shape": "tall"},
+    "brian-heder": {"main": "art-brian-heder", "hero": "shot-brian-heder-02", "card": "shot-brian-heder-01", "second": "shot-brian-heder-01", "shape": "tall"},
+    "boobie-ike": {"main": "art-boobie-ike", "hero": "shot-boobie-ike-01", "card": "shot-boobie-ike-02", "second": "shot-boobie-ike-02", "shape": "tall"},
+    "dre-quan-priest": {"main": "art-dequan-priest", "hero": "shot-dequan-priest-02", "card": "shot-dequan-priest-02", "second": "shot-dequan-priest-01", "shape": "wide"},
+    # Real Dimez is a duo (Bae-Luxe and Roxy). The one official screenshot that shows both women clearly is the one with
+    # Dre'Quan Priest between them (the label that signed them), so it is the second picture and the landing card; it is cut
+    # wide (4:3) so both women stay in it. The hero is Roxy alone, the large picture the full-length artwork of both.
+    "real-dimez": {"main": "art-real-dimez", "hero": "shot-real-dimez-01", "card": "shot-dequan-priest-01", "second": "shot-dequan-priest-01", "shape": "wide"},
+    "raul-bautista": {"main": "art-raul-bautista", "hero": "shot-raul-bautista-02", "card": "shot-raul-bautista-01", "second": "shot-raul-bautista-01", "shape": "tall"},
+}
+# The relationship network's portraits: faces cut from Rockstar's own character artwork (the illustrations, so every
+# portrait has the same lighting and weight), per person: the artwork, where each face sits, and the head's height as a
+# fraction of the picture's height (so each face fills the same share of its circle). A duo gets two circles.
+AVATARS = {
+    "jason-duval": {"media": "art-jason-lucia-beach", "faces": [(0.68, 0.175)], "hh": 0.21},
+    "lucia-caminos": {"media": "art-jason-lucia-beach", "faces": [(0.495, 0.43)], "hh": 0.20},
+    "cal-hampton": {"media": "art-cal-hampton", "faces": [(0.47, 0.135)], "hh": 0.16},
+    "brian-heder": {"media": "art-brian-heder", "faces": [(0.635, 0.105)], "hh": 0.17},
+    "boobie-ike": {"media": "art-boobie-ike", "faces": [(0.48, 0.085)], "hh": 0.17},
+    "dre-quan-priest": {"media": "art-dequan-priest", "faces": [(0.60, 0.08)], "hh": 0.14},
+    "real-dimez": {"media": "art-real-dimez", "faces": [(0.335, 0.17), (0.59, 0.19)], "hh": 0.19},
+    "raul-bautista": {"media": "art-raul-bautista", "faces": [(0.525, 0.10)], "hh": 0.14},
 }
 # Motion portraits on the Characters pages. Rockstar shot the two leads in 16:9 and the other six square, so each person
 # is shown in the shape the footage was shot in, never stretched into a shape it was not (the old extended widescreen

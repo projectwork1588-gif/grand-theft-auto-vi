@@ -85,29 +85,70 @@ def _relationship_view(rows, me_slug, names):
     return out
 
 
+_IMAGE_ASPECT = 16 / 9
+
+
+def frame_pos(slug, aspect, ax=0.5, ay=0.35):
+    """The CSS object-position ("X% Y%") that keeps the face of media `slug` in a box of the given width over height.
+
+    The face sits at (ax, ay) of the box where the crop allows it (ay is how far down the box the face is wanted: lower for
+    a hero with a header above it). X is on a two-percent grid and Y on a five-percent grid; characters.css has a rule for
+    every value on those grids, because the site's CSP forbids inline styles."""
+    fx, fy = media_slots.IMAGE_FACE.get(slug, (0.5, 0.35))
+    px = py = 0.5
+    if aspect >= _IMAGE_ASPECT:                       # a box wider than the picture: it is cut at the top and bottom
+        window = _IMAGE_ASPECT / aspect
+        if window < 0.999:
+            py = (fy - ay * window) / (1 - window)
+    else:                                              # a narrower box: it is cut at the sides
+        window = aspect / _IMAGE_ASPECT
+        px = (fx - ax * window) / (1 - window)
+    px, py = min(1.0, max(0.0, px)), min(1.0, max(0.0, py))
+    return f"{int(round(px * 50)) * 2}% {int(round(py * 20)) * 5}%"
+
+
+def _avatar(slug, media_rows):
+    """What the relationship network and the connection cards need to draw a person's portrait circle."""
+    spec = media_slots.AVATARS.get(slug)
+    if not spec:
+        return None
+    return {"media": media_rows.get(spec["media"]), "faces": spec["faces"], "hh": spec["hh"], "duo": len(spec["faces"]) > 1}
+
+
 def _cast_entries(include_media=True):
-    """The eight official characters in CAST_ORDER, each with its pictures, local motion portrait and connections."""
+    """The eight official characters in CHARACTERS_ORDER, each with its pictures, crops, motion sequence and connections."""
     rows = {r["slug"]: r for r in characters_repo.featured_official(50)}
     ids = {slug: rows[slug]["character_id"] for slug in rows}
-    stage_slugs = set()
+    wanted = set()
     for pick in media_slots.CHARACTER_STAGE.values():
-        stage_slugs.update((pick["main"], pick["second"]))
-    stage_media = media.by_slugs(stage_slugs)
+        wanted.update(pick[k] for k in ("main", "hero", "card", "second"))
+    wanted.update(spec["media"] for spec in media_slots.AVATARS.values())
+    stage_media = media.by_slugs(wanted)
     cast = []
-    for number, slug in enumerate((s for s in media_slots.CAST_ORDER if s in rows), start=1):
+    for number, slug in enumerate((s for s in media_slots.CHARACTERS_ORDER if s in rows), start=1):
         row = dict(rows[slug])
-        pick = media_slots.CHARACTER_STAGE.get(slug, {})
+        pick = media_slots.CHARACTER_STAGE.get(slug)
         row["number"] = number
         row["is_lead"] = slug in media_slots.CAST_LEADS
-        row["main"] = stage_media.get(pick.get("main"))
-        row["second"] = stage_media.get(pick.get("second"))
-        row["pos"] = pick.get("pos", "50% 40%")
-        row["pos2"] = pick.get("pos2", "50% 40%")
-        row["hero_side"] = pick.get("hero_side", "left")
-        row["pos_m"] = pick.get("pos_m", pick.get("pos", "50% 40%"))
-        row["pos_t"] = pick.get("pos_t", row["pos_m"])
-        row["pos_hero"] = pick.get("pos_hero", row["pos"])
-        row["face"] = pick.get("face", (0.5, 0.35))
+        if pick:
+            for key in ("main", "hero", "card", "second"):
+                row[key] = stage_media.get(pick[key])
+            row["second_shape"] = pick["shape"]
+            hero, card, second = pick["hero"], pick["card"], pick["second"]
+            fx = media_slots.IMAGE_FACE.get(hero, (0.5, 0.35))[0]
+            row["hero_side"] = "right" if fx < 0.5 else "left"          # the words go on the side the person is not
+            row["pos_hero"] = frame_pos(hero, 2.1, ay=0.38)
+            row["pos_hero_n"] = frame_pos(hero, 0.75, ay=0.30)
+            row["pos_card"] = frame_pos(card, 0.8)                      # the leads' tall spread picture
+            row["pos_card_n"] = frame_pos(card, 0.8)
+            row["pos_second"] = frame_pos(second, 4 / 3 if pick["shape"] == "wide" else 0.8)
+            row["pos_next"] = frame_pos(hero, 2.2, ay=0.4)
+            row["pos_next_n"] = frame_pos(hero, 2.0, ay=0.4)
+            row["pos_result"] = frame_pos(card, 1.6)
+        else:
+            for key in ("main", "hero", "card", "second"):
+                row[key] = None
+        row["avatar"] = _avatar(slug, stage_media)
         row["portrait"] = _portrait(slug)
         row["connections"] = _relationship_view(characters_repo.relationships_for(ids[slug]), slug, rows)
         row["regions"] = characters_repo.regions_for(ids[slug])
@@ -117,13 +158,15 @@ def _cast_entries(include_media=True):
     if missing:
         covers = media.covers("character", [ids[c["slug"]] for c in missing])
         for c in missing:
-            c["main"] = covers.get(ids[c["slug"]])
+            for key in ("main", "hero", "card", "second"):
+                c[key] = c[key] or covers.get(ids[c["slug"]])
     return cast
 
 
 def _cast_groups(cast):
     """The supporting cast in groups the data supports: people tied to a lead, then connected clusters among the rest
-    (titled where the source names them), then anyone with no stated connection."""
+    (titled where the source names them), then anyone with no stated connection. Within a group the people keep the
+    canonical order."""
     supporting = [c for c in cast if not c["is_lead"]]
     by_slug = {c["slug"]: c for c in supporting}
     lead_slugs = set(media_slots.CAST_LEADS)
@@ -157,15 +200,13 @@ def _cast_groups(cast):
     alone = [c for c in supporting if c["slug"] not in used]
     for c in alone:
         groups.append({"title": None, "kicker": "No stated connections yet", "people": [c], "single": True})
-    # where to cut each card's picture so the person stays in it: the card's width over the picture's 16:9 is the share of
-    # the picture that shows (about 1.0 for a feature, 0.9 for a pair, 0.72 for a stacked card, 0.47 for the tall one)
+    # where each card's picture is cut so the person stays in it, from the shape of the card it fills
     for g in groups:
         n = len(g["people"])
         for i, c in enumerate(g["people"]):
-            window = 1.0 if n == 1 else (0.9 if n == 2 else (0.47 if i == 0 else 0.72))
-            x = media_slots.SECOND_FOCUS.get(c["slug"], 0.5)
-            p = max(0.0, min(1.0, (x - window / 2) / (1 - window))) if window < 1 else 0.5
-            c["card_pos"] = f"{int(round(p * 10)) * 10}% 50%"
+            aspect = 16 / 9 if n == 1 else (1.6 if n == 2 else (0.84 if i == 0 else 1.25))
+            c["pos_card"] = frame_pos(media_slots.CHARACTER_STAGE[c["slug"]]["card"], aspect)
+            c["pos_card_n"] = frame_pos(media_slots.CHARACTER_STAGE[c["slug"]]["card"], 1.7)
     return groups
 
 
@@ -182,27 +223,29 @@ def _network(cast):
     fallback = list(media_slots.NETWORK_LAYOUT.values())
     for i, c in enumerate(cast):
         x, y = media_slots.NETWORK_LAYOUT.get(c["slug"], fallback[i % len(fallback)])
-        face = c["face"] if c["is_lead"] else (0.5, 0.4)
+        duo = bool(c["avatar"] and c["avatar"]["duo"])
         nodes.append({"slug": c["slug"], "name": c["full_name"], "role": c["role_title"], "x": x, "y": y, "lead": c["is_lead"],
-                      "linked": c["slug"] in linked, "image": c["second"] if not c["is_lead"] else c["main"],
-                      "pos": c["pos2"] if not c["is_lead"] else c["pos"], "fx": face[0], "fy": face[1],
-                      "iw": 240 if c["is_lead"] else 200, "ih": 135 if c["is_lead"] else 112,
+                      "linked": c["slug"] in linked, "avatar": c["avatar"], "duo": duo,
+                      "d": 88 if c["is_lead"] else (80 if duo else 68),
                       "side": "right" if c["slug"] in media_slots.NETWORK_NAME_RIGHT else "below"})
     for e in edges:
         a = next(n for n in nodes if n["slug"] == e["from"])
         b = next(n for n in nodes if n["slug"] == e["to"])
-        e.update(x1=a["x"], y1=a["y"], x2=b["x"], y2=b["y"], mx=(a["x"] + b["x"]) / 2, my=(a["y"] + b["y"]) / 2)
+        e.update(x1=a["x"], y1=a["y"], x2=b["x"], y2=b["y"], mx=(a["x"] + b["x"]) / 2, my=(a["y"] + b["y"]) / 2,
+                 from_avatar=a["avatar"], to_avatar=b["avatar"])
     return {"nodes": nodes, "edges": edges, "unlinked": [n["name"] for n in nodes if not n["linked"]]}
 
 
 def character_index(args):
     """The Characters landing page: editorial by default, a results list when the Explore panel is used.
 
-    Only official characters are ever listed here; a status in the query string is ignored."""
+    Only official characters are ever listed here; a status in the query string is ignored. Explore lists in the cast
+    order unless the visitor chooses another sort."""
     clean = {k: v for k, v in args.items() if k in ("q", "region", "sort", "page", "per_page")}
+    clean.setdefault("sort", "cast")
     result = characters.list_characters(clean)
     result["regions"] = regions_repo.list_all()
-    exploring = bool(result["filters"].get("q") or result["filters"].get("region") or clean.get("sort") or result["pagination"]["page"] > 1)
+    exploring = bool(result["filters"].get("q") or result["filters"].get("region") or args.get("sort") or result["pagination"]["page"] > 1)
     result["mode"] = "results" if exploring else "editorial"
     cast = _cast_entries()
     result["cast"] = cast
@@ -212,12 +255,11 @@ def character_index(args):
     result["opening"] = media.by_slugs([media_slots.CHARACTERS_OPENING]).get(media_slots.CHARACTERS_OPENING)
     result["together"] = media.by_slugs([media_slots.CAST_TOGETHER]).get(media_slots.CAST_TOGETHER)
     if result["mode"] == "results":
-        ids = characters_repo.ids_by_slug([r["slug"] for r in result["data"]])
         by_slug = {c["slug"]: c for c in cast}
         for row in result["data"]:
             entry = by_slug.get(row["slug"])
-            row["cover"] = entry["main"] if entry else None
-            row["pos"] = entry["pos"] if entry else "50% 40%"
+            row["cover"] = entry["card"] if entry else None
+            row["pos"] = entry["pos_result"] if entry else "50% 40%"
             row["number"] = entry["number"] if entry else None
     return result
 
@@ -226,38 +268,31 @@ def character_detail(slug):
     character, character_id = characters.get_character_with_id(slug)
     cast = _cast_entries()
     entry = next((c for c in cast if c["slug"] == slug), None)
+    for key in ("number", "main", "hero", "card", "second", "second_shape", "pos_hero", "pos_hero_n", "pos_second", "hero_side"):
+        character[key] = entry.get(key) if entry else None
     character["number"] = entry["number"] if entry else None
     character["is_lead"] = slug in media_slots.CAST_LEADS
-    character["main"] = entry["main"] if entry else None
-    character["second"] = entry["second"] if entry else None
-    character["pos"] = entry["pos"] if entry else "50% 40%"
-    character["pos2"] = entry["pos2"] if entry else "50% 40%"
-    character["hero_side"] = entry["hero_side"] if entry else "left"
-    character["pos_m"] = entry["pos_m"] if entry else "50% 40%"
-    character["pos_t"] = entry["pos_t"] if entry else "50% 40%"
-    character["pos_hero"] = entry["pos_hero"] if entry else "50% 40%"
-    character["cover"] = character["main"]
+    character["shape"] = "wide" if character["is_lead"] else "square"       # the motion footage's own shape
+    character["hero_side"] = character["hero_side"] or "left"
+    character["pos_hero"] = character["pos_hero"] or "50% 40%"
+    character["pos_hero_n"] = character["pos_hero_n"] or "50% 40%"
+    character["pos_second"] = character["pos_second"] or "50% 50%"
+    character["second_shape"] = character["second_shape"] or "tall"
+    character["cover"] = character["hero"] or character["main"]
     gallery = media.for_entity("character", character_id, limit=14)
-    used = {m["slug"] for m in (character["main"], character["second"]) if m}
+    used = {m["slug"] for m in (character["main"], character["hero"], character["second"]) if m}
     character["gallery"] = [m for m in gallery if m["slug"] not in used]
-    # the second picture overlaps the large picture; this is where the person sits across it, as a crop position
-    shape = "wide" if character["is_lead"] else "square"
-    window = 0.75 if shape == "wide" else 0.45
-    x = media_slots.SECOND_FOCUS.get(slug, 0.5)
-    character["second_pos"] = f"{round(max(0.0, min(1.0, (x - window / 2) / (1 - window))) * 100)}% 50%"
-    character["shape"] = shape
     character["costars"] = characters_repo.costars_for(character_id)
     clips = {c["character_slug"]: c for c in media.character_clips()}
     character["clip"] = clips.get(slug)
     character["portrait"] = _portrait(slug)
-    # connections with a face, and the people either side of them in the cast
+    # connections with a face, and the people either side of them in the cast (the order is circular)
     by_slug = {c["slug"]: c for c in cast}
     character["connections"] = []
     for r in character["relationships"]:
         other = by_slug.get(r["slug"])
         character["connections"].append({"slug": r["slug"], "name": r["full_name"], "type": r["relationship_type"], "text": r["description"],
-                                         "image": other["main"] if other else None, "pos": other["pos"] if other else "50% 40%",
-                                         "role": other["role_title"] if other else ""})
+                                         "avatar": other["avatar"] if other else None, "role": other["role_title"] if other else ""})
     order = [c["slug"] for c in cast]
     if slug in order:
         i = order.index(slug)
