@@ -1,0 +1,43 @@
+{# Pieces shared by the Garage landing page and the vehicle pages (Gate 3B). #}
+
+{# One of Rockstar's own pictures, cut around its subject. `p` comes from services.site._garage_picture: the media row, what the
+   picture shows, and where to cut it on wide screens (data-px, data-py) and phones (data-pxn, data-pyn). The site's CSP forbids
+   inline styles, so garage.css has one rule for every value on the grid the service uses. `sizes` must describe the width the
+   picture is really drawn at. A picture that is only decoration beside a heading keeps decorative=true (an empty alt). #}
+{% macro gshot(p, sizes, eager=false, cls='', decorative=true) -%}
+  {% if p and image_src(p.m.embed_url, 1920) %}
+  {% set at = p.pos.replace('%', '').split(' ') %}{% set an = p.posn.replace('%', '').split(' ') %}
+  <img class="gshot {{ cls }}" src="{{ image_src(p.m.embed_url, 1920) }}" srcset="{{ image_srcset(p.m.embed_url) }}" sizes="{{ sizes }}"
+       alt="{{ '' if decorative else p.alt }}" data-px="{{ at[0] }}" data-py="{{ at[1] }}" data-pxn="{{ an[0] }}" data-pyn="{{ an[1] }}"
+       {% if eager %}fetchpriority="high"{% else %}loading="lazy"{% endif %} decoding="async" referrerpolicy="no-referrer">
+  {% endif %}
+{%- endmacro %}
+
+{# A vehicle in the showroom grid: the whole card is one link. `size` sets how much of the row it takes (see garage_layout). #}
+{% macro gcard(v, index, eager=false) -%}
+  <article class="gcard gcard--{{ v.size }} reveal">
+    <a class="gcard__link" href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}">
+      <span class="gcard__art">{{ gshot(v.card, '(min-width: 900px) ' ~ ('92vw' if v.size == 'feature' else ('56vw' if v.size == 'wide' else '46vw')) ~ ', 100vw', eager=eager) }}</span>
+      <span class="gcard__shade" aria-hidden="true"></span>
+      <span class="gcard__body">
+        <span class="gcard__cat">{{ v.category_name }}</span>
+        <h3 class="gcard__name">{{ v.name }}</h3>
+        <span class="gcard__make">{{ v.manufacturer or 'Manufacturer not stated' }}{% if v.images %} <i aria-hidden="true">&middot;</i> {{ v.images }} official image{{ '' if v.images == 1 else 's' }}{% endif %}</span>
+        {% if v.size == 'feature' %}<span class="gcard__sum">{{ v.summary }}</span>{% endif %}
+      </span>
+      <span class="gcard__go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    </a>
+  </article>
+{%- endmacro %}
+
+{# The smaller card under "More from the garage": the picture, then the words beneath it, so the title is always readable. #}
+{% macro gtile(v) -%}
+  <a class="gtile" href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}">
+    <span class="gtile__art">{{ gshot(v.card, '(min-width: 1100px) 22vw, (min-width: 560px) 44vw, 74vw') }}</span>
+    <span class="gtile__body">
+      <span class="gtile__cat">{{ v.category_name }}</span>
+      <span class="gtile__name">{{ v.name }}</span>
+      <span class="gtile__make">{{ v.manufacturer or 'Manufacturer not stated' }}</span>
+    </span>
+  </a>
+{%- endmacro %}

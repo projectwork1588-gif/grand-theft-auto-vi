@@ -177,3 +177,43 @@ NETWORK_LAYOUT = {
     "jason-duval": (410, 250), "lucia-caminos": (790, 250), "brian-heder": (150, 110), "cal-hampton": (150, 390),
     "boobie-ike": (930, 100), "dre-quan-priest": (930, 285), "real-dimez": (930, 470), "raul-bautista": (560, 450),
 }
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Garage (Gate 3B). Every official vehicle has its pictures chosen by hand: nothing here states a fact about a vehicle, it
+# only says which of Rockstar's screenshots to use where, what is visibly in each one (for the caption and the alt text) and
+# where the subject sits so every crop keeps it.
+#
+#   face   (x, y) the middle of the subject as fractions of the picture's width and height, for wide boxes
+#   phone  the same, for the tall crops phones get (the front of a long car, not its middle)
+#   alt    what the picture shows, in the words of someone describing it: no names, no specifications
+GARAGE_FRAMES = {
+    "vehicle-grotti-cheetah-01": {"face": (0.38, 0.70), "phone": (0.30, 0.70), "alt": "White coupe with red stripes parked in front of a curved car park at sunset"},
+    "vehicle-grotti-cheetah-02": {"face": (0.70, 0.55), "phone": (0.78, 0.55), "alt": "Front of the white coupe with its headlights lit on a cobbled street at golden hour"},
+    "vehicle-grotti-cheetah-03": {"face": (0.40, 0.55), "phone": (0.40, 0.55), "alt": "Rear three-quarter of the white coupe: striped engine cover, round tail lights and a wheel"},
+    "vehicle-grotti-cheetah-04": {"face": (0.55, 0.50), "phone": (0.55, 0.50), "alt": "The coupe's red leather interior seen through the open driver's door"},
+    "vehicle-vapid-dominator-buggy-01": {"face": (0.35, 0.52), "phone": (0.35, 0.52), "alt": "Mud-splattered buggy with roof lights ploughing along a wet forest trail"},
+    "vehicle-vapid-dominator-buggy-02": {"face": (0.62, 0.62), "phone": (0.62, 0.62), "alt": "The buggy parked on gravel outside a workshop, on oversized tyres with a steel bumper"},
+    "vehicle-vapid-dominator-buggy-03": {"face": (0.45, 0.55), "phone": (0.45, 0.55), "alt": "Close-up of the buggy's front: steel bar, yellow driving lights and a crossed headlight"},
+    "vehicle-vapid-dominator-buggy-04": {"face": (0.55, 0.50), "phone": (0.55, 0.50), "alt": "The buggy's worn dashboard and steering wheel, flecked with mud"},
+    "vehicle-shitzu-squalo-01": {"face": (0.25, 0.68), "phone": (0.30, 0.68), "alt": "White speedboat cutting across a bay with the lit skyline behind it at dusk"},
+    "vehicle-shitzu-squalo-02": {"face": (0.50, 0.45), "phone": (0.50, 0.45), "alt": "The boat seen from above, leaving a white wake on dark water"},
+    "vehicle-shitzu-squalo-03": {"face": (0.38, 0.52), "phone": (0.38, 0.52), "alt": "Close-up of the white hull and its Squalo lettering in bright sun"},
+    "vehicle-shitzu-squalo-04": {"face": (0.65, 0.55), "phone": (0.65, 0.55), "alt": "Two people on the boat's deck above clear blue water, with a dolphin alongside"},
+    "vehicle-vapid-stanier-01": {"face": (0.50, 0.65), "phone": (0.78, 0.62), "alt": "Yellow and white vintage sedan on a neon-lit street at night, headlights on"},
+    "vehicle-vapid-stanier-02": {"face": (0.45, 0.45), "phone": (0.45, 0.45), "alt": "Two occupants seen through the sedan's windscreen, lit in purple and pink"},
+    "vehicle-vapid-stanier-03": {"face": (0.50, 0.60), "phone": (0.50, 0.60), "alt": "Side of the sedan: a wheel, the chrome mirror and the Stanier script on the door"},
+    "vehicle-vapid-stanier-04": {"face": (0.64, 0.45), "phone": (0.70, 0.45), "alt": "The sedan's tail fin and round red brake light under a night sky with palms"},
+    "vehicle-vapid-ganado-01": {"face": (0.45, 0.68), "phone": (0.66, 0.66), "alt": "Yellow retro pickup with red racing stripes on a coast road, the sea behind it"},
+}
+# Which picture each vehicle uses where (slugs of its media_assets rows):
+#   stage  the opening showroom on the Garage page, and the top of the vehicle's own page
+#   card   its card in the showroom grid (a different picture from the stage wherever it has more than one)
+#   side   which side the words sit on, opposite the vehicle (left or right); vpos "top" puts them above a long, low car
+GARAGE_PICKS = {
+    "grotti-cheetah": {"stage": "vehicle-grotti-cheetah-02", "card": "vehicle-grotti-cheetah-01", "side": "left", "vpos": "bottom"},
+    "vapid-dominator-buggy": {"stage": "vehicle-vapid-dominator-buggy-01", "card": "vehicle-vapid-dominator-buggy-02", "side": "right", "vpos": "bottom"},
+    "shitzu-squalo": {"stage": "vehicle-shitzu-squalo-01", "card": "vehicle-shitzu-squalo-02", "side": "right", "vpos": "bottom"},
+    "vapid-stanier": {"stage": "vehicle-vapid-stanier-04", "card": "vehicle-vapid-stanier-01", "side": "left", "vpos": "bottom"},
+    "vapid-ganado": {"stage": "vehicle-vapid-ganado-01", "card": "vehicle-vapid-ganado-01", "side": "left", "vpos": "top"},
+}

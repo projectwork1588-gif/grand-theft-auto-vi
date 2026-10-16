@@ -1,6 +1,6 @@
 // Minimal Chrome DevTools driver with no npm dependencies (Node 22+ for the built-in WebSocket).
 // Usage: node scripts/qa/cdp.mjs <script.mjs>   (the script default-exports async (b) => { ... })
-// b offers size(w, h, mobile), open(url, waitMs), eval(js), shot(path, {full, clip}), colorScheme(reduced), sleep(ms).
+// b offers size(w, h, mobile), open(url, waitMs), eval(js), shot(path, {full, clip}), colorScheme(reduced), on(handler) for protocol events, sleep(ms).
 // Set CHROME_PATH to a Chrome or Edge executable if it is not in a standard location. Developer tooling only.
 import { spawn } from "node:child_process";
 import { mkdtempSync, writeFileSync } from "node:fs";
@@ -77,6 +77,7 @@ export async function launch() {
       const r = await send("Page.captureScreenshot", params);
       writeFileSync(path, Buffer.from(r.data, "base64"));
     },
+    on(handler) { listeners.push(handler); },
     async sleep(ms) { await new Promise((r) => setTimeout(r, ms)); },
     close() { try { ws.close(); } catch {} proc.kill(); },
   };

@@ -26,7 +26,7 @@ def results(text):
 
 
 def garage_names(text):
-    return re.findall(r'<h2 class="garage-row__name"><a href="[^"]+">([^<]+)</a>', text)
+    return re.findall(r'<h3 class="gcard__name">([^<]+)</h3>', text)
 
 
 def visible_text(page):
@@ -154,7 +154,7 @@ def test_local_clip_route_is_empty_without_built_loops(client):
 ])
 def test_catalogue_pages_render(client, path, heading):
     page = html(client, path)
-    assert f"<h1>{heading}</h1>" in page
+    assert re.search(rf"<h1[^>]*>{heading}</h1>", page)
     assert 'aria-current="page"' in page  # the nav marks where you are
     assert "An unofficial educational fan project" in page
 
@@ -322,14 +322,14 @@ def test_garage_shows_only_official_vehicles_with_official_images(client):
         assert concept not in page, concept            # concept vehicles are not in the public garage
     assert "badge--demo" not in page and "Fictional demo" not in page and "vehicles.svg" not in page
     assert page.count("rockstargames.com/VI/_next/static/media/") >= 5 and "ULTIMATE_EDITION_GROTTI_CHEETAH" in page
-    assert page.count('class="garage-row ') == 5 and "product" not in page.lower()
+    assert page.count('class="gcard ') == 5 and "product" not in page.lower()
 
 
 def test_garage_filters_search_sorting_and_pagination(client):
     listed = lambda path: garage_names(html(client, path))
     assert listed("/vehicles?category=boat") == ["Shitzu Squalo"]
     assert listed("/vehicles?category=motorcycle") == []                      # empty categories give an empty state, not an error
-    assert "Nothing in this category yet" in html(client, "/vehicles?category=motorcycle")
+    assert "Nothing in the garage matches that" in html(client, "/vehicles?category=motorcycle")
     assert listed("/vehicles?q=stanier") == ["Vapid Stanier"]
     assert listed("/vehicles?q=vapid&sort=name_desc") == ["Vapid Stanier", "Vapid Ganado Retro Build", "&#39;67 Vapid Dominator Buggy"]
     assert listed("/vehicles?status=demo") == listed("/vehicles")             # the public garage ignores attempts to list concept vehicles
@@ -343,12 +343,13 @@ def test_garage_filters_search_sorting_and_pagination(client):
 
 def test_official_vehicle_detail_page(client):
     page = html(client, "/vehicles/shitzu-squalo")
-    assert "<h1>Shitzu Squalo</h1>" in page and "badge--official" in page
+    assert '<h1 class="vhero__name">Shitzu Squalo</h1>' in page and "badge--official" in page
     assert "https://www.rockstargames.com/VI/editions" in page                # source link
-    assert "Gallery" in page and page.count("data-lightbox") == 4
-    assert "More from the garage" in page and 'href="/vehicles/vapid-stanier"' in page
+    assert "The showcase" in page and page.count("data-lightbox") == 3         # the four pictures, less the one that opens the page
+    assert "More machines" in page and 'href="/vehicles/vapid-stanier"' in page
     assert "ULTIMATE_EDITION_SQUALO_01" in page and "Fictional" not in page
-    assert "Specifications" not in page                                        # nothing is invented where Rockstar is silent
+    assert "Not published by Rockstar" in page                                 # said plainly where Rockstar is silent
+    assert not re.search(r"horsepower|top speed|0-60|mph|km/h|bhp", page, re.I)      # and nothing is invented
 
 
 def test_concept_vehicles_have_no_public_page(client):
@@ -840,7 +841,8 @@ def test_display_titles_use_the_condensed_face_and_body_stays_sans():
     css = _css()
     wanted = {
         "components.css": (".key-card__title",),
-        "pages.css": (".hero__vi", ".regions__name", ".cast__name", ".page-hero h1", ".garage-row__name"),
+        "pages.css": (".hero__vi", ".regions__name", ".cast__name", ".page-hero h1"),
+        "garage.css": (".stage__name", ".vhero__name", ".gcard__name", ".gtile__name"),
     }
     for sheet, selectors in wanted.items():
         for selector in selectors:
@@ -861,7 +863,7 @@ def test_images_ask_for_what_the_layout_needs(client):
 
 
 def test_detail_galleries_are_full_width_and_leave_no_empty_cells(client):
-    for path, minimum in (("/vehicles/shitzu-squalo", 4), ("/characters/jason-duval", 2), ("/regions/vice-city", 2)):
+    for path, minimum in (("/characters/jason-duval", 2), ("/regions/vice-city", 2)):
         page = html(client, path)
         assert 'class="container gallery-page"' in page or 'class="p-gallery"' in page, path
         gallery = page.split('class="bento bento--')[1].split("</ul>")[0]

@@ -1,59 +1,130 @@
 {% extends "base.html" %}
-{% from "_components.html" import badge, picture, page_hero, provenance, vehicle_slide, bento %}
+{% from "_components.html" import badge %}
+{% from "vehicles/_garage.html" import gshot, gtile %}
 {% block title %}{{ vehicle.name }}{% endblock %}
 {% block description %}{{ vehicle.summary }}{% endblock %}
+{% block header_class %}{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='css/garage.css') }}"><script src="{{ url_for('static', filename='js/garage.js') }}" defer></script>{% endblock %}
 {% block content %}
-{% call page_hero(vehicle.category_name, vehicle.name, vehicle.summary, cover=vehicle.cover, tall=true) %}
-  {% if vehicle.manufacturer %}<p class="hero-badges"><span class="badge badge--type">{{ vehicle.manufacturer }}</span></p>{% endif %}
-{% endcall %}
+<article class="garage garage--vehicle">
 
-<section class="section section--tight">
-  <div class="container profile">
-    <div class="profile__main stack">
-      <div>
-        <h2 class="panel-title">About</h2>
-        <p class="lede">{{ vehicle.description }}</p>
+  {# ---------------------------------------------------------------- the opening picture #}
+  <header class="vhero vhero--{{ vehicle.side }} vhero--{{ vehicle.vpos }}">
+    <div class="vhero__art">{{ gshot(vehicle.hero, '100vw', eager=true, decorative=false) }}</div>
+    <div class="vhero__shade" aria-hidden="true"></div>
+    <div class="vhero__copy">
+      <nav class="vcrumb" aria-label="Breadcrumb">
+        <a href="{{ url_for('pages.vehicles') }}">The garage</a><span aria-hidden="true">/</span><a href="{{ url_for('pages.vehicles', category=vehicle.category_slug) }}#showroom">{{ vehicle.category_name }}</a>
+      </nav>
+      <h1 class="vhero__name">{{ vehicle.name }}</h1>
+      {% if vehicle.manufacturer %}<p class="vhero__make">{{ vehicle.manufacturer }}</p>{% endif %}
+      <p class="vhero__sum">{{ vehicle.summary }}</p>
+      <a class="vhero__cue" href="#overview">The vehicle <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+    </div>
+  </header>
+
+  {# ---------------------------------------------------------------- the vehicle: the database description, and what is verified #}
+  <section class="vover" id="overview" aria-labelledby="overview-title">
+    <div class="container--wide vover__in">
+      <div class="vover__text">
+        <p class="eyebrow">The vehicle</p>
+        <h2 id="overview-title" class="visually-hidden">About the {{ vehicle.name }}</h2>
+        <p class="vover__lede">{{ vehicle.description }}</p>
       </div>
-      <dl class="facts">
-        <div><dt>Manufacturer</dt><dd>{{ vehicle.manufacturer or 'Not stated' }}</dd></div>
-        <div><dt>Category</dt><dd><a href="{{ url_for('pages.vehicles', category=vehicle.category_slug) }}">{{ vehicle.category_name }}</a></dd></div>
+      <dl class="vplate" aria-label="Verified details">
+        {% if vehicle.manufacturer %}<div><dt>Maker</dt><dd>{{ vehicle.manufacturer }}</dd></div>{% endif %}
+        <div><dt>Category</dt><dd><a href="{{ url_for('pages.vehicles', category=vehicle.category_slug) }}#showroom">{{ vehicle.category_name }}</a></dd></div>
+        <div><dt>Official images</dt><dd>{{ vehicle.images }}</dd></div>
+        <div><dt>Specifications</dt><dd>Not published by Rockstar</dd></div>
+        <div class="vplate__source"><dt>Source</dt><dd>{{ badge(vehicle.content_status) }}{% if vehicle.source_url %} <a href="{{ vehicle.source_url }}" target="_blank" rel="noopener noreferrer">rockstargames.com</a>{% endif %}{% if vehicle.source_note %}<small>{{ vehicle.source_note }}</small>{% endif %}</dd></div>
       </dl>
-      {{ provenance(vehicle) }}
-
     </div>
+  </section>
 
-    <aside class="profile__side stack">
-      {% if vehicle.missions or vehicle.locations %}
-      <section aria-labelledby="vm-title">
-        <h2 class="panel-title" id="vm-title">Appears in</h2>
-        <ul class="link-list">
-          {% for m in vehicle.missions %}<li><a href="{{ url_for('pages.mission_detail', slug=m.slug) }}"><span class="name">{{ m.title }}</span></a></li>{% endfor %}
-          {% for l in vehicle.locations %}<li><a href="{{ url_for('pages.location_detail', slug=l.slug) }}"><span class="name">{{ l.name }}</span><span class="meta">{{ l.region_name }}</span></a></li>{% endfor %}
+  {# ---------------------------------------------------------------- the showcase: Rockstar's other pictures of it (never the one above) #}
+  {% if vehicle.gallery | length >= 2 %}
+  <section class="showcase" id="showcase" aria-labelledby="showcase-title" data-viewer>
+    <div class="container--wide">
+      <header class="showcase__head">
+        <p class="eyebrow">The showcase</p>
+        <h2 id="showcase-title">More of the {{ vehicle.name }}</h2>
+      </header>
+      <div class="viewer">
+        <div class="viewer__frame">
+          <ul class="viewer__slides">
+            {% for g in vehicle.gallery %}
+            <li class="viewer__slide{% if loop.first %} is-active{% endif %}" data-slide{% if not loop.first %} hidden{% endif %}>{{ gshot(g, '(min-width: 1100px) 78vw, 100vw', decorative=false, eager=loop.first) }}</li>
+            {% endfor %}
+          </ul>
+          <button class="viewer__open" type="button" data-open aria-label="View this image larger"></button>
+          <button class="viewer__nav viewer__nav--prev" type="button" data-prev aria-label="Previous image"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button class="viewer__nav viewer__nav--next" type="button" data-next aria-label="Next image"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <p class="viewer__count" aria-hidden="true"><span data-index>1</span> / {{ vehicle.gallery | length }}</p>
+        </div>
+        <p class="viewer__caption" data-caption aria-hidden="true">{{ vehicle.gallery[0].alt }}</p>
+        <ul class="viewer__thumbs" aria-label="Choose an image">
+          {% for g in vehicle.gallery %}
+          <li><a href="{{ image_src(g.m.embed_url, 2560) }}" data-thumb aria-label="Image {{ loop.index }} of {{ vehicle.gallery | length }}: {{ g.alt }}"{% if loop.first %} aria-current="true"{% endif %}>{{ gshot(g, '(min-width: 900px) 20vw, 28vw', cls='viewer__thumb') }}</a></li>
+          {% endfor %}
         </ul>
-      </section>
-      {% endif %}
-      <section aria-labelledby="where-title">
-        <h2 class="panel-title" id="where-title">See it in motion</h2>
-        <p class="muted">Rockstar shows it in its own <a href="https://www.rockstargames.com/VI/media/screenshots" target="_blank" rel="noopener noreferrer">screenshots</a> and <a href="https://www.rockstargames.com/VI/media/videos" target="_blank" rel="noopener noreferrer">videos</a>.</p>
-      </section>
-    </aside>
-  </div>
-
-  {% if vehicle.gallery | length > 1 %}
-  <div class="container gallery-page">
-    <h2 class="subhead gallery-page__title" id="gallery-title">Gallery</h2>
-    {{ bento(vehicle.gallery, 'gallery-title') }}
-  </div>
-  {% endif %}
-
-  {% if vehicle.more %}
-  <div class="container">
-    <h2 class="subhead">More from the garage</h2>
-    <div class="more-grid">
-      {% for o in vehicle.more[:3] %}{{ vehicle_slide(o, loop.index, sizes='(min-width: 900px) 33vw, 100vw') }}{% endfor %}
+        <ul data-gallery hidden>
+          {% for g in vehicle.gallery %}<li><a href="{{ image_src(g.m.embed_url, 2560) }}" data-lightbox data-caption="{{ g.alt }}">{{ g.alt }}</a></li>{% endfor %}
+        </ul>
+      </div>
     </div>
-    <p class="section-more"><a class="link-arrow" href="{{ url_for('pages.vehicles') }}">Back to the garage</a></p>
-  </div>
+  </section>
+  {% elif vehicle.gallery | length == 1 %}
+  <section class="showcase showcase--single" aria-labelledby="showcase-title">
+    <div class="container--wide">
+      <header class="showcase__head"><p class="eyebrow">The showcase</p><h2 id="showcase-title">More of the {{ vehicle.name }}</h2></header>
+      <figure class="single"><div class="single__art">{{ gshot(vehicle.gallery[0], '(min-width: 1100px) 78vw, 100vw', decorative=false) }}</div><figcaption>{{ vehicle.gallery[0].alt }}</figcaption></figure>
+    </div>
+  </section>
+  {% else %}
+  <section class="showcase showcase--none" aria-labelledby="showcase-title">
+    <div class="container--wide">
+      <h2 id="showcase-title" class="eyebrow">The showcase</h2>
+      <p class="showcase__none">{% if vehicle.images == 1 %}Rockstar has published one official image of this vehicle so far: it is the picture above.{% else %}Rockstar has not published more pictures of this vehicle yet.{% endif %}</p>
+      <p class="showcase__link"><a class="link-arrow" href="https://www.rockstargames.com/VI/media/screenshots" target="_blank" rel="noopener noreferrer">Rockstar&rsquo;s screenshots</a></p>
+    </div>
+  </section>
   {% endif %}
-</section>
+
+  {# ---------------------------------------------------------------- the connected world: only what the database actually records #}
+  {% if vehicle.missions or vehicle.locations %}
+  <section class="vworld" aria-labelledby="world-title">
+    <div class="container--wide">
+      <p class="eyebrow">The connected world</p>
+      <h2 id="world-title">Where it appears</h2>
+      <div class="vworld__cols">
+        {% if vehicle.missions %}
+        <div><h3>Stories</h3>
+          <ul class="vworld__list">{% for m in vehicle.missions %}<li><a href="{{ url_for('pages.mission_detail', slug=m.slug) }}"><b>{{ m.title }}</b>{% if m.usage_note %}<span>{{ m.usage_note }}</span>{% endif %}</a>{% if m.content_status != 'official' %}{{ badge(m.content_status) }}{% endif %}</li>{% endfor %}</ul>
+        </div>
+        {% endif %}
+        {% if vehicle.locations %}
+        <div><h3>Places</h3>
+          <ul class="vworld__list">{% for l in vehicle.locations %}<li><a href="{{ url_for('pages.location_detail', slug=l.slug) }}"><b>{{ l.name }}</b><span>{{ l.region_name }}</span></a>{% if l.content_status != 'official' %}{{ badge(l.content_status) }}{% endif %}</li>{% endfor %}</ul>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  {# ---------------------------------------------------------------- the rest of the garage #}
+  {% if vehicle.more %}
+  <section class="vmore" aria-labelledby="more-title">
+    <div class="container--wide">
+      <div class="vmore__head">
+        <div><p class="eyebrow">The garage</p><h2 id="more-title">More machines</h2></div>
+        <a class="link-arrow" href="{{ url_for('pages.vehicles') }}">Back to the garage</a>
+      </div>
+      <ul class="vmore__grid">
+        {% for o in vehicle.more %}<li>{{ gtile(o) }}</li>{% endfor %}
+      </ul>
+    </div>
+  </section>
+  {% endif %}
+</article>
 {% endblock %}

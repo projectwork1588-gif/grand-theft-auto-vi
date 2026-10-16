@@ -76,6 +76,24 @@ def covers(kind, entity_ids):
 
 
 @_tolerate_missing_tables(dict)
+def counts(kind, entity_ids):
+    """How many official pictures (artwork and screenshots) each entity has: {entity_id: n}."""
+    ids = [int(i) for i in entity_ids]
+    if not ids:
+        return {}
+    table, column = ENTITY_TABLES[kind]
+    marks = ", ".join(["%s"] * len(ids))
+    rows = query_all(
+        f"""SELECT link.{column} AS entity_id, COUNT(*) AS n
+            FROM {table} link JOIN media_assets m ON m.media_id = link.media_id
+            WHERE link.{column} IN ({marks}) AND {_VISIBLE} AND m.media_type IN ('artwork', 'screenshot')
+            GROUP BY link.{column}""",
+        ids,
+    )
+    return {row["entity_id"]: row["n"] for row in rows}
+
+
+@_tolerate_missing_tables(dict)
 def by_slugs(slugs):
     slugs = list(slugs)
     if not slugs:
