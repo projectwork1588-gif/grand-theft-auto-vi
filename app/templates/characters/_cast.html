@@ -12,20 +12,23 @@
   {% endif %}
 {%- endmacro %}
 
-{# A person's portrait circle: the face cut from Rockstar's own character artwork, every head the same share of its circle. A
-   duo (Real Dimez) gets two overlapping circles, one for each member, so neither face is squeezed out. `uid` keeps the
-   clip paths of one page apart; x and y place it inside another svg (the relationship network). #}
+{# A person's portrait circle: a head cut from Rockstar's own character artwork. Every head is scaled to the same share of its
+   circle (a.head) and centred in it, so every portrait has the same weight and the eyes sit in the upper middle. A duo
+   (Real Dimez) gets two overlapping circles, one for each member, so neither face is squeezed out. `uid` keeps the clip
+   paths of one page apart; x and y place it inside another svg (the relationship network). The head positions are in
+   media_slots.AVATARS: this one macro is the only place that turns them into a picture. #}
 {% macro avatar(a, size, uid, lead=false, x=none, y=none) -%}
   {% if a and a.media and image_src(a.media.embed_url, 1280) %}
   {% set d = (size * 0.82) if a.duo else size %}
   {% set w = (size * 1.45) if a.duo else size %}
   <svg class="av{% if a.duo %} av--duo{% endif %}{% if lead %} av--lead{% endif %}"{% if x is not none %} x="{{ x - w / 2 }}" y="{{ y - size / 2 }}"{% endif %} width="{{ w | round(1) }}" height="{{ size }}" viewBox="0 0 {{ w | round(1) }} {{ size }}" focusable="false" aria-hidden="true">
-    <defs>{% for f in a.faces %}<clipPath id="{{ uid }}-{{ loop.index0 }}"><circle cx="{{ ((d / 2) if loop.first else (w - d / 2)) | round(1) }}" cy="{{ size / 2 }}" r="{{ (d / 2 - 1.5) | round(1) }}"/></clipPath>{% endfor %}</defs>
-    {% for f in a.faces %}
+    <defs>{% for h in a.heads %}<clipPath id="{{ uid }}-{{ loop.index0 }}"><circle cx="{{ ((d / 2) if loop.first else (w - d / 2)) | round(1) }}" cy="{{ size / 2 }}" r="{{ (d / 2 - 1.5) | round(1) }}"/></clipPath>{% endfor %}</defs>
+    {% for h in a.heads %}
     {% set cx = (d / 2) if loop.first else (w - d / 2) %}
-    {% set ih = 0.60 * d / a.hh %}
+    {% set ih = a.head * d / h[2] * (h[3] if h | length > 3 else 1) %}
     {% set iw = ih * 16 / 9 %}
-    <g clip-path="url(#{{ uid }}-{{ loop.index0 }})"><circle cx="{{ cx | round(1) }}" cy="{{ size / 2 }}" r="{{ d / 2 }}" class="av__back"/><image href="{{ image_src(a.media.embed_url, 1280) }}" x="{{ (cx - iw * f[0]) | round(1) }}" y="{{ (size / 2 - ih * f[1]) | round(1) }}" width="{{ iw | round(1) }}" height="{{ ih | round(1) }}" preserveAspectRatio="none"/></g>
+    <g clip-path="url(#{{ uid }}-{{ loop.index0 }})"><circle cx="{{ cx | round(1) }}" cy="{{ size / 2 }}" r="{{ d / 2 }}" class="av__back"{% if a.bg %} fill="{{ a.bg }}"{% endif %}/>
+      <image href="{{ image_src(a.media.embed_url, 1280) }}" x="{{ (cx - iw * h[0]) | round(1) }}" y="{{ (size / 2 - ih * h[1]) | round(1) }}" width="{{ iw | round(1) }}" height="{{ ih | round(1) }}" preserveAspectRatio="none"/></g>
     <circle class="av__ring" cx="{{ cx | round(1) }}" cy="{{ size / 2 }}" r="{{ (d / 2 - 1.5) | round(1) }}"/>
     {% endfor %}
   </svg>

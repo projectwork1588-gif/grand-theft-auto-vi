@@ -320,19 +320,21 @@
 .web__svg .node { cursor: pointer; }
 .web__svg .node__hit { fill: transparent; }
 .av__ring { fill: none; stroke: rgba(255, 255, 255, .4); stroke-width: 3; transition: stroke var(--dur-2) var(--ease); }
-.av__back { fill: var(--ground-2); }
+.av__back:not([fill]) { fill: var(--ground-2); }
 .av--lead .av__ring { stroke: var(--action); }
 .web__svg .node:hover .av__ring, .web__svg .node:focus-visible .av__ring { stroke: var(--label); }
 .web__svg .node text { font: 700 var(--t-lead) var(--font-display); letter-spacing: var(--track-ui); text-transform: uppercase; fill: var(--text);
   paint-order: stroke; stroke: var(--ground-2); stroke-width: 7px; stroke-linejoin: round; }
-.web__svg .node--alone { opacity: .58; }
+/* a person with no stated connection keeps a full-brightness portrait; only the ring (dashed) and the name are quieter */
+.web__svg .node--alone .av__ring { stroke-dasharray: 5 5; stroke: rgba(255, 255, 255, .5); }
+.web__svg .node--alone text { fill: var(--text-2); }
 .web__svg.is-focus .edge { opacity: .25; }
 .web__svg.is-focus .edge.is-on { opacity: 1; }
 .web__svg.is-focus .edge.is-on line { stroke-width: 3.5; stroke-opacity: 1; }
 .web__list { list-style: none; margin: 0; padding: 0; display: none; gap: var(--s1); }
 .web__list li { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: var(--s2); padding: var(--s2); border: 1px solid var(--line); border-radius: var(--r-tile); background: var(--card); }
 .web__faces { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 4px; width: 64px; }
-.web__alone { opacity: .72; }
+.web__alone b { color: var(--text-2); }
 .web__faces .av { display: block; }
 .web__row { display: grid; gap: 4px; }
 .web__list b { font: 700 var(--t-lead)/1.1 var(--font-display); letter-spacing: var(--track-caps); text-transform: uppercase; }
@@ -447,6 +449,14 @@
   .p-story--wide { grid-template-columns: minmax(0, 1fr) minmax(0, 500px); }
   .p-story--square, .p-story--legacy { grid-template-columns: minmax(0, 1fr) minmax(0, 380px); }
   .p-story--wide .p-story__media, .p-story--square .p-story__media, .p-story--legacy .p-story__media { max-width: none; }
+}
+/* a hero with two people (Real Dimez) on a narrow screen: the picture is drawn wider than the screen and not cropped, so both
+   members are in it, instead of the full-height crop that fits one */
+@media (max-width: 900px) {
+  .p-hero--duo .p-hero__art { bottom: auto; height: calc(140vw * 9 / 16); overflow: hidden;
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 48px, #000 calc(100% - 110px), transparent 100%); mask-image: linear-gradient(180deg, transparent 0, #000 48px, #000 calc(100% - 110px), transparent 100%); }
+  .p-hero--duo .p-hero__art .shot { width: 140%; max-width: none; margin-left: -17%; height: 100%; }
+  .p-hero--duo.p-hero--full { min-height: calc(var(--header-h) + 140vw * 9 / 16 + 280px); }
 }
 @media (max-width: 760px) {
   .cast-open { min-height: 92svh; }

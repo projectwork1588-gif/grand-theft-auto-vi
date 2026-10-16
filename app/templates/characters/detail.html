@@ -9,7 +9,7 @@
 <article class="profile-page{% if character.is_lead %} profile-page--lead{% endif %}">
 
   {# ------------------------------------------------------------------ hero: full bleed for all eight; the words sit on the side the person is not #}
-  <header class="p-hero p-hero--full p-hero--{{ character.hero_side }}">
+  <header class="p-hero p-hero--full p-hero--{{ character.hero_side }}{% if character.hero_duo %} p-hero--duo{% endif %}">
     <div class="p-hero__art">{{ shot(character.hero or character.main, '(min-width: 1100px) 100vw, (min-width: 761px) 180vw, 265vw', character.pos_hero, eager=true, posn=character.pos_hero_n) }}</div>
     <div class="p-hero__shade" aria-hidden="true"></div>
     <div class="p-hero__in">

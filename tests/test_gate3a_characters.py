@@ -175,7 +175,8 @@ def test_a_head_is_never_cropped_out():
 
 def test_no_profile_repeats_its_hero_in_the_story_or_the_overlap():
     for slug, pick in media_slots.CHARACTER_STAGE.items():
-        assert pick["hero"] != pick["main"], slug                      # the hero and the large picture below it differ
+        if slug != "real-dimez":                                     # the one deliberate repeat: the duo's hero is the artwork of both
+            assert pick["hero"] != pick["main"], slug                # the hero and the large picture below it differ
         assert pick["hero"] != pick["second"], slug                    # and so do the hero and the overlapping picture
         assert pick["main"] != pick["second"], slug
 
@@ -472,15 +473,54 @@ def test_every_node_has_a_portrait_and_the_duo_has_two_circles(client):
         assert "<image " in node and "Jason_and_Lucia" in node or "<image " in node, slug
         assert node.count("av__ring") == (2 if slug == "real-dimez" else 1), slug
     assert set(media_slots.AVATARS) == set(media_slots.CHARACTERS_ORDER)
-    assert len(media_slots.AVATARS["real-dimez"]["faces"]) == 2
+    assert len(media_slots.AVATARS["real-dimez"]["heads"]) == 2
 
 
 def test_portraits_come_from_the_artwork_not_scene_screenshots():
     for slug, spec in media_slots.AVATARS.items():
         assert spec["media"].startswith("art-"), slug                       # one lighting and one style for all eight
-        assert 0.1 <= spec["hh"] <= 0.3 and all(0 < x < 1 and 0 < y < 1 for x, y in spec["faces"]), slug
+        for head in spec["heads"]:
+            x, y, h = head[:3]
+            assert 0.1 <= h <= 0.4 and 0 < x < 1 and 0 < y < 1, (slug, head)
+            assert y - h / 2 >= -0.01 and y + h / 2 <= 1, (slug, head)     # the whole head is inside its picture
+    assert 0.6 <= media_slots.AVATAR_HEAD <= 0.8
 
 
+def test_every_portrait_is_drawn_by_the_one_macro_with_the_same_head_size(client):
+    page = client.get("/characters").get_data(as_text=True)
+    assert "class=\"av__fill\"" not in page
+    for slug in ("jason-duval", "dre-quan-priest", "raul-bautista"):
+        profile = client.get(f"/characters/{slug}").get_data(as_text=True)
+        assert 'class="p-conn__face"' in profile or "has not stated any connections" in profile, slug
+    # the connection cards and the network use the same macro and the same specs: no second crop table exists
+    css = (ROOT / "app" / "static" / "css" / "characters.css").read_text(encoding="utf-8")
+    assert "p-conn__face .shot" not in css
+
+
+def test_a_person_with_no_stated_connection_keeps_a_bright_portrait():
+    css = (ROOT / "app" / "static" / "css" / "characters.css").read_text(encoding="utf-8")
+    assert not re.search(r"\.node--alone\s*\{[^}]*opacity", css)               # the portrait is never dimmed
+    assert ".node--alone .av__ring" in css
+
+
+def test_real_dimez_hero_shows_both_members(client):
+    page = client.get("/characters/real-dimez").get_data(as_text=True)
+    hero = page.split('class="p-hero p-hero--full')[1].split("</header>")[0]
+    assert "p-hero--duo" in page and "Real_Dimez_landscape" in hero          # the artwork of both women
+    assert "p-hero--left" in page.split('class="p-hero p-hero--full')[1][:60]
+    css = (ROOT / "app" / "static" / "css" / "characters.css").read_text(encoding="utf-8")
+    assert re.search(r"\.p-hero--duo \.p-hero__art \{[^}]*height: calc\(140vw", css)    # shown whole on narrow screens
+
+
+# ------------------------------------------------------------------ one complete playback per genuine visit
+def test_motion_controller_is_a_state_machine_with_rearm_on_leaving():
+    script = (ROOT / "app" / "static" / "js" / "site.js").read_text(encoding="utf-8")
+    block = script.split("(function portraits() {")[1].split("// ---- Short muted loops")[0]
+    for token in ('"armed"', '"playing"', '"rested"', "REARM", "ENTER", "KEEP", "data-state", "pick(ready)", "rootMargin"):
+        assert token in block, token
+    assert 'p.state === "rested" && p.ratio < REARM' in block              # a finished tile is re-armed once it has left the view
+    assert "done" not in block.replace("done:", "")                         # the old one-way flag is gone
+    assert block.count(".loop") == 0
 def test_the_phone_list_shows_the_portraits_and_the_person_without_a_stated_connection(client):
     page = client.get("/characters").get_data(as_text=True)
     items = page.split('class="web__list"')[1].split("</ul>")[0]

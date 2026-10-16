@@ -35,11 +35,15 @@ export default async function (b) {
   const done = await st("cal-hampton");
   check("a finished tile stays put (paused, not looping)", done.paused && done.rest, JSON.stringify(done));
 
-  // ---- 2. scrolling away and back to a finished tile does not replay it
-  await b.eval(`window.scrollTo(0, 0); true`); await b.sleep(1200);
-  await toTile("cal-hampton"); await b.sleep(2200);
-  const again = await st("cal-hampton");
-  check("returning to a finished tile does not replay it", again.paused && again.rest && again.ct >= 3, JSON.stringify(again));
+  // ---- 2. staying near a finished tile does not replay it; leaving it completely and coming back does, once
+  await b.sleep(1500);
+  const stayed = await st("cal-hampton");
+  check("staying near a finished tile does not replay it", stayed.paused && stayed.rest, JSON.stringify(stayed));
+  await b.eval(`window.scrollTo(0, 0); true`); await b.sleep(1500);
+  const armed = await st("cal-hampton");
+  check("after it has left the view it is armed again, at its artwork", armed.paused && !armed.rest && !armed.live && armed.ct < 0.1, JSON.stringify(armed));
+  await toTile("cal-hampton");
+  check("coming back to it plays it again and it rests once more", await waitRest("cal-hampton", 14000));
 
   // ---- 3. leaving mid-way goes back to the artwork (no frozen half-dissolve), and the tile plays again on return
   await fresh("/characters");
@@ -67,8 +71,8 @@ export default async function (b) {
   // ---- 5. the jump bar: a click lands on the person and their clip plays
   await fresh("/characters");
   await b.eval(`document.querySelector("[data-cast-nav] a[href='#real-dimez']").click(); true`);
-  await b.sleep(2400);
-  const dim = await st("real-dimez");
+  let dim = await st("real-dimez");
+  for (let t = 0; t < 40 && dim.paused && !dim.rest; t++) { await b.sleep(250); dim = await st("real-dimez"); }
   check("jump bar: the chosen person's clip is playing or finished", !dim.paused || dim.rest, JSON.stringify(dim));
   const heading = await b.eval(`(() => { const h = document.querySelector("#real-dimez .person__name").getBoundingClientRect(); const n = document.querySelector("[data-cast-nav]").getBoundingClientRect(); return { top: h.top, navBottom: n.bottom }; })()`);
   check("jump bar: the heading is not hidden under the bars", heading.top >= heading.navBottom + 4, JSON.stringify(heading));
@@ -82,8 +86,9 @@ export default async function (b) {
   check("motion off: the clip does not play", off.paused && !off.live && off.ct === 0, JSON.stringify(off));
   check("motion off: a Play button is shown", !button.hidden && button.w > 20, JSON.stringify(button));
   await b.eval(`${tile("boobie-ike")}.querySelector("[data-motion-optin]").click(); true`);
-  await b.sleep(1500);
-  check("motion off: one click plays it", !(await st("boobie-ike")).paused);
+  let clicked = await st("boobie-ike");
+  for (let t = 0; t < 40 && clicked.paused; t++) { await b.sleep(250); clicked = await st("boobie-ike"); }
+  check("motion off: one click plays it", !clicked.paused, JSON.stringify(clicked));
   await b.eval(`localStorage.clear(); true`);
 
   // ---- 7. autoplay refused by the browser: the still stays, a Play button appears, nothing throws

@@ -19,19 +19,25 @@ export default async function (b) {
   // the listeners go in before the page's own script runs, so a tile that is already in view at load (a profile page) is seen from its first frame
   const hook = `(() => {
     window.__log = [];
-    const attach = () => {
-      [...document.querySelectorAll("[data-portrait]")].forEach((t, i) => {
-        const v = t.querySelector("video");
-        const host = t.closest("[id]:not(#main)");
-        const slug = host ? host.id : location.pathname.split("/").pop();
-        const note = (ev) => window.__log.push({ i, slug, ev, w: performance.now(), ct: +v.currentTime.toFixed(3), live: t.classList.contains("is-live") });
-        ["play", "playing", "pause", "ended", "seeking", "seeked", "waiting", "stalled", "error"].forEach((e) => v.addEventListener(e, () => note(e)));
-        let last = 0;
-        v.addEventListener("timeupdate", () => { const n = performance.now(); if (n - last > 90) { last = n; note("tick"); } });
-        new MutationObserver(() => note("class:" + (t.classList.contains("is-live") ? "live" : "") + (t.classList.contains("is-rest") ? " rest" : ""))).observe(t, { attributes: true, attributeFilter: ["class"] });
-      });
-    };
-    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", attach); else attach();
+    const idx = (v) => [...document.querySelectorAll("[data-portrait] video")].indexOf(v);
+    const slugOf = (t) => { const h = t.closest("[id]:not(#main)"); return h ? h.id : location.pathname.split("/").pop(); };
+    const last = new WeakMap();
+    // capture-phase listeners on the document exist before any element does, so the very first play is never missed
+    ["play", "playing", "pause", "ended", "seeking", "seeked", "waiting", "stalled", "error", "timeupdate"].forEach((ev) => {
+      document.addEventListener(ev, (e) => {
+        const v = e.target; if (!(v instanceof HTMLVideoElement)) return;
+        const t = v.closest("[data-portrait]"); if (!t) return;
+        const n = performance.now();
+        if (ev === "timeupdate") { if (n - (last.get(v) || 0) < 90) return; last.set(v, n); }
+        window.__log.push({ i: idx(v), slug: slugOf(t), ev: ev === "timeupdate" ? "tick" : ev, w: n, ct: +v.currentTime.toFixed(3), live: t.classList.contains("is-live") });
+      }, true);
+    });
+    const watch = () => document.querySelectorAll("[data-portrait]").forEach((t) => {
+      if (t.__seen) return; t.__seen = true;
+      new MutationObserver(() => window.__log.push({ i: idx(t.querySelector("video")), slug: slugOf(t), ev: "class:" + (t.classList.contains("is-live") ? "live" : "") + (t.classList.contains("is-rest") ? " rest" : ""), w: performance.now(), ct: +t.querySelector("video").currentTime.toFixed(3) })).observe(t, { attributes: true, attributeFilter: ["class"] });
+    });
+    new MutationObserver(watch).observe(document, { childList: true, subtree: true });
+    document.addEventListener("DOMContentLoaded", watch);
   })();`;
   await b.send("Page.addScriptToEvaluateOnNewDocument", { source: hook });
   await b.open(base + route, 1800);
@@ -62,6 +68,7 @@ export default async function (b) {
     const slug = ev[0] ? ev[0].slug : String(i);
     const plays = ev.filter((e) => e.ev === "playing");
     const firstPlay = plays[0];
+    const begun = ev.find((e) => e.ev === "play");        // the sequence's real start: the first play() of this visit
     const live = ev.find((e) => e.ev.startsWith("class:live"));
     const ended = ev.find((e) => e.ev === "ended");
     const ticks = ev.filter((e) => e.ev === "tick" && firstPlay && e.w >= firstPlay.w && (!ended || e.w <= ended.w));
@@ -72,7 +79,8 @@ export default async function (b) {
     rows.push({
       slug, file: q.src, fileSeconds: q.duration, started: !!firstPlay, playCount: ev.filter((e) => e.ev === "play").length,
       takeoverAtVideoTime: live ? live.ct : null,
-      realSecondsToEnd: firstPlay && ended ? +((ended.w - firstPlay.w) / 1000).toFixed(2) : null,
+      firstPlayAtVideoTime: begun ? begun.ct : null,
+      realSecondsToEnd: begun && ended ? +((ended.w - begun.w) / 1000).toFixed(2) : null,
       rate: rates.length ? +rates[Math.floor(rates.length / 2)].toFixed(2) : null,
       framesPresented: q.total, framesExpected: Math.round((q.duration || 0) * 30), dropped: q.dropped,
       pausesBeforeEnd: ev.filter((e) => e.ev === "pause" && (!ended || e.w < ended.w) && e.ct < (q.duration || 0) - 0.1).length,

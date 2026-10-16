@@ -52,3 +52,21 @@ circles. The same macro draws the connection cards on the profiles and the phone
 `scripts/qa/cast_navigation.mjs` clicks all eight Previous and all eight Next cards, checks the labels, numbers,
 footer lists, jump bar and Explore order (52 checks). `scripts/qa/motion_scenarios.mjs` and `motion_timeline.mjs` cover
 the 16 playback contexts. See the review pack.
+
+## Acceptance correction (replay, portraits, Real Dimez hero)
+
+* **Replay.** Each landing and profile tile is a state machine (`data-state`: armed, playing, rested). A finished tile
+  is re-armed when it has genuinely left the view (under 2% visible, the sticky bars counting as covering the top of the
+  screen) and plays once again on the next visit; staying near it never replays it. Entry needs half the tile for 380 ms,
+  so scrolling past does not start and stop clips. Tiles in view together play one after another (rows in the direction of
+  travel, left to right in a row). `scripts/qa/motion_replay.mjs` traces down, up, down, up with a play count per visit.
+  The earlier rule ("a finished tile never replays in the same page visit") was the cause of the missed replays.
+* **Portraits.** Heads are read by eye from the pictures at full resolution (`media_slots.AVATARS`: head centre and height,
+  optional zoom, and the colour of the picture's top edge for heads at the very top). One macro (`avatar`) draws the network,
+  the connection cards and the phone list; Raul is no longer dimmed (only his ring and name are quieter).
+* **Real Dimez hero.** The official artwork of both women (Bae-Luxe: braids, "BL" chain; Roxy: curls, "ROXY" chain), words on the
+  left; on screens under 901 px the picture is drawn wider than the screen and not cropped, so both stay in. The story's large
+  picture rests on the same artwork (the one deliberate repeat): there is no other official picture of the duo that is clear,
+  bright and wide enough for a hero, and the screenshot with Dre'Quan between them would make him the subject.
+* **Brian's 2.91 s.** The old instrumentation attached its listeners after playback had begun (the first event it saw was at
+  video time 0.92 s), so the wall time was measured from mid-clip. It now listens on `document` from document start.

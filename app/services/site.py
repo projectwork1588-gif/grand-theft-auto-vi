@@ -112,7 +112,7 @@ def _avatar(slug, media_rows):
     spec = media_slots.AVATARS.get(slug)
     if not spec:
         return None
-    return {"media": media_rows.get(spec["media"]), "faces": spec["faces"], "hh": spec["hh"], "duo": len(spec["faces"]) > 1}
+    return {"media": media_rows.get(spec["media"]), "heads": spec["heads"], "head": media_slots.AVATAR_HEAD, "bg": spec.get("bg"), "duo": len(spec["heads"]) > 1}
 
 
 def _cast_entries(include_media=True):
@@ -134,9 +134,10 @@ def _cast_entries(include_media=True):
             for key in ("main", "hero", "card", "second"):
                 row[key] = stage_media.get(pick[key])
             row["second_shape"] = pick["shape"]
+            row["hero_duo"] = bool(pick.get("duo"))          # two people in the hero: on a narrow screen the picture is shown whole
             hero, card, second = pick["hero"], pick["card"], pick["second"]
             fx = media_slots.IMAGE_FACE.get(hero, (0.5, 0.35))[0]
-            row["hero_side"] = "right" if fx < 0.5 else "left"          # the words go on the side the person is not
+            row["hero_side"] = pick.get("side") or ("right" if fx < 0.5 else "left")   # the words go on the side the person is not
             row["pos_hero"] = frame_pos(hero, 2.1, ay=0.38)
             row["pos_hero_n"] = frame_pos(hero, 0.75, ay=0.30)
             row["pos_card"] = frame_pos(card, 0.8)                      # the leads' tall spread picture
@@ -268,7 +269,7 @@ def character_detail(slug):
     character, character_id = characters.get_character_with_id(slug)
     cast = _cast_entries()
     entry = next((c for c in cast if c["slug"] == slug), None)
-    for key in ("number", "main", "hero", "card", "second", "second_shape", "pos_hero", "pos_hero_n", "pos_second", "hero_side"):
+    for key in ("number", "main", "hero", "card", "second", "second_shape", "pos_hero", "pos_hero_n", "pos_second", "hero_side", "hero_duo"):
         character[key] = entry.get(key) if entry else None
     character["number"] = entry["number"] if entry else None
     character["is_lead"] = slug in media_slots.CAST_LEADS

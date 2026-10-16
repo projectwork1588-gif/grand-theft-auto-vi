@@ -99,7 +99,7 @@ IMAGE_FACE = {
     "shot-brian-heder-01": (0.52, 0.20), "shot-brian-heder-02": (0.58, 0.17),
     "shot-boobie-ike-01": (0.41, 0.15), "shot-boobie-ike-02": (0.32, 0.12),
     "shot-dequan-priest-01": (0.535, 0.10), "shot-dequan-priest-02": (0.73, 0.14),
-    "shot-real-dimez-01": (0.47, 0.20), "shot-real-dimez-02": (0.45, 0.20),
+    "shot-real-dimez-01": (0.47, 0.20), "art-real-dimez": (0.465, 0.17), "shot-real-dimez-02": (0.45, 0.20),
     "shot-raul-bautista-01": (0.62, 0.30), "shot-raul-bautista-02": (0.52, 0.16),
 }
 # Each person's pictures on the Characters pages (slugs of media_assets rows):
@@ -115,24 +115,28 @@ CHARACTER_STAGE = {
     "brian-heder": {"main": "art-brian-heder", "hero": "shot-brian-heder-02", "card": "shot-brian-heder-01", "second": "shot-brian-heder-01", "shape": "tall"},
     "boobie-ike": {"main": "art-boobie-ike", "hero": "shot-boobie-ike-01", "card": "shot-boobie-ike-02", "second": "shot-boobie-ike-02", "shape": "tall"},
     "dre-quan-priest": {"main": "art-dequan-priest", "hero": "shot-dequan-priest-02", "card": "shot-dequan-priest-02", "second": "shot-dequan-priest-01", "shape": "wide"},
-    # Real Dimez is a duo (Bae-Luxe and Roxy). The one official screenshot that shows both women clearly is the one with
+    # Real Dimez is a duo (Bae-Luxe, braids, 'BL' chain; Roxy, curls, 'ROXY' chain). The hero is the official artwork of both, so
+    # the title says what the picture shows; the sequence also rests on it (the one deliberate repeat). The one official screenshot that shows both women clearly is the one with
     # Dre'Quan Priest between them (the label that signed them), so it is the second picture and the landing card; it is cut
     # wide (4:3) so both women stay in it. The hero is Roxy alone, the large picture the full-length artwork of both.
-    "real-dimez": {"main": "art-real-dimez", "hero": "shot-real-dimez-01", "card": "shot-dequan-priest-01", "second": "shot-dequan-priest-01", "shape": "wide"},
+    "real-dimez": {"main": "art-real-dimez", "hero": "art-real-dimez", "card": "shot-dequan-priest-01", "second": "shot-dequan-priest-01", "shape": "wide", "side": "left", "duo": True},
     "raul-bautista": {"main": "art-raul-bautista", "hero": "shot-raul-bautista-02", "card": "shot-raul-bautista-01", "second": "shot-raul-bautista-01", "shape": "tall"},
 }
-# The relationship network's portraits: faces cut from Rockstar's own character artwork (the illustrations, so every
-# portrait has the same lighting and weight), per person: the artwork, where each face sits, and the head's height as a
-# fraction of the picture's height (so each face fills the same share of its circle). A duo gets two circles.
+# Portraits (the relationship network, the connection cards on the profiles, the phone list): a head cut from Rockstar's own
+# character artwork. `heads` are read by eye from the pictures at full resolution, one per face: (x, y, h) = the middle of the
+# whole head (hair or hat to chin) as a fraction of the picture's width and height, and its height as a fraction of the
+# picture's height (`bg` is the colour of the picture's top edge, which fills the circle above a head that sits at the very top of its picture; an optional fourth number zooms that one head in or out, to keep a neighbour out of the circle). Each head is scaled to the same share of its circle and centred in it, so the eyes sit in the upper
+# middle and every portrait has the same weight. A duo gets one circle per member.
+AVATAR_HEAD = 0.72        # share of the circle's height the head fills
 AVATARS = {
-    "jason-duval": {"media": "art-jason-lucia-beach", "faces": [(0.68, 0.175)], "hh": 0.21},
-    "lucia-caminos": {"media": "art-jason-lucia-beach", "faces": [(0.495, 0.43)], "hh": 0.20},
-    "cal-hampton": {"media": "art-cal-hampton", "faces": [(0.47, 0.135)], "hh": 0.16},
-    "brian-heder": {"media": "art-brian-heder", "faces": [(0.635, 0.105)], "hh": 0.17},
-    "boobie-ike": {"media": "art-boobie-ike", "faces": [(0.48, 0.085)], "hh": 0.17},
-    "dre-quan-priest": {"media": "art-dequan-priest", "faces": [(0.60, 0.08)], "hh": 0.14},
-    "real-dimez": {"media": "art-real-dimez", "faces": [(0.335, 0.17), (0.59, 0.19)], "hh": 0.19},
-    "raul-bautista": {"media": "art-raul-bautista", "faces": [(0.525, 0.10)], "hh": 0.14},
+    "jason-duval": {"media": "art-jason-lucia-01", "heads": [(0.556, 0.136, 0.17, 0.90)]},
+    "lucia-caminos": {"media": "art-jason-lucia-02", "heads": [(0.400, 0.290, 0.175)]},
+    "cal-hampton": {"media": "art-cal-hampton", "bg": "#83a3c7", "heads": [(0.490, 0.140, 0.26)]},
+    "brian-heder": {"media": "art-brian-heder", "bg": "#7d7fc5", "heads": [(0.645, 0.155, 0.29)]},
+    "boobie-ike": {"media": "art-boobie-ike", "bg": "#504e6b", "heads": [(0.505, 0.155, 0.20)]},
+    "dre-quan-priest": {"media": "art-dequan-priest", "bg": "#6f61a0", "heads": [(0.595, 0.100, 0.155)]},
+    "real-dimez": {"media": "art-real-dimez", "bg": "#8a80c5", "heads": [(0.330, 0.200, 0.215), (0.632, 0.118, 0.155)]},
+    "raul-bautista": {"media": "art-raul-bautista", "bg": "#a0b987", "heads": [(0.540, 0.115, 0.185)]},
 }
 # Motion portraits on the Characters pages. Rockstar shot the two leads in 16:9 and the other six square, so each person
 # is shown in the shape the footage was shot in, never stretched into a shape it was not (the old extended widescreen
