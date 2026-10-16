@@ -64,7 +64,7 @@
         <p class="viewer__caption" data-caption aria-hidden="true">{{ vehicle.gallery[0].alt }}</p>
         <ul class="viewer__thumbs" aria-label="Choose an image">
           {% for g in vehicle.gallery %}
-          <li><a href="{{ image_src(g.m.embed_url, 2560) }}" data-thumb aria-label="Image {{ loop.index }} of {{ vehicle.gallery | length }}: {{ g.alt }}"{% if loop.first %} aria-current="true"{% endif %}>{{ gshot(g, '(min-width: 900px) 20vw, 28vw', cls='viewer__thumb') }}</a></li>
+          <li><a href="{{ image_src(g.m.embed_url, 2560) }}" data-thumb aria-label="Image {{ loop.index }} of {{ vehicle.gallery | length }}: {{ g.alt }}"{% if loop.first %} aria-current="true"{% endif %}>{{ gshot(g, '(min-width: 900px) 20vw, 28vw', cls='viewer__thumb', lazy=false) }}</a></li>
           {% endfor %}
         </ul>
         <ul data-gallery hidden>

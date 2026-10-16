@@ -4,12 +4,12 @@
    picture shows, and where to cut it on wide screens (data-px, data-py) and phones (data-pxn, data-pyn). The site's CSP forbids
    inline styles, so garage.css has one rule for every value on the grid the service uses. `sizes` must describe the width the
    picture is really drawn at. A picture that is only decoration beside a heading keeps decorative=true (an empty alt). #}
-{% macro gshot(p, sizes, eager=false, cls='', decorative=true) -%}
+{% macro gshot(p, sizes, eager=false, cls='', decorative=true, lazy=true) -%}
   {% if p and image_src(p.m.embed_url, 1920) %}
   {% set at = p.pos.replace('%', '').split(' ') %}{% set an = p.posn.replace('%', '').split(' ') %}
   <img class="gshot {{ cls }}" src="{{ image_src(p.m.embed_url, 1920) }}" srcset="{{ image_srcset(p.m.embed_url) }}" sizes="{{ sizes }}"
        alt="{{ '' if decorative else p.alt }}" data-px="{{ at[0] }}" data-py="{{ at[1] }}" data-pxn="{{ an[0] }}" data-pyn="{{ an[1] }}"
-       {% if eager %}fetchpriority="high"{% else %}loading="lazy"{% endif %} decoding="async" referrerpolicy="no-referrer">
+       {% if eager %}fetchpriority="high"{% elif lazy %}loading="lazy"{% endif %} decoding="async" referrerpolicy="no-referrer">
   {% endif %}
 {%- endmacro %}
 
@@ -17,7 +17,7 @@
 {% macro gcard(v, index, eager=false) -%}
   <article class="gcard gcard--{{ v.size }} reveal">
     <a class="gcard__link" href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}">
-      <span class="gcard__art">{{ gshot(v.card, '(min-width: 900px) ' ~ ('92vw' if v.size == 'feature' else ('56vw' if v.size == 'wide' else '46vw')) ~ ', 100vw', eager=eager) }}</span>
+      <span class="gcard__art">{{ gshot(v.card, '(min-width: 900px) ' ~ ('92vw' if v.size == 'feature' else ('56vw' if v.size == 'wide' else '46vw')) ~ ', ' ~ ('100vw' if v.size == 'feature' else '(min-width: 680px) 48vw, 100vw'), eager=eager) }}</span>
       <span class="gcard__shade" aria-hidden="true"></span>
       <span class="gcard__body">
         <span class="gcard__cat">{{ v.category_name }}</span>

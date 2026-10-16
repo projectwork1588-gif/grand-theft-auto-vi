@@ -15,6 +15,9 @@
 .gshot.is-broken { visibility: hidden; }
 @media (max-width: 899px) { .gshot { object-position: var(--pxn, 50%) var(--pyn, 50%); } }
 
+/* cards keep their wide-screen cut until the grid becomes a single column (680px), not until the page stacks (900px) */
+@media (min-width: 680px) and (max-width: 899px) { .gcard .gshot, .gtile .gshot { object-position: var(--px, 50%) var(--py, 50%); } }
+
 /* ---------- Buttons ---------- */
 .gbtn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 0 26px; border-radius: var(--r-pill); border: 1px solid var(--action);
   background: var(--action); color: var(--on-action); font: 700 var(--t-small)/1 var(--font-text); letter-spacing: var(--track-ui); text-decoration: none; cursor: pointer;
