@@ -29,7 +29,7 @@ export default async function (b) {
       while (recording) {
         const t = Date.now() / 1000;
         try {
-          const r = await Promise.race([b.send("Page.captureScreenshot", { format: "jpeg", quality: 70 }), new Promise((_, no) => setTimeout(() => no(new Error("slow")), 4000))]);
+          const r = await Promise.race([b.send("Page.captureScreenshot", { format: "jpeg", quality: 62, optimizeForSpeed: true, clip: { x: 0, y: 0, width, height, scale: width > 700 ? 0.6 : 1 } }), new Promise((_, no) => setTimeout(() => no(new Error("slow")), 4000))]);
           frames.push({ t, data: r.data });
         } catch { /* a page change in the middle of a frame */ }
       }
@@ -67,7 +67,7 @@ export default async function (b) {
   await b.open(BASE + "/vehicles", 2500);
   await record("01-opening-lineup-desktop", 1440, 900, async () => {
     await b.sleep(900);
-    for (const slug of ["vapid-dominator-buggy", "shitzu-squalo", "vapid-stanier", "vapid-ganado", "grotti-cheetah"]) { await click(`[data-pick="${slug}"]`); await b.sleep(1700); }
+    for (const slug of ["vapid-dominator-buggy", "shitzu-squalo", "vapid-stanier", "dinka-enduro", "crest-kayak", "grotti-cheetah"]) { await click(`[data-pick="${slug}"]`); await b.sleep(1700); }
   });
   await record("02-opening-keyboard-desktop", 1440, 900, async () => {
     await b.eval(`document.querySelector('[data-pick="grotti-cheetah"]').focus(); true`);
@@ -84,10 +84,10 @@ export default async function (b) {
     await b.eval(`document.querySelector('.ctl__cats a[href*="category=boat"]').click(); true`); await b.sleep(2200);
     await b.eval(`document.querySelector('.gresult__clear').click(); true`); await b.sleep(2000);
   });
-  await b.open(BASE + "/vehicles/vapid-stanier", 2500);
+  await b.open(BASE + "/vehicles/vapid-dominator-buggy", 2500);
   await record("05-vehicle-page-and-showcase-desktop", 1440, 900, async () => {
     await b.sleep(1200);
-    await b.eval(`document.querySelector("#showcase").scrollIntoView(); true`); await b.sleep(1200);
+    await b.eval(`document.querySelector("[data-viewer]").scrollIntoView(); true`); await b.sleep(1200);
     for (let i = 0; i < 3; i++) { await click("[data-next]"); await b.sleep(1300); }
     await click("[data-open]"); await b.sleep(1200);
     await key("ArrowRight", "ArrowRight", 39); await b.sleep(900);
@@ -104,9 +104,9 @@ export default async function (b) {
     await b.sleep(900);
     for (const slug of ["vapid-dominator-buggy", "shitzu-squalo", "vapid-stanier"]) { await click(`[data-pick="${slug}"]`); await b.sleep(1700); }
   });
-  await b.open(BASE + "/vehicles/vapid-stanier", 2500);
+  await b.open(BASE + "/vehicles/vapid-dominator-buggy", 2500);
   await record("08-showcase-phone", 390, 844, async () => {
-    await b.eval(`document.querySelector("#showcase").scrollIntoView(); true`); await b.sleep(1100);
+    await b.eval(`document.querySelector("[data-viewer]").scrollIntoView(); true`); await b.sleep(1100);
     for (let i = 0; i < 3; i++) { await click("[data-next]"); await b.sleep(1300); }
   });
   await b.eval(`localStorage.clear(); true`);

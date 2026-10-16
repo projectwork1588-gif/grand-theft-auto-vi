@@ -19,7 +19,7 @@ export default async function (b) {
         if (ok) { break; }
         await b.sleep(250);
       }
-      await b.sleep(500);
+      await b.sleep(1300);
       await b.shot(`${OUT}${w}-stage-${slug}.jpg`);
     }
     console.log(w, "done");

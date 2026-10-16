@@ -23,10 +23,10 @@ export default async function (b) {
     await b.eval(`localStorage.setItem("tv-motion", "0"); true`);
 
     // ---- the showcase viewer: each picture, then the full-size viewer
-    await b.open(BASE + "/vehicles/shitzu-squalo", 1500);
+    await b.open(BASE + "/vehicles/vapid-dominator-buggy", 1500);
     await settle();
     for (let i = 1; i <= 3; i++) {
-      await b.eval(`document.querySelector("#showcase").scrollIntoView(); window.scrollBy(0, -40); true`); await b.sleep(500);
+      await b.eval(`document.querySelector("[data-viewer]").scrollIntoView(); window.scrollBy(0, -40); true`); await b.sleep(500);
       await b.shot(`${OUT}${w}-viewer-${i}.jpg`);
       await b.eval(`document.querySelector("[data-next]").click(); true`); await b.sleep(900);
     }

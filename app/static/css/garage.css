@@ -43,16 +43,17 @@
 /* =====================================================================
    The opening: one machine at a time, the whole lineup beneath
    ===================================================================== */
-.cine { position: relative; isolation: isolate; overflow: hidden; background: var(--ground); min-height: clamp(700px, 100svh, 1000px); }
+.cine { --console: 168px; position: relative; isolation: isolate; overflow: hidden; background: var(--ground); min-height: clamp(700px, 100svh, 1000px); }
 .cine__panels { position: absolute; inset: 0; }
 .scene { position: absolute; inset: 0; opacity: 0; visibility: hidden; }
 .scene.is-active { opacity: 1; visibility: visible; z-index: 1; }
 .scene__art, .scene__art .gshot { position: absolute; inset: 0; }
 /* the picture is drawn at its own proportions (never cropped at the sides) from the foot of the stage; any height left above it is the ground, faded in */
-.scene__art { inset: auto 0 0 0; height: min(100%, calc(100vw * 9 / 16)); background: var(--card); -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 16%); mask-image: linear-gradient(180deg, transparent 0, #000 16%); }
+.scene__art { inset: auto 0 var(--console) 0; height: min(calc(100% - var(--console)), calc(100vw * 9 / 16)); background: var(--card); }
+.scene__art::after, .vopen__art::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, var(--ground) 0, rgba(18, 16, 42, 0) 16%); }
 .scene__art .gshot { inset: 0; }
 /* a vehicle whose words sit above it is drawn a little smaller, so the roof is clear of them */
-.scene--top .scene__art { height: min(84%, calc(100vw * 9 / 16 * .84)); }
+.scene--top .scene__art { height: min(calc((100% - var(--console)) * .86), calc(100vw * 9 / 16 * .84)); }
 .scene--top .plate__model--long, .vopen--top .plate__model--long { font-size: var(--t-h2); }
 /* light: the scrims keep type readable, and a wash of the vehicle's tint sits behind the words */
 .scene__grade { position: absolute; inset: 0; pointer-events: none;
@@ -80,6 +81,9 @@
 .scene__kicker span { color: var(--text); }
 .scene__kicker i { width: 22px; height: 1px; background: currentColor; opacity: .6; }
 .scene__actions { margin-top: var(--s1) !important; }
+
+/* laptops and small windows: the picture is shorter, so the name is set smaller and stays clear of the vehicle */
+@media (min-width: 900px) and (max-width: 1199px) { .scene .plate__model, .vopen .plate__model { font-size: var(--t-h1); } .scene .plate__model--long, .vopen .plate__model--long { font-size: var(--t-h2); } }
 
 /* the console: the page's title, the previous/next controls and the lineup */
 .cine__console { position: absolute; z-index: 4; left: 0; right: 0; bottom: 0; padding: var(--s6) var(--edge) var(--s3); background: linear-gradient(0deg, rgba(10, 8, 28, .92) 0%, rgba(10, 8, 28, .6) 58%, rgba(10, 8, 28, 0) 100%); }
@@ -123,7 +127,8 @@
   .cine__head { order: 0; margin: 0; padding: var(--s2) var(--gutter) var(--s3); }
   .cine__panels { position: relative; inset: auto; display: grid; order: 1; min-width: 0; }
   .scene { position: relative; inset: auto; grid-area: 1 / 1; display: grid; grid-template-rows: auto 1fr; }
-  .scene--top .scene__art, .scene__art { position: relative; inset: auto; height: auto; aspect-ratio: 1.5; -webkit-mask-image: linear-gradient(180deg, #000 76%, transparent 100%); mask-image: linear-gradient(180deg, #000 76%, transparent 100%); }
+  .scene--top .scene__art, .scene__art { position: relative; inset: auto; height: auto; aspect-ratio: 1.5; }
+  .scene__art::after { background: linear-gradient(0deg, var(--ground) 0, rgba(18, 16, 42, 0) 24%); }
   .scene__art .gshot { position: absolute; }
   .scene__grade, .scene__numeral { display: none; }
   .scene__copy, .scene--right .scene__copy, .scene--top .scene__copy { position: relative; inset: auto; margin: -34px var(--gutter) 0; padding-bottom: var(--s4); min-height: 250px; justify-items: start; text-align: left; max-width: none; align-content: start; }
@@ -139,7 +144,8 @@
 @media (max-width: 560px) { .scene__art { aspect-ratio: 1.12; } .rail__list { grid-auto-columns: 208px; } }
 
 /* motion: the picture settles, the name rises from its baseline, the rest follows. Choosing another machine does the same, from the side it was chosen. */
-html.motion-on .scene { transition: opacity var(--dur-3) var(--ease), visibility 0s linear var(--dur-3); }
+html.motion-on .scene { will-change: opacity; transition: opacity var(--dur-3) var(--ease), visibility 0s linear var(--dur-3); }
+html.motion-on .scene .scene__art .gshot { will-change: transform; }
 html.motion-on .scene.is-active { transition-delay: 0s; }
 html.motion-on .scene .scene__art .gshot { transform: translateX(var(--from, 0%)) scale(1.06); transition: transform 1.8s var(--ease); }
 html.motion-on .scene.is-active .scene__art .gshot { transform: none; }
@@ -161,7 +167,7 @@ html.motion-on .cine__head, html.motion-on .rail--stage { animation: g-rise var(
 @supports (animation-timeline: scroll()) {
   @media (prefers-reduced-motion: no-preference) {
     html.motion-on .cine__panels { animation: g-drift linear both; animation-timeline: scroll(root); animation-range: 0 90vh; }
-    @keyframes g-drift { to { transform: translateY(7%) scale(1.03); filter: brightness(.7); } }
+    @keyframes g-drift { to { transform: translateY(6%); } }
   }
 }
 
@@ -292,7 +298,7 @@ html.motion-on .tile__art .gshot { transition: transform 1.4s var(--ease); }
 .vopen { position: relative; isolation: isolate; overflow: hidden; display: grid; align-items: end; min-height: clamp(620px, 96svh, 920px); padding: calc(var(--header-h) + var(--s5)) var(--edge) var(--s6); background: var(--ground); }
 .vopen__art, .vopen__art .gshot { position: absolute; inset: 0; z-index: -3; }
 /* the picture is drawn at its own proportions (never cropped at the sides) from the foot of the entrance; height left above it is the ground, faded in */
-.vopen__art { inset: auto 0 0 0; height: min(100%, calc(100vw * 9 / 16)); background: var(--card); -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 16%); mask-image: linear-gradient(180deg, transparent 0, #000 16%); }
+.vopen__art { inset: auto 0 0 0; height: min(100%, calc(100vw * 9 / 16)); background: var(--card); }
 .vopen__art .gshot { inset: 0; }
 .vopen--top .vopen__art { height: min(84%, calc(100vw * 9 / 16 * .84)); }
 .vopen__grade { position: absolute; inset: 0; z-index: -2; pointer-events: none;
@@ -346,7 +352,8 @@ html.motion-on .vopen__copy > :nth-child(5) { animation-delay: .42s; }
 @media (max-width: 899px) {
   /* tablets and phones: the picture on top, the words under it on the ground */
   .vopen { display: block; min-height: 0; padding: var(--header-h) var(--gutter) var(--s3); }
-  .vopen--top .vopen__art, .vopen__art { position: relative; z-index: 0; inset: auto; height: auto; margin: 0 calc(-1 * var(--gutter)); aspect-ratio: 1.45; -webkit-mask-image: linear-gradient(180deg, #000 74%, transparent 100%); mask-image: linear-gradient(180deg, #000 74%, transparent 100%); }
+  .vopen--top .vopen__art, .vopen__art { position: relative; z-index: 0; inset: auto; height: auto; margin: 0 calc(-1 * var(--gutter)); aspect-ratio: 1.45; }
+  .vopen__art::after { background: linear-gradient(0deg, var(--ground) 0, rgba(18, 16, 42, 0) 26%); }
   .vopen__art .gshot { position: absolute; z-index: 0; }
   .vopen__grade, .vopen__numeral { display: none; }
   .vopen__copy, .vopen--right .vopen__copy { margin-top: -30px; max-width: none; justify-self: stretch; justify-items: start; text-align: left; }
