@@ -51,7 +51,7 @@ Applying it to the owner's development database (the owner runs this; nothing is
 .\.venv\Scripts\python.exe -m scripts.migrate_db --plan
 .\.venv\Scripts\python.exe -m scripts.migrate_db
 ```
-Back up first and see the checks and the undo in `docs/GARAGE_MIGRATION_GUIDE.md`.
+To apply only this file (with prerequisite and conflict checks), use `python -m scripts.migrate_db --only 006_gate3b_garage.sql --plan`, then without `--plan`. Back up first; the Command Prompt commands, checks and the undo are in `docs/GARAGE_MIGRATION_GUIDE.md`.
 
 ## 5. Checks
 `tests/test_gate3b_garage.py` (arrangement, picture picks and alt text, the data, the opening, every control against MySQL, each vehicle's set, CSS scope), plus real-browser scripts in
