@@ -252,15 +252,40 @@ GARAGE_MOMENTS = (
     ("garage-classic-cars-04", "Classic Car Collection"),
 )
 
-# Garage concept (Stage A prototype): the pictures the collection's editorial spreads use, chosen so a machine is not shown by the same
-# photograph that opens the page wherever it has a second one. `main` is the large picture, `detail` a close-up set over its corner with
-# `detail_label` (what it shows, nothing more); a vehicle with one picture has `zoom` (scale, x, y) instead and no detail.
+# Garage concept (Stage A.2): the pictures the collection's chapters use, chosen so a machine is not shown by the picture that opens the page
+# wherever it has a second one. `main` is the large picture, `detail` a close-up of another part of the same machine with `detail_label`
+# (what it shows, nothing more); a machine with one picture has `zoom` (scale, x, y) instead. `role` is how its chapter draws it.
 GARAGE_SPREADS = {
-    "grotti-cheetah": {"main": "vehicle-grotti-cheetah-02", "detail": "vehicle-grotti-cheetah-04", "detail_label": "The cabin"},
-    "vapid-dominator-buggy": {"main": "vehicle-vapid-dominator-buggy-02", "detail": "vehicle-vapid-dominator-buggy-03", "detail_label": "Up close"},
-    "shitzu-squalo": {"main": "vehicle-shitzu-squalo-02", "detail": "vehicle-shitzu-squalo-03", "detail_label": "On the hull"},
-    "vapid-stanier": {"main": "vehicle-vapid-stanier-02", "detail": "vehicle-vapid-stanier-04", "detail_label": "The tail light"},
-    "vapid-ganado": {"main": "vehicle-vapid-ganado-01", "zoom": (1.5, 0.80, 0.66)},
-    "dinka-enduro": {"main": "vehicle-dinka-enduro-01", "zoom": (1.45, 0.50, 0.40)},
-    "crest-kayak": {"main": "vehicle-crest-kayak-01", "zoom": (1.4, 0.62, 0.40)},
+    "grotti-cheetah": {"role": "wide", "main": "vehicle-grotti-cheetah-02", "detail": "vehicle-grotti-cheetah-04", "detail_label": "The cabin"},
+    "vapid-dominator-buggy": {"role": "half", "main": "vehicle-vapid-dominator-buggy-02", "detail": "vehicle-vapid-dominator-buggy-03", "detail_label": "Up close"},
+    "shitzu-squalo": {"role": "half", "main": "vehicle-shitzu-squalo-02", "detail": "vehicle-shitzu-squalo-03", "detail_label": "On the hull"},
+    "vapid-stanier": {"role": "half", "main": "vehicle-vapid-stanier-02", "detail": "vehicle-vapid-stanier-04", "detail_label": "The tail light"},
+    "vapid-ganado": {"role": "portrait", "main": "vehicle-vapid-ganado-01", "zoom": (1.5, 0.80, 0.66)},
+    "dinka-enduro": {"role": "portrait", "main": "vehicle-dinka-enduro-01"},
+    "crest-kayak": {"role": "finale", "main": "vehicle-crest-kayak-01"},
 }
+# How each opening scene is composed. `plate` says where the words sit so they never cross the machine: br (lower right, the machine is on the
+# left), bl (lower left), ml (left, half way down: the machine is to the right) or band (a caption band beneath a picture that fills the width).
+GARAGE_SCENES = {
+    "grotti-cheetah": {"plate": "br", "subject": ((0.11, 0.51, 0.65, 0.87),)},
+    "vapid-dominator-buggy": {"plate": "br", "subject": ((0.02, 0.15, 0.62, 0.62), (0.02, 0.55, 0.50, 0.88))},
+    "shitzu-squalo": {"plate": "br", "subject": ((0.05, 0.52, 0.58, 0.87),)},
+    "vapid-stanier": {"plate": "band", "subject": ((0.00, 0.18, 0.98, 0.93),)},
+    "vapid-ganado": {"plate": "band", "subject": ((0.03, 0.20, 0.98, 0.84),)},
+    "dinka-enduro": {"plate": "ml", "px": 0, "subject": ((0.29, 0.03, 0.84, 0.95),)},      # px 0: the picture is held to the left of its frame, which moves the bike right and gives the words room
+    "crest-kayak": {"plate": "ml", "subject": ((0.33, 0.05, 0.78, 0.60), (0.40, 0.45, 0.70, 0.66), (0.15, 0.62, 0.68, 0.96))},
+}
+# `subject` is where the machine sits in its opening picture (one or more boxes x0, y0, x1, y1, as fractions of the picture), measured by eye against a 5 percent grid. The tests use it to check, in a real
+# browser, that the words never cross the machine and that the machine is not cut off, at the window sizes the opening is built for.
+# The collection's four chapters: visual themes for the eye, not categories and not claims about the game. A machine the list does not name
+# (one added to the database later) is shown after the chapters.
+GARAGE_CHAPTERS = (
+    {"key": "performance", "title": "Performance", "accent": "#ff7396", "slugs": ("grotti-cheetah",),
+     "line": "White paint and red stripes in the last of the evening light."},
+    {"key": "street", "title": "Street & Classics", "accent": "#ffbf47", "slugs": ("vapid-stanier", "vapid-ganado"),
+     "line": "Chrome and tail fins under the neon, a striped pickup on the coast road."},
+    {"key": "beyond", "title": "Beyond the Pavement", "accent": "#c4d15a", "slugs": ("vapid-dominator-buggy", "dinka-enduro"),
+     "line": "Mud, gravel and a teal garage door."},
+    {"key": "water", "title": "On the Water", "accent": "#59d6ee", "slugs": ("shitzu-squalo", "crest-kayak"),
+     "line": "A bay at dusk, then a paddle into the sunset."},
+)

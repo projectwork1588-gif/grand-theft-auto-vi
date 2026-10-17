@@ -3,7 +3,7 @@
 const BASE = process.env.GARAGE_BASE || "http://127.0.0.1:5057";
 const OUT = process.env.GARAGE_OUT || "review/garage-stage/";
 const WIDTHS = (process.env.GARAGE_WIDTHS || "1440,820,390").split(",").map(Number);
-const H = { 1920: 1080, 1440: 900, 1280: 800, 1024: 768, 820: 1180, 390: 844, 320: 640 };
+const H = { 1920: 1080, 1440: 900, 1366: 768, 1280: 720, 1024: 768, 820: 1180, 390: 844, 360: 740, 320: 640 };
 
 export default async function (b) {
   for (const w of WIDTHS) {

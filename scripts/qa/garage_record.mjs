@@ -25,7 +25,8 @@ export default async function (b) {
   // few to show a half-second fade; so the recorder takes screenshots as fast as the browser will give them (about ten a second)
   // while the scene plays, and keeps each frame's real time.
   const record = async (name, width, height, scene) => {
-    if (process.env.GARAGE_ONLY && !name.startsWith(process.env.GARAGE_ONLY)) { return; }
+    const only = (process.env.GARAGE_ONLY || "").split(",").filter(Boolean);      // for example GARAGE_ONLY=01,03,07 records just those
+    if (only.length && !only.some((prefix) => name.startsWith(prefix))) { return; }
     await b.send("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: width < 700 });
     frames = [];
     recording = true;
@@ -84,9 +85,9 @@ export default async function (b) {
     for (let i = 0; i < 3; i++) { await key("ArrowRight", "ArrowRight", 39); await b.sleep(1500); }
   });
   await record("03-showroom-scroll-desktop", 1440, 900, async () => {
-    for (let y = 0; y <= 4800; y += 90) { await b.eval(`window.scrollTo(0, ${y}); true`); await b.sleep(40); }
+    for (let y = 0; y <= 6600; y += 100) { await b.eval(`window.scrollTo(0, ${y}); true`); await b.sleep(40); }
     await b.sleep(900);
-    for (let y = 4800; y >= 0; y -= 160) { await b.eval(`window.scrollTo(0, ${y}); true`); await b.sleep(40); }
+    for (let y = 6600; y >= 0; y -= 200) { await b.eval(`window.scrollTo(0, ${y}); true`); await b.sleep(40); }
   });
   await b.open(BASE + PAGE, 1500);
   await record("04-showroom-filters-desktop", 1440, 900, async () => {
@@ -107,7 +108,7 @@ export default async function (b) {
   await b.open(BASE + PAGE, 2500);
   await record("06-choose-a-vehicle-transition-desktop", 1440, 900, async () => {
     await b.sleep(800);
-    await b.eval(`document.querySelector('[data-stage] [data-panel]:not([hidden]) a.gbtn').click(); true`);
+    await b.eval(`document.querySelector('[data-stage] [data-panel].is-active a.gbtn').click(); true`);
     await b.sleep(2600);
     // the page has changed by now (a navigation has only two states to see); scroll the new page so the recording also shows it settling
     for (let y = 0; y <= 760; y += 40) { await b.eval(`window.scrollTo(0, ${y}); true`); await b.sleep(50); }

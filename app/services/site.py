@@ -384,7 +384,7 @@ def _cell_shape(span, tone):
     return {"card": ((span / 12 * _GRID_WIDTH - 20) / _ROW_HEIGHT[tone], 1.3)}
 
 
-def _garage_picture(m, shapes, zoom=None):
+def _garage_picture(m, shapes, zoom=None, keep_height=False):
     """A frame ready for the `gshot` macro: the media row, what it shows, and one cut per named shape (where to place it on wide
     screens and on phones). `zoom` = (scale, x, y) draws it closer on (x, y)."""
     if not m:
@@ -394,7 +394,8 @@ def _garage_picture(m, shapes, zoom=None):
     phone = spec.get("phone", face)
     if zoom:
         face = phone = (zoom[1], zoom[2])
-    cuts = {name: (frame_pos(m["slug"], a[0], ay=0.5, face=face), frame_pos(m["slug"], a[1], ay=0.5, face=phone)) for name, a in shapes.items()}
+    # keep_height: a box that is wider than the picture cuts its top and bottom in step with where the subject sits (so a low subject loses more sky than road)
+    cuts = {name: (frame_pos(m["slug"], a[0], ay=face[1] if keep_height else 0.5, face=face), frame_pos(m["slug"], a[1], ay=0.5, face=phone)) for name, a in shapes.items()}
     first = next(iter(cuts.values()))
     return {"m": m, "slug": m["slug"], "alt": spec.get("alt") or m["title"], "pos": first[0], "posn": first[1], "cuts": cuts,
             "zoom": f"{zoom[0]:.2f}".rstrip("0").rstrip(".") if zoom else None}
@@ -489,76 +490,83 @@ def vehicle_index(args):
     return result
 
 
-# ---------------------------------------------------------------- the concept collection: editorial spreads instead of a grid of cards
-_SPREAD_SHAPES = {   # (wide screens, phones): the box each picture is cut for, width over height
-    "feature": {"main": (1.6, 1.25), "detail": (0.78, 1.5)},
-    "pair_a": {"main": (0.95, 1.2), "detail": (1.5, 1.5)},
-    "pair_b": {"main": (1.45, 1.2), "detail": (1.5, 1.5)},
+# ---------------------------------------------------------------- the concept: a full-screen opening and a collection told in four chapters
+_ROLE_SHAPES = {   # (wide screens, phones): the box each picture is cut for, width over height
+    "wide": {"main": (2.0, 1.25), "detail": (1.5, 1.5)},
+    "half": {"main": (1.5, 1.25), "detail": (1.5, 1.5)},
+    "portrait": {"main": (0.85, 1.1), "detail": (1.5, 1.5)},
     "finale": {"main": (2.3, 1.1), "detail": (1.5, 1.5)},
 }
-_BAY_SHAPE = {"bay": (2.0, 1.4)}
+_SCENE_SHAPE = {"stage": (1.6, 1.4)}
+_BAND_SHAPE = {"stage": (1.95, 1.4)}
 
 
-def spread_plan(count):
-    """How many machines each spread holds: one, two, one, two ... with no orphan (a lone last machine closes the page as the finale)."""
-    plan, left, i = [], count, 0
-    while left > 0:
-        take = min(1 if i % 2 == 0 else 2, left)
-        if left == 2 and take == 1:
-            take = 2
-        plan.append(take)
-        left -= take
-        i += 1
-    return plan
-
-
-def _concept_entry(entry, frames, kind):
+def _concept_entry(entry, frames, role=None):
+    """One machine as the collection draws it: its main picture cut for its role, and a close-up of another part of it where Rockstar has one."""
     pick = media_slots.GARAGE_SPREADS.get(entry["slug"], {})
+    role = role or pick.get("role", "half")
     main = frames.get(pick.get("main"))
     detail = frames.get(pick.get("detail"))
-    shapes = _SPREAD_SHAPES[kind]
-    return {**entry, "kind": kind, "cat": entry.get("category_slug") or "",
+    shapes = _ROLE_SHAPES[role]
+    return {**entry, "role": role, "cat": entry.get("category_slug") or "",
             "main": _garage_picture(main, {"main": shapes["main"]}, pick.get("zoom")) if main else entry["card"],
             "detail": _garage_picture(detail, {"detail": shapes["detail"]}) if detail else None,
             "detail_label": pick.get("detail_label", "")}
 
 
+def _chapters(rows, frames):
+    """The default collection told in the four chapters of media_slots.GARAGE_CHAPTERS. A chapter keeps only the machines the database has (so a
+    garage with five vehicles shows its chapters shorter, never with a gap), and a machine no chapter names comes after them, in the database's order."""
+    by_slug = {r["slug"]: r for r in rows}
+    chapters, placed = [], set()
+    for chapter in media_slots.GARAGE_CHAPTERS:
+        machines = [_concept_entry(by_slug[slug], frames) for slug in chapter["slugs"] if slug in by_slug]
+        placed.update(m["slug"] for m in machines)
+        if machines:
+            chapters.append({**chapter, "machines": machines})
+    leftovers = [_concept_entry(r, frames, "half") for r in rows if r["slug"] not in placed]
+    if leftovers:
+        chapters.append({"key": "more", "title": "More machines", "accent": "#ff9a9a", "slugs": (), "line": "", "machines": leftovers})
+    return chapters
+
+
 def vehicle_concept(args):
-    """The Garage as the concept page shows it: the same opening and the same MySQL-backed search, filter, sort and paging, with the
-    results laid out as spreads."""
+    """The Garage as the concept page shows it. The opening always holds the whole garage. The collection is the same MySQL-backed query as the live
+    page (search, category, sort and paging); with no filter it is told in four chapters (visual themes, not categories), and with any filter, search,
+    other sort or page it is an honest ordered list, so counts, ordering and empty states always mean what they say."""
     result = vehicle_index(args)
     rows = result["data"]
+    # the opening: each scene is cut for its own composition (a long low machine gets a caption band beneath it)
+    for r in result["stage"]:
+        scene = media_slots.GARAGE_SCENES.get(r["slug"], {})
+        r["plate"] = scene.get("plate", "br")
+        r["subject"] = ";".join(",".join(f"{v:.2f}" for v in box) for box in scene["subject"]) if scene.get("subject") else ""
+        if r["stage"]:
+            r["stage"] = _garage_picture(r["stage"]["m"], _BAND_SHAPE if r["plate"] == "band" else _SCENE_SHAPE, keep_height=True)
+            if "px" in scene:                           # a scene may hold its picture to one side of its frame (a percent, on the stylesheet's 2 percent grid)
+                wide, phone = r["stage"]["cuts"]["stage"]
+                r["stage"]["cuts"]["stage"] = (f"{scene['px']}% {wide.split()[1]}", phone)
+                r["stage"]["pos"] = r["stage"]["cuts"]["stage"][0]
     wanted = set()
     for r in rows:
         pick = media_slots.GARAGE_SPREADS.get(r["slug"], {})
         wanted.update(pick[k] for k in ("main", "detail") if pick.get(k))
     wanted.update(slug for slug, _ in media_slots.GARAGE_MOMENTS)
     frames = media.by_slugs(wanted)
-    plan = spread_plan(len(rows))
-    spreads, k = [], 0
-    for index, take in enumerate(plan):
-        last = index == len(plan) - 1
-        kinds = ["finale"] if (take == 1 and last) else (["feature"] if take == 1 else ["pair_a", "pair_b"])
-        items = [_concept_entry(rows[k + j], frames, kinds[j]) for j in range(take)]
-        spreads.append({"kind": "finale" if kinds[0] == "finale" else ("feature" if take == 1 else "pair"), "cards": items})
-        k += take
-    result["spreads"] = spreads
-    # the lineup in the opening: each machine's bay picture
-    ids = vehicles_repo.ids_by_slug([r["slug"] for r in result["stage"]])
-    stage_frames = media.by_slugs({media_slots.GARAGE_PICKS.get(r["slug"], {}).get("stage") for r in result["stage"]} - {None})
-    for r in result["stage"]:
-        m = stage_frames.get(media_slots.GARAGE_PICKS.get(r["slug"], {}).get("stage"))
-        r["bay"] = _garage_picture(m, _BAY_SHAPE) if m else r["thumb"]
-        r["detail_pick"] = media_slots.GARAGE_SPREADS.get(r["slug"], {})
-    # the customs reel (Rockstar's unnamed mod-shop and classic-car pictures), after the first two spreads
-    moments = []
-    for slug, caption in media_slots.GARAGE_MOMENTS:
-        picture = _garage_picture(frames.get(slug), {"reel": (1.3, 1.3)})
-        if picture:
-            moments.append({**picture, "caption": caption})
-    plain = not (result["filters"].get("q") or result["filters"].get("category")) and result["pagination"]["page"] == 1
-    result["reel"] = moments if plain and len(spreads) >= 2 else []
-    result["reel_after"] = 1
+    curated = not result["active"] and result["pagination"]["page"] == 1 and len(rows) == result["total_all"]
+    result["curated"] = curated
+    result["chapters"], result["list"] = [], []
+    if curated:
+        result["chapters"] = _chapters(rows, frames)
+        moments = []
+        for slug, caption in media_slots.GARAGE_MOMENTS:
+            picture = _garage_picture(frames.get(slug), {"reel": (1.0, 1.0)})
+            if picture:
+                moments.append({**picture, "caption": caption})
+        result["moments"] = moments
+    else:
+        result["list"] = [_concept_entry(r, frames, "half") for r in rows]
+        result["moments"] = []
     return result
 
 

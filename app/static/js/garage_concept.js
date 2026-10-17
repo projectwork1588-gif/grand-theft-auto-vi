@@ -1,10 +1,10 @@
-// Team Valkyrie | Garage concept (Stage A prototype) | progressive enhancement only. Every part works without this file:
-// the bays are links to each vehicle's page, the collection is a plain GET form, each spread is one link.
+// Team Valkyrie | Garage concept (Stage A.2) | progressive enhancement only. Every part works without this file:
+// the index is a row of links to each vehicle's page, the collection is a plain GET form, each machine in it is one link.
 (function () {
   "use strict";
 
   function each(list, fn) { Array.prototype.forEach.call(list, fn); }
-  var LEAVE = 900;   // how long the scene being replaced stays under the one arriving: the length of the shutter, in step with garage_concept.css
+  var LEAVE = 1000;  // how long the scene being replaced stays under the one arriving: the length of the opening frame, in step with garage_concept.css
 
   // run `fn` once the picture has arrived and been decoded (or after a moment, so a slow connection still gets the page)
   function whenReady(img, fn) {
@@ -23,9 +23,9 @@
     each(document.querySelectorAll(".gshot"), function (img) { if (img.complete && img.naturalWidth === 0 && img.currentSrc) { img.classList.add("is-broken"); } });
   });
 
-  // ---- The opening: choose a machine from the bays ----------------------------------------------------------------
+  // ---- The opening: choose a machine from the index ---------------------------------------------------------------
   // Nothing moves by itself: the scene changes only when the visitor asks (click, tap, the arrows, a swipe, the arrow keys).
-  // The scene on show is lifted like a door, up when going on and down when going back, and the one beneath it is already in place.
+  // The new scene opens as a frame that grows out of its own number in the index until it fills the window; the one it replaces stays beneath it.
   var stage = document.querySelector("[data-stage]");
   if (stage) {
     var panels = {};
@@ -33,57 +33,68 @@
     var picks = [].slice.call(stage.querySelectorAll("[data-pick]"));
     var order = picks.map(function (a) { return a.getAttribute("data-pick"); });
     var live = stage.querySelector("[data-stage-live]");
-    var counter = stage.querySelector("[data-count]");
-    var controls = stage.querySelector("[data-ctl]");
     var current = (picks.filter(function (a) { return a.getAttribute("aria-current") === "true"; })[0] || picks[0]).getAttribute("data-pick");
     var heading = current;
     var requested = 0;
     var timers = {};
     stage.setAttribute("data-vehicle", current);
-    if (controls) { controls.hidden = false; }
+    each(stage.querySelectorAll("[data-ctl]"), function (c) { c.hidden = false; });   // the arrows only exist when script can make them work
 
     var warm = function (slug) {
       var img = panels[slug] && panels[slug].querySelector("img");
       if (img && img.loading === "lazy") { img.loading = "eager"; }
     };
 
-    var show = function (slug, direction) {
+    // where, as a share of the scene's picture, the frame starts: at the new machine's number in the index
+    var origin = function (slug, panel) {
+      var tick = stage.querySelector('[data-pick="' + slug + '"]');
+      var art = panel.querySelector(".gx-art");
+      if (!tick || !art) { return [96, 50]; }
+      var t = tick.getBoundingClientRect(), a = art.getBoundingClientRect();
+      if (!a.width || !a.height) { return [96, 50]; }
+      var clamp = function (v) { return Math.max(4, Math.min(96, v)); };
+      return [clamp(((t.left + t.width / 2 - a.left) / a.width) * 100), clamp(((t.top + t.height / 2 - a.top) / a.height) * 100)];
+    };
+
+    var show = function (slug) {
       var next = panels[slug];
       if (!next || (slug === current && slug === heading)) { return; }
       heading = slug;
       warm(slug);
       var token = ++requested;
-      var dir = direction || (order.indexOf(slug) > order.indexOf(current) ? 1 : -1);
       whenReady(next.querySelector("img"), function () {
         if (token !== requested || slug === current) { return; }
         Object.keys(panels).forEach(function (key) {
           var panel = panels[key];
           if (key === slug) { return; }
           window.clearTimeout(timers[key]);
-          if (panel.classList.contains("is-active")) {
-            panel.classList.toggle("is-down", dir < 0);
-            panel.classList.add("is-leaving");
-          }
+          if (panel.classList.contains("is-active")) { panel.classList.add("is-leaving"); }
           panel.classList.remove("is-active");
           if (!panel.hidden) {
-            timers[key] = window.setTimeout(function () { panel.hidden = true; panel.classList.remove("is-leaving", "is-down"); }, LEAVE + 80);
+            timers[key] = window.setTimeout(function () { panel.hidden = true; panel.classList.remove("is-leaving"); }, LEAVE + 100);
           }
         });
         window.clearTimeout(timers[slug]);
-        next.classList.remove("is-leaving", "is-down");
+        next.classList.remove("is-leaving");
         next.hidden = false;
-        void next.offsetWidth;                           // laid out before it takes its place, so the entrance can play
+        var o = origin(slug, next);
+        next.style.setProperty("--ox", o[0].toFixed(1));
+        next.style.setProperty("--oy", o[1].toFixed(1));
+        void next.offsetWidth;                           // laid out as the small frame before it grows, so the opening can play
         next.classList.add("is-active");
         current = slug;
         stage.setAttribute("data-vehicle", slug);
+        stage.setAttribute("data-plate", next.getAttribute("data-plate") || "");   // where the title of the page sits depends on the composition
         picks.forEach(function (a) {
           if (a.getAttribute("data-pick") === slug) { a.setAttribute("aria-current", "true"); } else { a.removeAttribute("aria-current"); }
         });
-        if (counter) { counter.textContent = ("0" + (order.indexOf(slug) + 1)).slice(-2); }
+        var chosen = stage.querySelector('[data-pick="' + slug + '"]');                    // on a phone the index is a row that scrolls: keep the chosen name in view
+        var list = chosen && chosen.closest(".gx-index__list");
+        if (list && list.scrollWidth > list.clientWidth) { var cr = chosen.getBoundingClientRect(), lr = list.getBoundingClientRect(); list.scrollBy({ left: cr.left + cr.width / 2 - (lr.left + lr.width / 2), behavior: "smooth" }); }
         if (live) { live.textContent = "Showing the " + ((next.querySelector(".plate") || {}).textContent || slug); }
       });
     };
-    var step = function (by) { show(order[(order.indexOf(heading) + by + order.length) % order.length], by > 0 ? 1 : -1); };
+    var step = function (by) { show(order[(order.indexOf(heading) + by + order.length) % order.length]); };
 
     picks.forEach(function (a, i) {
       a.addEventListener("click", function (e) {
@@ -109,7 +120,7 @@
       b.addEventListener("click", function () { step(parseInt(b.getAttribute("data-step"), 10)); });
     });
 
-    // a swipe across the scene moves to the next or the previous machine (touch and pen; a mouse has the arrows)
+    // a swipe across the scene moves to the next or the previous machine (touch and pen; a mouse has the index and the arrows)
     var surface = stage.querySelector("[data-surface]");
     var startX = null, startY = null;
     if (surface) {
@@ -133,7 +144,7 @@
     if (!e.viewTransition || !e.activation || !e.activation.entry) { return; }
     var match = /^\/vehicles\/([a-z0-9-]+)\/?$/.exec(new URL(e.activation.entry.url).pathname);
     if (!match) { return; }
-    var art = document.querySelector('.gx-card[href="/vehicles/' + match[1] + '"] .gx-pic--main') ||
+    var art = document.querySelector('.gx-m[href="/vehicles/' + match[1] + '"] .gx-pic--main') ||
               document.querySelector('.gx-scene.is-active[data-panel="' + match[1] + '"] .gx-art');
     if (art) { art.style.viewTransitionName = "vehicle-art"; }
   });

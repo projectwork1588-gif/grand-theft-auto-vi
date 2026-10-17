@@ -73,3 +73,16 @@ SWEEP_ROUTES=/vehicles,/vehicles/crest-kayak MSYS_NO_PATHCONV=1 node scripts/qa/
 * Ganado, Dinka and Kayak each have one picture of their own; the Dinka and Kayak pages show a small, labelled cut of the same scene picture, enlarged from a 3840 px original, so it is softer than the entrance pictures.
 * Rockstar publishes no specifications; the Garage states none. No official vehicle has a recorded mission or place yet.
 * The picture-to-page transition is Chrome-only.
+
+## Stage A.2: the concept page (`/garage-concept`, not linked, `noindex`; awaiting the owner's approval)
+The live `/vehicles` is unchanged (apart from the Explore fix of Stage A). The concept is a design prototype built on the same data and the same MySQL-backed query.
+* **Opening.** Nearly the whole window, one scene at a time. Each scene has its own composition (`media_slots.GARAGE_SCENES`): `br` (words lower right, the machine on the left),
+  `ml` (words in a left column, the machine to the right; the Dinka's picture is held to the left of its frame so the bike moves right), `band` (a long, low machine fills the width and its
+  words sit in a band beneath it). The garage is a slim numbered index at the right edge (a row of names on phones). A new scene opens as a frame at its own number in the index and grows to fill the window
+  (reduced motion: a 0.25 s fade). `data-subject` on each scene (where the machine sits in its picture) lets `scripts/qa/garage_titles.mjs` prove, in a browser, that no words cross the machine and that
+  the machine is not cut off at 1920, 1440, 1366 and 1280 px wide.
+* **Collection.** The default view is four chapters (visual themes, not categories or game facts): Performance, Street & Classics (with the mod-shop pictures as a skyline of different heights),
+  Beyond the Pavement, On the Water (ending on the Kayak at sunset). With any search, category, other sort or page it is an ordered list in exactly the order MySQL returned
+  (`site.vehicle_concept`: `curated` is false), so counts, ordering and empty states always mean what they say. A machine no chapter names (one added later) is shown after them.
+* **Not blockable.** Every decoration is transparent to the pointer, the scene being replaced cannot be pressed, and `scripts/qa/garage_pointer.mjs` (real presses and taps) covers the concept as it does the live page.
+* Files: `app/templates/vehicles/concept.html`, `app/static/css/garage_concept.css` (all selectors `gx-`), `app/static/js/garage_concept.js`; tests `tests/test_garage_concept.py`.

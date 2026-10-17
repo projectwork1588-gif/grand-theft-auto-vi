@@ -61,3 +61,9 @@ def run_pointer_script(app, page, sizes, expected_links):
 def test_explore_button_responds_over_its_whole_surface_for_all_seven_machines(app):
     # per size and machine: left edge, text, centre, arrow, right edge, top edge and bottom edge = 7 real presses
     run_pointer_script(app, "/vehicles", "1440x900,1024x768,390x844", expected_links=7 * 7)
+
+
+@pytest.mark.skipif(not HAVE_BROWSER, reason="needs Node and Chrome")
+def test_explore_button_responds_over_its_whole_surface_on_the_concept_opening_too(app):
+    # the same real presses, taps, Enter and one real navigation per machine, on the redesigned opening, at a desktop and a phone size
+    run_pointer_script(app, "/garage-concept", "1440x900,390x844", expected_links=7 * 7)
