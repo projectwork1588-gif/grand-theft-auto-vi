@@ -3,7 +3,7 @@
 // ffmpeg joins them at their real timing into an mp4 (the one bundled with imageio-ffmpeg is enough).
 //   GARAGE_OUT=review/gate3b/recordings/ node scripts/qa/cdp.mjs scripts/qa/garage_record.mjs
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 const BASE = process.env.GARAGE_BASE || "http://127.0.0.1:5057";
@@ -17,11 +17,14 @@ export default async function (b) {
   mkdirSync(OUT, { recursive: true });
   let frames = [];
   let recording = false;
+  const statsFile = join(OUT, "recording-stats.json");
+  const stats = existsSync(statsFile) ? JSON.parse(readFileSync(statsFile, "utf8")) : {};
 
   // Chrome's screencast only delivers a frame when the compositor happens to produce one, which in a headless window is far too
   // few to show a half-second fade; so the recorder takes screenshots as fast as the browser will give them (about ten a second)
   // while the scene plays, and keeps each frame's real time.
   const record = async (name, width, height, scene) => {
+    if (process.env.GARAGE_ONLY && !name.startsWith(process.env.GARAGE_ONLY)) { return; }
     await b.send("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: width < 700 });
     frames = [];
     recording = true;
@@ -29,7 +32,9 @@ export default async function (b) {
       while (recording) {
         const t = Date.now() / 1000;
         try {
-          const r = await Promise.race([b.send("Page.captureScreenshot", { format: "jpeg", quality: 62, optimizeForSpeed: true, clip: { x: 0, y: 0, width, height, scale: width > 700 ? 0.6 : 1 } }), new Promise((_, no) => setTimeout(() => no(new Error("slow")), 4000))]);
+          // no clip rectangle: a clip is in page coordinates, so once the page has scrolled it lies outside the window and the frame comes back as
+          // blank ground (the cause of the empty frames in the first recordings); with none, the screenshot is the window as it is
+          const r = await Promise.race([b.send("Page.captureScreenshot", { format: "jpeg", quality: 62, optimizeForSpeed: true }), new Promise((_, no) => setTimeout(() => no(new Error("slow")), 1200))]);
           frames.push({ t, data: r.data });
         } catch { /* a page change in the middle of a frame */ }
       }
@@ -52,8 +57,12 @@ export default async function (b) {
     const list = join(dir, "list.txt");
     writeFileSync(list, lines.join("\n"));
     const out = join(OUT, name + ".mp4");
-    const r = spawnSync(FFMPEG, ["-hide_banner", "-loglevel", "error", "-y", "-f", "concat", "-safe", "0", "-i", list, "-vf", "fps=30,scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p", "-c:v", "libx264", "-crf", "24", "-preset", "veryfast", "-movflags", "+faststart", out]);
-    if (r.status !== 0) { console.log(name, "ffmpeg failed", String(r.stderr)); } else { console.log(name, frames.length, "frames ->", out); }
+    const r = spawnSync(FFMPEG, ["-hide_banner", "-loglevel", "error", "-y", "-f", "concat", "-safe", "0", "-i", list, "-vf", `fps=30,scale=${width > 700 ? 960 : width}:-2,format=yuv420p`, "-c:v", "libx264", "-crf", "24", "-preset", "veryfast", "-movflags", "+faststart", out]);
+    if (r.status !== 0) { console.log(name, "ffmpeg failed", String(r.stderr)); } else {
+      const secs = frames[frames.length - 1].t - frames[0].t;
+      stats[name] = { frames: frames.length, seconds: Number(secs.toFixed(1)), capturedPerSecond: Number((frames.length / Math.max(secs, 0.1)).toFixed(1)) };
+      console.log(name, frames.length, "frames over", secs.toFixed(1), "s ->", out);
+    }
     rmSync(dir, { recursive: true, force: true });
   };
 
@@ -99,6 +108,8 @@ export default async function (b) {
     await b.sleep(800);
     await b.eval(`document.querySelector('.scene.is-active .gbtn').click(); true`);
     await b.sleep(2600);
+    // the page has changed by now (a navigation has only two states to see); scroll the new page so the recording also shows it settling
+    for (let y = 0; y <= 760; y += 40) { await b.eval(`window.scrollTo(0, ${y}); true`); await b.sleep(50); }
   });
   await b.open(BASE + "/vehicles", 2500);
   await record("07-opening-lineup-phone", 390, 844, async () => {
@@ -110,5 +121,6 @@ export default async function (b) {
     await b.eval(`document.querySelector("[data-viewer]").scrollIntoView(); true`); await b.sleep(1100);
     for (let i = 0; i < 3; i++) { await click("[data-next]"); await b.sleep(1300); }
   });
+  writeFileSync(statsFile, JSON.stringify(stats, null, 2));
   await b.eval(`localStorage.clear(); true`);
 }

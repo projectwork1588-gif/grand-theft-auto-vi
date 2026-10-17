@@ -5,12 +5,13 @@
    A vehicle with one picture draws it closer for its tile (data-zoom). The site's CSP forbids inline styles, so garage.css has one rule
    for every value on the grids the service uses. `sizes` must describe the width the picture is really drawn at. A picture that is only
    decoration beside a heading keeps decorative=true (an empty alt). #}
+{# The Garage adds a 320 px size to the usual set (its lineup and viewer thumbnails are drawn far smaller than 640 px), and a cut drawn around a vehicle, which is enlarged several times, may take the largest size Rockstar's service gives. #}
 {% macro gshot(p, sizes, eager=false, cls='', decorative=true, lazy=true, cut=none) -%}
   {% if p and image_src(p.m.embed_url, 1920) %}
   {% set cutting = p.cuts[cut] if (cut and p.cuts and cut in p.cuts) else (p.pos, p.posn) %}
   {% set at = cutting[0].replace('%', '').split(' ') %}{% set an = cutting[1].replace('%', '').split(' ') %}
-  <img class="gshot {{ cls }}" src="{{ image_src(p.m.embed_url, 1920) }}" srcset="{{ image_srcset(p.m.embed_url) }}" sizes="{{ sizes }}"
-       alt="{{ '' if decorative else p.alt }}" data-px="{{ at[0] }}" data-py="{{ at[1] }}" data-pxn="{{ an[0] }}" data-pyn="{{ an[1] }}"{% if p.zoom %} data-zoom="{{ p.zoom }}"{% endif %}
+  <img class="gshot {{ cls }}" src="{{ image_src(p.m.embed_url, 1920) }}" srcset="{{ image_srcset(p.m.embed_url, (960, 1920, 2560, 3840) if (p.zx is defined and p.zx is not none) else (320, 640, 960, 1280, 1920, 2560)) }}" sizes="{{ sizes }}"
+       alt="{{ '' if decorative else p.alt }}" data-px="{{ at[0] }}" data-py="{{ at[1] }}" data-pxn="{{ an[0] }}" data-pyn="{{ an[1] }}"{% if p.zoom %} data-zoom="{{ p.zoom }}"{% endif %}{% if p.zx is defined and p.zx is not none %} data-zx="{{ p.zx }}" data-zy="{{ p.zy }}"{% endif %}
        {% if eager %}fetchpriority="high"{% elif lazy %}loading="lazy"{% endif %} decoding="async" referrerpolicy="no-referrer">
   {% endif %}
 {%- endmacro %}
@@ -45,7 +46,7 @@
     <ol class="rail__list">
       {% for v in items %}
       <li><a class="rail__item" href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}"{% if stage %} data-pick="{{ v.slug }}" aria-controls="scene-{{ v.slug }}"{% endif %}{% if v.slug == current %} aria-current="true"{% endif %}>
-        <span class="rail__thumb" aria-hidden="true">{{ gshot(v.thumb, '160px', cut='thumb') }}</span>
+        <span class="rail__thumb" aria-hidden="true">{{ gshot(v.thumb, '(min-width: 900px) 176px, 64px', cut='thumb') }}</span>
         <span class="rail__no" aria-hidden="true">{{ '%02d' % v.number }}</span>
         <span class="rail__name">{{ v.name }}</span>
         <span class="rail__cat">{{ v.category_name }}</span>

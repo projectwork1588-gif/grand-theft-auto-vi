@@ -21,6 +21,7 @@ Thumbs.db
 *.sql.bak
 *.dump
 *.sqlite3
+backups/
 
 # Large or unlicensed media must never be committed (see docs/MEDIA_INVENTORY.md)
 media/*

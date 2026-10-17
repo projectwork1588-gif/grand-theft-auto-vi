@@ -24,8 +24,9 @@
     </div>
   </header>
 
+  <div class="vbody">
   {# ---------------------------------------------------------------- the machine: the database description, set large, and the few verified details #}
-  <section class="vintro" id="machine" aria-labelledby="machine-title">
+  <section class="vintro" id="machine" aria-labelledby="machine-title" data-ghost="{{ vehicle.model_line }}">
     <div class="container--wide vintro__in">
       <h2 id="machine-title" class="visually-hidden">About the {{ vehicle.name }}</h2>
       <p class="vintro__lede">{{ vehicle.description }}</p>
@@ -86,12 +87,21 @@
       </div>
     </div>
   </section>
-  {% elif vehicle.story == 'scene' and vehicle.scene %}
-  <section class="vshow vshow--scene" aria-label="Where Rockstar shows it">
-    <div class="container--wide">
-      <ul class="scenefig" data-gallery>
-        <li><a href="{{ image_src(vehicle.scene.m.embed_url, 2560) }}" data-lightbox data-caption="{{ vehicle.scene.alt }}"><span class="scenefig__art">{{ gshot(vehicle.scene, '(min-width: 900px) 92vw, 100vw', decorative=false, cut='wide') }}</span><span class="mos__cap">{{ vehicle.scene.caption }}</span></a></li>
-      </ul>
+  {% elif vehicle.story == 'context' and vehicle.context %}
+  {% set c = vehicle.context %}
+  <section class="vshow vctx{% if c.flip %} vctx--flip{% endif %}" aria-labelledby="ctx-title">
+    <div class="container--wide vctx__in">
+      <figure class="vctx__fig" data-gallery>
+        <a href="{{ image_src(c.m.embed_url, 2560) }}" data-lightbox data-caption="{{ c.alt }}" aria-label="View the whole scene larger">
+          <span class="vctx__art">{{ gshot(c, '(min-width: 900px) ' ~ ((56 * c.zoom | float) | round | int) ~ 'vw, ' ~ ((100 * c.zoom | float) | round | int) ~ 'vw', decorative=false) }}</span>
+          <span class="vctx__more">The whole scene <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </a>
+      </figure>
+      <div class="vctx__text">
+        <p class="eyebrow">Rockstar&rsquo;s own screenshots</p>
+        <h2 id="ctx-title">{{ c.title }}</h2>
+        <p>{{ c.text }}</p>
+      </div>
     </div>
   </section>
   {% endif %}
@@ -130,9 +140,10 @@
         <p class="eyebrow">All machines</p>
         {{ rail(vehicle.rail, vehicle.slug) }}
       </div>
-      <p class="credit">Screenshots &copy; Rockstar Games, shown from Rockstar&rsquo;s own site. Rockstar has not published specifications for the {{ vehicle.name }}. <a href="{{ url_for('pages.vehicles') }}">Back to the Garage</a></p>
+      <p class="credit">Screenshots &copy; Rockstar Games. <a href="{{ url_for('pages.vehicles') }}">Back to the Garage</a></p>
     </div>
   </section>
   {% endif %}
+  </div>
 </article>
 {% endblock %}

@@ -355,6 +355,7 @@ _GRID_WIDTH = 1328
 _STAGE_SHAPE = {"stage": (1.6, 1.3)}
 _HERO_SHAPE = {"hero": (1.7, 1.15)}
 _THUMB_SHAPE = {"thumb": (1.6, 1.6)}
+_CONTEXT_ASPECT = 1.45
 _GALLERY_SHAPES = {"large": (1.5, 1.3), "wide": (2.3, 1.5), "small": (1.25, 1.3), "viewer": (16 / 9, 4 / 3), "thumb": (1.6, 1.6)}
 
 
@@ -407,6 +408,27 @@ def split_name(name, maker):
         if at >= 0 and name[at + len(maker):].strip():
             return name[:at + len(maker)].strip(), name[at + len(maker):].strip()
     return "", name
+
+
+def _context_picture(m, focus, zoom, aspect):
+    """A picture drawn close around one subject: `focus` (x, y) is where the subject sits in the picture, `zoom` how far in. The box is cut
+    around the subject as usual (frame_pos), then drawn `zoom` times larger about an origin (data-zx, data-zy on a 2 percent grid) chosen so
+    the subject ends up in the middle of the box."""
+    spec = media_slots.GARAGE_FRAMES.get(m["slug"], {})
+    fx, fy = focus
+    pos = frame_pos(m["slug"], aspect, ay=0.5, face=focus)
+    px, py = (int(v.strip("%")) / 100 for v in pos.split())
+    if aspect < _IMAGE_ASPECT:
+        window = aspect / _IMAGE_ASPECT
+        bx, by = (fx - (1 - window) * px) / window, fy
+    else:
+        window = _IMAGE_ASPECT / aspect
+        bx, by = fx, (fy - (1 - window) * py) / window
+    # the origin that puts the subject in the middle of the box after the zoom: (1 - z) * o + z * b = 0.5 (kept inside the picture)
+    origin = lambda b: min(1.0, max(0.0, (0.5 - zoom * b) / (1 - zoom)))
+    grid = lambda v: min(100, max(0, int(round(v * 50)) * 2))
+    return {"m": m, "slug": m["slug"], "alt": spec.get("alt") or m["title"], "pos": pos, "posn": pos, "cuts": {}, "zoom": f"{zoom:.2f}".rstrip("0").rstrip("."),
+            "zx": grid(origin(bx)), "zy": grid(origin(by))}
 
 
 def _all_official():
@@ -492,17 +514,22 @@ def vehicle_detail(slug):
     vehicle["images"] = len(frames)
     # the showcase never repeats the picture that opens the page
     wanted = [by_slug[g] for g in pick.get("gallery", []) if g in by_slug and by_slug[g] is not hero]
-    rest = wanted or [m for m in frames if not hero or m["slug"] != hero["slug"] and m["slug"] != pick.get("scene", ("",))[0]]
-    story = pick.get("story") or ("viewer" if len(rest) >= 2 else ("none" if not rest else "scene"))
+    ctx = pick.get("context")
+    rest = wanted or [m for m in frames if not hero or (m["slug"] != hero["slug"] and m["slug"] != (ctx or {}).get("slug"))]
+    story = pick.get("story") or ("viewer" if len(rest) >= 2 else ("none" if not rest else "context"))
     if story in ("mosaic", "mosaic-flip") and len(rest) != 3:
-        story = "viewer" if len(rest) >= 2 else ("none" if not rest else "scene")
-    vehicle["story"] = story
+        story = "viewer" if len(rest) >= 2 else "none"
+    if story == "viewer" and len(rest) < 2:
+        story = "none"
     vehicle["gallery"] = [_garage_picture(m, _GALLERY_SHAPES) for m in rest]
-    scene = pick.get("scene")
-    scene_row = media.by_slugs([scene[0]]).get(scene[0]) if scene else None
-    vehicle["scene"] = {**_garage_picture(scene_row, _GALLERY_SHAPES, (1.0, *scene[2]) if len(scene) > 2 else None), "caption": scene[1]} if scene_row else None
-    if story == "scene" and not vehicle["scene"]:
-        vehicle["story"] = "none"
+    vehicle["context"] = None
+    if story == "context":
+        row = media.by_slugs([ctx["slug"]]).get(ctx["slug"]) if ctx else None
+        if row:
+            vehicle["context"] = {**_context_picture(row, ctx["focus"], ctx["zoom"], _CONTEXT_ASPECT), "title": ctx["title"], "text": ctx["text"], "flip": ctx["flip"]}
+        else:
+            story = "none"                                                  # the scene picture is not in this database: the page is the entrance alone
+    vehicle["story"] = story
     entries = _garage_entries(_all_official(), lambda i: {"card": (1.9, 1.3)})
     me = next((i for i, e in enumerate(entries) if e["slug"] == slug), 0)
     vehicle["rail"] = entries

@@ -65,7 +65,7 @@ def test_every_pick_is_described_and_belongs_to_its_vehicle():
             assert pick[role] in media_slots.GARAGE_FRAMES and pick[role].startswith("vehicle-"), (slug, role)
             assert pick[role].split("vehicle-")[1].startswith(slug.split("-")[-1]) or slug in pick[role], (slug, role)
         assert pick["side"] in ("left", "right") and pick["vpos"] in ("top", "bottom")
-        assert pick["story"] in ("mosaic", "mosaic-flip", "viewer", "panorama", "scene", "none")
+        assert pick["story"] in ("mosaic", "mosaic-flip", "viewer", "panorama", "context", "none")
         assert pick["stage"] not in pick["gallery"]                      # the showcase never repeats the opening picture
         for g in pick["gallery"]:
             assert g in media_slots.GARAGE_FRAMES
@@ -265,7 +265,7 @@ def test_every_vehicle_page_has_its_own_entrance_and_never_repeats_it(client, sl
 def test_each_vehicle_is_set_the_way_its_pictures_want_to_be_seen(client):
     stories = {slug: re.search(r'class="garage garage--vehicle story--([a-z-]+)"', html(client, f"/vehicles/{slug}")).group(1) for slug in OFFICIAL}
     assert stories == {"grotti-cheetah": "mosaic", "vapid-dominator-buggy": "viewer", "shitzu-squalo": "panorama", "vapid-stanier": "mosaic-flip",
-                       "vapid-ganado": "none", "dinka-enduro": "scene", "crest-kayak": "scene"}
+                       "vapid-ganado": "none", "dinka-enduro": "context", "crest-kayak": "context"}
     assert len(set(stories.values())) >= 5                                 # not one template with five backgrounds
 
 
@@ -275,7 +275,7 @@ def test_vehicle_pages_state_only_what_is_recorded_and_do_not_apologise(client):
         assert not re.search(r"horsepower|top speed|0-60|\bmph\b|\bkm/h\b|\bbhp\b|\$\d", page, re.I), slug
         assert "Not published by Rockstar" not in page and "Specifications" not in page and "has published one official image" not in page
         assert "Where it appears" not in page                              # no mission or place is recorded for these, so none is shown
-        assert 'href="https://www.rockstargames.com/' in page and "Rockstar has not published specifications" in page   # said once, quietly, in the credit line
+        assert 'href="https://www.rockstargames.com/' in page and "Rockstar has not published specifications" not in page   # provenance stays (source link, credit); the explanation is not repeated on every page
 
 
 def test_a_vehicle_with_one_picture_has_no_gallery_and_no_empty_frame(client):
@@ -293,10 +293,45 @@ def test_the_viewer_markup_works_without_script(client):
     assert "loading=" not in thumbnails and thumbnails.count("<img") == 3          # the thumbnails are never lazy, so none is ever an empty frame
 
 
-def test_the_scene_pictures_are_captioned_with_rockstars_own_set_title(client):
-    for slug in ("dinka-enduro", "crest-kayak"):
-        page = html(client, f"/vehicles/{slug}")
-        assert "scenefig" in page and "Jason&#39;s Safehouse Vehicles" in page
+def test_dinka_and_kayak_show_a_smaller_labelled_cut_of_the_scene_not_a_large_picture(client):
+    pages = {slug: html(client, f"/vehicles/{slug}") for slug in ("dinka-enduro", "crest-kayak")}
+    for slug, page in pages.items():
+        ctx = page.split('class="vshow vctx')[1].split("</section>")[0]
+        assert "own screenshots" in ctx and "The whole scene" in ctx and "data-lightbox" in ctx      # labelled, with the full picture a click away
+        assert 'data-zoom="' in ctx and 'data-zx="' in ctx and 'data-zy="' in ctx                                # drawn close around the vehicle
+        assert "ULTIMATE_EDITION_SAFEHOUSE_VEHICLES_01" in ctx
+    assert 'vctx vctx--flip' not in pages["dinka-enduro"] and 'vctx vctx--flip' in pages["crest-kayak"]
+    zooms = {slug: re.search(r'data-zx="(\d+)" data-zy="(\d+)"', p.split('class="vshow vctx')[1]).groups() for slug, p in pages.items()}
+    assert zooms["dinka-enduro"] != zooms["crest-kayak"]                                                       # not the same part of the picture twice
+
+
+def test_context_cut_keeps_the_vehicle_in_view():
+    """The zoom origin puts the vehicle near the middle of its box after zooming."""
+    from app.services import site
+    for slug, pick in media_slots.GARAGE_PICKS.items():
+        ctx = pick.get("context")
+        if not ctx:
+            continue
+        pic = site._context_picture({"slug": ctx["slug"], "title": "t", "embed_url": "x"}, ctx["focus"], ctx["zoom"], 1.45)
+        z, zx, zy = float(pic["zoom"]), pic["zx"] / 100, pic["zy"] / 100
+        px, py = (int(v.strip("%")) / 100 for v in pic["pos"].split())
+        window = 1.45 / (16 / 9)
+        bx, by = (ctx["focus"][0] - (1 - window) * px) / window, ctx["focus"][1]
+        for box, origin in ((bx, zx), (by, zy)):
+            shown = (1 - z) * origin + z * box                      # where the vehicle lands after the zoom, as a fraction of the box
+            assert 0.35 <= shown <= 0.65, (slug, shown)                # the vehicle lands near the middle of the box
+
+
+def test_the_sticky_curtain_is_only_for_a_single_picture_vehicle_and_off_for_reduced_motion():
+    sheet = css()
+    block = sheet.split(".story--none .vopen { position: sticky")[0].rsplit("@media", 1)[1]
+    assert "prefers-reduced-motion: no-preference" in block and "min-width: 900px" in block
+
+
+def test_the_collection_copy_does_not_name_a_vehicle_the_database_may_lack(client):
+    page = html(client, "/vehicles")
+    lede = re.search(r'class="coll__lede">([^<]+)<', page).group(1)
+    assert "kayak" not in lede.lower() and "motorcycle" not in lede.lower()
 
 
 def test_connected_world_lists_missions_and_places_with_their_labels(client, app):
@@ -328,7 +363,7 @@ def test_related_panels_are_readable_not_oversized_headings():
 def test_garage_styles_only_define_garage_selectors():
     text = re.sub(r"/\*.*?\*/", "", css(), flags=re.S)
     own = ("garage", "cine", "scene", "rail", "gshot", "gbtn", "plate", "coll", "ctl", "gresult", "mosaic", "mrow", "tile", "customs", "gempty", "credit",
-           "vopen", "vcrumb", "vintro", "vcredits", "vshow", "mos", "pano", "scenefig", "viewer", "vworld", "vnext", "neighbour", "story", "vehicle")
+           "vopen", "vcrumb", "vintro", "vcredits", "vshow", "mos", "pano", "vctx", "vbody", "viewer", "vworld", "vnext", "neighbour", "story", "vehicle")
     for selector in re.findall(r"(?:^|\})\s*([^{}@]+?)\s*\{", text):
         for part in selector.split(","):
             part = part.strip().replace("html.motion-on ", "")

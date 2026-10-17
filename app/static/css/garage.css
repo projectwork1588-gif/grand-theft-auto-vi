@@ -131,18 +131,19 @@
   .scene__art::after { background: linear-gradient(0deg, var(--ground) 0, rgba(18, 16, 42, 0) 24%); }
   .scene__art .gshot { position: absolute; }
   .scene__grade, .scene__numeral { display: none; }
-  .scene__copy, .scene--right .scene__copy, .scene--top .scene__copy { position: relative; inset: auto; margin: -34px var(--gutter) 0; padding-bottom: var(--s4); min-height: 250px; justify-items: start; text-align: left; max-width: none; align-content: start; }
+  .scene__copy, .scene--right .scene__copy, .scene--top .scene__copy { position: relative; inset: auto; margin: -34px var(--gutter) 0; padding-bottom: var(--s3); min-height: 0; gap: 12px; justify-items: start; text-align: left; max-width: none; align-content: start; }
   .scene--right .plate { justify-items: start; }
   .plate__model { font-size: var(--t-h1); }
   .plate__model--long { font-size: var(--t-h2); }
-  .rail { order: 2; min-width: 0; padding: 0 0 var(--s4); }
+  .rail { order: 2; min-width: 0; padding: 0 0 var(--s4); margin-top: 0; }
   .rail__list { grid-auto-columns: 224px; overflow-x: auto; scroll-snap-type: x proximity; padding: 0 var(--gutter) 6px; gap: 0 14px; scrollbar-width: none; }
   .rail__item { grid-template-columns: 64px minmax(0, 1fr); grid-template-areas: "thumb no" "thumb name" "thumb cat"; column-gap: 12px; row-gap: 3px; align-content: center; padding: 14px 0 4px; scroll-snap-align: start; }
   .rail__thumb { display: block; grid-area: thumb; align-self: center; aspect-ratio: 1; border-radius: var(--r-tile); overflow: hidden; background: var(--card); }
   .rail__no { grid-area: no; } .rail__name { grid-area: name; } .rail__cat { grid-area: cat; }
 }
-@media (max-width: 560px) { .scene__art { aspect-ratio: 1.12; } .rail__list { grid-auto-columns: 208px; } }
+@media (max-width: 560px) { .scene__art, .scene--top .scene__art { aspect-ratio: 1.12; } .rail__list { grid-auto-columns: 208px; } }
 /* the narrowest phones: the counter gives way so the title and the two arrows never meet */
+@media (max-width: 359px) { .plate__model--long { font-size: var(--t-h3); } }
 @media (max-width: 379px) { .cine__count { display: none; } .cine__ctl { gap: 10px; flex: none; } .cine__arrow { width: 44px; height: 44px; } .cine__head { gap: var(--s2); } .cine__title { flex: 1 1 auto; } }
 
 /* motion: the picture settles, the name rises from its baseline, the rest follows. Choosing another machine does the same, from the side it was chosen. */
@@ -375,15 +376,14 @@ html.motion-on .vopen__copy > :nth-child(5) { animation-delay: .42s; }
 
 /* the pictures: each vehicle is set the way its pictures want to be seen */
 .vshow { padding-block: 0 clamp(56px, 8vw, 112px); }
-.mos__art, .pano__art, .scenefig__art { display: block; position: relative; overflow: hidden; border-radius: var(--r-card); background: var(--card); }
-.mos__art .gshot, .pano__art .gshot, .scenefig__art .gshot { position: absolute; inset: 0; }
-.mos a, .pano a, .scenefig a { display: block; position: relative; color: var(--text); text-decoration: none; cursor: zoom-in; border-radius: var(--r-card); }
-.mos a:focus-visible, .pano a:focus-visible, .scenefig a:focus-visible { border-radius: var(--r-card); outline-offset: 4px; }
+.mos__art, .pano__art, .vctx__art { display: block; position: relative; overflow: hidden; border-radius: var(--r-card); background: var(--card); }
+.mos__art .gshot, .pano__art .gshot { position: absolute; inset: 0; }
+.mos a, .pano a { display: block; position: relative; color: var(--text); text-decoration: none; cursor: zoom-in; border-radius: var(--r-card); }
+.mos a:focus-visible, .pano a:focus-visible { border-radius: var(--r-card); outline-offset: 4px; }
 .mos__cap { position: absolute; left: 14px; bottom: 14px; right: 14px; padding: 9px 14px; border-radius: var(--r-tile); background: rgba(10, 8, 28, .7); backdrop-filter: blur(8px); font: 600 var(--t-small)/1.35 var(--font-text); color: var(--text); opacity: 0; transform: translateY(6px); transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease); pointer-events: none; }
-.mos a:hover .mos__cap, .mos a:focus-visible .mos__cap, .pano a:hover .mos__cap, .pano a:focus-visible .mos__cap, .scenefig a:hover .mos__cap, .scenefig a:focus-visible .mos__cap { opacity: 1; transform: none; }
-.scenefig .mos__cap { opacity: 1; transform: none; width: fit-content; right: auto; }
-html.motion-on .mos__art .gshot, html.motion-on .pano__art .gshot, html.motion-on .scenefig__art .gshot { transition: transform 1.4s var(--ease); }
-@media (hover: hover) { html.motion-on .mos a:hover .gshot, html.motion-on .pano a:hover .gshot, html.motion-on .scenefig a:hover .gshot { transform: scale(1.04); } }
+.mos a:hover .mos__cap, .mos a:focus-visible .mos__cap, .pano a:hover .mos__cap, .pano a:focus-visible .mos__cap { opacity: 1; transform: none; }
+html.motion-on .mos__art .gshot, html.motion-on .pano__art .gshot { transition: transform 1.4s var(--ease); }
+@media (hover: hover) { html.motion-on .mos a:hover .gshot, html.motion-on .pano a:hover .gshot { transform: scale(1.04); } }
 /* a large picture and two beside it */
 .mos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: repeat(2, clamp(200px, 21vw, 300px)); gap: var(--g-gap); }
 .mos li, .pano li { min-width: 0; }
@@ -394,15 +394,45 @@ html.motion-on .mos__art .gshot, html.motion-on .pano__art .gshot, html.motion-o
 .pano { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--g-gap); }
 .pano__a { grid-column: 1 / -1; } .pano__a .pano__art { aspect-ratio: 2.35; } .pano__b .pano__art, .pano__c .pano__art { aspect-ratio: 1.55; }
 /* one wide picture from the same Rockstar set */
-.scenefig { list-style: none; margin: 0; padding: 0; } .scenefig__art { aspect-ratio: 2.2; }
 @media (max-width: 899px) {
   .mos { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto; }
   .mos__a, .vshow--mosaic-flip .mos__a { grid-column: 1 / -1; grid-row: auto; } .mos__b, .mos__c, .vshow--mosaic-flip .mos__b, .vshow--mosaic-flip .mos__c { grid-column: auto; grid-row: auto; }
   .mos a, .mos__art { height: auto; } .mos__a .mos__art { aspect-ratio: 1.5; } .mos__b .mos__art, .mos__c .mos__art { aspect-ratio: 1.2; }
-  .scenefig__art { aspect-ratio: 1.6; } .pano__a .pano__art { aspect-ratio: 1.7; }
+  .pano__a .pano__art { aspect-ratio: 1.7; }
   .mos__cap { display: none; }
 }
 @media (max-width: 560px) { .pano { grid-template-columns: 1fr; } .mos__b .mos__art, .mos__c .mos__art { aspect-ratio: 1.1; } }
+
+/* a vehicle with no second picture of its own: a smaller, labelled cut of a Rockstar scene it appears in, drawn around the vehicle, beside its words */
+.vctx__in { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--s4) clamp(24px, 4vw, 64px); align-items: center; }
+.vctx__fig { grid-column: 1 / span 7; margin: 0; }
+.vctx__text { grid-column: 9 / span 4; display: grid; gap: var(--s2); align-content: center; }
+.vctx--flip .vctx__fig { grid-column: 6 / span 7; grid-row: 1; } .vctx--flip .vctx__text { grid-column: 1 / span 4; grid-row: 1; }
+.vctx__text > * { margin: 0; }
+.vctx__text h2 { font: 700 var(--t-h2)/.95 var(--font-display); letter-spacing: var(--track-caps); text-transform: uppercase; text-wrap: balance; }
+.vctx__text p:not(.eyebrow) { color: var(--text-2); font: 500 var(--t-body)/1.6 var(--font-text); max-width: 30ch; }
+.vctx__fig a { display: block; position: relative; color: var(--text); text-decoration: none; cursor: zoom-in; border-radius: var(--r-card); }
+.vctx__fig a:focus-visible { border-radius: var(--r-card); outline-offset: 4px; }
+.vctx__art { aspect-ratio: 1.45; box-shadow: 0 34px 80px -46px #000; }
+/* the picture is drawn zoom times larger from the point where the vehicle lies in its box, so the vehicle stays in view */
+.vctx__art .gshot[data-zx] { position: absolute; inset: auto; max-width: none; width: calc(var(--z, 1) * 100%); height: calc(var(--z, 1) * 100%); left: calc((1 - var(--z, 1)) * var(--zx, 50%)); top: calc((1 - var(--z, 1)) * var(--zy, 50%)); }
+.vctx__more { position: absolute; left: 14px; bottom: 14px; display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border-radius: var(--r-pill); background: rgba(10, 8, 28, .7); backdrop-filter: blur(8px); font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-ui); color: var(--text); }
+.vctx__more svg { width: 14px; height: 14px; transition: transform var(--dur-2) var(--ease); }
+.vctx__fig a:hover .vctx__more svg, .vctx__fig a:focus-visible .vctx__more svg { transform: translateX(3px); }
+@media (max-width: 899px) { .vctx__in { grid-template-columns: 1fr; } .vctx__fig, .vctx--flip .vctx__fig { grid-column: 1; grid-row: 1; } .vctx__text, .vctx--flip .vctx__text { grid-column: 1; grid-row: 2; } .vctx__art { aspect-ratio: 1.3; } }
+
+/* a vehicle with one picture: the entrance stays pinned while the page rises over it (no second picture needed), and its name stands behind the words */
+.vbody { position: relative; background: var(--ground); }
+@media (min-width: 900px) and (prefers-reduced-motion: no-preference) {
+  .story--none .vopen { position: sticky; top: 0; z-index: 0; }
+  .story--none .vbody { z-index: 1; border-radius: var(--r-card); box-shadow: 0 -50px 90px -30px rgba(7, 6, 20, .85); }
+}
+.story--none .vintro { position: relative; overflow: hidden; }
+/* the model name, outlined behind the description: wide screens only (a phone has no room for it) */
+@media (min-width: 900px) {
+  .story--none .vintro::before { content: attr(data-ghost); position: absolute; left: var(--edge); right: var(--edge); top: .1em; font: 700 var(--t-numeral)/.85 var(--font-display); letter-spacing: var(--track-tight); text-transform: uppercase; white-space: nowrap; overflow: hidden; color: transparent; -webkit-text-stroke: 1px color-mix(in srgb, var(--tint) 24%, transparent); pointer-events: none; user-select: none; }
+}
+.story--none .vintro__in { position: relative; padding-top: clamp(40px, 7vw, 110px); }
 
 /* a viewer: one large picture, the others beneath it */
 .viewer { display: grid; gap: var(--s2); }
@@ -657,3 +687,119 @@ html.motion-on .neighbour__art .gshot { transition: transform 1.4s var(--ease); 
 .gshot[data-zoom="1.7"] { --z: 1.7; }
 .gshot[data-zoom="1.75"] { --z: 1.75; }
 .gshot[data-zoom="1.8"] { --z: 1.8; }
+.gshot[data-zoom="2"] { --z: 2.0; }
+.gshot[data-zoom="2.25"] { --z: 2.25; }
+.gshot[data-zoom="2.5"] { --z: 2.5; }
+.gshot[data-zoom="2.75"] { --z: 2.75; }
+.gshot[data-zoom="3"] { --z: 3.0; }
+.gshot[data-zoom="3.25"] { --z: 3.25; }
+.gshot[data-zoom="3.5"] { --z: 3.5; }
+.gshot[data-zoom="3.75"] { --z: 3.75; }
+.gshot[data-zoom="4"] { --z: 4.0; }
+.gshot[data-zoom="4.25"] { --z: 4.25; }
+.gshot[data-zoom="4.5"] { --z: 4.5; }
+.gshot[data-zoom="4.75"] { --z: 4.75; }
+.gshot[data-zoom="5"] { --z: 5.0; }
+/* zoom origin of a cut drawn around a vehicle (data-zx, data-zy), 2 percent grid */
+.gshot[data-zx="0"] { --zx: 0%; }
+.gshot[data-zy="0"] { --zy: 0%; }
+.gshot[data-zx="2"] { --zx: 2%; }
+.gshot[data-zy="2"] { --zy: 2%; }
+.gshot[data-zx="4"] { --zx: 4%; }
+.gshot[data-zy="4"] { --zy: 4%; }
+.gshot[data-zx="6"] { --zx: 6%; }
+.gshot[data-zy="6"] { --zy: 6%; }
+.gshot[data-zx="8"] { --zx: 8%; }
+.gshot[data-zy="8"] { --zy: 8%; }
+.gshot[data-zx="10"] { --zx: 10%; }
+.gshot[data-zy="10"] { --zy: 10%; }
+.gshot[data-zx="12"] { --zx: 12%; }
+.gshot[data-zy="12"] { --zy: 12%; }
+.gshot[data-zx="14"] { --zx: 14%; }
+.gshot[data-zy="14"] { --zy: 14%; }
+.gshot[data-zx="16"] { --zx: 16%; }
+.gshot[data-zy="16"] { --zy: 16%; }
+.gshot[data-zx="18"] { --zx: 18%; }
+.gshot[data-zy="18"] { --zy: 18%; }
+.gshot[data-zx="20"] { --zx: 20%; }
+.gshot[data-zy="20"] { --zy: 20%; }
+.gshot[data-zx="22"] { --zx: 22%; }
+.gshot[data-zy="22"] { --zy: 22%; }
+.gshot[data-zx="24"] { --zx: 24%; }
+.gshot[data-zy="24"] { --zy: 24%; }
+.gshot[data-zx="26"] { --zx: 26%; }
+.gshot[data-zy="26"] { --zy: 26%; }
+.gshot[data-zx="28"] { --zx: 28%; }
+.gshot[data-zy="28"] { --zy: 28%; }
+.gshot[data-zx="30"] { --zx: 30%; }
+.gshot[data-zy="30"] { --zy: 30%; }
+.gshot[data-zx="32"] { --zx: 32%; }
+.gshot[data-zy="32"] { --zy: 32%; }
+.gshot[data-zx="34"] { --zx: 34%; }
+.gshot[data-zy="34"] { --zy: 34%; }
+.gshot[data-zx="36"] { --zx: 36%; }
+.gshot[data-zy="36"] { --zy: 36%; }
+.gshot[data-zx="38"] { --zx: 38%; }
+.gshot[data-zy="38"] { --zy: 38%; }
+.gshot[data-zx="40"] { --zx: 40%; }
+.gshot[data-zy="40"] { --zy: 40%; }
+.gshot[data-zx="42"] { --zx: 42%; }
+.gshot[data-zy="42"] { --zy: 42%; }
+.gshot[data-zx="44"] { --zx: 44%; }
+.gshot[data-zy="44"] { --zy: 44%; }
+.gshot[data-zx="46"] { --zx: 46%; }
+.gshot[data-zy="46"] { --zy: 46%; }
+.gshot[data-zx="48"] { --zx: 48%; }
+.gshot[data-zy="48"] { --zy: 48%; }
+.gshot[data-zx="50"] { --zx: 50%; }
+.gshot[data-zy="50"] { --zy: 50%; }
+.gshot[data-zx="52"] { --zx: 52%; }
+.gshot[data-zy="52"] { --zy: 52%; }
+.gshot[data-zx="54"] { --zx: 54%; }
+.gshot[data-zy="54"] { --zy: 54%; }
+.gshot[data-zx="56"] { --zx: 56%; }
+.gshot[data-zy="56"] { --zy: 56%; }
+.gshot[data-zx="58"] { --zx: 58%; }
+.gshot[data-zy="58"] { --zy: 58%; }
+.gshot[data-zx="60"] { --zx: 60%; }
+.gshot[data-zy="60"] { --zy: 60%; }
+.gshot[data-zx="62"] { --zx: 62%; }
+.gshot[data-zy="62"] { --zy: 62%; }
+.gshot[data-zx="64"] { --zx: 64%; }
+.gshot[data-zy="64"] { --zy: 64%; }
+.gshot[data-zx="66"] { --zx: 66%; }
+.gshot[data-zy="66"] { --zy: 66%; }
+.gshot[data-zx="68"] { --zx: 68%; }
+.gshot[data-zy="68"] { --zy: 68%; }
+.gshot[data-zx="70"] { --zx: 70%; }
+.gshot[data-zy="70"] { --zy: 70%; }
+.gshot[data-zx="72"] { --zx: 72%; }
+.gshot[data-zy="72"] { --zy: 72%; }
+.gshot[data-zx="74"] { --zx: 74%; }
+.gshot[data-zy="74"] { --zy: 74%; }
+.gshot[data-zx="76"] { --zx: 76%; }
+.gshot[data-zy="76"] { --zy: 76%; }
+.gshot[data-zx="78"] { --zx: 78%; }
+.gshot[data-zy="78"] { --zy: 78%; }
+.gshot[data-zx="80"] { --zx: 80%; }
+.gshot[data-zy="80"] { --zy: 80%; }
+.gshot[data-zx="82"] { --zx: 82%; }
+.gshot[data-zy="82"] { --zy: 82%; }
+.gshot[data-zx="84"] { --zx: 84%; }
+.gshot[data-zy="84"] { --zy: 84%; }
+.gshot[data-zx="86"] { --zx: 86%; }
+.gshot[data-zy="86"] { --zy: 86%; }
+.gshot[data-zx="88"] { --zx: 88%; }
+.gshot[data-zy="88"] { --zy: 88%; }
+.gshot[data-zx="90"] { --zx: 90%; }
+.gshot[data-zy="90"] { --zy: 90%; }
+.gshot[data-zx="92"] { --zx: 92%; }
+.gshot[data-zy="92"] { --zy: 92%; }
+.gshot[data-zx="94"] { --zx: 94%; }
+.gshot[data-zy="94"] { --zy: 94%; }
+.gshot[data-zx="96"] { --zx: 96%; }
+.gshot[data-zy="96"] { --zy: 96%; }
+.gshot[data-zx="98"] { --zx: 98%; }
+.gshot[data-zy="98"] { --zy: 98%; }
+.gshot[data-zx="100"] { --zx: 100%; }
+.gshot[data-zy="100"] { --zy: 100%; }

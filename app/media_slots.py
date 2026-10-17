@@ -221,9 +221,9 @@ GARAGE_FRAMES = {
 #   theme      a few words for the mood of the picture (what it shows, not a claim about the vehicle)
 #   story      the showcase on its page: "mosaic" (one large picture and two beside it), "mosaic-flip" (the same, mirrored),
 #              "viewer" (one large picture, thumbnails, previous and next), "panorama" (one wide picture, two beneath it),
-#              "scene" (one wide picture from the same Rockstar set), or "none" (a vehicle with one picture: the opening is all of it)
+#              "context" (a vehicle's own set has no second picture: a smaller, labelled cut of a Rockstar scene it appears in, drawn around the vehicle), or "none" (a vehicle with one picture: the opening is all of it)
 #   gallery    the showcase pictures, in order (never the stage picture)
-#   scene      the shared picture of a "scene" showcase, the caption it carries and where to cut it (x, y), so two vehicles sharing one picture show different parts of it
+#   context    the scene picture, where the vehicle sits in it (focus x, y as fractions), how close to draw it (zoom), the side the figure sits on, and its words
 GARAGE_PICKS = {
     "grotti-cheetah": {"stage": "vehicle-grotti-cheetah-01", "card": "vehicle-grotti-cheetah-02", "side": "right", "vpos": "bottom", "theme": "Golden hour",
                        "story": "mosaic", "gallery": ["vehicle-grotti-cheetah-02", "vehicle-grotti-cheetah-03", "vehicle-grotti-cheetah-04"]},
@@ -236,9 +236,13 @@ GARAGE_PICKS = {
     "vapid-ganado": {"stage": "vehicle-vapid-ganado-01", "card": "vehicle-vapid-ganado-01", "card_zoom": (1.5, 0.80, 0.66), "side": "left", "vpos": "top", "theme": "Coast road",
                      "story": "none", "gallery": []},
     "dinka-enduro": {"stage": "vehicle-dinka-enduro-01", "card": "vehicle-dinka-enduro-01", "card_zoom": (1.45, 0.50, 0.40), "side": "left", "vpos": "bottom", "theme": "Garage door",
-                     "story": "scene", "gallery": [], "scene": ("garage-jasons-safehouse", "From Rockstar's Jason's Safehouse Vehicles screenshots", (0.46, 0.30))},
+                     "story": "context", "gallery": [],
+                     "context": {"slug": "garage-jasons-safehouse", "focus": (0.485, 0.81), "zoom": 3.0, "flip": False, "title": "In its setting",
+                                 "text": "Rockstar shows it parked beside a stilt house on the water, in its Jason's Safehouse Vehicles screenshots."}},
     "crest-kayak": {"stage": "vehicle-crest-kayak-01", "card": "vehicle-crest-kayak-01", "card_zoom": (1.4, 0.62, 0.40), "side": "left", "vpos": "bottom", "theme": "Sunset paddle",
-                    "story": "scene", "gallery": [], "scene": ("garage-jasons-safehouse", "From Rockstar's Jason's Safehouse Vehicles screenshots", (0.66, 1.0))},
+                    "story": "context", "gallery": [],
+                    "context": {"slug": "garage-jasons-safehouse", "focus": (0.615, 0.765), "zoom": 3.5, "flip": True, "title": "On the shore",
+                                "text": "The same safehouse set shows the kayak pulled up on the shore beside the house."}},
 }
 # The Garage's pictures of machines Rockstar does not name: its own set titles are the captions, and nothing more is claimed.
 GARAGE_MOMENTS = (
