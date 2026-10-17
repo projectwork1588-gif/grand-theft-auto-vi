@@ -72,7 +72,7 @@
   color: transparent; -webkit-text-stroke: 1px color-mix(in srgb, var(--text) 26%, transparent); pointer-events: none; user-select: none; }
 .scene--right .scene__numeral { left: auto; right: var(--edge); }
 .scene--top .scene__numeral { left: auto; right: var(--edge); }
-.scene__copy { position: absolute; z-index: 2; inset-inline: var(--edge); bottom: 198px; display: grid; gap: 18px; justify-items: start; max-width: 46rem; }
+.scene__copy { position: absolute; z-index: 5; inset-inline: var(--edge); bottom: 198px; display: grid; gap: 18px; justify-items: start; max-width: 46rem; }
 .scene--right .scene__copy { justify-items: end; text-align: right; margin-left: auto; }
 .scene--right .plate { justify-items: end; }
 .scene--top .scene__copy { bottom: auto; top: calc(var(--header-h) + 30px); }
@@ -86,12 +86,15 @@
 @media (min-width: 900px) and (max-width: 1199px) { .scene .plate__model, .vopen .plate__model { font-size: var(--t-h1); } .scene .plate__model--long, .vopen .plate__model--long { font-size: var(--t-h2); } }
 
 /* the console: the page's title, the previous/next controls and the lineup */
-.cine__console { position: absolute; z-index: 4; left: 0; right: 0; bottom: 0; padding: var(--s6) var(--edge) var(--s3); background: linear-gradient(0deg, rgba(10, 8, 28, .92) 0%, rgba(10, 8, 28, .6) 58%, rgba(10, 8, 28, 0) 100%); }
+/* the console's box is taller than what is in it (its top is only padding and a fade), and it sits over the foot of the stage where the Explore button is: so the box itself
+   takes no pointer events and only its own controls do. (Before this, most of the visible Explore pill was under the console's transparent top and did not respond.) */
+.cine__console { pointer-events: none; position: absolute; z-index: 4; left: 0; right: 0; bottom: 0; padding: var(--s6) var(--edge) var(--s3); background: linear-gradient(0deg, rgba(10, 8, 28, .92) 0%, rgba(10, 8, 28, .6) 58%, rgba(10, 8, 28, 0) 100%); }
 .cine__head { display: flex; align-items: end; justify-content: space-between; gap: var(--s3); margin-bottom: var(--s1); }
 .cine__title { display: grid; gap: 8px; min-width: 0; }
 .cine__title .eyebrow { white-space: nowrap; }
 .cine__title h1 { margin: 0; font: 700 var(--t-h4)/1 var(--font-display); letter-spacing: var(--track-caps); text-transform: uppercase; }
-.cine__ctl { display: flex; align-items: center; gap: 14px; }
+.cine__ctl { display: flex; align-items: center; gap: 14px; pointer-events: auto; }
+.cine__console .rail__item { pointer-events: auto; }
 .cine__ctl[hidden] { display: none; }
 .cine__count { margin: 0; min-width: 4.4rem; text-align: center; font: 600 var(--t-small)/1 var(--font-text); letter-spacing: var(--track-ui); color: var(--text-3); }
 .cine__count b { color: var(--text); font-weight: 700; }
