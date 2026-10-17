@@ -8,7 +8,7 @@
 //   TL_BASE=http://127.0.0.1:5059 TITLES_OUT=dir/ node scripts/qa/cdp.mjs scripts/qa/garage_titles.mjs      (exit status 1 on any crossing)
 import { mkdirSync } from "node:fs";
 const BASE = process.env.TL_BASE || "http://127.0.0.1:5059";
-const PAGE = process.env.TITLES_PATH || "/garage-concept";
+const PAGE = process.env.TITLES_PATH || "/garage-concept?autoplay=0";      // the automatic clock off, so a scene is measured where it rests
 const OUT = process.env.TITLES_OUT || "";
 const SIZES = (process.env.TITLES_SIZES || "1920x1080,1440x900,1366x768,1280x720").split(",").map((s) => s.split("x").map(Number));
 let failed = 0;
@@ -30,14 +30,15 @@ export default async function (b) {
         if (ready) { break; }
         await b.sleep(150);
       }
-      await b.sleep(2100);   // the entrance has finished
+      await b.sleep(2100);   // the entrance has mostly finished
+      await b.eval(`document.getAnimations().forEach((a) => { try { a.finish(); } catch (e) {} }); true`);   // the slow settle of the picture is played to its end, where it rests
       const r = JSON.parse(await b.eval(`(() => { const p = document.querySelector('[data-panel="${slug}"]'); const art = p.querySelector(".gx-art"), im = art.querySelector("img");
         const box = art.getBoundingClientRect(); const cs = getComputedStyle(im); const [ox, oy] = cs.objectPosition.split(" ").map((v) => parseFloat(v) / 100);
-        const nw = im.naturalWidth || 1600, nh = im.naturalHeight || 900; const scale = Math.max(box.width / nw, box.height / nh); const dw = nw * scale, dh = nh * scale;
-        const left = box.left - (dw - box.width) * ox, top = box.top - (dh - box.height) * oy;
+        const nw = im.naturalWidth || 1600, nh = im.naturalHeight || 900; const contain = cs.objectFit === "contain"; const scale = contain ? Math.min(box.width / nw, box.height / nh) : Math.max(box.width / nw, box.height / nh); const dw = nw * scale, dh = nh * scale;
+        const left = box.left - (dw - box.width) * ox, top = box.top - (dh - box.height) * oy;      // cover cuts the overflow; contain sets the whole picture inside the box
         const subjects = (p.dataset.subject || "0,0,0,0").split(";").map((s) => { const [x0, y0, x1, y1] = s.split(",").map(Number); return { l: left + x0 * dw, t: top + y0 * dh, r: left + x1 * dw, b: top + y1 * dh }; });
         const rect = (e) => { const q = e.getBoundingClientRect(); return { l: q.left, t: q.top, r: q.right, b: q.bottom, w: q.width, h: q.height, name: (e.className && e.className.toString().split(" ")[0]) || e.tagName.toLowerCase() }; };
-        const words = [...p.querySelectorAll(".gx-kicker, .plate, .gx-sum, .gx-actions a")].map(rect).filter((q) => q.w > 0 && q.h > 0);
+        const words = [...p.querySelectorAll(".gx-kicker, .plate, .gx-sum, .gx-actions a, .gx-head__title, .gx-play")].map(rect).filter((q) => q.w > 0 && q.h > 0);
         const header = document.querySelector(".site-header").getBoundingClientRect();
         return JSON.stringify({ subjects, words, art: { l: box.left, t: box.top, r: box.right, b: box.bottom }, headerBottom: header.bottom, plate: p.dataset.plate }); })()`));
       let area = 0, shown = 0, crossing = [];

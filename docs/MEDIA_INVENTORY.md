@@ -248,3 +248,16 @@ people-centred, so no frame was used. Not used: location shots with unnamed vehi
 2. Add it to the manifest, regenerate the next migration and the seed block, and add it here.
 3. Link it to the right character, region or vehicle. Never link official media to a concept record.
 4. Never commit the file itself.
+
+## Garage sea clip (the owner's instruction, 2026-10-17)
+
+The owner supplied Rockstar's Launch Trailer (published 15 October 2026) and asked for short excerpts to strengthen the Garage. This supersedes the earlier "trailers are not cut" decision for this one purpose; the files stay Git-ignored and removable.
+All three trailers on disk (Launch Trailer, Trailer 1, Trailer 2) were stepped through. The shots are mostly 0.5 to 2 s long and many carry people, weapons or text, so only two calm, caption-free shots were used, joined by a 0.5 s dissolve into one 3.3 s muted clip (`media/clips/garage/on-the-water.mp4`, built by `python -m scripts.make_garage_clips`):
+
+| Shot | Source | Time | What it shows | Used because |
+|---|---|---|---|---|
+| Marina from the air | Launch Trailer | 4.98 to 6.90 s | A slow aerial of a boat marina, boats stacked in racks | Boats and water, no people, no overlay; says nothing about which vehicle is which |
+| Sunset over a dock | Trailer 2 | 83.15 to 85.00 s | Golden sunset on calm water, a dock rail, string lights, life rings | The continuity into the Kayak's own sunset picture |
+
+Considered and not used: the aerial boat and surf shots (Trailer 1, 10.8 to 14.2 s: three shots of 0.6 to 0.9 s each); the dirt-bike jump (Launch Trailer, about 1.3 s); the green lowrider (Launch Trailer, 19.0 to 21.0 s: a pistol is in frame); the street and police shots (0.25 to 0.5 s each); the marina seaplane (0.9 s). No unnamed vehicle in the footage is identified as one of the seven. The page asks for the file only when the finale is near, only when motion is allowed and data saver is off, plays it once, and rests on its last frame (the still picture).
+

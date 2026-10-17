@@ -27,12 +27,12 @@ export default async function (b) {
     for (const [index, slug] of slugs.entries()) {
       const tag = `${W}x${H} ${slug}`;
       // the opening with this machine on show: loaded, the script ready, and the other panels gone (polled, never a fixed wait; tried again if the page lags)
-      const ready = `(() => { const shown = [...document.querySelectorAll("[data-stage] [data-panel]")].filter((p) => !p.hidden); return location.pathname === "${PAGE}" && shown.length === 1 && shown[0].dataset.panel === "${slug}" && shown[0].classList.contains("is-active"); })()`;
+      const ready = `(() => { const shown = [...document.querySelectorAll("[data-stage] [data-panel]")].filter((p) => !p.hidden); return location.pathname === "${PAGE.split("?")[0]}" && shown.length === 1 && shown[0].dataset.panel === "${slug}" && shown[0].classList.contains("is-active"); })()`;
       const show = async () => {
         for (let attempt = 0; attempt < 3; attempt++) {
           await b.open(BASE + PAGE, 600);
           for (let i = 0; i < 40; i++) {
-            if (await b.eval(`location.pathname === "${PAGE}" && !!document.querySelector('[data-stage] [data-pick]')`).catch(() => false)) { break; }
+            if (await b.eval(`location.pathname === "${PAGE.split("?")[0]}" && !!document.querySelector('[data-stage] [data-pick]')`).catch(() => false)) { break; }
             await b.sleep(150);
           }
           if (index > 0) { await b.eval(`document.querySelector('[data-stage] [data-pick="${slug}"]').click(); true`).catch(() => {}); }
@@ -42,7 +42,7 @@ export default async function (b) {
               let last = "", still = 0;
               for (let k = 0; k < 60 && still < 3; k++) {
                 // the rect is only trusted when nothing on the page is still animating (a delayed entrance is motionless for a moment before it moves)
-                const now = await b.eval(`JSON.stringify((() => { const r = ${BUTTON}.getBoundingClientRect(); const running = document.getAnimations().filter((a) => a.playState === "running" || a.playState === "pending").length; return [running, getComputedStyle(${BUTTON}).opacity, ...[r.left, r.top, r.width, r.height].map((v) => Math.round(v * 10) / 10)]; })())`).catch(() => "");
+                const now = await b.eval(`JSON.stringify((() => { const r = ${BUTTON}.getBoundingClientRect(); const running = document.getAnimations().filter((a) => (a.playState === "running" || a.playState === "pending") && !(a.effect && a.effect.getTiming().duration >= 3000)).length;   // the entrance moves the words; the slow settle of the picture (9 s) does not move the button return [running, getComputedStyle(${BUTTON}).opacity, ...[r.left, r.top, r.width, r.height].map((v) => Math.round(v * 10) / 10)]; })())`).catch(() => "");
                 still = (now === last && now.startsWith("[0,\"1\"")) ? still + 1 : 0; last = now; await b.sleep(120);
               }
               return true;

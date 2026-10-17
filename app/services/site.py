@@ -352,11 +352,11 @@ _ROW_CYCLE = ((8, 4), (4, 4, 4), (5, 7), (7, 5))
 _ROW_TONE = {(8, 4): "tall", (4, 4, 4): "mid", (5, 7): "low", (7, 5): "low", (6, 6): "mid", (12,): "wide"}
 _ROW_HEIGHT = {"tall": 540, "mid": 390, "low": 440, "wide": 420}
 _GRID_WIDTH = 1328
-_STAGE_SHAPE = {"stage": (1.6, 1.3)}
+_STAGE_SHAPE = {"stage": (1.6, 1.5)}
 _HERO_SHAPE = {"hero": (1.7, 1.15)}
 _THUMB_SHAPE = {"thumb": (1.6, 1.6)}
 _CONTEXT_ASPECT = 1.45
-_GALLERY_SHAPES = {"large": (1.5, 1.3), "wide": (2.3, 1.5), "small": (1.25, 1.3), "viewer": (16 / 9, 4 / 3), "thumb": (1.6, 1.6)}
+_GALLERY_SHAPES = {"large": (1.5, 1.5), "wide": (2.3, 1.5), "small": (1.25, 1.5), "viewer": (16 / 9, 4 / 3), "thumb": (1.6, 1.6)}
 
 
 def garage_rows(count):
@@ -381,7 +381,7 @@ def garage_rows(count):
 
 def _cell_shape(span, tone):
     """The box a showroom tile is drawn in (wide screens, then phones), so its picture is cut around its subject."""
-    return {"card": ((span / 12 * _GRID_WIDTH - 20) / _ROW_HEIGHT[tone], 1.3)}
+    return {"card": ((span / 12 * _GRID_WIDTH - 20) / _ROW_HEIGHT[tone], 1.5)}
 
 
 def _garage_picture(m, shapes, zoom=None, keep_height=False):
@@ -453,7 +453,7 @@ def _garage_entries(rows, shapes_for=None):
         fallback = covers.get(ids.get(r["slug"]))
         card = frames.get(pick.get("card")) or fallback
         stage = frames.get(pick.get("stage")) or fallback
-        shapes = shapes_for(index) if shapes_for else {"card": (1.5, 1.3)}
+        shapes = shapes_for(index) if shapes_for else {"card": (1.5, 1.5)}
         make_line, model_line = split_name(r["name"], r.get("manufacturer"))
         entries.append({**r, "make_line": make_line, "model_line": model_line, "number": (order.index(r["slug"]) + 1) if r["slug"] in order else index + 1, "images": counts.get(ids.get(r["slug"]), 0),
                         "card": _garage_picture(card, shapes, pick.get("card_zoom")), "stage": _garage_picture(stage, _STAGE_SHAPE),
@@ -491,27 +491,31 @@ def vehicle_index(args):
 
 
 # ---------------------------------------------------------------- the concept: a full-screen opening and a collection told in four chapters
-_ROLE_SHAPES = {   # (wide screens, phones): the box each picture is cut for, width over height
-    "wide": {"main": (2.0, 1.25), "detail": (1.5, 1.5)},
-    "half": {"main": (1.5, 1.25), "detail": (1.5, 1.5)},
-    "portrait": {"main": (0.85, 1.1), "detail": (1.5, 1.5)},
-    "finale": {"main": (2.3, 1.1), "detail": (1.5, 1.5)},
+_ROLE_SHAPES = {   # (wide screens, phones): the box each picture is cut for, width over height (the same ratios as garage_concept.css)
+    "feature": {"main": (1.75, 1.6), "second": (0.853, 2.6)},
+    "lead": {"main": (1.78, 1.6), "second": (1.6, 1.6)},
+    "second": {"main": (1.6, 1.6), "second": (1.6, 1.6)},
+    "duo_a": {"main": (1.75, 1.6), "second": (1.5, 1.6)},
+    "duo_b": {"main": (1.25, 1.6), "second": (1.5, 1.6)},
+    "sea_a": {"main": (1.95, 1.6), "second": (1.4, 2.6)},
+    "finale": {"main": (2.8, 1.05), "second": (1.5, 1.6)},
 }
 _SCENE_SHAPE = {"stage": (1.6, 1.4)}
 _BAND_SHAPE = {"stage": (1.95, 1.4)}
+_MOMENT_SHAPES = {"feat": (1.67, 1.9), "wide": (2.3, 2.6), "sq": (1.2, 1.25)}
 
 
 def _concept_entry(entry, frames, role=None):
     """One machine as the collection draws it: its main picture cut for its role, and a close-up of another part of it where Rockstar has one."""
     pick = media_slots.GARAGE_SPREADS.get(entry["slug"], {})
-    role = role or pick.get("role", "half")
+    role = role or pick.get("role", "second")
     main = frames.get(pick.get("main"))
-    detail = frames.get(pick.get("detail"))
+    second = frames.get(pick.get("second"))
     shapes = _ROLE_SHAPES[role]
     return {**entry, "role": role, "cat": entry.get("category_slug") or "",
             "main": _garage_picture(main, {"main": shapes["main"]}, pick.get("zoom")) if main else entry["card"],
-            "detail": _garage_picture(detail, {"detail": shapes["detail"]}) if detail else None,
-            "detail_label": pick.get("detail_label", "")}
+            "second": _garage_picture(second, {"second": shapes["second"]}) if second else None,
+            "second_label": pick.get("second_label", "")}
 
 
 def _chapters(rows, frames):
@@ -524,7 +528,7 @@ def _chapters(rows, frames):
         placed.update(m["slug"] for m in machines)
         if machines:
             chapters.append({**chapter, "machines": machines})
-    leftovers = [_concept_entry(r, frames, "half") for r in rows if r["slug"] not in placed]
+    leftovers = [_concept_entry(r, frames, "second") for r in rows if r["slug"] not in placed]
     if leftovers:
         chapters.append({"key": "more", "title": "More machines", "accent": "#ff9a9a", "slugs": (), "line": "", "machines": leftovers})
     return chapters
@@ -550,7 +554,7 @@ def vehicle_concept(args):
     wanted = set()
     for r in rows:
         pick = media_slots.GARAGE_SPREADS.get(r["slug"], {})
-        wanted.update(pick[k] for k in ("main", "detail") if pick.get(k))
+        wanted.update(pick[k] for k in ("main", "second") if pick.get(k))
     wanted.update(slug for slug, _ in media_slots.GARAGE_MOMENTS)
     frames = media.by_slugs(wanted)
     curated = not result["active"] and result["pagination"]["page"] == 1 and len(rows) == result["total_all"]
@@ -560,12 +564,12 @@ def vehicle_concept(args):
         result["chapters"] = _chapters(rows, frames)
         moments = []
         for slug, caption in media_slots.GARAGE_MOMENTS:
-            picture = _garage_picture(frames.get(slug), {"reel": (1.0, 1.0)})
+            picture = _garage_picture(frames.get(slug), _MOMENT_SHAPES)
             if picture:
                 moments.append({**picture, "caption": caption})
         result["moments"] = moments
     else:
-        result["list"] = [_concept_entry(r, frames, "half") for r in rows]
+        result["list"] = [_concept_entry(r, frames, "second") for r in rows]
         result["moments"] = []
     return result
 
@@ -574,7 +578,7 @@ def _garage_moments():
     frames = media.by_slugs({slug for slug, _ in media_slots.GARAGE_MOMENTS})
     out = []
     for slug, caption in media_slots.GARAGE_MOMENTS:
-        picture = _garage_picture(frames.get(slug), {"wide": (1.7, 1.4), "tall": (0.9, 1.3), "small": (1.5, 1.4)})
+        picture = _garage_picture(frames.get(slug), {"wide": (1.7, 1.4), "tall": (0.9, 1.5), "small": (1.5, 1.4)})
         if picture:
             out.append({**picture, "caption": caption})
     return out
@@ -611,7 +615,7 @@ def vehicle_detail(slug):
         else:
             story = "none"                                                  # the scene picture is not in this database: the page is the entrance alone
     vehicle["story"] = story
-    entries = _garage_entries(_all_official(), lambda i: {"card": (1.9, 1.3)})
+    entries = _garage_entries(_all_official(), lambda i: {"card": (1.9, 1.5)})
     me = next((i for i, e in enumerate(entries) if e["slug"] == slug), 0)
     vehicle["rail"] = entries
     vehicle["number"] = entries[me]["number"] if entries else 1

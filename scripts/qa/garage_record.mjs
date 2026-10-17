@@ -123,6 +123,28 @@ export default async function (b) {
     await b.eval(`document.querySelector("[data-viewer]").scrollIntoView(); true`); await b.sleep(1100);
     for (let i = 0; i < 3; i++) { await click("[data-next]"); await b.sleep(1300); }
   });
+  // the automatic showcase (needs the Garage page that has it): the whole round with a short hold, ending 07 to 01; pause, a choice and play; and a phone
+  if (process.env.GARAGE_AUTOPLAY) {
+    const auto = BASE + PAGE.split("?")[0] + "?dwell=3";
+    await b.open(auto, 2500);
+    await record("09-auto-cycle-desktop-07-to-01", 1440, 900, async () => { await b.sleep(29000); });
+    await b.open(auto, 2500);
+    await record("10-pause-choose-and-play-desktop", 1440, 900, async () => {
+      await b.sleep(1500);
+      await click("[data-playpause]"); await b.sleep(4200);                 // paused: nothing moves
+      await click('[data-pick="vapid-stanier"]'); await b.sleep(2500);      // a choice responds at once
+      await click("[data-playpause]"); await b.sleep(5200);                 // play: it goes on from there
+    });
+    await b.open(auto, 2500);
+    await record("11-auto-cycle-phone-07-to-01", 390, 844, async () => { await b.sleep(29000); });
+    await b.open(BASE + PAGE.split("?")[0] + "?autoplay=0", 2500);
+    await b.eval(`document.querySelectorAll("img").forEach((i) => { i.loading = "eager"; }); true`);
+    await record("12-finale-sea-clip-then-kayak-desktop", 1440, 900, async () => {
+      await b.eval(`window.scrollTo(0, document.querySelector(".gx-sea-row").getBoundingClientRect().top + scrollY - 140); true`); await b.sleep(900);
+      for (let y = 0; y < 560; y += 14) { await b.eval(`window.scrollBy(0, 14); true`); await b.sleep(40); }
+      await b.sleep(3800);                                                                    // the clip plays once and rests on its last frame
+    });
+  }
   writeFileSync(statsFile, JSON.stringify(stats, null, 2));
   await b.eval(`localStorage.clear(); true`);
 }

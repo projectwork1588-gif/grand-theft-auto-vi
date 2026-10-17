@@ -64,3 +64,12 @@ python -m scripts.make_hero_layers --debug       # (re)build from media/source/h
 It writes `sky.webp`, `mid.webp`, `fg.webp`, `fg-lit.webp` and lighter `-1280` copies (about 470 KB for the desktop set,
 270 KB for phones). Without them the hero is the single official picture, exactly as before. Everything in `media/` is
 Git-ignored. See `docs/HERO_MOTION_POSTER.md`.
+
+The Garage concept page (`/garage-concept`) shows one short sea clip, cut by you from Rockstar's trailers (a slow aerial of the marina dissolving into a sunset over a dock, about 3.3 s, muted, no title card or logo):
+
+```powershell
+python -m scripts.make_garage_clips        # reads media/source/rockstar/gta-vi-launch-trailer.mp4 and media/source-videos/trailers/GTAVI_Trailer_2.mp4; writes media/clips/garage/
+```
+
+Without it the page shows the still picture. The sources are never modified, and `media/clips/garage/` is Git-ignored like the rest.
+

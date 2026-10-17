@@ -253,15 +253,15 @@ GARAGE_MOMENTS = (
 )
 
 # Garage concept (Stage A.2): the pictures the collection's chapters use, chosen so a machine is not shown by the picture that opens the page
-# wherever it has a second one. `main` is the large picture, `detail` a close-up of another part of the same machine with `detail_label`
+# wherever it has a second one. `main` is the large picture, `second` a close-up of another part of the same machine with `detail_label`
 # (what it shows, nothing more); a machine with one picture has `zoom` (scale, x, y) instead. `role` is how its chapter draws it.
 GARAGE_SPREADS = {
-    "grotti-cheetah": {"role": "wide", "main": "vehicle-grotti-cheetah-02", "detail": "vehicle-grotti-cheetah-04", "detail_label": "The cabin"},
-    "vapid-dominator-buggy": {"role": "half", "main": "vehicle-vapid-dominator-buggy-02", "detail": "vehicle-vapid-dominator-buggy-03", "detail_label": "Up close"},
-    "shitzu-squalo": {"role": "half", "main": "vehicle-shitzu-squalo-02", "detail": "vehicle-shitzu-squalo-03", "detail_label": "On the hull"},
-    "vapid-stanier": {"role": "half", "main": "vehicle-vapid-stanier-02", "detail": "vehicle-vapid-stanier-04", "detail_label": "The tail light"},
-    "vapid-ganado": {"role": "portrait", "main": "vehicle-vapid-ganado-01", "zoom": (1.5, 0.80, 0.66)},
-    "dinka-enduro": {"role": "portrait", "main": "vehicle-dinka-enduro-01"},
+    "grotti-cheetah": {"role": "feature", "main": "vehicle-grotti-cheetah-02", "second": "vehicle-grotti-cheetah-04", "second_label": "The cabin"},
+    "vapid-stanier": {"role": "lead", "main": "vehicle-vapid-stanier-02"},
+    "vapid-ganado": {"role": "second", "main": "vehicle-vapid-ganado-01"},
+    "dinka-enduro": {"role": "duo_b", "main": "vehicle-dinka-enduro-01"},
+    "vapid-dominator-buggy": {"role": "duo_a", "main": "vehicle-vapid-dominator-buggy-02"},
+    "shitzu-squalo": {"role": "sea_a", "main": "vehicle-shitzu-squalo-02", "second": "vehicle-shitzu-squalo-04", "second_label": "On deck"},
     "crest-kayak": {"role": "finale", "main": "vehicle-crest-kayak-01"},
 }
 # How each opening scene is composed. `plate` says where the words sit so they never cross the machine: br (lower right, the machine is on the
@@ -270,8 +270,8 @@ GARAGE_SCENES = {
     "grotti-cheetah": {"plate": "br", "subject": ((0.11, 0.51, 0.65, 0.87),)},
     "vapid-dominator-buggy": {"plate": "br", "subject": ((0.02, 0.15, 0.62, 0.62), (0.02, 0.55, 0.50, 0.88))},
     "shitzu-squalo": {"plate": "br", "subject": ((0.05, 0.52, 0.58, 0.87),)},
-    "vapid-stanier": {"plate": "band", "subject": ((0.00, 0.18, 0.98, 0.93),)},
-    "vapid-ganado": {"plate": "band", "subject": ((0.03, 0.20, 0.98, 0.84),)},
+    "vapid-stanier": {"plate": "band", "subject": ((0.00, 0.18, 0.98, 0.85),)},
+    "vapid-ganado": {"plate": "band", "subject": ((0.03, 0.20, 0.98, 0.86),)},
     "dinka-enduro": {"plate": "ml", "px": 0, "subject": ((0.29, 0.03, 0.84, 0.95),)},      # px 0: the picture is held to the left of its frame, which moves the bike right and gives the words room
     "crest-kayak": {"plate": "ml", "subject": ((0.33, 0.05, 0.78, 0.60), (0.40, 0.45, 0.70, 0.66), (0.15, 0.62, 0.68, 0.96))},
 }

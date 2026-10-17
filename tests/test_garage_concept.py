@@ -1,14 +1,15 @@
-"""The Garage concept (Stage A.2, /garage-concept): a full-screen opening and the same MySQL-backed collection, told in four chapters by default and as an honest ordered list when filtered."""
+"""The Garage concept (/garage-concept): a full-screen opening that cycles through the seven machines by itself, and the same MySQL-backed collection told in four chapters by default and as an honest ordered list when filtered."""
 import re
 from pathlib import Path
 
 import pytest
 
-from app import media_slots
+from app import local_media, media_slots
 from app.services import site
 
 ROOT = Path(__file__).resolve().parent.parent
 SLUGS = ["grotti-cheetah", "vapid-dominator-buggy", "shitzu-squalo", "vapid-stanier", "vapid-ganado", "dinka-enduro", "crest-kayak"]
+CHAPTER_ORDER = ["grotti-cheetah", "vapid-stanier", "vapid-ganado", "vapid-dominator-buggy", "dinka-enduro", "shitzu-squalo", "crest-kayak"]
 
 
 def html(client, path):
@@ -18,7 +19,7 @@ def html(client, path):
 
 
 def machines(page):
-    return re.findall(r'class="gx-m gx-m--[a-z]+" href="(/vehicles/[a-z-]+)"', page)
+    return re.findall(r'class="gx-m gx-m--[a-z_]+ [^"]*" href="(/vehicles/[a-z-]+)"', page)
 
 
 def names(page):
@@ -30,18 +31,27 @@ def test_the_default_collection_is_four_chapters_in_the_planned_order(client):
     page = html(client, "/garage-concept")
     assert re.findall(r'data-chapter="([a-z]+)"', page) == ["performance", "street", "beyond", "water"]
     assert re.findall(r'<h2 id="ch-[a-z]+">([^<]+)</h2>', page) == ["Performance", "Street &amp; Classics", "Beyond the Pavement", "On the Water"]
-    assert machines(page) == [f"/vehicles/{s}" for s in ["grotti-cheetah", "vapid-stanier", "vapid-ganado", "vapid-dominator-buggy", "dinka-enduro", "shitzu-squalo", "crest-kayak"]]
-    assert len(set(machines(page))) == 7
-    assert page.count("gx-finale reveal") == 1 and page.count('class="gx-customs"') == 1       # the Kayak closes the page; the mod shop sits inside Street & Classics
+    assert machines(page) == [f"/vehicles/{s}" for s in CHAPTER_ORDER] and len(set(machines(page))) == 7
+    assert page.count("gx-finale reveal") == 1                                       # the Kayak closes the page
     street = page.split('data-chapter="street"')[1].split('data-chapter="beyond"')[0]
-    assert "gx-customs__strip" in street and street.count("gx-customs__cell ") == 4
+    assert "gx-customs__grid" in street and street.count("gx-customs__cell gx-customs__cell--") == 4   # the mod shop is one mosaic inside Street & Classics
+
+
+def test_each_chapter_is_set_differently_not_as_the_same_card_repeated(client):
+    page = html(client, "/garage-concept")
+    layouts = [("performance", "gx-perf"), ("street", "gx-street"), ("beyond", "gx-duo"), ("water", "gx-sea-row")]
+    for key, cls in layouts:
+        block = page.split(f'data-chapter="{key}"')[1].split("</section>")[0]
+        assert cls in block, key
+    roles = re.findall(r'class="gx-m gx-m--([a-z_]+) ', page)
+    assert roles == ["feature", "lead", "second", "duo_a", "duo_b", "sea_a", "finale"]  # seven machines, seven roles
 
 
 def test_the_mod_shop_keeps_rockstars_set_titles_and_invents_no_model(client):
     page = html(client, "/garage-concept")
-    strip = page.split("gx-customs__strip")[1].split("</ul>")[0]
-    assert re.findall(r"<figcaption>([^<]+)</figcaption>", strip) == ["Rideout Customs Mod Shop", "One-Eyed Willie&#39;s Mod Shop", "Classic Car Collection", "Classic Car Collection"]
-    assert not re.search(r"Cheetah|Dominator|Squalo|Stanier|Ganado|Enduro|Kayak", strip)
+    grid = page.split("gx-customs__grid")[1].split("</ul>")[0]
+    assert re.findall(r"<figcaption>([^<]+)</figcaption>", grid) == ["Rideout Customs Mod Shop", "One-Eyed Willie&#39;s Mod Shop", "Classic Car Collection", "Classic Car Collection"]
+    assert not re.search(r"Cheetah|Dominator|Squalo|Stanier|Ganado|Enduro|Kayak", grid)
     assert "has not published" not in page and "not published" not in page
 
 
@@ -63,7 +73,7 @@ def test_the_chapter_lines_are_visual_themes_not_claims():
 def test_any_filter_search_sort_or_page_gives_an_ordered_list_not_chapters(client):
     for path in ("/garage-concept?category=boat", "/garage-concept?q=vapid", "/garage-concept?sort=name_asc", "/garage-concept?per_page=3&page=2"):
         page = html(client, path)
-        assert "data-chapter=" not in page and 'class="gx-customs"' not in page and "gx-finale" not in page, path
+        assert "data-chapter=" not in page and "gx-customs" not in page and "gx-finale" not in page and "data-sea" not in page, path
         assert 'class="container--wide gx-list"' in page, path
 
 
@@ -85,47 +95,72 @@ def test_an_empty_search_and_bad_input_are_handled(client):
 
 
 # ------------------------------------------------------------------ the opening
-def test_the_opening_holds_all_seven_scenes_and_the_index(client):
+def test_the_opening_holds_all_seven_scenes_the_index_and_the_showcase_controls(client):
     page = html(client, "/garage-concept")
     stage = page.split("data-stage")[1].split("</section>")[0]
     assert stage.count("data-panel=") == 7 and stage.count("data-pick=") == 7 and stage.count('fetchpriority="high"') == 1
     assert re.findall(r'class="gx-scene gx-scene--([a-z]+)', stage) == ["br", "br", "br", "band", "band", "ml", "ml"]
     assert stage.count('class="gbtn gx-btn"') == 7 and stage.count("data-step=") == 2 and "data-ctl hidden" in stage
-    assert page.count("<h1") == 1 and "<video" not in stage and "autoplay" not in stage.lower()
+    assert page.count("<h1") == 1 and "<video" not in stage
+    assert re.search(r'data-play-ui hidden', stage) and 'data-playpause aria-pressed="false" aria-label="Pause the showcase"' in stage      # the control exists only when script can run it
+    assert 'class="gx-play__bar"' in stage and "data-count" in stage
+    assert stage.count('class="gx-bloom"') == 2                                                  # the two long, low machines glow into their words
     assert "Seven machines of Leonida" in page
+
+
+def test_the_showcase_clock_is_built_to_wait_and_never_to_scroll():
+    js = (ROOT / "app" / "static" / "js" / "garage_concept.js").read_text(encoding="utf-8")
+    assert "dwellSeconds >= 2 && dwellSeconds <= 30 ? dwellSeconds : 7" in js                    # seven seconds a scene; 2 to 30 only as a review switch
+    for condition in ("userPaused", "document.hidden", "holding.pointer", "holding.focus", "visible", "heading === current", "IntersectionObserver", "visibilitychange", "tv:motion"):
+        assert condition in js, condition
+    assert "scrollTo(" not in js.replace("list.scrollTo", "") and "scrollIntoView" not in js and "window.scroll" not in js   # it never scrolls the page
+    assert "saveData" in js                                                                      # and it does not run on data saver
 
 
 def test_every_scene_has_a_considered_composition():
     assert set(media_slots.GARAGE_SCENES) == set(SLUGS)
     assert {v["plate"] for v in media_slots.GARAGE_SCENES.values()} <= {"br", "bl", "ml", "band"}
-    # the long, low machines (which fill the width of the picture) have their words in a band beneath it, where nothing can cross the machine
     assert media_slots.GARAGE_SCENES["vapid-stanier"]["plate"] == "band" and media_slots.GARAGE_SCENES["vapid-ganado"]["plate"] == "band"
     assert media_slots.GARAGE_SCENES["dinka-enduro"]["plate"] == "ml"
+    for scene in media_slots.GARAGE_SCENES.values():
+        for box in scene["subject"]:
+            x0, y0, x1, y1 = box
+            assert 0 <= x0 < x1 <= 1 and 0 <= y0 < y1 <= 1
 
 
 def test_machines_with_a_second_picture_are_not_shown_by_the_picture_that_opens_the_page():
     for slug in ("grotti-cheetah", "vapid-dominator-buggy", "shitzu-squalo", "vapid-stanier"):
         spread, pick = media_slots.GARAGE_SPREADS[slug], media_slots.GARAGE_PICKS[slug]
-        assert spread["main"] != pick["stage"] and spread["detail"] not in (spread["main"], pick["stage"])
-        assert spread["detail_label"]
-        assert not re.search(r"horsepower|mph|km/h|top speed", spread["detail_label"], re.I)
+        assert spread["main"] != pick["stage"], slug
+    for slug in ("grotti-cheetah", "shitzu-squalo"):
+        spread = media_slots.GARAGE_SPREADS[slug]
+        assert spread["second"] not in (spread["main"], media_slots.GARAGE_PICKS[slug]["stage"]) and spread["second_label"]
+        assert not re.search(r"horsepower|mph|km/h|top speed", spread["second_label"], re.I)
 
 
-def test_a_tall_picture_keeps_its_name_beneath_it_so_it_never_crosses_the_machine(client):
+# ------------------------------------------------------------------ the sea clip
+def test_the_sea_clip_is_asked_for_only_by_script_and_has_a_still_beneath_it(client):
     page = html(client, "/garage-concept")
-    for slug in ("vapid-ganado", "dinka-enduro"):
-        block = page.split(f'href="/vehicles/{slug}" data-vehicle="{slug}"')[1].split("</a>")[0]
-        main = block.split("gx-pic--main")[1].split("gx-pic__veil")[0]
-        assert "gx-m__name" not in main                                                       # the name is not inside the picture
-        assert "gx-m__title--below" in block
+    if "data-sea" in page and "gx-sea__video" in page:
+        video = re.search(r'<video[^>]*>', page).group(0)
+        assert "muted" in video and "playsinline" in video and 'preload="none"' in video and " src=" not in video and "data-src=" in video
+        assert "gx-sea__still" in page.split("data-sea")[1].split("</div>")[0]
+        assert "autoplay" not in video                                                          # script decides, and only when motion is allowed
+    assert "<video" not in html(client, "/vehicles")
+
+
+def test_garage_clips_are_servable_from_their_own_folder_and_only_that():
+    assert local_media.SAFE_NAME.match("clips/garage/on-the-water.mp4") and local_media.SAFE_NAME.match("clips/garage/on-the-water.jpg")
+    for bad in ("clips/garage/../secret.mp4", "clips/garage/sub/x.mp4", "garage/on-the-water.mp4", "clips/garage/On-The-Water.mp4", "clips/garage/x.exe"):
+        assert not local_media.SAFE_NAME.match(bad), bad
 
 
 # ------------------------------------------------------------------ technical guards
 def test_the_concept_uses_no_inline_styles_and_every_cut_it_uses_is_in_the_stylesheet(client):
+    garage = (ROOT / "app" / "static" / "css" / "garage.css").read_text(encoding="utf-8")
     for path in ("/garage-concept", "/garage-concept?category=boat"):
         page = html(client, path)
         assert not re.search(r"<[^>]+\sstyle=", page)
-        garage = (ROOT / "app" / "static" / "css" / "garage.css").read_text(encoding="utf-8")
         for attr in ("data-px", "data-py", "data-pxn", "data-pyn", "data-zoom", "data-zx", "data-zy"):
             for value in set(re.findall(rf'{attr}="([0-9.]+)"', page)):
                 assert f'[{attr}="{value}"]' in garage, (attr, value)
@@ -139,10 +174,10 @@ def test_concept_styles_only_define_gx_selectors_and_never_catch_presses_over_a_
     allowed = re.compile(r"^(html(\.motion-on|:not\(\.motion-on\))?\s+)?(\.gx[\w-]*|\[data-cat=\"[a-z]+\"\]|\[data-chapter=\"[a-z]+\"\]|\.gx\s)")
     stray = [s for s in selectors if s and not allowed.match(s) and not (s.startswith("html") and "gx-" in s)]
     assert not stray, stray[:5]
-    # a scene being replaced cannot be pressed, and every layer that only decorates is transparent to the pointer
     assert re.search(r"\.gx-scene\.is-leaving \{[^}]*pointer-events: none", css)
     for decoration in (".gx-grade", ".gx-pic__veil"):
         assert re.search(re.escape(decoration) + r" \{[^}]*pointer-events: none", css), decoration
+    assert re.search(r"\.gx-sea \{[^}]*", css) and "gx-sea__video" in css
 
 
 def test_only_the_concept_page_loads_the_concept_assets(client):

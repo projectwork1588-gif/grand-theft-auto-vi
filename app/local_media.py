@@ -1,6 +1,7 @@
 """Locally built media (media/clips/, media/cinematic/ and media/hero/). All three folders are Git-ignored.
 
 clips/      loops and the cast reel, built by `scripts.fetch_clips` and `scripts.make_loops`.
+clips/garage/  the Garage's one atmosphere clip and its two stills, built by `scripts.make_garage_clips` from Rockstar's trailers.
 cinematic/  the three homepage moments built by `scripts.make_cinematics`: moment-N.mp4, moment-N.jpg (poster) and
             moment-N-mobile.mp4 (a lighter phone cut), for N = 1, 2, 3. They exist only after that script has run.
 
@@ -16,7 +17,7 @@ from pathlib import Path
 
 from flask import current_app
 
-SAFE_NAME = re.compile(r"^(?:clips|cinematic|hero)/[a-z0-9-]+\.(?:mp4|jpg|webp)$")
+SAFE_NAME = re.compile(r"^(?:clips/garage|clips|cinematic|hero)/[a-z0-9-]+\.(?:mp4|jpg|webp)$")
 CINEMATIC_SLOTS = ("moment-1", "moment-2", "moment-3")
 DEFAULT_ROOT = Path(__file__).resolve().parent.parent / "media"
 

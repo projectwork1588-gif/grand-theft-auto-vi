@@ -1,10 +1,11 @@
-// Team Valkyrie | Garage concept (Stage A.2) | progressive enhancement only. Every part works without this file:
+// Team Valkyrie | Garage concept (Stage A.3) | progressive enhancement only. Every part works without this file:
 // the index is a row of links to each vehicle's page, the collection is a plain GET form, each machine in it is one link.
 (function () {
   "use strict";
 
   function each(list, fn) { Array.prototype.forEach.call(list, fn); }
   var LEAVE = 1000;  // how long the scene being replaced stays under the one arriving: the length of the opening frame, in step with garage_concept.css
+  var params = new URLSearchParams(window.location.search);
 
   // run `fn` once the picture has arrived and been decoded (or after a moment, so a slow connection still gets the page)
   function whenReady(img, fn) {
@@ -23,8 +24,8 @@
     each(document.querySelectorAll(".gshot"), function (img) { if (img.complete && img.naturalWidth === 0 && img.currentSrc) { img.classList.add("is-broken"); } });
   });
 
-  // ---- The opening: choose a machine from the index ---------------------------------------------------------------
-  // Nothing moves by itself: the scene changes only when the visitor asks (click, tap, the arrows, a swipe, the arrow keys).
+  // ---- The opening ----------------------------------------------------------------------------------------------
+  // The machines take turns on their own, 01 to 07 and round to 01, each held for a few seconds, and the visitor can choose any at any time.
   // The new scene opens as a frame that grows out of its own number in the index until it fills the window; the one it replaces stays beneath it.
   var stage = document.querySelector("[data-stage]");
   if (stage) {
@@ -33,6 +34,7 @@
     var picks = [].slice.call(stage.querySelectorAll("[data-pick]"));
     var order = picks.map(function (a) { return a.getAttribute("data-pick"); });
     var live = stage.querySelector("[data-stage-live]");
+    var counters = stage.querySelectorAll("[data-count]");
     var current = (picks.filter(function (a) { return a.getAttribute("aria-current") === "true"; })[0] || picks[0]).getAttribute("data-pick");
     var heading = current;
     var requested = 0;
@@ -56,10 +58,13 @@
       return [clamp(((t.left + t.width / 2 - a.left) / a.width) * 100), clamp(((t.top + t.height / 2 - a.top) / a.height) * 100)];
     };
 
-    var show = function (slug) {
+    var elapsed = 0;   // how long the scene on show has been held, in milliseconds (the automatic clock; a choice sets it back to nothing)
+
+    var show = function (slug, auto) {
       var next = panels[slug];
       if (!next || (slug === current && slug === heading)) { return; }
       heading = slug;
+      elapsed = 0;
       warm(slug);
       var token = ++requested;
       whenReady(next.querySelector("img"), function () {
@@ -81,20 +86,102 @@
         next.style.setProperty("--ox", o[0].toFixed(1));
         next.style.setProperty("--oy", o[1].toFixed(1));
         void next.offsetWidth;                           // laid out as the small frame before it grows, so the opening can play
-        next.classList.add("is-active");
+        next.classList.add("is-active", "is-entering");   // the opening plays while this class is on, and leaves nothing behind when it is off
+        window.setTimeout(function () { next.classList.remove("is-entering"); }, 1200);
         current = slug;
+        elapsed = 0;                                     // the dwell starts when the scene is actually on show
         stage.setAttribute("data-vehicle", slug);
         stage.setAttribute("data-plate", next.getAttribute("data-plate") || "");   // where the title of the page sits depends on the composition
         picks.forEach(function (a) {
           if (a.getAttribute("data-pick") === slug) { a.setAttribute("aria-current", "true"); } else { a.removeAttribute("aria-current"); }
         });
+        each(counters, function (c) { c.textContent = ("0" + (order.indexOf(slug) + 1)).slice(-2); });
         var chosen = stage.querySelector('[data-pick="' + slug + '"]');                    // on a phone the index is a row that scrolls: keep the chosen name in view
         var list = chosen && chosen.closest(".gx-index__list");
         if (list && list.scrollWidth > list.clientWidth) { var cr = chosen.getBoundingClientRect(), lr = list.getBoundingClientRect(); list.scrollBy({ left: cr.left + cr.width / 2 - (lr.left + lr.width / 2), behavior: "smooth" }); }
-        if (live) { live.textContent = "Showing the " + ((next.querySelector(".plate") || {}).textContent || slug); }
+        if (live && !auto) { live.textContent = "Showing the " + ((next.querySelector(".plate") || {}).textContent || slug); }   // only a choice is announced, never the clock
+        kick();
       });
     };
-    var step = function (by) { show(order[(order.indexOf(heading) + by + order.length) % order.length]); };
+    var step = function (by, auto) { show(order[(order.indexOf(heading) + by + order.length) % order.length], auto); };
+
+    // ---- the clock -------------------------------------------------------------------------------------------------
+    // The scene is held for DWELL milliseconds and then the next one takes its place. The clock only runs while nothing says otherwise: the
+    // visitor has paused it, a pointer or keyboard is on the scene's words, the index or the controls, the opening is off screen, the tab is
+    // hidden, or the next picture has not arrived yet. It never scrolls the page.
+    var dwellSeconds = parseFloat(params.get("dwell"));
+    var DWELL = (dwellSeconds >= 2 && dwellSeconds <= 30 ? dwellSeconds : 7) * 1000;
+    var saveData = !!(navigator.connection && navigator.connection.saveData);
+    var motionOn = function () { return document.documentElement.classList.contains("motion-on"); };
+    var userPaused = true;      // settled when the page is ready (the site's own script decides whether motion is on): with motion off, or on request, it starts paused; Play still works
+    var holding = { pointer: false, focus: false, touchUntil: 0 };
+    var visible = true;
+    var rafId = 0, last = 0;
+    var playUi = stage.querySelector("[data-play-ui]");
+    var playBtn = stage.querySelector("[data-playpause]");
+    var playWord = stage.querySelector("[data-playword]");
+
+    var canRun = function () {
+      return !userPaused && visible && !document.hidden && !holding.pointer && !holding.focus && performance.now() > holding.touchUntil && heading === current;
+    };
+    var paint = function () {
+      stage.style.setProperty("--p", Math.min(1, elapsed / DWELL).toFixed(3));
+      stage.classList.toggle("is-paused", userPaused);
+      if (playBtn) {
+        playBtn.setAttribute("aria-pressed", userPaused ? "true" : "false");
+        playBtn.setAttribute("aria-label", userPaused ? "Play the showcase" : "Pause the showcase");
+        if (playWord) { playWord.textContent = userPaused ? "Play" : "Pause"; }
+      }
+    };
+    var frame = function (now) {
+      rafId = 0;
+      var dt = Math.min(100, now - last);
+      last = now;
+      if (canRun()) {
+        elapsed += dt;
+        if (elapsed >= DWELL * 0.55 && order.length > 1) { warm(order[(order.indexOf(current) + 1) % order.length]); }   // fetch only the next picture, and only when it is nearly time
+        if (elapsed >= DWELL) { elapsed = 0; step(1, true); }
+        paint();
+      }
+      if (canRun()) { rafId = window.requestAnimationFrame(frame); }
+    };
+    var kick = function () { if (!rafId && canRun()) { last = performance.now(); rafId = window.requestAnimationFrame(frame); } };
+    window.__gxClock = function () { return { elapsed: elapsed, dwell: DWELL, userPaused: userPaused, running: !!rafId, current: current, holding: holding, visible: visible }; };
+
+    if (playUi) { playUi.hidden = false; }
+    paint();
+    if (playBtn) {
+      playBtn.addEventListener("click", function () {
+        userPaused = !userPaused;
+        if (!userPaused) { elapsed = 0; }
+        paint();
+        kick();
+        if (live) { live.textContent = userPaused ? "The showcase is paused." : "The showcase is playing."; }
+      });
+    }
+
+    // the clock waits while a pointer is over, or focus is in, the words of the scene, the index or the controls; a touch holds it for a few seconds
+    var interactive = ".gx-copy, .gx-index, .gx-play";
+    stage.addEventListener("pointerover", function (e) { if (e.pointerType === "mouse" && e.target.closest && e.target.closest(interactive)) { holding.pointer = true; } });
+    stage.addEventListener("pointerout", function (e) {
+      if (e.pointerType !== "mouse") { return; }
+      var to = e.relatedTarget;
+      holding.pointer = !!(to && to.closest && to.closest(interactive) && stage.contains(to));
+      kick();
+    });
+    stage.addEventListener("pointerdown", function (e) { if (e.pointerType !== "mouse" && e.target.closest && e.target.closest(interactive)) { holding.touchUntil = performance.now() + 5000; window.setTimeout(kick, 5100); } });
+    stage.addEventListener("focusin", function (e) { if (e.target.closest && e.target.closest(interactive)) { holding.focus = true; } });
+    stage.addEventListener("focusout", function (e) { var to = e.relatedTarget; holding.focus = !!(to && to.closest && to.closest(interactive) && stage.contains(to)); kick(); });
+    document.addEventListener("visibilitychange", kick);
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(function (entries) { visible = entries[entries.length - 1].intersectionRatio >= 0.35; kick(); }, { threshold: [0, 0.35, 0.6, 1] }).observe(stage);
+    }
+    document.addEventListener("tv:motion", function () {          // the site's own motion switch: off pauses it, on lets it run again
+      if (!motionOn()) { userPaused = true; } else if (params.get("autoplay") !== "0") { userPaused = false; elapsed = 0; }
+      paint(); kick();
+    });
+    var settle = function () { userPaused = params.get("autoplay") === "0" || saveData || !motionOn(); paint(); kick(); };
+    if (document.readyState !== "complete") { document.addEventListener("DOMContentLoaded", settle); } else { settle(); }   // after the site's own script has set the motion class (it runs just before DOMContentLoaded)
 
     picks.forEach(function (a, i) {
       a.addEventListener("click", function (e) {
@@ -133,11 +220,34 @@
       });
     }
 
-    // once the page has settled, fetch the next scene's picture quietly (not on phones or with data saver)
-    var idle = window.requestIdleCallback || function (fn) { return window.setTimeout(fn, 1500); };
-    var thrifty = (navigator.connection && navigator.connection.saveData) || !window.matchMedia("(hover: hover)").matches;
-    window.addEventListener("load", function () { if (!thrifty) { idle(function () { if (order[1]) { warm(order[1]); } }); } });
+    // the first scene has its picture; the next is fetched only when it is nearly time (see the clock), never all seven at once
   }
+
+  // ---- The sea clip: a few seconds of Rockstar's own footage, played once as the finale comes into view, then it rests on its last frame ----------
+  // The still picture is always there beneath it, so nothing flashes; the video file is not asked for until the band is near the window, and not at all
+  // when motion is off, data saver is on, or the browser cannot play it.
+  each(document.querySelectorAll("[data-sea]"), function (sea) {
+    var video = sea.querySelector("video");
+    if (!video || !("IntersectionObserver" in window)) { return; }
+    var saveData = !!(navigator.connection && navigator.connection.saveData);
+    var started = false;
+    var near = new IntersectionObserver(function (entries) {
+      if (started || !entries[0].isIntersecting) { return; }
+      if (!document.documentElement.classList.contains("motion-on") || saveData || params.get("autoplay") === "0") { near.disconnect(); return; }
+      video.src = video.getAttribute("data-src");
+      video.load();
+      near.disconnect();
+      var play = new IntersectionObserver(function (e) {
+        if (started || !e[0].isIntersecting) { return; }
+        started = true;
+        play.disconnect();
+        var go = function () { var p = video.play(); if (p && p.then) { p.then(function () { sea.classList.add("is-playing"); }, function () { /* the browser said no: the still stays */ }); } };
+        if (video.readyState >= 3) { go(); } else { video.addEventListener("canplay", go, { once: true }); }
+      }, { threshold: 0.3 });
+      play.observe(sea);
+    }, { rootMargin: "700px 0px" });
+    near.observe(sea);
+  });
 
   // ---- Leaving for a vehicle's page: the chosen picture is the one that grows into it (garage.css) ----------------
   window.addEventListener("pageswap", function (e) {
