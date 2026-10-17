@@ -10,7 +10,7 @@ export default async function (b) {
     await b.send("Emulation.setDeviceMetricsOverride", { width: w, height: H[w] || 900, deviceScaleFactor: 1, mobile: w < 700 });
     await b.open(BASE + "/about", 100);
     await b.eval(`localStorage.setItem("tv-motion", "0"); true`);
-    await b.open(BASE + "/vehicles", 1500);
+    await b.open(BASE + (process.env.GARAGE_PATH || "/vehicles"), 1500);
     const slugs = await b.eval(`[...document.querySelectorAll("[data-pick]")].map(a => a.dataset.pick)`);
     for (const slug of slugs) {
       await b.eval(`window.scrollTo(0, 0); document.querySelector('[data-pick="${slug}"]').click(); true`);

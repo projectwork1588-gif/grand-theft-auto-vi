@@ -10,7 +10,7 @@
 import { writeFileSync } from "node:fs";
 const BASE = process.env.TL_BASE || "http://127.0.0.1:5057";
 const OUT = process.env.NET_OUT || "review/network-analysis.txt";
-const ROUTES = ["/vehicles", "/vehicles/grotti-cheetah", "/vehicles/vapid-dominator-buggy", "/vehicles/shitzu-squalo", "/vehicles/vapid-ganado", "/vehicles/dinka-enduro", "/vehicles/crest-kayak"];
+const ROUTES = process.env.NET_ROUTES ? process.env.NET_ROUTES.split(",") : ["/vehicles", "/vehicles/grotti-cheetah", "/vehicles/vapid-dominator-buggy", "/vehicles/shitzu-squalo", "/vehicles/vapid-ganado", "/vehicles/dinka-enduro", "/vehicles/crest-kayak"];
 const SETUPS = [[390, 844, 3], [390, 844, 2], [820, 1180, 2], [1440, 900, 1], [1440, 900, 2], [1920, 1080, 1]];
 const imw = (u) => Number((/imwidth=(\d+)/.exec(u) || [])[1] || 0);
 const base = (u) => u.split("?")[0];

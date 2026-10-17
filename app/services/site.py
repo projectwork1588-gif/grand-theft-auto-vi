@@ -489,6 +489,79 @@ def vehicle_index(args):
     return result
 
 
+# ---------------------------------------------------------------- the concept collection: editorial spreads instead of a grid of cards
+_SPREAD_SHAPES = {   # (wide screens, phones): the box each picture is cut for, width over height
+    "feature": {"main": (1.6, 1.25), "detail": (0.78, 1.5)},
+    "pair_a": {"main": (0.95, 1.2), "detail": (1.5, 1.5)},
+    "pair_b": {"main": (1.45, 1.2), "detail": (1.5, 1.5)},
+    "finale": {"main": (2.3, 1.1), "detail": (1.5, 1.5)},
+}
+_BAY_SHAPE = {"bay": (2.0, 1.4)}
+
+
+def spread_plan(count):
+    """How many machines each spread holds: one, two, one, two ... with no orphan (a lone last machine closes the page as the finale)."""
+    plan, left, i = [], count, 0
+    while left > 0:
+        take = min(1 if i % 2 == 0 else 2, left)
+        if left == 2 and take == 1:
+            take = 2
+        plan.append(take)
+        left -= take
+        i += 1
+    return plan
+
+
+def _concept_entry(entry, frames, kind):
+    pick = media_slots.GARAGE_SPREADS.get(entry["slug"], {})
+    main = frames.get(pick.get("main"))
+    detail = frames.get(pick.get("detail"))
+    shapes = _SPREAD_SHAPES[kind]
+    return {**entry, "kind": kind, "cat": entry.get("category_slug") or "",
+            "main": _garage_picture(main, {"main": shapes["main"]}, pick.get("zoom")) if main else entry["card"],
+            "detail": _garage_picture(detail, {"detail": shapes["detail"]}) if detail else None,
+            "detail_label": pick.get("detail_label", "")}
+
+
+def vehicle_concept(args):
+    """The Garage as the concept page shows it: the same opening and the same MySQL-backed search, filter, sort and paging, with the
+    results laid out as spreads."""
+    result = vehicle_index(args)
+    rows = result["data"]
+    wanted = set()
+    for r in rows:
+        pick = media_slots.GARAGE_SPREADS.get(r["slug"], {})
+        wanted.update(pick[k] for k in ("main", "detail") if pick.get(k))
+    wanted.update(slug for slug, _ in media_slots.GARAGE_MOMENTS)
+    frames = media.by_slugs(wanted)
+    plan = spread_plan(len(rows))
+    spreads, k = [], 0
+    for index, take in enumerate(plan):
+        last = index == len(plan) - 1
+        kinds = ["finale"] if (take == 1 and last) else (["feature"] if take == 1 else ["pair_a", "pair_b"])
+        items = [_concept_entry(rows[k + j], frames, kinds[j]) for j in range(take)]
+        spreads.append({"kind": "finale" if kinds[0] == "finale" else ("feature" if take == 1 else "pair"), "cards": items})
+        k += take
+    result["spreads"] = spreads
+    # the lineup in the opening: each machine's bay picture
+    ids = vehicles_repo.ids_by_slug([r["slug"] for r in result["stage"]])
+    stage_frames = media.by_slugs({media_slots.GARAGE_PICKS.get(r["slug"], {}).get("stage") for r in result["stage"]} - {None})
+    for r in result["stage"]:
+        m = stage_frames.get(media_slots.GARAGE_PICKS.get(r["slug"], {}).get("stage"))
+        r["bay"] = _garage_picture(m, _BAY_SHAPE) if m else r["thumb"]
+        r["detail_pick"] = media_slots.GARAGE_SPREADS.get(r["slug"], {})
+    # the customs reel (Rockstar's unnamed mod-shop and classic-car pictures), after the first two spreads
+    moments = []
+    for slug, caption in media_slots.GARAGE_MOMENTS:
+        picture = _garage_picture(frames.get(slug), {"reel": (1.3, 1.3)})
+        if picture:
+            moments.append({**picture, "caption": caption})
+    plain = not (result["filters"].get("q") or result["filters"].get("category")) and result["pagination"]["page"] == 1
+    result["reel"] = moments if plain and len(spreads) >= 2 else []
+    result["reel_after"] = 1
+    return result
+
+
 def _garage_moments():
     frames = media.by_slugs({slug for slug, _ in media_slots.GARAGE_MOMENTS})
     out = []

@@ -8,6 +8,7 @@ import { join, resolve } from "node:path";
 
 const BASE = process.env.GARAGE_BASE || "http://127.0.0.1:5057";
 const OUT = process.env.GARAGE_OUT || "review/garage-recordings/";
+const PAGE = process.env.GARAGE_PATH || "/vehicles";                      // the Garage page recorded (the concept page has its own path)
 const FFMPEG = process.env.FFMPEG || (() => {
   const dir = ".venv/Lib/site-packages/imageio_ffmpeg/binaries";
   return existsSync(dir) ? join(dir, readdirSync(dir).find((f) => f.startsWith("ffmpeg"))) : "ffmpeg";
@@ -73,7 +74,7 @@ export default async function (b) {
   const key = async (k, code, vk) => { await b.send("Input.dispatchKeyEvent", { type: "keyDown", key: k, code, windowsVirtualKeyCode: vk }); await b.send("Input.dispatchKeyEvent", { type: "keyUp", key: k, code, windowsVirtualKeyCode: vk }); };
 
   await b.send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
-  await b.open(BASE + "/vehicles", 2500);
+  await b.open(BASE + PAGE, 2500);
   await record("01-opening-lineup-desktop", 1440, 900, async () => {
     await b.sleep(900);
     for (const slug of ["vapid-dominator-buggy", "shitzu-squalo", "vapid-stanier", "dinka-enduro", "crest-kayak", "grotti-cheetah"]) { await click(`[data-pick="${slug}"]`); await b.sleep(1700); }
@@ -83,11 +84,11 @@ export default async function (b) {
     for (let i = 0; i < 3; i++) { await key("ArrowRight", "ArrowRight", 39); await b.sleep(1500); }
   });
   await record("03-showroom-scroll-desktop", 1440, 900, async () => {
-    for (let y = 0; y <= 2300; y += 90) { await b.eval(`window.scrollTo(0, ${y}); true`); await b.sleep(40); }
+    for (let y = 0; y <= 4800; y += 90) { await b.eval(`window.scrollTo(0, ${y}); true`); await b.sleep(40); }
     await b.sleep(900);
-    for (let y = 2300; y >= 0; y -= 120) { await b.eval(`window.scrollTo(0, ${y}); true`); await b.sleep(40); }
+    for (let y = 4800; y >= 0; y -= 160) { await b.eval(`window.scrollTo(0, ${y}); true`); await b.sleep(40); }
   });
-  await b.open(BASE + "/vehicles", 1500);
+  await b.open(BASE + PAGE, 1500);
   await record("04-showroom-filters-desktop", 1440, 900, async () => {
     await b.eval(`document.getElementById("showroom").scrollIntoView(); true`); await b.sleep(900);
     await b.eval(`document.querySelector('.ctl__cats a[href*="category=boat"]').click(); true`); await b.sleep(2200);
@@ -103,15 +104,15 @@ export default async function (b) {
     await key("ArrowRight", "ArrowRight", 39); await b.sleep(900);
     await key("Escape", "Escape", 27); await b.sleep(900);
   });
-  await b.open(BASE + "/vehicles", 2500);
+  await b.open(BASE + PAGE, 2500);
   await record("06-choose-a-vehicle-transition-desktop", 1440, 900, async () => {
     await b.sleep(800);
-    await b.eval(`document.querySelector('.scene.is-active .gbtn').click(); true`);
+    await b.eval(`document.querySelector('[data-stage] [data-panel]:not([hidden]) a.gbtn').click(); true`);
     await b.sleep(2600);
     // the page has changed by now (a navigation has only two states to see); scroll the new page so the recording also shows it settling
     for (let y = 0; y <= 760; y += 40) { await b.eval(`window.scrollTo(0, ${y}); true`); await b.sleep(50); }
   });
-  await b.open(BASE + "/vehicles", 2500);
+  await b.open(BASE + PAGE, 2500);
   await record("07-opening-lineup-phone", 390, 844, async () => {
     await b.sleep(900);
     for (const slug of ["vapid-dominator-buggy", "shitzu-squalo", "vapid-stanier"]) { await click(`[data-pick="${slug}"]`); await b.sleep(1700); }

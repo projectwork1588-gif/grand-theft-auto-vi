@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% from "_components.html" import pager %}
+{% from "vehicles/_garage.html" import gshot, nameplate %}
+{% block title %}Garage{% endblock %}
+{% block description %}Machines of Leonida: the vehicles Rockstar has shown from Grand Theft Auto VI, in its own screenshots.{% endblock %}
+{% block header_class %}{% endblock %}
+{% block head_extra %}<meta name="robots" content="noindex"><link rel="stylesheet" href="{{ url_for('static', filename='css/garage.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/garage_concept.css') }}"><script src="{{ url_for('static', filename='js/garage_concept.js') }}" defer></script>{% endblock %}
+
+{# One machine in the collection: a large picture with its name set over the foot, a close-up beside or over its corner, and a line of words. The whole block is one link. #}
+{% macro card(v, sizes_main, sizes_detail='(min-width: 900px) 24vw, 46vw') -%}
+  <a class="gx-card" href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}">
+    <span class="gx-pic gx-pic--main">{{ gshot(v.main, sizes_main, cut='main') }}<span class="gx-pic__veil" aria-hidden="true"></span>
+      <span class="gx-pic__tag"><i aria-hidden="true"></i>{{ v.category_name }}</span>
+      <span class="gx-pic__title">
+        <span class="gx-card__kicker"><span class="gx-no">{{ '%02d' % v.number }}</span>{% if v.theme %}<span>{{ v.theme }}</span>{% endif %}</span>
+        {% if v.make_line %}<span class="gx-card__make">{{ v.make_line }}</span>{% endif %}
+        <h3 class="gx-card__name">{{ v.model_line }}</h3>
+      </span>
+    </span>
+    <span class="gx-card__rail">
+      {% if v.detail %}<span class="gx-pic gx-pic--detail">{{ gshot(v.detail, sizes_detail, cut='detail') }}{% if v.detail_label %}<small>{{ v.detail_label }}</small>{% endif %}</span>{% endif %}
+      <span class="gx-card__words">
+        <span class="gx-card__sum">{{ v.summary }}</span>
+        <span class="gx-card__go">Explore<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </span>
+    </span>
+  </a>
+{%- endmacro %}
+
+{% block content %}
+{% set words = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve'] %}
+<div class="garage gx" id="top">
+
+  {# ---------------------------------------------------------------- the opening: one scene at a time, the whole garage as a row of bays beneath it #}
+  <section class="gx-open" data-stage data-vehicle="{{ stage[0].slug if stage else "" }}" aria-labelledby="garage-title">
+    <div class="gx-scenes" data-surface>
+      {% for v in stage %}
+      <article class="gx-scene gx-scene--{{ v.side }} gx-scene--{{ v.vpos }}{% if loop.first %} is-active{% endif %}" id="scene-{{ v.slug }}" data-panel="{{ v.slug }}" data-vehicle="{{ v.slug }}"{% if not loop.first %} hidden{% endif %}>
+        <div class="gx-art">{{ gshot(v.stage, '100vw', eager=loop.first, cut='stage') }}</div>
+        <div class="gx-grade" aria-hidden="true"></div>
+        <p class="gx-numeral" aria-hidden="true">{{ '%02d' % v.number }}</p>
+        <div class="gx-copy">
+          <p class="gx-kicker"><span>{{ '%02d' % v.number }}</span>{% if v.theme %}{{ v.theme }}{% endif %}<i aria-hidden="true"></i>{{ v.category_name }}</p>
+          {{ nameplate(v, 'h2', 'gx-plate') }}
+          <p class="gx-sum">{{ v.summary }}</p>
+          <p class="gx-actions"><a class="gbtn gx-btn" href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}" aria-label="Explore the {{ v.name }}">Explore<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a></p>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    <div class="gx-dock">
+      <div class="gx-dock__id">
+        <p class="eyebrow">The Garage</p>
+        <h1 id="garage-title">Machines of Leonida</h1>
+        <div class="gx-ctl" data-ctl hidden>
+          <button class="cine__arrow" type="button" data-step="-1" aria-label="Previous machine"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <p class="gx-count" aria-hidden="true"><b data-count>01</b> / {{ '%02d' % stage | length }}</p>
+          <button class="cine__arrow" type="button" data-step="1" aria-label="Next machine"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+      </div>
+      <nav class="gx-bays" aria-label="Choose a machine" data-lineup>
+        <ol class="gx-bays__list">
+          {% for v in stage %}
+          <li><a class="gx-bay" href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}" data-pick="{{ v.slug }}" aria-controls="scene-{{ v.slug }}"{% if loop.first %} aria-current="true"{% endif %} aria-label="{{ v.name }}, {{ v.category_name }}">
+            <span class="gx-bay__art" aria-hidden="true">{{ gshot(v.bay, '(min-width: 900px) 12vw, 120px', cut='bay') }}</span>
+            <span class="gx-bay__no" aria-hidden="true">{{ '%02d' % v.number }}</span>
+            <span class="gx-bay__name" aria-hidden="true">{{ v.model_line }}</span>
+          </a></li>
+          {% endfor %}
+        </ol>
+      </nav>
+    </div>
+    <p class="visually-hidden" role="status" aria-live="polite" data-stage-live></p>
+  </section>
+
+  {# ---------------------------------------------------------------- the collection: the database, browsed, laid out as spreads #}
+  <section class="gx-coll" id="showroom" aria-labelledby="coll-title">
+    <div class="container--wide">
+      <header class="gx-coll__head">
+        <p class="gx-coll__count" aria-hidden="true">{{ '%02d' % total_all }}</p>
+        <div>
+          <p class="eyebrow">The collection</p>
+          <h2 id="coll-title">{{ words[total_all] if total_all < words | length else total_all }} machine{{ '' if total_all == 1 else 's' }} of Leonida</h2>
+        </div>
+        <p class="gx-coll__lede">Golden-hour coupes, mud-caked buggies and neon-lit cruisers, each in Rockstar&rsquo;s own screenshots.</p>
+      </header>
+
+      <div class="ctl">
+        {% if categories | length > 1 %}
+        <nav class="ctl__cats" aria-label="Vehicle categories">
+          <a href="{{ url_for('pages.garage_concept', q=filters.q, sort=(filters.sort if filters.sort != 'featured' else none)) }}#showroom"{% if not filters.category %} aria-current="true"{% endif %}>All</a>
+          {% for c in categories %}
+          <a class="gx-catlink" data-cat="{{ c.slug }}" href="{{ url_for('pages.garage_concept', category=c.slug, q=filters.q, sort=(filters.sort if filters.sort != 'featured' else none)) }}#showroom"{% if filters.category == c.slug %} aria-current="true"{% endif %}><i aria-hidden="true"></i>{{ c.name }}<small>{{ c.vehicle_count }}</small></a>
+          {% endfor %}
+        </nav>
+        {% endif %}
+        <form class="ctl__form" method="get" action="{{ url_for('pages.garage_concept') }}#showroom" role="search" aria-label="Search and sort the collection">
+          <label class="ctl__search"><span class="visually-hidden">Search by name or maker</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <input type="search" name="q" value="{{ filters.q or '' }}" placeholder="Search" maxlength="100" autocomplete="off" enterkeyhint="search">
+            <button type="submit" class="ctl__go" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </label>
+          <label class="ctl__sort"><span class="visually-hidden">Sort</span>
+            <select name="sort" data-autosubmit aria-label="Sort the collection">
+              {% for value, label in sorts %}<option value="{{ value }}"{% if filters.sort == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+          </label>
+          {% if filters.category %}<input type="hidden" name="category" value="{{ filters.category }}">{% endif %}
+        </form>
+      </div>
+
+      <p class="gresult" role="status" aria-live="polite"{% if not active %} hidden{% endif %}>
+        {% if pagination.total %}<b>{{ pagination.total }}</b> {{ 'machine' if pagination.total == 1 else 'machines' }}{% else %}No machines{% endif %}
+        {% if category_name %} in <b>{{ category_name }}</b>{% endif %}{% if filters.q %} matching <b>&ldquo;{{ filters.q }}&rdquo;</b>{% endif %}
+        {% if active %}<a class="gresult__clear" href="{{ url_for('pages.garage_concept') }}#showroom">Clear</a>{% endif %}
+      </p>
+    </div>
+
+    {% if data %}
+    <div class="gx-spreads" data-count="{{ data | length }}">
+      {% for sp in spreads %}
+      {% if sp.kind == 'feature' %}
+      {% set v = sp.cards[0] %}
+      <section class="gx-spread gx-spread--feature gx-spread--{{ 'flip' if loop.index0 % 4 == 2 else 'norm' }} reveal" data-vehicle="{{ v.slug }}" data-cat="{{ v.cat }}" aria-label="{{ v.name }}">
+        <div class="container--wide">{{ card(v, '(min-width: 900px) 70vw, 100vw') }}</div>
+      </section>
+      {% elif sp.kind == 'pair' %}
+      <section class="gx-spread gx-spread--pair reveal" aria-label="{{ sp.cards[0].name }} and {{ sp.cards[1].name }}">
+        <div class="container--wide gx-pair">
+          {% for v in sp.cards %}
+          <div class="gx-pair__item gx-pair__item--{{ 'a' if loop.first else 'b' }}" data-vehicle="{{ v.slug }}" data-cat="{{ v.cat }}">{{ card(v, '(min-width: 900px) ' ~ ('36vw' if loop.first else '52vw') ~ ', 100vw') }}</div>
+          {% endfor %}
+        </div>
+      </section>
+      {% else %}
+      {% set v = sp.cards[0] %}
+      <section class="gx-spread gx-spread--finale reveal" data-vehicle="{{ v.slug }}" data-cat="{{ v.cat }}" aria-label="{{ v.name }}">
+        {{ card(v, '100vw') }}
+      </section>
+      {% endif %}
+
+      {% if reel and loop.index0 == reel_after %}
+      <section class="gx-reel" aria-labelledby="reel-title">
+        <div class="container--wide gx-reel__head">
+          <div><p class="eyebrow">Customs and classics</p><h2 id="reel-title">Built in the mod shop</h2></div>
+          <p>Gold wheels, electric green, a turquoise coupe and a red racer, straight from Rockstar&rsquo;s own screenshots.</p>
+          <a class="link-arrow" href="https://www.rockstargames.com/VI/media/screenshots" target="_blank" rel="noopener noreferrer">On rockstargames.com</a>
+        </div>
+        <ul class="gx-reel__strip">
+          {% for m in reel %}
+          <li class="gx-reel__cell gx-reel__cell--{{ loop.index }}"><figure>{{ gshot(m, '(min-width: 900px) 34vw, 80vw', cut='reel') }}<figcaption>{{ m.caption }}</figcaption></figure></li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% endif %}
+      {% endfor %}
+    </div>
+    <div class="container--wide">{{ pager(pagination) }}</div>
+    {% else %}
+    <div class="container--wide">
+      <div class="gempty">
+        <h3>No machine matches that</h3>
+        <p>{% if filters.q %}Nothing is named or made &ldquo;{{ filters.q }}&rdquo;{% if category_name %} in {{ category_name }}{% endif %}. Try a shorter word.{% else %}There is nothing in that category yet.{% endif %}</p>
+        <a class="gbtn" href="{{ url_for('pages.garage_concept') }}#showroom">Show the whole collection</a>
+      </div>
+    </div>
+    {% endif %}
+
+    <footer class="container--wide gx-end">
+      <a class="gx-end__up" href="#top"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Back to the opening</a>
+      <p class="credit">Screenshots &copy; Rockstar Games.</p>
+    </footer>
+  </section>
+</div>
+{% endblock %}

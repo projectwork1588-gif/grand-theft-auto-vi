@@ -251,3 +251,16 @@ GARAGE_MOMENTS = (
     ("garage-classic-cars-02", "Classic Car Collection"),
     ("garage-classic-cars-04", "Classic Car Collection"),
 )
+
+# Garage concept (Stage A prototype): the pictures the collection's editorial spreads use, chosen so a machine is not shown by the same
+# photograph that opens the page wherever it has a second one. `main` is the large picture, `detail` a close-up set over its corner with
+# `detail_label` (what it shows, nothing more); a vehicle with one picture has `zoom` (scale, x, y) instead and no detail.
+GARAGE_SPREADS = {
+    "grotti-cheetah": {"main": "vehicle-grotti-cheetah-02", "detail": "vehicle-grotti-cheetah-04", "detail_label": "The cabin"},
+    "vapid-dominator-buggy": {"main": "vehicle-vapid-dominator-buggy-02", "detail": "vehicle-vapid-dominator-buggy-03", "detail_label": "Up close"},
+    "shitzu-squalo": {"main": "vehicle-shitzu-squalo-02", "detail": "vehicle-shitzu-squalo-03", "detail_label": "On the hull"},
+    "vapid-stanier": {"main": "vehicle-vapid-stanier-02", "detail": "vehicle-vapid-stanier-04", "detail_label": "The tail light"},
+    "vapid-ganado": {"main": "vehicle-vapid-ganado-01", "zoom": (1.5, 0.80, 0.66)},
+    "dinka-enduro": {"main": "vehicle-dinka-enduro-01", "zoom": (1.45, 0.50, 0.40)},
+    "crest-kayak": {"main": "vehicle-crest-kayak-01", "zoom": (1.4, 0.62, 0.40)},
+}

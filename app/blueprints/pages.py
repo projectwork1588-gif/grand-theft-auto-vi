@@ -21,6 +21,12 @@ def vehicles():
     return render_template("vehicles/index.html", **site.vehicle_index(request.args))
 
 
+@pages_bp.route("/garage-concept")
+def garage_concept():
+    """Stage A prototype of the redesigned Garage (not linked from the site; removed or promoted to /vehicles after the owner decides)."""
+    return render_template("vehicles/concept.html", **site.vehicle_concept(request.args))
+
+
 @pages_bp.route("/vehicles/<slug>")
 def vehicle_detail(slug):
     return render_template("vehicles/detail.html", vehicle=site.vehicle_detail(slug))
