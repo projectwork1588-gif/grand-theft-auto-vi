@@ -1,6 +1,6 @@
 # Gate 3B: Garage v2 (cinematic transformation) — RESUME CHECKPOINT
 
-Saved 2026-10-16 at the owner's request ("pause work and save a resume checkpoint"). This is a **pause**, not a completion or cancellation.
+Saved 2026-10-16 at the owner's request (RESUMED and COMPLETED on 2026-10-17: see docs/GATE3B_GARAGE.md and the v2 review ZIP) ("pause work and save a resume checkpoint"). This is a **pause**, not a completion or cancellation.
 To resume, the owner will say: *"Claude, resume Team Valkyrie Garage Gate 3B from the saved checkpoint."* Then: read this file, inspect the real
 repository and `git status`, reconcile, continue from the first unfinished task in section 6, finish, build the review ZIP and **stop for approval**.
 
