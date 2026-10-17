@@ -223,7 +223,7 @@ GARAGE_FRAMES = {
 #              "viewer" (one large picture, thumbnails, previous and next), "panorama" (one wide picture, two beneath it),
 #              "scene" (one wide picture from the same Rockstar set), or "none" (a vehicle with one picture: the opening is all of it)
 #   gallery    the showcase pictures, in order (never the stage picture)
-#   scene      the shared picture of a "scene" showcase, and the caption it carries
+#   scene      the shared picture of a "scene" showcase, the caption it carries and where to cut it (x, y), so two vehicles sharing one picture show different parts of it
 GARAGE_PICKS = {
     "grotti-cheetah": {"stage": "vehicle-grotti-cheetah-01", "card": "vehicle-grotti-cheetah-02", "side": "right", "vpos": "bottom", "theme": "Golden hour",
                        "story": "mosaic", "gallery": ["vehicle-grotti-cheetah-02", "vehicle-grotti-cheetah-03", "vehicle-grotti-cheetah-04"]},
@@ -236,9 +236,9 @@ GARAGE_PICKS = {
     "vapid-ganado": {"stage": "vehicle-vapid-ganado-01", "card": "vehicle-vapid-ganado-01", "card_zoom": (1.5, 0.80, 0.66), "side": "left", "vpos": "top", "theme": "Coast road",
                      "story": "none", "gallery": []},
     "dinka-enduro": {"stage": "vehicle-dinka-enduro-01", "card": "vehicle-dinka-enduro-01", "card_zoom": (1.45, 0.50, 0.40), "side": "left", "vpos": "bottom", "theme": "Garage door",
-                     "story": "scene", "gallery": [], "scene": ("garage-jasons-safehouse", "From Rockstar's Jason's Safehouse Vehicles screenshots")},
+                     "story": "scene", "gallery": [], "scene": ("garage-jasons-safehouse", "From Rockstar's Jason's Safehouse Vehicles screenshots", (0.46, 0.30))},
     "crest-kayak": {"stage": "vehicle-crest-kayak-01", "card": "vehicle-crest-kayak-01", "card_zoom": (1.4, 0.62, 0.40), "side": "left", "vpos": "bottom", "theme": "Sunset paddle",
-                    "story": "scene", "gallery": [], "scene": ("garage-jasons-safehouse", "From Rockstar's Jason's Safehouse Vehicles screenshots")},
+                    "story": "scene", "gallery": [], "scene": ("garage-jasons-safehouse", "From Rockstar's Jason's Safehouse Vehicles screenshots", (0.66, 1.0))},
 }
 # The Garage's pictures of machines Rockstar does not name: its own set titles are the captions, and nothing more is claimed.
 GARAGE_MOMENTS = (

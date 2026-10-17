@@ -1,92 +1,64 @@
-# Gate 3B: the Garage ("Machines of Leonida")
+# Gate 3B: the Garage, "Machines of Leonida" (version 2)
 
-The Garage was rebuilt from the audit up. This note records why, what was chosen, and how to run and check it. The code is in
-`app/templates/vehicles/`, `app/static/css/garage.css`, `app/static/js/garage.js`, the vehicle section of `app/services/site.py` and the
-Garage block at the end of `app/media_slots.py`. Nothing outside the Garage loads the new stylesheet or script.
+Version 1 (commits `b4a9f35`, `c6459f2`) was rated 4/10 by the owner. Version 2 (`46d0718` onward) is a redesign of the Garage page and the vehicle pages. This note
+records the audit, the direction, the behaviour and how to run and check it. Code: `app/templates/vehicles/`, `app/static/css/garage.css`, `app/static/js/garage.js`, the
+Garage section of `app/services/site.py` and the end of `app/media_slots.py`. Nothing outside the Garage loads the new stylesheet or script.
 
-## 1. Audit: why the old Garage felt weak
-
-* **The opening was a generic banner.** The same `page_hero` every catalogue page uses: a dimmed picture with a title, no way in.
-* **The catalogue was five identical rows.** Image left, text right, then image right, text left. Each vehicle got the same weight and
-  the same crop (16:10 over a 16:9 picture, chosen by a generic "focus" word), so a long car was cut at the nose or the tail.
-* **The controls were chips only.** The back end already supported search, sort and pagination; the page used none of it.
-* **The vehicle page was the generic profile.** About, a two-column facts list, a bento gallery, then three related cards.
-* **The related cards set the vehicle's name at heading size over a busy picture** ("'67 VAPID DOMINATOR BUGGY" at 65 px, three lines,
-  clipped), the complaint that led to this rebuild.
-* **Pictures repeated**: the first gallery picture was the hero, so the same screenshot appeared twice on one page.
-* **Phones got the desktop layout shrunk**, and every picture loaded at the largest size.
-
-What was kept: the routes, the services and repositories (official vehicles only, bound parameters, sort/page validation), the API
-contract, the content-status labels and source links, the media registry, the shared image viewer and the motion policy.
+## 1. Why version 1 failed
+* The opening was one oversized close-up of the Cheetah with a small title: a big picture with text on it, not art direction.
+* Below it, a database-administration look: a wide search bar, category chips, a sort menu and five similar cards.
+* Every vehicle page was the same template (hero, one paragraph, facts plate, gallery, related cards).
+* Developer wording took the space: "Every Machine Rockstar Has Shown", "Not published by Rockstar", "4 official images", "What the pictures are".
+* Five vehicles and 17 pictures were all it knew; the gallery thumbnails looked empty in captures (lazy loading and capture timing).
 
 ## 2. Direction
+A cinematic stage, then a varied mosaic with a customs-and-classics band, then an editorial page per vehicle. Team Valkyrie tokens only; each vehicle has a tint (`--tint`)
+used for light and the lit line. Words sit opposite the vehicle (or above it for a long low car, with the summary beside the name); the picture is drawn at its own 16:9 above the
+controller, never cropped at the sides; on tablets and phones the picture comes first and the words under it.
+Three directions were compared: equal cards (what v1 was), one chapter per vehicle (hides the database), stage + mosaic + per-vehicle sets (chosen).
 
-Three directions were compared on paper: (a) a magazine grid of equal cards, (b) one scrolling "chapter" per vehicle, (c) a stage with a
-lineup, then a planned showroom. (a) is what we had; (b) hides the database and is poor with five vehicles; (c) was chosen.
+## 3. What each part does
+* **Opening** (`.cine`): one machine at a time, seven in the lineup (click, tap, previous/next arrows, swipe, arrow keys, Home/End); the lit line takes the machine's tint; a counter and a
+  live announcement; pictures are decoded before their panel shows; the picture and words move in from the side chosen; no auto-advance. Pointer depth and scroll lag only where the browser
+  allows and the visitor has not asked for reduced motion.
+* **Collection** (`.coll`): headline "Seven machines of Leonida" (counts the data), category pills, a compact search and a sort menu (applies when chosen); a result line only while filtering;
+  rows from `site.garage_rows` (8+4, 4+4+4, 5+7, 7+5, …) so no row has a hole; whole-tile links with number, theme words, maker above model; the customs band shows only on the whole collection.
+  All of it is a real GET against MySQL (`vehicles.list_vehicles`: official only, bound parameters, validated sort and page, pagination).
+* **Vehicle pages**: entrance (picture + large name), the database description set large, credits (maker, type, source), then the showcase set to suit the pictures: Cheetah `mosaic`,
+  Dominator Buggy `viewer` (previous/next, thumbnails, swipe, full-size viewer), Squalo `panorama`, Stanier `mosaic-flip`, Ganado `none` (one picture: nothing empty),
+  Dinka and Kayak `scene` (the shared safehouse picture, cut differently, captioned with Rockstar's set title). The connected-world section appears only when the database records
+  missions or places. Previous/next panels wrap round; the whole lineup follows.
+* **Choosing a vehicle**: the picture grows into the vehicle's page (Chrome cross-document view transition; other browsers load the page). Off under reduced motion.
+* **Honest copy**: one quiet credit line ("Screenshots © Rockstar Games… Rockstar has not published specifications"); no specification, price or performance claim anywhere.
 
-* **The opening** is one machine at a time, large, with its name, maker, a one-line summary and a single action. A lineup of all
-  five sits beneath it (click, tap, arrow keys, Home/End). Nothing advances by itself. Wide screens put the words opposite the vehicle;
-  tablets and phones put the picture on top and the words under it, so a long car is never hidden behind its own title.
-* **The showroom** is the database: real `GET` search, category, sort and pagination, a result line that says what is shown, a clear
-  link, an empty state. The grid is planned (`site.garage_layout`): a feature, a pair, a wide and a narrow, a narrow and a wide, and a
-  last card with no partner always spans the row, so there is never a hole. Every card is one link.
-* **The vehicle page** is an editorial feature: a full-bleed opening, the database description set large, a plate of only verified
-  details, the showcase, the connected world (only if the database records one), and more machines.
-* **Accent**: no new colours or fonts. The label gold marks the lit item; the action pink is the one action colour (the Team Valkyrie
-  tokens, checked by `tests/test_design_tokens.py`, which now also covers `garage.css`).
-
-## 3. Pictures
-
-All 17 official vehicle screenshots (3840 x 2160, Rockstar's own) were inspected one by one. They are the only vehicle pictures the
-project has: Cheetah 4, Dominator Buggy 4, Squalo 4, Stanier 4, Ganado 1. `media_slots.GARAGE_FRAMES` records, for each, what it shows
-(used for the alt text and caption: a description of what is visible, never a claim) and where the subject sits for wide and narrow
-crops. `GARAGE_PICKS` says which picture opens the page and which is the card. The showcase never repeats the opening picture, and a card
-is a different picture from the opening wherever the vehicle has more than one.
-
-The Ganado has one picture. Its page says so ("Rockstar has published one official image of this vehicle so far") instead of inventing a
-gallery, and its card and opening use that picture cut differently.
-
-No generated media exists for the Garage: the pictures are remote references to Rockstar's server, as before, so there is nothing new to
-build or to keep out of Git.
-
-## 4. Behaviour
-
-* **Choosing a vehicle**: the chosen picture grows into the vehicle's page (cross-document view transitions in Chrome; every other
-  browser just loads the page). Off under reduced motion.
-* **Motion**: every transition sits under `html.motion-on`; under the system reduced-motion setting the two pictures that change on request
-  keep a 0.25 s plain fade (no zoom, no rise). The opening has no auto-advance and no loop anywhere.
-* **Pictures** are decoded before their panel is shown, so a change is never a blank frame; the next machine is fetched quietly on
-  desktop, the rest on demand; a picture that fails leaves its tinted frame, not a broken-image icon.
-* **Without script** the opening shows the first machine, the lineup is five links, the showroom is a form and links, the showcase shows
-  its first picture and each thumbnail links to the full picture.
-
-## 5. Database and back end
-
-No schema change, no migration, no new endpoint. `repositories/media.py` gained `counts()` (how many official pictures an entity has);
-`services/site.py` builds the view-models; `frame_pos()` gained an optional `face` argument (Characters calls it as before).
-The old `.garage-rows` and `.more-grid` rules were removed from `pages.css` (no template uses them).
-
-## 6. Checks
-
-`tests/test_gate3b_garage.py` (the planner, the pictures, the opening, the controls and their SQL behaviour, the pages, the CSS scope),
-plus the real-browser scripts in `scripts/qa/`: `garage_interactions.mjs`, `garage_keyboard.mjs`, `garage_resilience.mjs`,
-`garage_stage_shots.mjs`, `garage_review_shots.mjs`, `garage_record.mjs`, `capture_pages.mjs`, and the existing `sweep.mjs`.
+## 4. Data and media
+Migration `database/migrations/006_gate3b_garage.sql` (non-destructive, idempotent, mirrored in `database/seed.sql`): vehicles 14 (Dinka Enduro Motorcycle) and 15 (Crest Kayak), media
+rows 108–114 (their pictures and four atmosphere pictures), `media_vehicles` links, plain editorial copy for the five existing official vehicles. No schema change. Research and sources:
+`docs/MEDIA_INVENTORY.md` ("Garage research") and the review pack's `MEDIA_SOURCES.md`. No generated or downloaded media: every picture is a remote reference to Rockstar's server.
+Applying it to the owner's development database (the owner runs this; nothing is dropped or deleted):
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\python.exe -m scripts.migrate_db --plan
+.\.venv\Scripts\python.exe -m scripts.migrate_db
+```
+
+## 5. Checks
+`tests/test_gate3b_garage.py` (arrangement, picture picks and alt text, the data, the opening, every control against MySQL, each vehicle's set, CSS scope), plus real-browser scripts in
+`scripts/qa/`: `garage_interactions.mjs`, `garage_keyboard.mjs`, `garage_resilience.mjs` (console, no script, reduced motion, images blocked), `garage_stage_shots.mjs`,
+`garage_review_shots.mjs`, `garage_record.mjs`, `capture_pages.mjs`, and the existing `sweep.mjs`.
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q          # stop the preview server first
 .\.venv\Scripts\python.exe -m flask --app wsgi run
-# with the app on 5057 (the preview server), in Git Bash:
+# with the app on 5057 (Git Bash):
 MSYS_NO_PATHCONV=1 node scripts/qa/cdp.mjs scripts/qa/garage_interactions.mjs
 MSYS_NO_PATHCONV=1 node scripts/qa/cdp.mjs scripts/qa/garage_keyboard.mjs
 MSYS_NO_PATHCONV=1 node scripts/qa/cdp.mjs scripts/qa/garage_resilience.mjs
-SWEEP_ROUTES=/vehicles,/vehicles/vapid-stanier MSYS_NO_PATHCONV=1 node scripts/qa/cdp.mjs scripts/qa/sweep.mjs
+SWEEP_ROUTES=/vehicles,/vehicles/crest-kayak MSYS_NO_PATHCONV=1 node scripts/qa/cdp.mjs scripts/qa/sweep.mjs
 ```
 
-## 7. Limits
-
-* Five vehicles and 17 pictures: a filtered showroom can hold one card, and pagination only appears past nine vehicles (it works; it is
-  tested with `per_page=2`).
-* The official vehicles have no recorded missions or places, so "The connected world" is not shown for any of them yet (it renders, labelled,
-  as soon as the database records one; tested).
-* Rockstar has published no specifications, so the plate says "Not published by Rockstar" and nothing else is stated.
-* The picture-to-page transition is Chrome-only; other browsers load the page normally.
+## 6. Limits
+* Seven vehicles and 21 vehicle pictures (plus four atmosphere pictures): a filtered collection can hold one tile; pagination appears past nine vehicles (works; tested with `per_page=2`).
+* Ganado, Dinka and Kayak each have one picture of their own; the Dinka and Kayak pages share one scene picture (cut differently).
+* Rockstar publishes no specifications; the Garage states none. No official vehicle has a recorded mission or place yet.
+* The picture-to-page transition is Chrome-only.

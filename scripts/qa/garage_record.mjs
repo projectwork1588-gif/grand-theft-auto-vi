@@ -82,7 +82,8 @@ export default async function (b) {
   await record("04-showroom-filters-desktop", 1440, 900, async () => {
     await b.eval(`document.getElementById("showroom").scrollIntoView(); true`); await b.sleep(900);
     await b.eval(`document.querySelector('.ctl__cats a[href*="category=boat"]').click(); true`); await b.sleep(2200);
-    await b.eval(`document.querySelector('.gresult__clear').click(); true`); await b.sleep(2000);
+    for (let i = 0; i < 40 && !(await b.eval(`!!document.querySelector('.gresult__clear')`).catch(() => false)); i++) { await b.sleep(250); }
+    await b.eval(`(document.querySelector('.gresult__clear') || { click() {} }).click(); true`); await b.sleep(2000);
   });
   await b.open(BASE + "/vehicles/vapid-dominator-buggy", 2500);
   await record("05-vehicle-page-and-showcase-desktop", 1440, 900, async () => {

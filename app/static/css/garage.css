@@ -142,6 +142,8 @@
   .rail__no { grid-area: no; } .rail__name { grid-area: name; } .rail__cat { grid-area: cat; }
 }
 @media (max-width: 560px) { .scene__art { aspect-ratio: 1.12; } .rail__list { grid-auto-columns: 208px; } }
+/* the narrowest phones: the counter gives way so the title and the two arrows never meet */
+@media (max-width: 379px) { .cine__count { display: none; } .cine__ctl { gap: 10px; flex: none; } .cine__arrow { width: 44px; height: 44px; } .cine__head { gap: var(--s2); } .cine__title { flex: 1 1 auto; } }
 
 /* motion: the picture settles, the name rises from its baseline, the rest follows. Choosing another machine does the same, from the side it was chosen. */
 html.motion-on .scene { will-change: opacity; transition: opacity var(--dur-3) var(--ease), visibility 0s linear var(--dur-3); }

@@ -500,7 +500,7 @@ def vehicle_detail(slug):
     vehicle["gallery"] = [_garage_picture(m, _GALLERY_SHAPES) for m in rest]
     scene = pick.get("scene")
     scene_row = media.by_slugs([scene[0]]).get(scene[0]) if scene else None
-    vehicle["scene"] = {**_garage_picture(scene_row, _GALLERY_SHAPES), "caption": scene[1]} if scene_row else None
+    vehicle["scene"] = {**_garage_picture(scene_row, _GALLERY_SHAPES, (1.0, *scene[2]) if len(scene) > 2 else None), "caption": scene[1]} if scene_row else None
     if story == "scene" and not vehicle["scene"]:
         vehicle["story"] = "none"
     entries = _garage_entries(_all_official(), lambda i: {"card": (1.9, 1.3)})
