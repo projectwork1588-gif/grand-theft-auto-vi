@@ -26,10 +26,20 @@ Three directions were compared: equal cards (what v1 was), one chapter per vehic
   All of it is a real GET against MySQL (`vehicles.list_vehicles`: official only, bound parameters, validated sort and page, pagination).
 * **Vehicle pages**: entrance (picture + large name), the database description set large, credits (maker, type, source), then the showcase set to suit the pictures: Cheetah `mosaic`,
   Dominator Buggy `viewer` (previous/next, thumbnails, swipe, full-size viewer), Squalo `panorama`, Stanier `mosaic-flip`, Ganado `none` (one picture: nothing empty),
-  Dinka and Kayak `scene` (the shared safehouse picture, cut differently, captioned with Rockstar's set title). The connected-world section appears only when the database records
+  Dinka and Kayak `context` (a smaller, labelled cut of Rockstar's safehouse screenshot drawn around the named vehicle, "The whole scene" opens the full picture; see the refinement below). The connected-world section appears only when the database records
   missions or places. Previous/next panels wrap round; the whole lineup follows.
 * **Choosing a vehicle**: the picture grows into the vehicle's page (Chrome cross-document view transition; other browsers load the page). Off under reduced motion.
-* **Honest copy**: one quiet credit line ("Screenshots © Rockstar Games… Rockstar has not published specifications"); no specification, price or performance claim anywhere.
+* **Honest copy**: one quiet credit line ("Screenshots © Rockstar Games."); no specification, price or performance claim anywhere, and no repeated "not published" explanation.
+
+### Final refinement (after the v2 review)
+* **Dinka Enduro and Crest Kayak**: the large safehouse picture is gone from the page body. `media_slots.GARAGE_PICKS[...]["context"]` names the picture, the point where the vehicle sits (`focus`) and a zoom;
+  `site._context_picture` turns that into a crop (zoom origin = clamp((0.5 − z·b)/(1 − z)) so the vehicle sits at the centre of the frame) and the template draws it at 3 to 3.5 times with a label and a link to the whole scene.
+  The text only says what Rockstar's pictures show. `sizes` accounts for the enlargement and the largest size (3840 px) is allowed for these cuts so they stay sharp.
+* **Ganado (one picture)**: the entrance is a sticky "curtain" (the description slides up over the held picture, wide screens with motion only) and the model name is set as an outline behind the description (≥ 900 px).
+* **Phone opening**: all panels share one grid cell, so the cell was as tall as the tallest panel; the picture's aspect ratio is now the same for every machine on phones, so the lineup sits 24 to 32 px under Explore at 390 and 360 px.
+* **Picture sizes**: the Garage adds a 320 px size to the srcset and the lineup thumbnails declare their real size; no address is fetched twice in one load (`scripts/qa/garage_network.mjs`).
+* **Recordings**: `garage_record.mjs` no longer clips the screenshot (a clip is in page coordinates, so after scrolling it captured blank ground); `scripts/qa/recording_check.py` fails any recording with blank or unchanging frames.
+* **Migration**: `tests/test_gate3b_migration.py` rebuilds the pre-006 database (test database only) and proves five machines are shown without it, seven with it, and that every route works either way. Owner procedure: `docs/GARAGE_MIGRATION_GUIDE.md`.
 
 ## 4. Data and media
 Migration `database/migrations/006_gate3b_garage.sql` (non-destructive, idempotent, mirrored in `database/seed.sql`): vehicles 14 (Dinka Enduro Motorcycle) and 15 (Crest Kayak), media
@@ -41,11 +51,12 @@ Applying it to the owner's development database (the owner runs this; nothing is
 .\.venv\Scripts\python.exe -m scripts.migrate_db --plan
 .\.venv\Scripts\python.exe -m scripts.migrate_db
 ```
+Back up first and see the checks and the undo in `docs/GARAGE_MIGRATION_GUIDE.md`.
 
 ## 5. Checks
 `tests/test_gate3b_garage.py` (arrangement, picture picks and alt text, the data, the opening, every control against MySQL, each vehicle's set, CSS scope), plus real-browser scripts in
 `scripts/qa/`: `garage_interactions.mjs`, `garage_keyboard.mjs`, `garage_resilience.mjs` (console, no script, reduced motion, images blocked), `garage_stage_shots.mjs`,
-`garage_review_shots.mjs`, `garage_record.mjs`, `capture_pages.mjs`, and the existing `sweep.mjs`.
+`garage_review_shots.mjs`, `garage_record.mjs`, `recording_check.py`, `garage_network.mjs`, `capture_pages.mjs`, and the existing `sweep.mjs`.
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q          # stop the preview server first
@@ -59,6 +70,6 @@ SWEEP_ROUTES=/vehicles,/vehicles/crest-kayak MSYS_NO_PATHCONV=1 node scripts/qa/
 
 ## 6. Limits
 * Seven vehicles and 21 vehicle pictures (plus four atmosphere pictures): a filtered collection can hold one tile; pagination appears past nine vehicles (works; tested with `per_page=2`).
-* Ganado, Dinka and Kayak each have one picture of their own; the Dinka and Kayak pages share one scene picture (cut differently).
+* Ganado, Dinka and Kayak each have one picture of their own; the Dinka and Kayak pages show a small, labelled cut of the same scene picture, enlarged from a 3840 px original, so it is softer than the entrance pictures.
 * Rockstar publishes no specifications; the Garage states none. No official vehicle has a recorded mission or place yet.
 * The picture-to-page transition is Chrome-only.

@@ -27,8 +27,7 @@ export default async function (b) {
   check("opening: seven machines in the lineup", (await ev(`document.querySelectorAll("[data-pick]").length`)) === 7);
   check("opening: the arrows are shown now that script runs", await ev(`!document.querySelector("[data-ctl]").hidden && getComputedStyle(document.querySelector("[data-ctl]")).display !== "none"`));
   await ev(`document.querySelector('[data-pick="shitzu-squalo"]').click(); true`);
-  await b.sleep(1200);
-  s = await ev(state);
+  for (let i = 0; i < 20; i++) { await b.sleep(250); s = await ev(state); if (s.visible.length === 1) { break; } }    // the outgoing machine leaves when its fade is done
   check("opening: choosing from the lineup switches the machine", s.active[0] === "shitzu-squalo" && s.visible.length === 1 && s.current[0] === "shitzu-squalo", JSON.stringify(s));
   check("opening: the counter, the tint and the announcement follow", s.count === "03" && s.tint === "shitzu-squalo" && /Squalo/i.test(s.live), JSON.stringify(s));
   check("opening: the page did not navigate", (await ev(`location.pathname`)) === "/vehicles");
@@ -113,10 +112,10 @@ export default async function (b) {
   check("viewer: Esc closes it", !(await ev(`document.getElementById("image-dialog").open`)));
 
   // ---- the other settings of pictures
-  for (const [slug, selector, n] of [["grotti-cheetah", ".mos li", 3], ["vapid-stanier", ".mos li", 3], ["shitzu-squalo", ".pano li", 3], ["dinka-enduro", ".scenefig li", 1], ["crest-kayak", ".scenefig li", 1]]) {
+  for (const [slug, selector, n] of [["grotti-cheetah", ".mos li", 3], ["vapid-stanier", ".mos li", 3], ["shitzu-squalo", ".pano li", 3], ["dinka-enduro", ".vctx__art", 1], ["crest-kayak", ".vctx__art", 1]]) {
     await b.open(BASE + "/vehicles/" + slug, 900);
     await ev(`document.querySelectorAll("img").forEach(i => { i.loading = "eager"; }); true`); await b.sleep(2500);
-    check(`${slug}: its pictures are set as ${selector.slice(1, 4)} and all load`, (await ev(`document.querySelectorAll("${selector}").length`)) === n && (await ev(`[...document.querySelectorAll("${selector} img")].every(i => i.complete && i.naturalWidth > 0)`)));
+    check(`${slug}: its pictures are set as ${selector.replace(/^\.(\w+).*/, "$1")} and all load`, (await ev(`document.querySelectorAll("${selector}").length`)) === n && (await ev(`[...document.querySelectorAll("${selector} img")].every(i => i.complete && i.naturalWidth > 0)`)));
   }
   await ev(`document.querySelector(".vshow a[data-lightbox]").click(); true`); await b.sleep(900);
   check("a still opens the full-size viewer from its set", await ev(`document.getElementById("image-dialog").open`));
