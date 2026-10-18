@@ -57,7 +57,7 @@
     <div class="gx-scenes" data-surface>
       {% for v in stage %}
       <article class="gx-scene gx-scene--{{ v.plate }}{% if loop.first %} is-active{% endif %}" id="scene-{{ v.slug }}" data-panel="{{ v.slug }}" data-vehicle="{{ v.slug }}" data-plate="{{ v.plate }}"{% if v.subject %} data-subject="{{ v.subject }}"{% endif %}{% if not loop.first %} hidden{% endif %}>
-        <div class="gx-bloom" aria-hidden="true">{{ gshot(v.stage, '64px', cut='stage', lazy=(v.plate != 'wide')) }}</div>
+        <div class="gx-bloom" aria-hidden="true">{{ gshot(v.stage, '64px', cut='stage', lazy=true) }}</div>
         <div class="gx-art">{{ gshot(v.stage, '100vw', eager=loop.first, cut='stage') }}</div>
         <div class="gx-grade" aria-hidden="true"></div>
         <div class="gx-copy">
@@ -71,6 +71,10 @@
     </div>
     <div class="gx-head">
       <div class="gx-head__title"><p class="eyebrow">The Garage</p><h1 id="garage-title">Machines of Leonida</h1></div>
+      <button class="gx-pause" title="Pause or resume the showcase" type="button" data-playpause aria-pressed="false" aria-label="Pause the showcase" hidden>
+        <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6v12M15 6v12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+        <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 6v12l9.5-6z" fill="currentColor"/></svg>
+      </button>
     </div>
     <nav class="gx-index" aria-label="Choose a machine" data-lineup>
       <button class="gx-step gx-step--prev" type="button" data-step="-1" data-ctl hidden aria-label="Previous machine"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 14l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -82,10 +86,6 @@
         {% endfor %}
       </ol>
       <button class="gx-step gx-step--next" type="button" data-step="1" data-ctl hidden aria-label="Next machine"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 10l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <button class="gx-pause" type="button" data-playpause aria-pressed="false" aria-label="Pause the showcase" hidden>
-        <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6v12M15 6v12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
-        <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 6v12l9.5-6z" fill="currentColor"/></svg>
-      </button>
     </nav>
     <p class="visually-hidden" role="status" aria-live="polite" data-stage-live></p>
   </section>
@@ -168,6 +168,7 @@
       {# one directed sequence: the bay at dusk dissolves into the sunset and ends on the Kayak #}
       <div class="gx-sea">
         {% for v in ms if v.role == 'sea_a' %}{{ feature(v, '100vw', 'right') }}{% endfor %}
+        <div class="gx-sea__horizon" aria-hidden="true"></div>
         {% for v in ms if v.role == 'finale' %}{{ feature(v, '100vw', 'left') }}{% endfor %}
       </div>
 

@@ -51,3 +51,6 @@ Everything in "Unfinished / pending" was done: below-picture names for Dominator
 
 ## Status update (final cinematic reconstruction, 2026-10-18)
 Superseded the layouts described above: 5 s autoplay with a quiet pause button and progress ring in the index; Stanier/Ganado as `wide` scenes; the collection as stages (Cheetah, Stanier/Ganado zigzag), a sideways strip of the mod-shop pictures, a Dominator/Dinka diptych and a Squalo-to-Kayak water chapter. The sea video was removed from the page (`scripts/make_garage_clips.py` and `media/clips/garage/` are kept but unused). Editorial lines live in `media_slots.GARAGE_COPY`. Awaiting the owner's live review; Stage B not started.
+
+## Status update (live-review corrections, 2026-10-18)
+Autoplay is 3 s a scene; a choice in the index never stops it (only the words/Explore hold the clock); the pause is a small button beside the page title. Stanier and Ganado are full-window `tr` scenes (words top right, above the hood); a nearly square or ultrawide opening draws every picture whole over its own bloom (container query `gxopen`). The water chapter is Squalo (with an "On deck" detail), a horizon line, then the Kayak, with no overlap. Awaiting the owner's live review.

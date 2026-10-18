@@ -260,10 +260,10 @@ GARAGE_MOMENTS = (
 GARAGE_SPREADS = {
     "grotti-cheetah": {"role": "perf", "main": "vehicle-grotti-cheetah-02", "second": "vehicle-grotti-cheetah-04", "second_label": "The cabin"},
     "vapid-stanier": {"role": "street_a", "main": "vehicle-vapid-stanier-02", "second": "vehicle-vapid-stanier-04", "second_label": "The tail fin"},
-    "vapid-ganado": {"role": "street_b", "main": "vehicle-vapid-ganado-01", "zoom": (1.3, 0.64, 0.62)},
+    "vapid-ganado": {"role": "street_b", "main": "vehicle-vapid-ganado-01", "zoom": (1.15, 0.58, 0.56)},
     "dinka-enduro": {"role": "duo_b", "main": "vehicle-dinka-enduro-01", "face": (0.53, 0.5)},
     "vapid-dominator-buggy": {"role": "duo_a", "main": "vehicle-vapid-dominator-buggy-02", "face": (0.58, 0.6)},
-    "shitzu-squalo": {"role": "sea_a", "main": "vehicle-shitzu-squalo-02"},
+    "shitzu-squalo": {"role": "sea_a", "main": "vehicle-shitzu-squalo-02", "second": "vehicle-shitzu-squalo-04", "second_label": "On deck"},
     "crest-kayak": {"role": "finale", "main": "vehicle-crest-kayak-01"},
 }
 # The words the concept page prints about each machine (the opening and the collection use the same line). They describe what Rockstar's pictures show and
@@ -284,8 +284,8 @@ GARAGE_SCENES = {
     "grotti-cheetah": {"plate": "br", "subject": ((0.11, 0.51, 0.65, 0.87),)},
     "vapid-dominator-buggy": {"plate": "br", "subject": ((0.02, 0.15, 0.62, 0.62), (0.02, 0.55, 0.50, 0.88))},
     "shitzu-squalo": {"plate": "br", "subject": ((0.05, 0.52, 0.58, 0.87),)},
-    "vapid-stanier": {"plate": "wide", "subject": ((0.00, 0.18, 0.98, 0.85),)},
-    "vapid-ganado": {"plate": "wide", "subject": ((0.03, 0.20, 0.98, 0.86),)},
+    "vapid-stanier": {"plate": "tr", "subject": ((0.12, 0.17, 0.66, 0.92), (0.60, 0.36, 0.95, 0.90), (0.06, 0.38, 0.16, 0.86))},
+    "vapid-ganado": {"plate": "tr", "subject": ((0.24, 0.24, 0.66, 0.90), (0.58, 0.36, 0.95, 0.84), (0.06, 0.44, 0.30, 0.86))},
     "dinka-enduro": {"plate": "ml", "px": 0, "subject": ((0.29, 0.03, 0.84, 0.95),)},      # px 0: the picture is held to the left of its frame, which moves the bike right and gives the words room
     "crest-kayak": {"plate": "ml", "subject": ((0.33, 0.05, 0.78, 0.60), (0.40, 0.45, 0.70, 0.66), (0.15, 0.62, 0.68, 0.96))},
 }

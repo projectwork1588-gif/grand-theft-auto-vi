@@ -2,7 +2,7 @@
 // resetting the hold, the clock waiting for a pointer, for focus, for the opening to leave the window and for a hidden tab, motion switched off,
 // the page never scrolling by itself, and the pictures and the sea clip being fetched only when needed.
 //   TL_BASE=http://127.0.0.1:5059 node scripts/qa/cdp.mjs scripts/qa/garage_autoplay.mjs        (exit status 1 on any failure)
-// The hold is shortened to 2.5 s with ?dwell=2.5 (the page accepts 2 to 30 s) so the whole round fits in a minute; the default is 7 s.
+// The hold is shortened to 2.5 s with ?dwell=2.5 (the page accepts 2 to 30 s) so the whole round fits in a minute; the default is 3 s (one extra check below runs at the default).
 const BASE = process.env.TL_BASE || "http://127.0.0.1:5059";
 const PAGE = process.env.AUTOPLAY_PATH || "/garage-concept";
 const DWELL = 2.5;
@@ -52,7 +52,7 @@ export default async function (b) {
   // ---- 2. Pause and Play
   await open(`?dwell=${DWELL}`);
   const label1 = await ev(`document.querySelector("[data-playpause]").getAttribute("aria-label") + "|" + document.querySelector("[data-playpause]").getAttribute("aria-pressed")`);
-  report(label1 === "Pause the showcase|false", "while it plays the quiet button in the index says Pause", label1);
+  report(label1 === "Pause the showcase|false", "while it plays the quiet button beside the page title says Pause", label1);
   await ev(`document.querySelector("[data-playpause]").click(); true`);
   const label2 = await ev(`document.querySelector("[data-playpause]").getAttribute("aria-label") + "|" + document.querySelector("[data-playpause]").getAttribute("aria-pressed")`);
   report(label2 === "Resume the showcase|true", "after Pause the button offers to resume", label2);
@@ -63,17 +63,46 @@ export default async function (b) {
   const afterPlay = await watch(DWELL + 2.5);
   report(afterPlay.length >= 1, "pressing Play sets it going again", afterPlay.map((c) => c[0]).join(","));
 
-  // ---- 3. a choice responds at once and sets the hold back to nothing
+  // ---- 3. a choice responds at once, sets the hold back to nothing, and never stops the showcase: pressed with a real mouse (which then stays on the index) or the keyboard
+  const press = async (slug) => {
+    const r = JSON.parse(await ev(`(() => { const q = document.querySelector('[data-pick="${slug}"]').getBoundingClientRect(); return JSON.stringify([q.left + q.width / 2, q.top + q.height / 2]); })()`));
+    await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: r[0], y: r[1] });
+    await b.send("Input.dispatchMouseEvent", { type: "mousePressed", x: r[0], y: r[1], button: "left", buttons: 1, clickCount: 1 });
+    await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: r[0], y: r[1], button: "left", buttons: 0, clickCount: 1 });
+  };
   await open(`?dwell=${DWELL}`);
   await b.sleep(DWELL * 1000 - 700);                      // nearly at the end of the Cheetah's hold
   const t0 = Date.now();
-  await ev(`document.querySelector('[data-pick="vapid-ganado"]').click(); true`);
+  await press("vapid-ganado");
   let at = null;
   for (let i = 0; i < 40; i++) { if ((await shown()) === "vapid-ganado") { at = Date.now() - t0; break; } await b.sleep(50); }
-  report(at !== null && at < 900, "choosing a machine shows it at once", at === null ? "never" : at + " ms");
+  report(at !== null && at < 900, "choosing a machine with a real press shows it at once", at === null ? "never" : at + " ms");
   const afterChoice = await watch(DWELL + 2.2);
   const firstAuto = afterChoice[0];
-  report(!!firstAuto && firstAuto[0] === "dinka-enduro" && firstAuto[1] > DWELL * 0.85, "after a choice the hold starts again and the next machine follows it (06 after 05)", firstAuto ? firstAuto[0] + " after " + firstAuto[1].toFixed(1) + " s" : "no change");
+  report(!!firstAuto && firstAuto[0] === "dinka-enduro" && firstAuto[1] > DWELL * 0.85, "after a choice (the mouse still on the index) the hold starts again and the next machine follows it (06 after 05)", firstAuto ? firstAuto[0] + " after " + firstAuto[1].toFixed(1) + " s" : "no change");
+  await press("shitzu-squalo");
+  await b.sleep(400);
+  const afterThree = await watch(DWELL + 2.2);
+  report(afterThree.length >= 1 && afterThree[0][0] === "vapid-stanier", "choosing 03 shows 03 and then goes on to 04", afterThree.map((c) => c[0]).join(","));
+  await press("crest-kayak");
+  await b.sleep(400);
+  const afterSeven = await watch(DWELL + 2.2);
+  report(afterSeven.length >= 1 && afterSeven[0][0] === "grotti-cheetah", "choosing 07 shows 07 and then goes on to 01", afterSeven.map((c) => c[0]).join(","));
+  const stillRunning = await clock();
+  report(stillRunning.userPaused === false && stillRunning.running === true, "choosing numbers never pauses the showcase", JSON.stringify({ paused: stillRunning.userPaused, running: stillRunning.running }));
+  // the keyboard: focus a number and press Enter; focus stays on it, and the showcase goes on
+  await ev(`document.querySelector('[data-pick="dinka-enduro"]').focus(); true`);
+  await b.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13 });
+  await b.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13 });
+  await b.sleep(500);
+  const keyed = await shown();
+  const afterKey = await watch(DWELL + 2.2);
+  report(keyed === "dinka-enduro" && afterKey.length >= 1 && afterKey[0][0] === "crest-kayak", "choosing 06 from the keyboard shows 06 and then goes on to 07", keyed + " then " + afterKey.map((c) => c[0]).join(","));
+  // the showcase's own pace: with no review switch it changes about every three seconds
+  await open("");
+  const real = await watch(11);
+  const realGaps = real.slice(1, 4).map((c, i) => c[1] - real[i][1]);
+  report(real.length >= 3 && realGaps.every((g) => g > 2.6 && g < 4.4), "at its own pace the scene changes about every three seconds", realGaps.map((g) => g.toFixed(1)).join(", "));
 
   // ---- 4. a pointer on the words or the controls holds it; so does focus
   await open(`?dwell=${DWELL}`);
@@ -87,7 +116,10 @@ export default async function (b) {
   await open(`?dwell=${DWELL}`);
   await ev(`document.querySelector('[data-pick="vapid-stanier"]').focus(); true`);
   const heldFocus = await watch(DWELL * 2 + 1);
-  report(heldFocus.length === 0, "with keyboard focus in the index it does not advance", String(heldFocus.length) + " changes");
+  report(heldFocus.length >= 1, "keyboard focus in the index does not stop it (a choice there never pauses the showcase)", heldFocus.map((c) => c[0]).join(","));
+  await ev(`document.querySelector('.gx-scene.is-active .gbtn').focus(); true`);
+  const heldExplore = await watch(DWELL * 2 + 1);
+  report(heldExplore.length === 0, "with keyboard focus on Explore it does not advance", String(heldExplore.length) + " changes");
   await ev(`document.activeElement.blur(); true`);
   const afterFocus = await watch(DWELL + 2.5);
   report(afterFocus.length >= 1, "with focus gone it goes on", afterFocus.map((c) => c[0]).join(","));

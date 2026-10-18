@@ -4,7 +4,7 @@
   "use strict";
 
   function each(list, fn) { Array.prototype.forEach.call(list, fn); }
-  var LEAVE = 900;   // how long the scene being replaced stays under the one arriving: the length of the opening frame, in step with garage_concept.css
+  var LEAVE = 700;   // how long the scene being replaced stays under the one arriving: the length of the opening frame, in step with garage_concept.css
   var params = new URLSearchParams(window.location.search);
 
   // run `fn` once the picture has arrived and been decoded (or after a moment, so a slow connection still gets the page)
@@ -61,7 +61,8 @@
 
     var show = function (slug, auto) {
       var next = panels[slug];
-      if (!next || (slug === current && slug === heading)) { return; }
+      if (!next) { return; }
+      if (slug === current && slug === heading) { elapsed = 0; return; }   // choosing the machine already on show starts its hold again
       heading = slug;
       elapsed = 0;
       warm(slug);
@@ -86,7 +87,7 @@
         next.style.setProperty("--oy", o[1].toFixed(1));
         void next.offsetWidth;                           // laid out as the small frame before it grows, so the opening can play
         next.classList.add("is-active", "is-entering");   // the opening plays while this class is on, and leaves nothing behind when it is off
-        window.setTimeout(function () { next.classList.remove("is-entering"); }, 1000);
+        window.setTimeout(function () { next.classList.remove("is-entering"); }, 800);
         current = slug;
         elapsed = 0;                                     // the dwell starts when the scene is actually on show
         stage.setAttribute("data-vehicle", slug);
@@ -108,7 +109,7 @@
     // visitor has paused it, a pointer or keyboard is on the scene's words, the index or the controls, the opening is off screen, the tab is
     // hidden, or the next picture has not arrived yet. It never scrolls the page.
     var dwellSeconds = parseFloat(params.get("dwell"));
-    var DWELL = (dwellSeconds >= 2 && dwellSeconds <= 30 ? dwellSeconds : 5) * 1000;
+    var DWELL = (dwellSeconds >= 2 && dwellSeconds <= 30 ? dwellSeconds : 3) * 1000;
     var saveData = !!(navigator.connection && navigator.connection.saveData);
     var motionOn = function () { return document.documentElement.classList.contains("motion-on"); };
     var userPaused = true;      // settled when the page is ready (the site's own script decides whether motion is on): with motion off, or on request, it starts paused; Play still works
@@ -134,7 +135,7 @@
       last = now;
       if (canRun()) {
         elapsed += dt;
-        if (elapsed >= DWELL * 0.55 && order.length > 1) { warm(order[(order.indexOf(current) + 1) % order.length]); }   // fetch only the next picture, and only when it is nearly time
+        if (elapsed >= 250 && order.length > 1) { warm(order[(order.indexOf(current) + 1) % order.length]); }   // fetch only the next picture, once this one is on show
         if (elapsed >= DWELL) { elapsed = 0; step(1, true); }
         paint();
       }
@@ -155,8 +156,8 @@
       });
     }
 
-    // the clock waits while a pointer is over, or focus is in, the words of the scene or the index (the pause button is part of it); a touch holds it for a few seconds
-    var interactive = ".gx-copy, .gx-index";
+    // the clock waits while a pointer is over, or focus is in, the words of the scene (its Explore must not move under a press); a touch there holds it for a few seconds. Choosing a number in the index never stops it: the chosen machine is shown, its hold starts again and the next follows.
+    var interactive = ".gx-copy";
     stage.addEventListener("pointerover", function (e) { if (e.pointerType === "mouse" && e.target.closest && e.target.closest(interactive)) { holding.pointer = true; } });
     stage.addEventListener("pointerout", function (e) {
       if (e.pointerType !== "mouse") { return; }

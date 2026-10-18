@@ -502,7 +502,6 @@ _ROLE_SHAPES = {   # (wide screens, phones): the box each picture is cut for, wi
     "second": {"main": (1.78, 1.6), "second": (1.6, 1.6)},      # the plain card of a filtered list or a machine no chapter names
 }
 _SCENE_SHAPE = {"stage": (1.6, 1.4)}
-_WIDE_SHAPE = {"stage": (1.78, 1.4)}
 _MOMENT_SHAPES = {"strip": (1.78, 1.6)}
 
 
@@ -548,7 +547,7 @@ def vehicle_concept(args):
         r["summary"] = media_slots.GARAGE_COPY.get(r["slug"], r.get("summary", ""))
         r["subject"] = ";".join(",".join(f"{v:.2f}" for v in box) for box in scene["subject"]) if scene.get("subject") else ""
         if r["stage"]:
-            r["stage"] = _garage_picture(r["stage"]["m"], _WIDE_SHAPE if r["plate"] == "wide" else _SCENE_SHAPE, keep_height=True)
+            r["stage"] = _garage_picture(r["stage"]["m"], _SCENE_SHAPE, keep_height=True)
             if "px" in scene:                           # a scene may hold its picture to one side of its frame (a percent, on the stylesheet's 2 percent grid)
                 wide, phone = r["stage"]["cuts"]["stage"]
                 r["stage"]["cuts"]["stage"] = (f"{scene['px']}% {wide.split()[1]}", phone)

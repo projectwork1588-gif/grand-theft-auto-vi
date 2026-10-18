@@ -56,6 +56,8 @@ export default async function (b) {
   // ---- the water chapter: stills only, the Squalo then the Kayak, the Kayak's words are readable
   const water = JSON.parse(await ev(`JSON.stringify({ video: document.querySelectorAll("video").length, order: [...document.querySelectorAll(".gx-sea .gx-f")].map((a) => a.dataset.vehicle) })`));
   ok(water.video === 0 && water.order.join() === "shitzu-squalo,crest-kayak", "the water chapter is two stills, the Squalo and then the Kayak, with no video", JSON.stringify(water));
+  const gap = JSON.parse(await ev(`(() => { const a = document.querySelector(".gx-f--sea_a").getBoundingClientRect(), z = document.querySelector(".gx-f--finale").getBoundingClientRect(); return JSON.stringify({ a: Math.round(a.bottom), z: Math.round(z.top) }); })()`));
+  ok(gap.z >= gap.a - 1, "the two water stages never overlap (the Kayak starts where the Squalo ends)", JSON.stringify(gap));
   await ev(`document.querySelector(".gx-f--finale").scrollIntoView({ block: "center" }); true`);
   await b.sleep(2000);
   const fin = JSON.parse(await ev(`(() => { const f = document.querySelector(".gx-f--finale"); const w = f.querySelector(".gx-f__words h3"); const r = w.getBoundingClientRect(); const a = f.querySelector(".gx-f__art"); return JSON.stringify({ op: getComputedStyle(w).opacity, artOp: getComputedStyle(a).opacity, inView: r.top > 72 && r.bottom < innerHeight }); })()`));
@@ -78,7 +80,7 @@ export default async function (b) {
     }
     return JSON.stringify(out);
   })()`));
-  ok(hits.length === 16 && hits.every((h) => h[2]), "a press on any machine's picture, words or detail reaches that machine's own link", hits.length + " checked; " + hits.filter((h) => !h[2]).map((h) => h[0] + " " + h[1]).join(", "));
+  ok(hits.length === 17 && hits.every((h) => h[2]), "a press on any machine's picture, words or detail reaches that machine's own link", hits.length + " checked; " + hits.filter((h) => !h[2]).map((h) => h[0] + " " + h[1]).join(", "));
 
   // ---- the slow drift of a stage's picture is real and small: it follows the scroll and never exceeds a few percent
   await ev(`document.querySelector(".gx-f--perf").scrollIntoView({ block: "start" }); true`);
@@ -89,6 +91,23 @@ export default async function (b) {
   const d2 = await ev(`getComputedStyle(document.querySelector(".gx-f--perf .gx-f__art .gshot")).transform`);
   const ty = (m) => parseFloat(String(m).replace(/matrix\(|\)/g, "").split(",")[5] || "0");
   ok(d1 !== d2 && Math.abs(ty(d1)) < 60 && Math.abs(ty(d2)) < 60, "a stage's picture drifts a little against the scroll", d1 + " -> " + d2);
+
+  // ---- pictures that fail to load: every picture of Rockstar's is blocked, and the page still reads: the words, the links and the layout stay, nothing throws, nothing scrolls sideways
+  const thrown = [];
+  b.on((d) => { if (d.method === "Runtime.exceptionThrown") { thrown.push(d.params.exceptionDetails.exception?.description || d.params.exceptionDetails.text); } });
+  await b.send("Network.enable");
+  await b.send("Network.setBlockedURLs", { urls: ["*rockstargames.com*"] });
+  await b.open(BASE + "/about", 100);
+  await ev(`localStorage.setItem("tv-motion", "1"); true`);
+  await b.open(BASE + "/garage-concept?autoplay=0", 2500);
+  await ev(`document.querySelectorAll("img").forEach((i) => { i.loading = "eager"; }); true`);
+  await b.sleep(2500);
+  const fail = JSON.parse(await ev(`JSON.stringify({ imgs: document.querySelectorAll("img.gshot").length, broken: document.querySelectorAll("img.gshot.is-broken").length, words: [...document.querySelectorAll(".gx-f__words h3, .gx-d__words h3, .gx-scene.is-active .plate")].filter((e) => e.getBoundingClientRect().height > 0 && getComputedStyle(e).visibility !== "hidden").length, side: document.documentElement.scrollWidth > document.documentElement.clientWidth, h: document.documentElement.scrollHeight })`));
+  ok(fail.imgs > 20 && fail.broken >= fail.imgs - 2 && fail.words >= 8 && !fail.side && thrown.length === 0, "with every picture failing, the page keeps its words, links and layout and throws nothing", JSON.stringify(fail) + (thrown[0] ? " " + thrown[0] : ""));
+  await ev(`document.querySelector(".gx-f--finale").scrollIntoView({ block: "center" }); true`);
+  await b.sleep(2200);
+  ok(await ev(`getComputedStyle(document.querySelector(".gx-f--finale .gx-f__words h3")).opacity === "1"`), "and the Kayak finale still shows its name and its Explore link");
+  await b.send("Network.setBlockedURLs", { urls: [] });
 
   // ---- the motion switch: with motion off nothing waits for an animation, and the strip and the index still work
   await b.open(BASE + "/about", 100);
