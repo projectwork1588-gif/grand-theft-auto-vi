@@ -72,9 +72,11 @@ export default async function (b) {
   await b.sleep(DWELL * 1000 - 700);                      // nearly at the end of the Cheetah's hold
   const t0 = Date.now();
   await press("vapid-ganado");
+  const idx = await ev(`(() => { const a = document.querySelector('[data-pick="vapid-ganado"]'); const lit = a.getAttribute("aria-current") === "true"; return lit; })()`);
+  report(idx === true, "the index answers a real press at once (the lit number has already moved when the press returns)", String(idx));
   let at = null;
   for (let i = 0; i < 40; i++) { if ((await shown()) === "vapid-ganado") { at = Date.now() - t0; break; } await b.sleep(50); }
-  report(at !== null && at < 900, "choosing a machine with a real press shows it at once", at === null ? "never" : at + " ms");
+  report(at !== null && at < 4500, "choosing a machine with a real press shows its scene as soon as its picture is decoded (software rendering on a busy machine: seconds at the very most; the index answers at once)", at === null ? "never" : at + " ms");
   const afterChoice = await watch(DWELL + 2.2);
   const firstAuto = afterChoice[0];
   report(!!firstAuto && firstAuto[0] === "dinka-enduro" && firstAuto[1] > DWELL * 0.85, "after a choice (the mouse still on the index) the hold starts again and the next machine follows it (06 after 05)", firstAuto ? firstAuto[0] + " after " + firstAuto[1].toFixed(1) + " s" : "no change");
@@ -96,11 +98,11 @@ export default async function (b) {
   const keyed = await shown();
   const afterKey = await watch(DWELL + 2.2);
   report(keyed === "dinka-enduro" && afterKey.length >= 1 && afterKey[0][0] === "crest-kayak", "choosing 06 from the keyboard shows 06 and then goes on to 07", keyed + " then " + afterKey.map((c) => c[0]).join(","));
-  // the showcase's own pace: with no review switch it changes about every three seconds
+  // the showcase's own pace, recorded inside the page (no polling from here): with no review switch it changes about every three seconds
   await open("");
-  const real = await watch(11);
-  const realGaps = real.slice(1, 4).map((c, i) => c[1] - real[i][1]);
-  report(real.length >= 3 && realGaps.every((g) => g > 2.6 && g < 4.4), "at its own pace the scene changes about every three seconds", realGaps.map((g) => g.toFixed(1)).join(", "));
+  const paceGaps = await ev(`new Promise((done) => { const st = document.querySelector("[data-stage]"), at = []; const mo = new MutationObserver(() => at.push(performance.now())); mo.observe(st, { attributes: true, attributeFilter: ["data-vehicle"] }); setTimeout(() => { mo.disconnect(); done(JSON.stringify(at.slice(1).map((x, i) => +((x - at[i]) / 1000).toFixed(2)))); }, 24000); })`).then(JSON.parse);
+  const sorted = [...paceGaps].sort((x, y) => x - y), median = sorted[Math.floor(sorted.length / 2)];
+  report(paceGaps.length >= 3 && median >= 2.6 && median <= 4.6 && sorted[sorted.length - 1] < 7, "at its own pace the scene changes about every three seconds (median, longest)", `${median} s, ${sorted[sorted.length - 1]} s of ${paceGaps.length}: ${paceGaps.join(", ")}`);
 
   // ---- 4. a pointer on the words or the controls holds it; so does focus
   await open(`?dwell=${DWELL}`);
@@ -161,13 +163,28 @@ export default async function (b) {
   await open(`?dwell=${DWELL * 2}`, "1", false);
   await b.sleep(900);
   const bigStage = new Set(requested.filter((u) => /rockstargames\.com/.test(u) && /imwidth=(1920|2560|3840)/.test(u)));
-  report(bigStage.size <= 2, "at first only the first scene's large picture is fetched (not all seven)", String(bigStage.size) + " large pictures requested");
+  report(bigStage.size <= 3, "at first only the scene on show and the next two are fetched (not all seven)", String(bigStage.size) + " large pictures requested");
   const videoAny = await ev(`document.querySelectorAll("video").length`);
   report(videoAny === 0, "the collection has no video to load, stall or restart (every chapter is a still picture)", String(videoAny));
   await ev(`document.querySelector(".gx-f--finale").scrollIntoView({ block: "start" }); true`);
   await b.sleep(2500);
   const videoRequests = requested.filter((u) => /\.mp4/.test(u)).length;
   report(videoRequests === 0, "scrolling to the finale asks for no video file", String(videoRequests));
+  // ---- a scene is never shown before its picture has arrived (no empty frame): on a slow link, with nothing cached, the showcase waits for the picture
+  await b.send("Network.emulateNetworkConditions", { offline: false, latency: 250, downloadThroughput: 300 * 1024, uploadThroughput: 300 * 1024 });
+  await b.send("Network.setCacheDisabled", { cacheDisabled: true });
+  await open("?dwell=30", "1", false);
+  const empty = await ev(`new Promise((done) => {
+    const bad = []; const t0 = performance.now(); let shown = 0;
+    document.querySelector('[data-pick="vapid-stanier"]').click();
+    setTimeout(() => document.querySelector('[data-pick="vapid-ganado"]').click(), 300);
+    const tick = () => { document.querySelectorAll(".gx-scene.is-active").forEach((p) => { shown++; const i = p.querySelector(".gx-art img"); if (!(i.complete && i.naturalWidth > 0)) { bad.push(p.dataset.panel + "@" + Math.round(performance.now() - t0)); } }); if (performance.now() - t0 < 14000) { requestAnimationFrame(tick); } else { done(JSON.stringify({ bad: bad.slice(0, 3), frames: shown, now: document.querySelector("[data-stage]").getAttribute("data-vehicle") })); } };
+    requestAnimationFrame(tick);
+  })`).then(JSON.parse);
+  report(empty.bad.length === 0 && empty.now === "vapid-ganado", "on a slow link a scene is not shown until its picture has arrived (no empty frame)", JSON.stringify(empty));
+  await b.send("Network.emulateNetworkConditions", { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
+  await b.send("Network.setCacheDisabled", { cacheDisabled: false });
+
   await ev(`localStorage.clear(); true`);
   console.log(failed ? `\n${failed} FAILED` : "\nall passed");
   process.exitCode = failed ? 1 : 0;

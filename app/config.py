@@ -24,7 +24,8 @@ def _flag(name, default="0"):
 class Config:
     # Footage, the cast reel, the region explorer and the garage start by themselves. A visitor whose system asks
     # for reduced motion (or has data saver on) gets a Play button instead, unless this is set: then they autoplay
-    # too, muted, with a pause control. A visitor's own choice in the menu always wins.
+    # too, muted. A development setting only (a production run ignores it, see ProductionConfig). A visitor's own
+    # choice in the menu (the Motion switch) always wins, in either direction.
     AUTOPLAY_ALWAYS = _flag("TV_AUTOPLAY_ALWAYS")
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-insecure-key")
     DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
@@ -67,6 +68,12 @@ class DevelopmentConfig(Config):
     pass
 
 
+class ProductionConfig(DevelopmentConfig):
+    """A deployed site always respects a visitor's system setting for reduced motion: TV_AUTOPLAY_ALWAYS (a development convenience) is ignored here."""
+
+    AUTOPLAY_ALWAYS = False
+
+
 class TestingConfig(Config):
     """Uses the separate *_test database so tests can never touch real data."""
 
@@ -76,7 +83,7 @@ class TestingConfig(Config):
 
 def get_config(name=None):
     name = (name or os.getenv("FLASK_ENV", "development")).lower()
-    config = TestingConfig if name == "testing" else DevelopmentConfig
+    config = TestingConfig if name == "testing" else (ProductionConfig if name == "production" else DevelopmentConfig)
     if config is TestingConfig and not config.DB_NAME.endswith("_test"):
         raise RuntimeError("Refusing to run tests: TEST_DB_NAME must end with '_test'.")
     if config is DevelopmentConfig and config.DB_NAME.endswith("_test"):

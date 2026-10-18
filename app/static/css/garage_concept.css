@@ -126,17 +126,42 @@ html.motion-on .gx-scene.is-leaving .gx-grade, html.motion-on .gx-scene.is-leavi
 /* the camera: a slow push-in with a small drift, on the picture only (a transform, so nothing is laid out again); the words stay still. Each scene has its own centre (--fx, --fy: where the
    machine sits), how far the camera goes (--zf) and which way it drifts (--dx, --dy, a fraction of a percent). The movement starts from the picture exactly as it rests, so there is no jump when it
    begins, and the scene being replaced keeps moving under the one arriving instead of snapping back. The scale always outgrows the drift, so no edge is ever bared. */
-html.motion-on .gx-scene.is-active .gx-art .gshot, html.motion-on .gx-scene.is-leaving .gx-art .gshot { transform-origin: var(--fx, 50%) var(--fy, 50%); will-change: transform; animation: gx-push 5s cubic-bezier(.3, .15, .45, 1) both; }
+html.motion-on .gx-scene.is-active .gx-art .gshot, html.motion-on .gx-scene.is-leaving .gx-art .gshot { transform-origin: var(--fx, 50%) var(--fy, 50%); will-change: transform; animation: gx-push 4.2s cubic-bezier(.4, .05, .6, .95) both; }
 @keyframes gx-push { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(var(--dx, 0%), var(--dy, 0%), 0) scale(var(--zf, 1.05)); } }
 html.motion-on .gx-open.is-paused .gx-scene .gx-art .gshot { animation-play-state: paused; }
-.gx-scene[data-vehicle="grotti-cheetah"] .gx-art .gshot { --fx: 36%; --fy: 70%; --zf: 1.06; --dx: -.7%; --dy: -.3%; }
-.gx-scene[data-vehicle="vapid-dominator-buggy"] .gx-art .gshot { --fx: 30%; --fy: 52%; --zf: 1.055; --dx: -.6%; --dy: 0%; }
-.gx-scene[data-vehicle="shitzu-squalo"] .gx-art .gshot { --fx: 30%; --fy: 68%; --zf: 1.055; --dx: -.5%; --dy: .2%; }
-.gx-scene[data-vehicle="vapid-stanier"] .gx-art .gshot { --fx: 55%; --fy: 60%; --zf: 1.035; --dx: .4%; --dy: 0%; }
-.gx-scene[data-vehicle="vapid-ganado"] .gx-art .gshot { --fx: 52%; --fy: 58%; --zf: 1.035; --dx: -.4%; --dy: 0%; }
-.gx-scene[data-vehicle="dinka-enduro"] .gx-art .gshot { --fx: 56%; --fy: 50%; --zf: 1.04; --dx: -.3%; --dy: 0%; }
-.gx-scene[data-vehicle="crest-kayak"] .gx-art .gshot { --fx: 58%; --fy: 60%; --zf: 1.03; --dx: -.3%; --dy: -.2%; }
-/* a visitor who asks for reduced motion has no motion class (the site's own policy, site.js: the system setting, data saver and the visitor's choice in the menu), so none of this runs for them */
+/* the centre of each push is on the side of the machine that faces the words, so the machine grows away from them; the far side keeps its margin (the push never takes it off the window) */
+.gx-scene[data-vehicle="grotti-cheetah"] .gx-art .gshot { --fx: 65%; --fy: 70%; --zf: 1.09; --dx: -1.4%; --dy: -.3%; }
+.gx-scene[data-vehicle="vapid-dominator-buggy"] .gx-art .gshot { --fx: 28%; --fy: 52%; --zf: 1.065; --dx: 0%; --dy: -.3%; }
+.gx-scene[data-vehicle="shitzu-squalo"] .gx-art .gshot { --fx: 28%; --fy: 66%; --zf: 1.08; --dx: -1%; --dy: .4%; }
+.gx-scene[data-vehicle="vapid-stanier"] .gx-art .gshot { --fx: 45%; --fy: 36%; --zf: 1.055; --dx: -.4%; --dy: .5%; }
+.gx-scene[data-vehicle="vapid-ganado"] .gx-art .gshot { --fx: 45%; --fy: 36%; --zf: 1.055; --dx: -.4%; --dy: .5%; }
+.gx-scene[data-vehicle="dinka-enduro"] .gx-art .gshot { --fx: 29%; --fy: 50%; --zf: 1.05; --dx: .5%; --dy: 0%; }
+.gx-scene[data-vehicle="crest-kayak"] .gx-art .gshot { --fx: 30%; --fy: 78%; --zf: 1.05; --dx: .4%; --dy: -.3%; }
+/* a visitor who asks for reduced motion has no motion class (the site's own policy, site.js: the system setting, data saver and the visitor's choice in the menu), so none of this runs for them.
+   One more case: site.css switches every animation and transition off for a system that asks for reduced motion (duration .001 ms, with !important), and the site's own policy lets a visitor's choice in
+   the menu, or the server setting TV_AUTOPLAY_ALWAYS, opt back in (html.motion-on). For them the camera, the scene changes and the reveals would be stuck at their end state and nothing would
+   visibly move, so the Garage gives its own timings back, exactly as garage.css does for its footage and slideshows. Without html.motion-on none of these rules applies. */
+@media (prefers-reduced-motion: reduce) {
+  html.motion-on .gx-scene.is-active .gx-art .gshot, html.motion-on .gx-scene.is-leaving .gx-art .gshot { animation-duration: 4.2s !important; animation-delay: 0s !important; }
+  html.motion-on .gx-scene.is-entering .gx-art, html.motion-on .gx-scene.is-entering .gx-bloom { animation-duration: .7s !important; animation-delay: 0s !important; }
+  html.motion-on .gx-open { transition-duration: .9s !important; }
+  html.motion-on .gx-scene.is-leaving .gx-grade, html.motion-on .gx-scene.is-leaving .gx-copy { transition-duration: .2s !important; }
+  html.motion-on .gx-scene.is-active .gx-copy > * { transition-duration: .45s, .6s !important; }
+  html.motion-on .gx-scene.is-active .gx-copy > :nth-child(1) { transition-delay: .18s !important; }
+  html.motion-on .gx-scene.is-active .gx-copy > :nth-child(2) { transition-delay: .25s !important; }
+  html.motion-on .gx-scene.is-active .gx-copy > :nth-child(3) { transition-delay: .32s !important; }
+  html.motion-on .gx-scene.is-active .gx-copy > :nth-child(4) { transition-delay: .39s !important; }
+  html.motion-on .gx-f__art { transition-duration: 1.3s !important; }
+  html.motion-on .gx-f__words > * { transition-duration: .8s, .9s !important; }
+  html.motion-on .gx-f__words > :nth-child(2) { transition-delay: .08s !important; }
+  html.motion-on .gx-f__words > :nth-child(3) { transition-delay: .16s !important; }
+  html.motion-on .gx-f__words > :nth-child(4) { transition-delay: .24s !important; }
+  html.motion-on .gx-f__words > :nth-child(5) { transition-delay: .32s !important; }
+  html.motion-on .gx-f__inset { transition-duration: 1s !important; transition-delay: .4s !important; }
+  html.motion-on .gx-d__pic { transition-duration: 1.2s !important; }
+  html.motion-on .gx-d__words { transition-duration: .8s, .9s !important; transition-delay: .25s !important; }
+  html.motion-on .gx-d { transition-duration: .8s !important; }
+}
 html.motion-on .gx-scene .gx-copy > * { opacity: 0; transform: translateY(18px); }
 html.motion-on .gx-scene.is-active .gx-copy > * { opacity: 1; transform: none; transition: opacity .45s var(--ease), transform .6s var(--ease); }
 html.motion-on .gx-scene.is-active .gx-copy > :nth-child(1) { transition-delay: .18s; }

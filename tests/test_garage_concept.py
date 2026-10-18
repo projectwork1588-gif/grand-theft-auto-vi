@@ -164,7 +164,7 @@ def test_the_opening_holds_all_seven_scenes_the_index_and_the_showcase_controls(
 
 def test_the_showcase_clock_is_built_to_wait_and_never_to_scroll():
     js = (ROOT / "app" / "static" / "js" / "garage_concept.js").read_text(encoding="utf-8")
-    assert "dwellSeconds >= 2 && dwellSeconds <= 30 ? dwellSeconds : 3" in js                    # three seconds a scene; 2 to 30 only as a review switch
+    assert "dwellSeconds >= 2 && dwellSeconds <= 30 ? dwellSeconds : 2.8" in js                  # a hold of 2.8 s, so a change comes about every three seconds; 2 to 30 only as a review switch
     for condition in ("userPaused", "document.hidden", "holding.pointer", "holding.focus", "visible", "heading === current", "IntersectionObserver", "visibilitychange", "tv:motion"):
         assert condition in js, condition
     assert "scrollTo(" not in js.replace("list.scrollTo", "").replace("railEl.scrollTo", "") and "scrollIntoView" not in js and "window.scroll" not in js   # it never scrolls the page
@@ -244,10 +244,36 @@ def test_every_scene_has_its_own_small_camera_move_that_cannot_bare_an_edge():
         assert rule, slug
         values = {k: float(v) for k, v in re.findall(r"--(fx|fy|zf|dx|dy):\s*(-?[0-9.]+)%?", rule.group(1))}
         assert set(values) == {"fx", "fy", "zf", "dx", "dy"}, slug
-        assert 20 <= values["fx"] <= 80 and 20 <= values["fy"] <= 80, slug                           # centred on the machine, never at an edge
-        assert 1.02 <= values["zf"] <= 1.07, slug                                                    # a push of two to seven percent: restrained
+        assert 20 <= values["fx"] <= 80 and 20 <= values["fy"] <= 80, slug                           # centred on the machine's side that faces its words, never at an edge
+        assert 1.05 <= values["zf"] <= 1.10, slug                                                    # a push of five to nine percent: clearly visible, still slow
         # the drift must stay inside the margin the push opens up on the side it bares: (zoom - 1) times the distance from the centre to that edge
         margin_x = (values["zf"] - 1) * 100 * min(values["fx"], 100 - values["fx"]) / 100
         margin_y = (values["zf"] - 1) * 100 * min(values["fy"], 100 - values["fy"]) / 100
         assert abs(values["dx"]) <= margin_x and abs(values["dy"]) <= margin_y, slug
-    assert css.count("animation: gx-push 5s") == 1 and "gx-open .7s" in css                        # one camera, over a little longer than a scene's three seconds and its opening
+    assert css.count("animation: gx-push 4.2s") == 1 and "gx-open .7s" in css                      # one camera, over a little longer than a scene is on show
+
+
+def test_a_system_that_asks_for_reduced_motion_but_has_opted_in_still_sees_the_camera():
+    """The site's blanket rule (site.css) zeroes every animation duration for a system that asks for reduced motion. The owner's own setup (TV_AUTOPLAY_ALWAYS=1 on a computer
+    that asks for reduced motion) once froze the camera at its end state for exactly that reason, so the Garage gives its timings back under html.motion-on, and only there."""
+    site = (ROOT / "app" / "static" / "css" / "site.css").read_text(encoding="utf-8")
+    assert re.search(r"prefers-reduced-motion: reduce\) \{.{0,200}animation-duration: \.001ms !important", site, re.S)
+    css = (ROOT / "app" / "static" / "css" / "garage_concept.css").read_text(encoding="utf-8")
+    block = css.split("@media (prefers-reduced-motion: reduce) {")[1].split(chr(10) + "}" + chr(10))[0]
+    assert "html.motion-on .gx-scene.is-active .gx-art .gshot" in block and "animation-duration: 4.2s !important" in block
+    assert all(line.strip().startswith("html.motion-on") for line in block.strip().splitlines())      # nothing is given back without the motion class
+
+
+def test_the_server_setting_that_overrides_a_systems_reduced_motion_is_a_development_setting():
+    from app import config
+    assert config.ProductionConfig.AUTOPLAY_ALWAYS is False                                           # a deployed site always respects a visitor's system setting
+    assert config.get_config("production") is config.ProductionConfig and config.get_config("development") is config.DevelopmentConfig
+    js = (ROOT / "app" / "static" / "js" / "garage_concept.js").read_text(encoding="utf-8")
+    assert "console.info" in js and "TV_AUTOPLAY_ALWAYS" in js                                        # when it is the only reason motion is on, the page says so
+
+
+def test_the_showcase_waits_for_the_scene_picture_and_never_for_the_small_glow_picture():
+    js = (ROOT / "app" / "static" / "js" / "garage_concept.js").read_text(encoding="utf-8")
+    assert 'panels[slug].querySelector(".gx-art img")' in js and 'next.querySelector(".gx-art img")' in js   # the first image in a scene is its glow, not its picture
+    assert 'querySelector("img")' not in js
+    assert "img.decode()" in js and "trickleAt" in js                                                  # decoded ahead; the rest of the pictures follow one at a time

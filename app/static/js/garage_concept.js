@@ -42,8 +42,9 @@
     each(stage.querySelectorAll("[data-ctl]"), function (c) { c.hidden = false; });   // the arrows only exist when script can make them work
 
     var warm = function (slug) {
-      var img = panels[slug] && panels[slug].querySelector("img");
+      var img = panels[slug] && panels[slug].querySelector(".gx-art img");
       if (img && img.loading === "lazy") { img.loading = "eager"; }
+      if (img && img.decode) { img.decode().then(function () {}, function () {}); }   // decoded ahead too, so the scene can open the moment it is chosen
     };
 
     // where, as a share of the scene's picture, the frame starts: at the new machine's number in the index
@@ -65,9 +66,12 @@
       if (slug === current && slug === heading) { elapsed = 0; return; }   // choosing the machine already on show starts its hold again
       heading = slug;
       elapsed = 0;
+      picks.forEach(function (a) {                       // the index answers the choice at once; the scene follows as soon as its picture is ready
+        if (a.getAttribute("data-pick") === slug) { a.setAttribute("aria-current", "true"); } else { a.removeAttribute("aria-current"); }
+      });
       warm(slug);
       var token = ++requested;
-      whenReady(next.querySelector("img"), function () {
+      whenReady(next.querySelector(".gx-art img"), function () {
         if (token !== requested || slug === current) { return; }
         Object.keys(panels).forEach(function (key) {
           var panel = panels[key];
@@ -109,7 +113,7 @@
     // visitor has paused it, a pointer or keyboard is on the scene's words, the index or the controls, the opening is off screen, the tab is
     // hidden, or the next picture has not arrived yet. It never scrolls the page.
     var dwellSeconds = parseFloat(params.get("dwell"));
-    var DWELL = (dwellSeconds >= 2 && dwellSeconds <= 30 ? dwellSeconds : 3) * 1000;
+    var DWELL = (dwellSeconds >= 2 && dwellSeconds <= 30 ? dwellSeconds : 2.8) * 1000;   // the hold; with the opening of a scene (under a second) a change comes about every three seconds
     var saveData = !!(navigator.connection && navigator.connection.saveData);
     var motionOn = function () { return document.documentElement.classList.contains("motion-on"); };
     var userPaused = true;      // settled when the page is ready (the site's own script decides whether motion is on): with motion off (reduced motion, the site's switch, data saver) or ?autoplay=0 the showcase waits for a choice and does not cycle by itself
@@ -126,7 +130,7 @@
     };
     var frame = function (now) {
       rafId = 0;
-      var dt = Math.min(100, now - last);
+      var dt = Math.min(250, now - last);   // real time, not frames: a slow frame must not stretch the hold
       last = now;
       if (canRun()) {
         elapsed += dt;
@@ -162,7 +166,16 @@
       if (!motionOn()) { userPaused = true; } else if (params.get("autoplay") !== "0") { userPaused = false; elapsed = 0; }
       paint(); kick();
     });
-    var settle = function () { userPaused = params.get("autoplay") === "0" || saveData || !motionOn(); paint(); kick(); };
+    var settle = function () {
+      userPaused = params.get("autoplay") === "0" || saveData || !motionOn();
+      paint(); kick();
+      // motion is never switched on silently over a system that asks for less: when the only reason it is on is the server's TV_AUTOPLAY_ALWAYS (a development setting), say so once
+      var stored = null;
+      try { stored = window.localStorage.getItem("tv-motion"); } catch (e) { /* storage unavailable */ }
+      if (motionOn() && stored === null && document.body.getAttribute("data-autoplay") === "always" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches && window.console && console.info) {
+        console.info("Team Valkyrie: motion is on because this server sets TV_AUTOPLAY_ALWAYS=1 (a development setting that overrides the system's request for reduced motion). The Motion switch in the menu turns it off and is remembered.");
+      }
+    };
     if (document.readyState !== "complete") { document.addEventListener("DOMContentLoaded", settle); } else { settle(); }   // after the site's own script has set the motion class (it runs just before DOMContentLoaded)
 
     picks.forEach(function (a, i) {
@@ -202,7 +215,19 @@
       });
     }
 
-    // the first scene has its picture; the next is fetched only when it is nearly time (see the clock), never all seven at once
+    // the first scene has its picture; the next two are fetched as the clock runs (see above). Then, a few seconds after the page has loaded, the rest follow one at a time (one every
+    // 1.2 s, only while the opening is on show, never on data saver), so any number in the index opens at once: never all seven at the same moment.
+    if (!saveData) {
+      var trickleAt = 0;
+      var trickle = function () {
+        window.setTimeout(function again() {
+          if (trickleAt >= order.length) { return; }
+          if (!document.hidden && visible) { warm(order[trickleAt++]); }
+          window.setTimeout(again, 1200);
+        }, 3500);
+      };
+      if (document.readyState === "complete") { trickle(); } else { window.addEventListener("load", trickle, { once: true }); }
+    }
   }
 
   // ---- The collection --------------------------------------------------------------------------------------------

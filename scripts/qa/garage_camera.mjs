@@ -1,12 +1,15 @@
 // The Garage opening's camera movement, checked in a real browser: a slow push-in with a small drift on each scene's picture, never a bared edge, no jump when it starts or when
 // the scene is replaced, stopped in a hidden tab or when the opening is out of the window, absent for a visitor who asks for reduced motion, no visible play/pause control at any width,
 // no sideways scrolling, no console errors.
+// The camera is checked twice: in a browser whose system asks for reduced motion on the server with TV_AUTOPLAY_ALWAYS=1 (the owner's own setup, where site.css's blanket reduced-motion rule
+// would otherwise freeze every animation at its end state, which is exactly what once made the movement invisible), and in a browser with no such request. In both, the movement must be
+// MEASURED: running, a duration of seconds, the picture's rendered size growing by several percent, and the rendered pixels really changing.
 //   TL_BASE=http://127.0.0.1:5059 node scripts/qa/cdp.mjs scripts/qa/garage_camera.mjs      (exit status 1 on any failure)
 const BASE = process.env.TL_BASE || "http://127.0.0.1:5059";
 let failed = 0;
 const ok = (c, label, detail = "") => { if (!c) { failed++; } console.log((c ? "PASS  " : "FAIL  ") + label + (detail ? "  (" + detail + ")" : "")); };
 const SLUGS = ["grotti-cheetah", "vapid-dominator-buggy", "shitzu-squalo", "vapid-stanier", "vapid-ganado", "dinka-enduro", "crest-kayak"];
-const ZOOM = { "grotti-cheetah": 1.06, "vapid-dominator-buggy": 1.055, "shitzu-squalo": 1.055, "vapid-stanier": 1.035, "vapid-ganado": 1.035, "dinka-enduro": 1.04, "crest-kayak": 1.03 };
+const ZOOM = { "grotti-cheetah": 1.09, "vapid-dominator-buggy": 1.065, "shitzu-squalo": 1.08, "vapid-stanier": 1.055, "vapid-ganado": 1.055, "dinka-enduro": 1.05, "crest-kayak": 1.05 };
 
 export default async function (b) {
   const errors = [];
@@ -15,7 +18,7 @@ export default async function (b) {
     if (d.method === "Runtime.consoleAPICalled" && d.params.type === "error") { errors.push("console.error: " + d.params.args.map((a) => a.value || a.description).join(" ")); }
   });
   const ev = (x) => b.eval(x);
-  await b.colorScheme(false);
+  await b.colorScheme(true);                                                    // a system that asks for reduced motion, as on the owner's computer
   await b.send("Emulation.setFocusEmulationEnabled", { enabled: true });
   const open = async (w, h, query = "?dwell=30", motion = "1") => {
     await b.send("Emulation.setDeviceMetricsOverride", { width: w, height: h, deviceScaleFactor: 1, mobile: w < 700 });
@@ -26,7 +29,7 @@ export default async function (b) {
   // the scale and the shift of a scene's picture, and whether it still covers its frame
   const look = (slug) => ev(`(() => { const p = document.querySelector('[data-panel="${slug}"]'); const i = p.querySelector(".gx-art img"); const a = p.querySelector(".gx-art").getBoundingClientRect(); const r = i.getBoundingClientRect();
     const m = new DOMMatrix(getComputedStyle(i).transform); const an = i.getAnimations().map((x) => x.animationName + ":" + x.playState);
-    return JSON.stringify({ s: +m.a.toFixed(4), tx: +(m.e / r.width * 100).toFixed(3), ty: +(m.f / r.height * 100).toFixed(3), covers: r.left <= a.left + 0.6 && r.right >= a.right - 0.6 && r.top <= a.top + 0.6 && r.bottom >= a.bottom - 0.6, an, fit: getComputedStyle(i).objectFit }); })()`).then(JSON.parse);
+    return JSON.stringify({ w: r.width, s: +m.a.toFixed(4), tx: +(m.e / r.width * 100).toFixed(3), ty: +(m.f / r.height * 100).toFixed(3), covers: r.left <= a.left + 0.6 && r.right >= a.right - 0.6 && r.top <= a.top + 0.6 && r.bottom >= a.bottom - 0.6, an, fit: getComputedStyle(i).objectFit }); })()`).then(JSON.parse);
   const choose = async (slug) => {
     await ev(`document.querySelector('[data-pick="${slug}"]').click(); true`);
     for (let i = 0; i < 60; i++) { if (await ev(`document.querySelector('[data-panel="${slug}"]').classList.contains("is-active") && !document.querySelector(".is-entering")`).catch(() => false)) { break; } await b.sleep(50); }
@@ -39,21 +42,42 @@ export default async function (b) {
     ok(ctl.hooks === 0 && ctl.buttons.length === 0, `${w}px: the opening has no play or pause control`, JSON.stringify(ctl));
   }
 
-  // ---- each scene's camera
-  await open(1440, 900);
-  for (const slug of SLUGS) {
-    await choose(slug);
-    const t0 = Date.now();
-    const a = await look(slug);
-    await b.sleep(Math.max(0, 1500 - (Date.now() - t0)));
-    const m = await look(slug);
-    await b.sleep(Math.max(0, 3200 - (Date.now() - t0)));
-    const z = await look(slug);
-    const z1 = ZOOM[slug];
-    ok(a.an.some((n) => n.startsWith("gx-push")) && m.s > a.s && z.s > m.s && z.s <= z1 + 0.002 && a.s >= 1, `${slug}: a slow push-in, still moving after three seconds, never past ${z1}`, [a.s, m.s, z.s].join(" > "));
-    ok(a.covers && m.covers && z.covers, `${slug}: the picture always covers its frame (no bared edge)`, JSON.stringify([a.covers, m.covers, z.covers]));
-    ok(Math.abs(z.tx) < 1.1 && Math.abs(z.ty) < 0.9, `${slug}: the drift stays small`, `${z.tx}%, ${z.ty}%`);
+  // the mean absolute difference between two screenshots of the opening (0 to 255), worked out in the page on a canvas
+  const frameDiff = async (x, y) => ev(`(async () => { const load = (d) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.src = "data:image/jpeg;base64," + d; }); const [a, b] = await Promise.all([load(${JSON.stringify(x)}), load(${JSON.stringify(y)})]);
+    const c = document.createElement("canvas"); c.width = 360; c.height = 225; const g = c.getContext("2d", { willReadFrequently: true }); g.drawImage(a, 0, 0, 360, 225); const p = g.getImageData(0, 0, 360, 225).data; g.drawImage(b, 0, 0, 360, 225); const q = g.getImageData(0, 0, 360, 225).data;
+    let t = 0; for (let k = 0; k < p.length; k += 4) { t += Math.abs(p[k] - q[k]) + Math.abs(p[k + 1] - q[k + 1]) + Math.abs(p[k + 2] - q[k + 2]); } return +(t / (p.length / 4 * 3)).toFixed(2); })()`);
+  const snap = async () => (await b.send("Page.captureScreenshot", { format: "jpeg", quality: 55, clip: { x: 0, y: 0, width: 1440, height: 900, scale: 1 } })).data;
+  for (const mode of [{ reduce: true, name: "reduced-motion system, TV_AUTOPLAY_ALWAYS=1 (the owner's browser)" }, { reduce: false, name: "no reduced-motion request" }]) {
+    await b.colorScheme(mode.reduce);
+    await open(1440, 900);
+    const sys = await ev(`JSON.stringify({ reduce: matchMedia("(prefers-reduced-motion: reduce)").matches, motion: document.documentElement.classList.contains("motion-on") })`).then(JSON.parse);
+    ok(sys.reduce === mode.reduce && sys.motion, `[${mode.name}] the page is in the state under test`, JSON.stringify(sys));
+    for (const slug of SLUGS) {
+      await choose(SLUGS[(SLUGS.indexOf(slug) + 3) % SLUGS.length]);       // another scene first, so the one under test always begins afresh
+      await b.sleep(250);
+      await choose(slug);
+      const t0 = Date.now();
+      const a = await look(slug);
+      const shotA = await snap();
+      await b.sleep(Math.max(0, 1500 - (Date.now() - t0)));
+      const m = await look(slug);
+      await b.sleep(Math.max(0, 3000 - (Date.now() - t0)));
+      const z = await look(slug);
+      const shotZ = await snap();
+      const z1 = ZOOM[slug];
+      const timing = await ev(`(() => { const i = document.querySelector('[data-panel="${slug}"] .gx-art img'); const an = i.getAnimations().find((x) => x.animationName === "gx-push"); return an ? JSON.stringify({ duration: an.effect.getTiming().duration, state: an.playState, at: Math.round(an.currentTime) }) : "null"; })()`).then(JSON.parse);
+      const grew = z.w / a.w - 1;
+      const diff = await frameDiff(shotA, shotZ);
+      ok(timing && timing.duration >= 3500 && timing.state === "running" && timing.at > 2000, `[${mode.reduce ? "reduce" : "normal"}] ${slug}: the camera animation is really running (a duration of seconds, not finished)`, JSON.stringify(timing));
+      ok(a.an.some((n) => n.startsWith("gx-push")) && m.s > a.s && z.s > m.s && z.s <= z1 + 0.002 && a.s >= 1, `[${mode.reduce ? "reduce" : "normal"}] ${slug}: a push-in that keeps going for three seconds, never past ${z1}`, [a.s, m.s, z.s].join(" > "));
+      ok(grew >= (z1 - 1) * 0.6, `[${mode.reduce ? "reduce" : "normal"}] ${slug}: the picture visibly grows (${(grew * 100).toFixed(1)} percent in three seconds, of ${((z1 - 1) * 100).toFixed(1)} at the end)`);
+      ok(diff >= 3, `[${mode.reduce ? "reduce" : "normal"}] ${slug}: the pixels on screen really change (mean difference ${diff} of 255 between the first and the third second)`);
+      ok(a.covers && m.covers && z.covers, `[${mode.reduce ? "reduce" : "normal"}] ${slug}: the picture always covers its frame (no bared edge)`, JSON.stringify([a.covers, m.covers, z.covers]));
+      ok(Math.abs(z.tx) < 2 && Math.abs(z.ty) < 1, `[${mode.reduce ? "reduce" : "normal"}] ${slug}: the drift stays small`, `${z.tx}%, ${z.ty}%`);
+    }
   }
+  await b.colorScheme(true);
+  await open(1440, 900);
 
   // ---- no jump when a scene begins, and the one being replaced keeps moving under the one arriving
   await choose("grotti-cheetah");
@@ -65,10 +89,10 @@ export default async function (b) {
     const scale = (i) => new DOMMatrix(getComputedStyle(i).transform).a;
     const cover = (i) => { const a = i.parentElement.getBoundingClientRect(), r = i.getBoundingClientRect(); return r.left <= a.left + 0.6 && r.right >= a.right - 0.6 && r.top <= a.top + 0.6 && r.bottom >= a.bottom - 0.6; };
     document.querySelector('[data-pick="vapid-dominator-buggy"]').click();
-    const tick = () => { const t = performance.now() - t0; out.push([Math.round(t), +scale(A).toFixed(4), +scale(B).toFixed(4), cover(A) && cover(B)]); if (t < 640) { requestAnimationFrame(tick); } else { done(JSON.stringify(out)); } };
+    const tick = () => { const t = performance.now() - t0; out.push([Math.round(t), +scale(A).toFixed(4), +scale(B).toFixed(4), A.closest(".gx-scene").hidden || (cover(A) && cover(B)), A.closest(".gx-scene").hidden]); if (t < 640) { requestAnimationFrame(tick); } else { done(JSON.stringify(out)); } };
     requestAnimationFrame(tick);
   })`).then(JSON.parse);
-  const aS = frames.map((f) => f[1]), bS = frames.map((f) => f[2]);
+  const aS = frames.filter((f) => !f[4]).map((f) => f[1]), bS = frames.map((f) => f[2]);   // while the old scene is on show (once it is hidden under the new one it is no longer drawn)
   ok(aS.every((s, i) => s >= before.s - 0.0005 && (i === 0 || s >= aS[i - 1] - 0.0005)), "the scene being replaced is not reset: its camera keeps moving under the new one", `${before.s} > ${aS[0]} ... ${aS[aS.length - 1]} (${frames.length} frames)`);
   ok(bS.every((s) => s >= 1 && s < 1.03) && bS.every((s, i) => i === 0 || s >= bS[i - 1] - 0.0005), "the arriving scene's camera starts from the picture as it rests", `${bS[0]} ... ${bS[bS.length - 1]}`);
   ok(frames.every((f) => f[3]), "no edge is bared while two scenes are on show");
@@ -116,6 +140,17 @@ export default async function (b) {
   } else {
     ok(false, "reduced motion: a second server without forced autoplay is needed on " + RM);
   }
+
+  // ---- a visitor's own choice wins: the Motion switch in the menu set to Off beats the server's TV_AUTOPLAY_ALWAYS
+  await b.colorScheme(false);
+  await b.open(BASE + "/about", 100);
+  await ev(`localStorage.setItem("tv-motion", "0"); true`);
+  await b.open(BASE + "/garage-concept?dwell=2", 1800);
+  const off = await ev(`JSON.stringify({ motion: document.documentElement.classList.contains("motion-on"), anim: document.querySelector(".gx-scene.is-active .gx-art img").getAnimations().length, shown: document.querySelector("[data-stage]").getAttribute("data-vehicle"), clock: window.__gxClock().userPaused })`).then(JSON.parse);
+  await b.sleep(4400);
+  ok(!off.motion && off.anim === 0 && off.clock === true && (await ev(`document.querySelector("[data-stage]").getAttribute("data-vehicle")`)) === off.shown, "the visitor's Motion switch set to Off wins over TV_AUTOPLAY_ALWAYS: no camera, no cycling", JSON.stringify(off));
+  await ev(`localStorage.removeItem("tv-motion"); true`);
+  await b.colorScheme(true);
 
   // ---- no sideways scrolling or console errors at narrow, standard, 4:3 and ultrawide shapes
   for (const [w, h] of [[390, 844], [820, 1180], [1024, 768], [1440, 900], [2560, 1080]]) {
