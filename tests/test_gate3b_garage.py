@@ -254,19 +254,25 @@ def test_the_customs_band_names_no_model_and_shows_only_on_the_whole_collection(
 @pytest.mark.parametrize("slug", OFFICIAL)
 def test_every_vehicle_page_has_its_own_entrance_and_never_repeats_it(client, slug):
     page = html(client, f"/vehicles/{slug}")
-    opening = page.split('<header class="vopen')[1].split("</header>")[0]
-    assert '<h1 class="plate vopen__plate">' in opening
+    opening = page.split('<header class="vd-hero')[1].split("</header>")[0]
+    assert '<h1 class="plate vd-plate">' in opening and 'class="vd-crumb"' in opening and 'href="#machine"' in opening
     hero_file = re.search(r"static/media/([A-Za-z0-9_.~-]+\.jpg)", opening).group(1)
-    body = page.split('id="machine"')[1].split('class="vnext"')[0]
-    assert hero_file not in body, slug                                     # the showcase never repeats the opening picture
-    assert page.count('class="neighbour ') == 2 and page.count("rail__item") == 7
+    body = page.split('id="machine"')[1].split('class="vd-next"')[0]
+    if 'class="vd-seq vd-close"' in body:                                  # a machine with one picture is shown in crops of it, named as such: only there does the file come back
+        before, rest = body.split('class="vd-seq vd-close"')
+        assert hero_file not in before and hero_file not in rest.split("</section>")[1], slug
+    else:
+        assert hero_file not in body, slug                                 # the showcase never repeats the opening picture
+    assert page.count('rel="prev"') == 1 and page.count('rel="next"') == 1 and page.count('data-vehicle="') >= 9 and 'aria-label="All machines"' in page
 
 
 def test_each_vehicle_is_set_the_way_its_pictures_want_to_be_seen(client):
-    stories = {slug: re.search(r'class="garage garage--vehicle story--([a-z-]+)"', html(client, f"/vehicles/{slug}")).group(1) for slug in OFFICIAL}
-    assert stories == {"grotti-cheetah": "mosaic", "vapid-dominator-buggy": "viewer", "shitzu-squalo": "panorama", "vapid-stanier": "mosaic-flip",
-                       "vapid-ganado": "none", "dinka-enduro": "context", "crest-kayak": "context"}
-    assert len(set(stories.values())) >= 5                                 # not one template with five backgrounds
+    stories = {slug: re.search(r'<article class="garage vd" data-vehicle="[a-z-]+" data-sequence="([a-z_]+)"', html(client, f"/vehicles/{slug}")).group(1) for slug in OFFICIAL}
+    assert stories == {"grotti-cheetah": "stage_pair", "vapid-dominator-buggy": "viewer", "shitzu-squalo": "panorama_pair", "vapid-stanier": "stage_pair",
+                       "vapid-ganado": "close", "dinka-enduro": "context", "crest-kayak": "context"}
+    assert len(set(stories.values())) >= 5                                 # not one template with seven backgrounds
+    sides = [re.search(r"vd-stage vd-stage--(left|right)", html(client, f"/vehicles/{slug}")).group(1) for slug in ("grotti-cheetah", "vapid-stanier")]
+    assert sides == ["right", "left"]                                      # the two stage pages bleed off opposite edges
 
 
 def test_vehicle_pages_state_only_what_is_recorded_and_do_not_apologise(client):
@@ -278,30 +284,36 @@ def test_vehicle_pages_state_only_what_is_recorded_and_do_not_apologise(client):
         assert 'href="https://www.rockstargames.com/' in page and "Rockstar has not published specifications" not in page   # provenance stays (source link, credit); the explanation is not repeated on every page
 
 
-def test_a_vehicle_with_one_picture_has_no_gallery_and_no_empty_frame(client):
+def test_a_vehicle_with_one_picture_is_shown_in_crops_named_for_what_they_show(client):
     page = html(client, "/vehicles/vapid-ganado")
-    assert "story--none" in page and "vshow" not in page and "data-viewer" not in page and "data-lightbox" not in page
+    assert 'data-sequence="close"' in page and "data-viewer" not in page and 'class="vd-stage ' not in page and "vd-duo" not in page
+    close = page.split('class="vd-seq vd-close"')[1].split("</section>")[0]
+    assert re.findall(r"</span>([^<]+)</figcaption>", close) == ["The hood and its red stripes", "The grille and its four headlights", "Behind the wheel"]
+    assert close.count('data-zoom="') == 3 and close.count('data-zx="') == 3 and close.count("data-lightbox") == 1      # three crops of the one picture, one link to the whole picture
+    assert "In close" in close and "The whole picture" in close
 
 
 def test_the_viewer_markup_works_without_script(client):
     page = html(client, "/vehicles/vapid-dominator-buggy")
     thumbs = re.findall(r'<a href="(https://www\.rockstargames\.com/[^"]+)" data-thumb', page)
     assert len(thumbs) == 3 and all("imwidth=2560" in t for t in thumbs)
-    slides = page.split('class="viewer__slides"')[1].split("</ul>")[0]
+    slides = page.split('class="vd-viewer__slides"')[1].split("</ul>")[0]
     assert slides.count(" hidden") == 2
-    thumbnails = page.split('class="viewer__thumbs"')[1].split("</ul>")[0]
+    thumbnails = page.split('class="vd-viewer__thumbs"')[1].split("</ul>")[0]
     assert "loading=" not in thumbnails and thumbnails.count("<img") == 3          # the thumbnails are never lazy, so none is ever an empty frame
+    assert re.search(r"data-captions='\[&#34;|data-captions='\[\"", page) or "data-captions=" in page
 
 
-def test_dinka_and_kayak_show_a_smaller_labelled_cut_of_the_scene_not_a_large_picture(client):
+def test_dinka_and_kayak_show_a_smaller_labelled_cut_of_the_scene_then_crops_of_their_own_picture(client):
     pages = {slug: html(client, f"/vehicles/{slug}") for slug in ("dinka-enduro", "crest-kayak")}
     for slug, page in pages.items():
-        ctx = page.split('class="vshow vctx')[1].split("</section>")[0]
+        ctx = page.split('class="vd-seq vd-seq--context"')[1].split("</section>")[0]
         assert "own screenshots" in ctx and "The whole scene" in ctx and "data-lightbox" in ctx      # labelled, with the full picture a click away
         assert 'data-zoom="' in ctx and 'data-zx="' in ctx and 'data-zy="' in ctx                                # drawn close around the vehicle
         assert "ULTIMATE_EDITION_SAFEHOUSE_VEHICLES_01" in ctx
-    assert 'vctx vctx--flip' not in pages["dinka-enduro"] and 'vctx vctx--flip' in pages["crest-kayak"]
-    zooms = {slug: re.search(r'data-zx="(\d+)" data-zy="(\d+)"', p.split('class="vshow vctx')[1]).groups() for slug, p in pages.items()}
+        assert page.count("vd-close__art") >= 3                                                                  # then three crops of the machine's own picture
+    assert 'vd-stage--right vd-stage--scene' in pages["dinka-enduro"] and 'vd-stage--left vd-stage--scene' in pages["crest-kayak"]
+    zooms = {slug: re.search(r'data-zx="(\d+)" data-zy="(\d+)"', p.split('class="vd-seq vd-seq--context"')[1]).groups() for slug, p in pages.items()}
     assert zooms["dinka-enduro"] != zooms["crest-kayak"]                                                       # not the same part of the picture twice
 
 

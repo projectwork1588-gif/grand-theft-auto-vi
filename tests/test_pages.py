@@ -342,7 +342,7 @@ def test_garage_filters_search_sorting_and_pagination(client):
 
 def test_official_vehicle_detail_page(client):
     page = html(client, "/vehicles/shitzu-squalo")
-    assert '<h1 class="plate vopen__plate">' in page and "badge--official" not in page
+    assert '<h1 class="plate vd-plate">' in page and "badge--official" not in page
     assert "https://www.rockstargames.com/VI/editions" in page                # source link
     assert page.count("data-lightbox") == 3                                    # the four pictures, less the one that opens the page
     assert 'href="/vehicles/vapid-stanier"' in page and "All machines" in page

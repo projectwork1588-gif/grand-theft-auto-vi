@@ -585,15 +585,43 @@ def _garage_moments():
     return out
 
 
+# ---------------------------------------------------------------- the vehicle pages (Stage B)
+_DETAIL_SHAPES = {"stage": (1.6, 1.6), "half": (1.3, 1.3), "pano": (2.4, 1.3), "viewer": (16 / 9, 4 / 3), "thumb": (1.6, 1.6)}
+_CLOSE_ASPECT = 1.2          # the box of each crop in "in close", width over height
+_CONTEXT_STAGE_ASPECT = 2.2  # the box of the smaller cut of a Rockstar scene
+
+
+def _scene_picture(m, scene):
+    """A vehicle's opening picture, cut for its composition exactly as the Garage's opening cuts it (so the page opens on the same picture the visitor chose)."""
+    picture = _garage_picture(m, _SCENE_SHAPE, keep_height=True)
+    if picture and "px" in scene:                                    # a scene may hold its picture to one side of its frame
+        wide, phone = picture["cuts"]["stage"]
+        picture["cuts"]["stage"] = (f"{scene['px']}% {wide.split()[1]}", phone)
+        picture["pos"] = picture["cuts"]["stage"][0]
+    return picture
+
+
+def _captioned(m, caption=None):
+    """A gallery picture with its short caption and the full-size picture's address (the page links to it)."""
+    picture = _garage_picture(m, _DETAIL_SHAPES)
+    picture["caption"] = caption or media_slots.GARAGE_CAPTIONS.get(m["slug"]) or picture["alt"]
+    return picture
+
+
 def vehicle_detail(slug):
     vehicle, vehicle_id = vehicles.get_vehicle_with_id(slug)
     if vehicle["content_status"] != "official":
         raise NotFound("That vehicle is not part of the public garage.")
     pick = media_slots.GARAGE_PICKS.get(slug, {})
+    detail = media_slots.GARAGE_DETAIL.get(slug, {})
+    scene = media_slots.GARAGE_SCENES.get(slug, {})
     frames = media.for_entity("vehicle", vehicle_id, limit=24)
     by_slug = {m["slug"]: m for m in frames}
     hero = by_slug.get(pick.get("stage")) or (frames[0] if frames else None)
-    vehicle["hero"] = _garage_picture(hero, _HERO_SHAPE)
+    vehicle["hero"] = _scene_picture(hero, scene)
+    vehicle["plate"] = scene.get("plate", "br")
+    vehicle["subject"] = ";".join(",".join(f"{v:.2f}" for v in box) for box in scene["subject"]) if scene.get("subject") else ""
+    vehicle["line"] = media_slots.GARAGE_COPY.get(slug, vehicle["summary"])
     vehicle["side"], vehicle["vpos"] = pick.get("side", "left"), pick.get("vpos", "bottom")
     vehicle["theme"] = pick.get("theme", "")
     vehicle["make_line"], vehicle["model_line"] = split_name(vehicle["name"], vehicle.get("manufacturer"))
@@ -602,20 +630,35 @@ def vehicle_detail(slug):
     wanted = [by_slug[g] for g in pick.get("gallery", []) if g in by_slug and by_slug[g] is not hero]
     ctx = pick.get("context")
     rest = wanted or [m for m in frames if not hero or (m["slug"] != hero["slug"] and m["slug"] != (ctx or {}).get("slug"))]
-    story = pick.get("story") or ("viewer" if len(rest) >= 2 else ("none" if not rest else "context"))
-    if story in ("mosaic", "mosaic-flip") and len(rest) != 3:
-        story = "viewer" if len(rest) >= 2 else "none"
-    if story == "viewer" and len(rest) < 2:
-        story = "none"
-    vehicle["gallery"] = [_garage_picture(m, _GALLERY_SHAPES) for m in rest]
+    vehicle["gallery"] = [_captioned(m) for m in rest]
+    # how the rest of the page is told: chosen for the pictures that exist, never forced
+    sequence = detail.get("sequence")
+    n = len(vehicle["gallery"])
+    if sequence in ("stage_pair", "panorama_pair") and n < 3:
+        sequence = "viewer" if n >= 2 else None
+    if sequence == "viewer" and n < 2:
+        sequence = None
+    if sequence is None and n >= 3:
+        sequence = "stage_pair"
+    vehicle["side"] = detail.get("side", "right")
     vehicle["context"] = None
-    if story == "context":
+    if sequence == "context":
         row = media.by_slugs([ctx["slug"]]).get(ctx["slug"]) if ctx else None
         if row:
-            vehicle["context"] = {**_context_picture(row, ctx["focus"], ctx["zoom"], _CONTEXT_ASPECT), "title": ctx["title"], "text": ctx["text"], "flip": ctx["flip"]}
-        else:
-            story = "none"                                                  # the scene picture is not in this database: the page is the entrance alone
-    vehicle["story"] = story
+            vehicle["context"] = {**_context_picture(row, ctx["focus"], ctx["zoom"], _CONTEXT_STAGE_ASPECT), "title": ctx["title"], "text": ctx["text"], "flip": ctx["flip"]}
+    # a machine with one picture is drawn closer: crops of that same picture, each named for what it shows
+    vehicle["close"] = []
+    if hero and sequence in ("close", "context"):
+        for label, x, y, zoom in media_slots.GARAGE_CLOSE.get(slug, ()):
+            crop = _context_picture(hero, (x, y), zoom, _CLOSE_ASPECT)
+            crop["label"] = label
+            vehicle["close"].append(crop)
+    if sequence == "context" and not vehicle["context"] and not vehicle["close"]:
+        sequence = None
+    if sequence == "close" and not vehicle["close"]:
+        sequence = None
+    vehicle["sequence"] = sequence
+    vehicle["story"] = sequence or "none"
     entries = _garage_entries(_all_official(), lambda i: {"card": (1.9, 1.5)})
     me = next((i for i, e in enumerate(entries) if e["slug"] == slug), 0)
     vehicle["rail"] = entries
@@ -623,6 +666,9 @@ def vehicle_detail(slug):
     vehicle["total"] = len(entries)
     vehicle["previous"] = entries[(me - 1) % len(entries)] if len(entries) > 1 else None
     vehicle["next"] = entries[(me + 1) % len(entries)] if len(entries) > 1 else None
+    for e in (vehicle["previous"], vehicle["next"]):
+        if e:
+            e["line"] = media_slots.GARAGE_COPY.get(e["slug"], e.get("summary", ""))
     vehicle["cover"] = frames[0] if frames else None
     return vehicle
 

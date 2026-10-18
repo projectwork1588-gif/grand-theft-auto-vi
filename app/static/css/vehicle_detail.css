@@ -1,0 +1,342 @@
+/* =====================================================================
+   The seven vehicle pages (Stage B): the Garage's cinematic language carried into each machine's own page. An opening of the whole window (the picture the
+   visitor chose, a slow camera push, the words set where the picture leaves room), the description set large, the machine's other pictures told the way
+   they want to be seen (a stage that bleeds off the window, a panorama, a viewer, a diptych, or crops of a single picture), the next machine in its own
+   picture. Loaded after garage.css, which supplies the picture cuts (.gshot), the nameplate (.plate) and each machine's tint (--tint); every rule here
+   is prefixed vd- so nothing else is touched. Tokens only. Motion is decoration: it sits under html.motion-on and every composition is complete without it.
+   ===================================================================== */
+
+.vd .container--wide { width: auto; margin-inline: var(--edge); }
+/* a picture frame: the picture is drawn to fill it; a picture drawn closer on its subject (a machine with one picture) is scaled about the origin the service chose */
+.vd-pic { position: relative; display: block; overflow: hidden; margin: 0; background: var(--card); }
+.vd-pic .gshot { position: absolute; inset: 0; }
+.vd .vd-pic .gshot[data-zoom] { position: absolute; inset: auto; width: calc(var(--z, 1) * 100%); height: calc(var(--z, 1) * 100%); max-width: none; left: calc((1 - var(--z, 1)) * var(--px, 50%)); top: calc((1 - var(--z, 1)) * var(--py, 50%)); object-position: var(--px, 50%) var(--py, 50%); }
+.vd .vd-pic .gshot[data-zoom][data-zx] { left: calc((1 - var(--z, 1)) * var(--zx, 50%)); top: calc((1 - var(--z, 1)) * var(--zy, 50%)); }
+@media (max-width: 899px) { .vd .vd-pic .gshot[data-zoom]:not([data-zx]) { left: calc((1 - var(--z, 1)) * var(--pxn, 50%)); top: calc((1 - var(--z, 1)) * var(--pyn, 50%)); } }
+
+.vd-kicker { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font: 700 var(--t-micro)/1.2 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--tint); }
+.vd-kicker span:first-child { color: var(--text); }
+.vd-kicker span + span::before { content: ""; display: inline-block; width: 18px; height: 1px; margin-right: 14px; vertical-align: middle; background: currentColor; opacity: .55; }
+.vd-view { display: inline-flex; flex: none; align-items: center; gap: 10px; padding-bottom: 5px; border-bottom: 1px solid var(--line-strong); font: 700 var(--t-small)/1 var(--font-text); letter-spacing: var(--track-ui); color: var(--text); text-decoration: none; }
+.vd-view svg { width: 18px; height: 18px; transition: transform var(--dur-2) var(--ease); }
+a:hover > .vd-view svg, a:focus-visible > .vd-view svg, .vd-view:hover svg { transform: translateX(5px); }
+a:hover > .vd-view, a:focus-visible > .vd-view, .vd-view:hover { border-color: var(--tint); }
+
+/* =====================================================================
+   The opening: nearly the whole window, the picture the visitor chose
+   ===================================================================== */
+@media (min-width: 900px) { .vd-hero { container: vdhero / size; } }
+.vd-hero { --col: min(22rem, 25vw); position: relative; isolation: isolate; overflow: hidden; background: var(--ground); height: clamp(640px, 100svh, 1000px); }
+.vd-hero__art { position: absolute; inset: 0; overflow: hidden; background: var(--card); }
+.vd-hero__art .gshot { position: absolute; inset: 0; }
+.vd-hero__art::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(10, 8, 28, .62) 0, rgba(10, 8, 28, 0) 24%); }
+.vd-hero__bloom { position: absolute; inset: 0; display: none; overflow: hidden; background: var(--ground); }
+.vd-hero__bloom .gshot { position: absolute; inset: -12%; width: 124%; height: 124%; max-width: none; filter: blur(40px) saturate(1.3) brightness(.4); }
+.vd-hero__grade { position: absolute; inset: 0; pointer-events: none; }
+.vd-hero--br .vd-hero__grade { background: radial-gradient(60% 70% at 86% 92%, color-mix(in srgb, var(--tint) 22%, transparent), transparent 72%),
+  linear-gradient(0deg, rgba(10, 8, 28, .78) 0%, rgba(10, 8, 28, .3) 26%, rgba(10, 8, 28, 0) 50%), linear-gradient(270deg, rgba(10, 8, 28, .6) 0%, rgba(10, 8, 28, 0) 46%); }
+.vd-hero--ml .vd-hero__grade { background: radial-gradient(60% 70% at 10% 60%, color-mix(in srgb, var(--tint) 20%, transparent), transparent 72%),
+  linear-gradient(90deg, rgba(10, 8, 28, .74) 0%, rgba(10, 8, 28, .3) 34%, rgba(10, 8, 28, 0) 58%), linear-gradient(0deg, rgba(10, 8, 28, .55) 0%, rgba(10, 8, 28, 0) 30%); }
+.vd-hero--tr .vd-hero__grade { background: radial-gradient(60% 55% at 88% 14%, color-mix(in srgb, var(--tint) 16%, transparent), transparent 72%),
+  linear-gradient(180deg, rgba(10, 8, 28, .78) 0%, rgba(10, 8, 28, .42) 22%, rgba(10, 8, 28, 0) 42%), linear-gradient(270deg, rgba(10, 8, 28, .5) 0%, rgba(10, 8, 28, 0) 38%), linear-gradient(0deg, rgba(10, 8, 28, .5) 0%, rgba(10, 8, 28, 0) 24%); }
+
+.vd-crumb { position: absolute; z-index: 4; left: var(--edge); top: calc(var(--header-h) + 16px); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--text-2); text-shadow: 0 1px 14px rgba(7, 6, 20, .9); }
+.vd-crumb a { display: inline-flex; align-items: center; min-height: 28px; color: var(--text-2); text-decoration: none; }
+.vd-crumb a:hover { color: var(--text); }
+
+.vd-hero__copy { position: absolute; z-index: 3; display: grid; gap: 14px; justify-items: start; max-width: 32rem; }
+.vd-hero__copy > * { margin: 0; }
+.vd-hero__copy .plate { gap: 8px; }
+.vd-hero__copy .plate__make { font-size: var(--t-h4); }
+.vd-hero__copy .plate__model { font-size: var(--t-h1); }
+.vd-hero__copy .plate__model--long { font-size: var(--t-h2); }
+.vd-hero__line { max-width: 23rem; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, .26); color: var(--text-2); font: 500 var(--t-lead)/1.35 var(--font-text); }
+.vd-hero__line, .vd-hero__copy .plate { text-shadow: 0 1px 3px rgba(7, 6, 20, .55), 0 2px 28px rgba(7, 6, 20, .8); }
+.vd-cue { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font: 700 var(--t-small)/1 var(--font-text); letter-spacing: var(--track-ui); color: var(--text); text-decoration: none; text-shadow: 0 1px 12px rgba(7, 6, 20, .9); }
+.vd-cue svg { width: 18px; height: 18px; transition: transform var(--dur-2) var(--ease); }
+.vd-cue:hover { color: var(--tint); }
+.vd-cue:hover svg { transform: translateY(4px); }
+.vd-hero--br .vd-hero__copy { right: var(--edge); bottom: clamp(40px, 8vh, 84px); justify-items: end; text-align: right; }
+.vd-hero--br .plate { justify-items: end; }
+.vd-hero--br .vd-hero__line { max-width: 15rem; }
+.vd-hero--ml .vd-hero__copy { left: var(--edge); top: 50%; translate: 0 -38%; max-width: min(24rem, 27vw); }
+.vd-hero--ml .vd-hero__line { max-width: 17rem; }
+@media (min-width: 900px) { .vd-hero--ml[data-plate="ml"] .vd-hero__copy { top: 52%; } [data-vehicle="crest-kayak"] .vd-hero--ml .vd-hero__copy { top: 36%; } }
+.vd-hero--tr .vd-hero__copy { right: var(--edge); top: calc(var(--header-h) + 22px); justify-items: end; text-align: right; max-width: 21rem; gap: 10px; }
+.vd-hero--tr .plate { justify-items: end; }
+.vd-hero--tr .vd-hero__line { max-width: 17rem; padding-top: 10px; font-size: var(--t-body); }
+.vd-hero--tr .plate__model { font-size: var(--t-h2); }
+.vd-hero--tr .plate__model--long { font-size: var(--t-h3); }
+.vd-hero--tr .plate__make { font-size: var(--t-body); }
+/* the free sky above the hood is about a third of the window's height: on a short window the block is shorter too */
+@media (min-width: 900px) and (max-height: 860px) { .vd-hero--tr .plate__make, .vd-hero--tr .vd-kicker span:nth-child(3) { display: none; } .vd-hero--tr .vd-hero__copy { top: calc(var(--header-h) + 8px); } }
+@media (min-width: 900px) and (max-height: 760px) { .vd-hero--tr .plate__model { font-size: var(--t-h3); } .vd-hero--tr .vd-hero__line { font-size: var(--t-small); } }
+@media (min-width: 900px) and (max-width: 1199px) { .vd-hero__copy .plate__model { font-size: var(--t-h2); } .vd-hero__line { font-size: var(--t-body); } .vd-hero--tr .plate__model { font-size: var(--t-h3); } }
+/* a laptop's width: the lower-right words are a little smaller, so they stay on the open water and road beside the machine */
+@media (min-width: 900px) and (max-width: 1340px) { .vd-hero--br .vd-kicker span:nth-child(3) { display: none; } .vd-hero--br .plate__model { font-size: var(--t-h2); } .vd-hero--br .plate__model--long { font-size: var(--t-h3); } }
+
+/* the camera: a slow push-in with a small drift on the picture only (a transform, nothing is laid out again); the words stay still. Each machine has its own centre
+   (--fx, --fy: the side of the machine that faces its words, so it grows away from them), how far the camera goes (--zf) and which way it drifts (--dx, --dy). It starts from the
+   picture exactly as it rests, and the scale always outgrows the drift, so no edge is ever bared. The page is lingered on, so the push is long and then holds. */
+html.motion-on .vd-hero__art .gshot { transform-origin: var(--fx, 50%) var(--fy, 50%); will-change: transform; animation: vd-push 12s cubic-bezier(.3, .12, .4, 1) both; }
+@keyframes vd-push { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(var(--dx, 0%), var(--dy, 0%), 0) scale(var(--zf, 1.05)); } }
+[data-vehicle="grotti-cheetah"] .vd-hero__art .gshot { --fx: 65%; --fy: 70%; --zf: 1.09; --dx: -1.4%; --dy: -.3%; }
+[data-vehicle="vapid-dominator-buggy"] .vd-hero__art .gshot { --fx: 28%; --fy: 52%; --zf: 1.065; --dx: 0%; --dy: -.3%; }
+[data-vehicle="shitzu-squalo"] .vd-hero__art .gshot { --fx: 28%; --fy: 66%; --zf: 1.08; --dx: -1%; --dy: .4%; }
+[data-vehicle="vapid-stanier"] .vd-hero__art .gshot { --fx: 45%; --fy: 36%; --zf: 1.055; --dx: -.4%; --dy: .5%; }
+[data-vehicle="vapid-ganado"] .vd-hero__art .gshot { --fx: 45%; --fy: 36%; --zf: 1.055; --dx: -.4%; --dy: .5%; }
+[data-vehicle="dinka-enduro"] .vd-hero__art .gshot { --fx: 29%; --fy: 50%; --zf: 1.05; --dx: .5%; --dy: 0%; }
+[data-vehicle="crest-kayak"] .vd-hero__art .gshot { --fx: 30%; --fy: 78%; --zf: 1.05; --dx: .4%; --dy: -.3%; }
+html.motion-on .vd-hero__copy > * { animation: vd-rise .8s var(--ease) backwards; }
+html.motion-on .vd-hero__copy > :nth-child(1) { animation-delay: .1s; }
+html.motion-on .vd-hero__copy > :nth-child(2) { animation-delay: .2s; }
+html.motion-on .vd-hero__copy > :nth-child(3) { animation-delay: .3s; }
+html.motion-on .vd-hero__copy > :nth-child(4) { animation-delay: .4s; }
+@keyframes vd-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+/* the opening picture carries the name the Garage's chosen picture grew from (Chrome's cross-document view transitions); off for reduced motion */
+@media (prefers-reduced-motion: no-preference) { .vd-hero__art { view-transition-name: vehicle-art; } }
+
+/* a window that is nearly square (a 4:3 tablet held wide) or much wider than 16:9 (an ultrawide): the picture is drawn whole, its own colours blown up and blurred fill the bars beside it */
+@container vdhero (max-aspect-ratio: 3/2) {
+  .vd-hero__bloom { display: block; }
+  .vd-hero__art { background: transparent; -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 9%, #000 91%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0, #000 9%, #000 91%, transparent 100%); }
+  .vd-hero__art .gshot { object-fit: contain; object-position: 50% 50%; }
+  .vd-hero--tr .vd-hero__art .gshot { object-position: 50% 100%; }
+  .vd-hero__art::after { background: none; }
+  .vd-hero--br .vd-kicker span:nth-child(3) { display: none; }
+}
+@container vdhero (min-aspect-ratio: 2/1) {
+  .vd-hero__bloom { display: block; }
+  .vd-hero__art { background: transparent; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 8%, #000 92%, transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 8%, #000 92%, transparent 100%); }
+  .vd-hero__art .gshot { object-fit: contain; object-position: 50% 50%; }
+  .vd-hero__art::after { background: none; }
+}
+
+/* tablets and phones: the picture on top, cut for a phone; the words beneath it */
+@media (max-width: 899px) {
+  .vd-hero { height: auto; display: grid; grid-template-columns: minmax(0, 1fr); padding-top: calc(var(--header-h) + 4px); }
+  .vd-hero__art { position: relative; inset: auto; grid-row: 2; aspect-ratio: 1.5; }
+  .vd-hero__art .gshot { object-position: var(--pxn, 50%) var(--pyn, 50%); }
+  .vd-hero__art::after { background: linear-gradient(0deg, var(--ground) 0%, rgba(18, 16, 42, 0) 38%); }
+  .vd-hero__bloom, .vd-hero__grade { display: none; }
+  .vd-crumb { position: relative; inset: auto; grid-row: 1; padding: var(--s2) var(--gutter) var(--s1); }
+  .vd-hero__copy, .vd-hero--br .vd-hero__copy, .vd-hero--ml .vd-hero__copy, .vd-hero--tr .vd-hero__copy { position: relative; inset: auto; grid-row: 3; translate: none; max-width: none; justify-items: start; text-align: left; margin: 0; padding: var(--s1) var(--gutter) var(--s3); gap: 10px; }
+  .vd-hero--br .plate, .vd-hero--tr .plate { justify-items: start; }
+  .vd-hero__copy .plate__model, .vd-hero--tr .plate__model, .vd-hero--tr .plate__model--long { font-size: var(--t-h1); }
+  .vd-hero__copy .plate__model--long { font-size: var(--t-h2); }
+  .vd-hero--tr .plate__make { font-size: var(--t-h4); }
+  .vd-hero__line, .vd-hero--tr .vd-hero__line { max-width: 30rem; padding: 12px 0 0; border: 0; border-top: 1px solid var(--line-strong); font-size: var(--t-body); }
+}
+@media (min-width: 640px) and (max-width: 899px) { .vd-hero--tr .vd-hero__art { aspect-ratio: 1.78; } }
+@media (max-width: 559px) { .vd-hero__art { aspect-ratio: 1.5; } .vd-hero__line { font-size: var(--t-small); } }
+@media (max-width: 559px) { [data-vehicle="vapid-stanier"] .vd-hero__art, [data-vehicle="vapid-ganado"] .vd-hero__art { aspect-ratio: 1.7; } }   /* the two long machines are shown whole */
+
+/* =====================================================================
+   The machine: the database's description, set large, and the few details that are recorded
+   ===================================================================== */
+.vd-body { position: relative; }
+.vd-machine { position: relative; overflow: hidden; padding-block: clamp(56px, 8vw, 112px) clamp(40px, 6vw, 88px); scroll-margin-top: calc(var(--header-h) - 20px); }
+.vd-machine::before { content: ""; position: absolute; left: -10%; top: -30%; width: 70%; height: 130%; pointer-events: none; background: radial-gradient(closest-side, color-mix(in srgb, var(--tint) 13%, transparent), transparent); }
+.vd-machine::after { content: attr(data-ghost); position: absolute; right: var(--edge); bottom: -.12em; pointer-events: none; font: 700 var(--t-numeral)/.8 var(--font-display); letter-spacing: var(--track-caps); text-transform: uppercase; color: transparent; -webkit-text-stroke: 1px rgba(255, 255, 255, .07); white-space: nowrap; }
+.vd-machine__in { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); gap: clamp(32px, 6vw, 96px); align-items: end; }
+.vd-machine__text > * { margin: 0; }
+.vd-machine__text .eyebrow { margin-bottom: 18px; color: var(--tint); }
+.vd-lede { max-width: 34ch; font: 500 var(--t-h3)/1.28 var(--font-text); letter-spacing: var(--track-tight); color: var(--text); text-wrap: pretty; }
+.vd-facts { margin: 0; display: grid; border-top: 1px solid var(--line); }
+.vd-facts > div { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.vd-facts dt { font: 700 var(--t-micro)/1.2 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--text-3); }
+.vd-facts dd { margin: 0; font: 600 var(--t-small)/1.3 var(--font-text); color: var(--text); text-align: right; }
+.vd-facts dd a { display: inline-flex; align-items: center; min-height: 28px; color: var(--text); text-decoration-color: var(--line-strong); text-underline-offset: 4px; }
+.vd-facts dd a:hover { color: var(--tint); }
+@media (max-width: 899px) { .vd-machine__in { grid-template-columns: 1fr; align-items: start; } .vd-lede { font-size: var(--t-lead); } }
+
+/* =====================================================================
+   The pictures: a stage that bleeds off an edge of the window, a panorama, a diptych, a viewer, or crops of one picture
+   ===================================================================== */
+.vd-seq { position: relative; }
+/* a stage: the picture bleeds off one edge and melts into the page; its words in the open column; the whole stage opens the picture full size */
+.vd-stage { position: relative; isolation: isolate; overflow: hidden; display: grid; align-content: center; min-height: clamp(440px, 58svh, 620px); color: var(--text); text-decoration: none; }
+.vd-stage__art { position: absolute; top: 0; bottom: 0; width: 74%; z-index: -2; background: transparent; }
+.vd-stage--right .vd-stage__art { right: 0; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 28%), linear-gradient(180deg, transparent 0, #000 12%, #000 88%, transparent 100%); -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent 0, #000 28%), linear-gradient(180deg, transparent 0, #000 12%, #000 88%, transparent 100%); mask-composite: intersect; }
+.vd-stage--left .vd-stage__art { left: 0; -webkit-mask-image: linear-gradient(270deg, transparent 0, #000 28%), linear-gradient(180deg, transparent 0, #000 12%, #000 88%, transparent 100%); -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(270deg, transparent 0, #000 28%), linear-gradient(180deg, transparent 0, #000 12%, #000 88%, transparent 100%); mask-composite: intersect; }
+.vd-stage__shade { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.vd-stage--right .vd-stage__shade { background: linear-gradient(90deg, rgba(18, 16, 42, .82) 0%, rgba(18, 16, 42, .45) 30%, rgba(18, 16, 42, 0) 52%); }
+.vd-stage--left .vd-stage__shade { background: linear-gradient(270deg, rgba(18, 16, 42, .82) 0%, rgba(18, 16, 42, .45) 30%, rgba(18, 16, 42, 0) 52%); }
+.vd-stage__words { position: relative; display: grid; gap: 14px; justify-items: start; width: min(100%, calc(26rem + var(--edge))); padding-left: var(--edge); box-sizing: border-box; }
+.vd-stage--left .vd-stage__words { justify-self: end; padding-left: 0; padding-right: var(--edge); }
+.vd-stage__title { font: 700 var(--t-h2)/.92 var(--font-display); letter-spacing: var(--track-tight); text-transform: uppercase; text-wrap: balance; text-shadow: 0 2px 30px rgba(7, 6, 20, .6); }
+.vd-stage__cap { max-width: 22rem; padding-top: 14px; border-top: 1px solid var(--line-strong); color: var(--text); font: 500 var(--t-lead)/1.35 var(--font-text); text-shadow: 0 1px 18px rgba(7, 6, 20, .8); }
+.vd-stage:focus-visible, .vd-pano:focus-visible, .vd-next__stage:focus-visible { outline: 2px solid var(--text); outline-offset: -6px; }
+.vd-stage--scene { min-height: clamp(400px, 52svh, 560px); }
+
+/* two pictures together, across the whole window, level with each other; the one under the pointer opens a little wider */
+.vd-duo { list-style: none; margin: 0; padding: 0; display: flex; gap: 6px; align-items: flex-start; }
+.vd-duo li { flex: 1.3 1 0; min-width: 0; transition: flex-grow .8s var(--ease); }
+.vd-duo li + li { flex-grow: 1; }
+.vd-duo a { display: grid; gap: 14px; color: var(--text); text-decoration: none; }
+.vd-duo__art { height: clamp(300px, 34vw, 520px); }
+.vd-duo__cap { display: grid; gap: 8px; padding-inline: var(--s3); font: 500 var(--t-body)/1.4 var(--font-text); color: var(--text-2); }
+.vd-duo li:first-child .vd-duo__cap { padding-left: var(--edge); }
+.vd-duo li:last-child .vd-duo__cap { padding-right: var(--edge); }
+.vd-duo a:focus-visible { outline: 2px solid var(--text); outline-offset: 4px; }
+@media (hover: hover) and (min-width: 900px) { .vd-duo li:hover { flex-grow: 1.7; } }
+
+/* a panorama: one wide picture across the window, its caption on the foot */
+.vd-pano { position: relative; display: block; overflow: hidden; color: var(--text); text-decoration: none; }
+.vd-pano__art { height: clamp(300px, 42vw, 640px); }
+.vd-pano__shade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(0deg, rgba(10, 8, 28, .82) 0%, rgba(10, 8, 28, .3) 30%, rgba(10, 8, 28, 0) 56%), linear-gradient(180deg, var(--ground) 0%, rgba(18, 16, 42, 0) 14%); }
+.vd-pano__words { position: absolute; z-index: 2; left: 0; right: 0; bottom: clamp(22px, 3.4vw, 48px); display: grid; gap: 12px; justify-items: start; }
+.vd-pano .vd-stage__cap { max-width: 30rem; font-size: var(--t-lead); }
+.vd-seq > .vd-duo { margin-top: 6px; }
+.vd-seq--stage_pair > .vd-duo { margin-top: 0; }
+
+/* a viewer: one large picture, the rest as thumbnails, previous and next (without script every picture is still a link to its full size) */
+.vd-seq--viewer { padding-block: 0 clamp(40px, 5vw, 72px); }
+.vd-viewer { display: grid; gap: 14px; width: min(100%, calc(78svh * 16 / 9)); margin-inline: auto; }
+.vd-viewer__frame { position: relative; overflow: hidden; border-radius: var(--r-card); background: var(--card); aspect-ratio: 16 / 9; }
+.vd-viewer__slides { list-style: none; margin: 0; padding: 0; position: absolute; inset: 0; }
+.vd-viewer__slide { position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity .64s var(--ease), visibility 0s linear .64s; }
+.vd-viewer__slide.is-active { opacity: 1; visibility: visible; transition-delay: 0s; }
+.vd-viewer__slide .gshot { position: absolute; inset: 0; }
+.vd-viewer__open { position: absolute; inset: 0; z-index: 1; border: 0; background: none; cursor: zoom-in; }
+.vd-viewer__open:focus-visible { outline: 2px solid var(--text); outline-offset: -6px; border-radius: var(--r-card); }
+.vd-viewer__nav { position: absolute; z-index: 2; top: 50%; translate: 0 -50%; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .3); background: rgba(10, 8, 28, .5); color: var(--text); cursor: pointer; backdrop-filter: blur(6px); transition: background var(--dur-2), color var(--dur-2), border-color var(--dur-2); }
+.vd-viewer__nav--prev { left: 16px; }
+.vd-viewer__nav--next { right: 16px; }
+.vd-viewer__nav svg { width: 22px; height: 22px; }
+.vd-viewer__nav:hover { background: var(--text); color: var(--ground); border-color: var(--text); }
+.vd-viewer__nav:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+.vd-viewer__bar { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); }
+.vd-viewer__caption { margin: 0; font: 500 var(--t-body)/1.4 var(--font-text); color: var(--text-2); }
+.vd-viewer__count { margin: 0; color: var(--text-3); font: 600 var(--t-small)/1 var(--font-text); letter-spacing: var(--track-ui); }
+.vd-viewer__thumbs { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.vd-viewer__thumbs a { position: relative; display: block; aspect-ratio: 16 / 9; overflow: hidden; border-radius: var(--r-tile); border: 2px solid transparent; opacity: .6; transition: opacity var(--dur-2), border-color var(--dur-2); }
+.vd-viewer__thumbs a[aria-current="true"] { opacity: 1; border-color: var(--tint); }
+.vd-viewer__thumbs a:hover { opacity: 1; }
+.vd-viewer__thumbs a:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+.vd-viewer__thumb { position: absolute; inset: 0; }
+
+/* in close: a machine with one picture, drawn closer, three crops each named for what it shows */
+.vd-close { padding-block: clamp(40px, 6vw, 96px); }
+.vd-close__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s2) var(--s3); margin-bottom: var(--s3); padding-bottom: var(--s2); border-bottom: 1px solid color-mix(in srgb, var(--tint) 42%, transparent); }
+.vd-close__head > * { margin: 0; }
+.vd-close__head .eyebrow { flex-basis: 100%; color: var(--tint); }
+.vd-close__head h2 { font: 700 var(--t-h2)/.92 var(--font-display); letter-spacing: var(--track-caps); text-transform: uppercase; }
+.vd-close__row { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(10px, 1.4vw, 20px); }
+.vd-close__row figure { margin: 0; display: grid; gap: 14px; }
+.vd-close__art { aspect-ratio: 1.2; border-radius: var(--r-card); box-shadow: 0 36px 80px -50px #000; }
+.vd-close__row figcaption { display: grid; gap: 6px; font: 500 var(--t-body)/1.4 var(--font-text); color: var(--text-2); }
+.vd-close__row figcaption span { font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); color: var(--tint); }
+
+/* the connected world: only what the database records */
+.vd-world { padding-block: clamp(40px, 6vw, 88px); }
+.vd-world .eyebrow, .vd-world h2 { margin: 0 0 var(--s2); }
+.vd-world__cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--s4); }
+.vd-world__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.vd-world__list a { display: grid; gap: 2px; color: var(--text); text-decoration: none; }
+.vd-world__list span { color: var(--text-2); font: 500 var(--t-small)/1.4 var(--font-text); }
+
+/* the next machine, in its own picture; then the way back and the seven */
+.vd-next { position: relative; margin-top: clamp(24px, 4vw, 56px); }
+.vd-next__stage { position: relative; isolation: isolate; overflow: hidden; display: grid; align-items: end; min-height: clamp(420px, 62svh, 680px); color: var(--text); text-decoration: none; }
+.vd-next__art { position: absolute; inset: 0; z-index: -2; background: var(--card); -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22%); mask-image: linear-gradient(180deg, transparent 0, #000 22%); }
+.vd-next__shade { position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(90deg, rgba(10, 8, 28, .78) 0%, rgba(10, 8, 28, .28) 38%, rgba(10, 8, 28, 0) 62%), linear-gradient(0deg, rgba(10, 8, 28, .6) 0%, rgba(10, 8, 28, 0) 36%); }
+.vd-next__words { display: grid; gap: 10px; justify-items: start; padding-block: clamp(40px, 6vw, 80px); }
+.vd-next__make { font: 700 var(--t-h4)/1 var(--font-display); letter-spacing: var(--track-caps); text-transform: uppercase; color: var(--text-2); }
+.vd-next__name { max-width: 14ch; font: 700 var(--t-h1)/.88 var(--font-display); letter-spacing: var(--track-tight); text-transform: uppercase; text-wrap: balance; text-shadow: 0 2px 36px rgba(7, 6, 20, .55); }
+.vd-next__name--long { font-size: var(--t-h2); max-width: 12ch; }
+.vd-next__line { max-width: 24rem; padding-top: 12px; border-top: 1px solid var(--line-strong); color: var(--text-2); font: 500 var(--t-body)/1.4 var(--font-text); }
+.vd-next__words .vd-view { margin-top: 6px; }
+.vd-next__bar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s3); padding-block: var(--s4) var(--s2); }
+.vd-prev, .vd-back { display: inline-flex; align-items: center; gap: 14px; min-height: 52px; color: var(--text); text-decoration: none; font: 700 var(--t-small)/1.2 var(--font-text); letter-spacing: var(--track-ui); }
+.vd-prev svg, .vd-back svg { width: 20px; height: 20px; flex: none; transition: transform var(--dur-2) var(--ease); }
+.vd-prev small { display: block; margin-bottom: 4px; color: var(--text-3); font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; }
+.vd-prev:hover svg { transform: translateX(-5px); }
+.vd-back:hover svg { transform: translateX(5px); }
+.vd-prev:hover, .vd-back:hover { color: var(--tint); }
+.vd-all ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 22px; }
+.vd-all a { display: inline-grid; grid-auto-flow: column; align-items: baseline; gap: 8px; min-height: 36px; align-content: center; padding-block: 4px; color: var(--text-3); text-decoration: none; border-bottom: 2px solid transparent; font: 600 var(--t-small)/1.2 var(--font-text); letter-spacing: var(--track-ui); transition: color var(--dur-2), border-color var(--dur-2); }
+.vd-all b { font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); }
+.vd-all a:hover { color: var(--text); }
+.vd-all a[aria-current="true"] { color: var(--text); border-color: var(--tint); }
+.vd-all a[aria-current="true"] b { color: var(--tint); }
+.vd-all a:focus-visible, .vd-prev:focus-visible, .vd-back:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+.vd-credit { margin-block: 0 var(--s4); color: var(--text-3); }
+.vd-next[data-vehicle="grotti-cheetah"] { --tint: #ff7396; }
+.vd-next[data-vehicle="vapid-dominator-buggy"] { --tint: #d6b64e; }
+.vd-next[data-vehicle="shitzu-squalo"] { --tint: #9582ff; }
+.vd-next[data-vehicle="vapid-stanier"] { --tint: #ffbf47; }
+.vd-next[data-vehicle="vapid-ganado"] { --tint: #ff9a3c; }
+.vd-next[data-vehicle="dinka-enduro"] { --tint: #35d0bd; }
+.vd-next[data-vehicle="crest-kayak"] { --tint: #ff8f5a; }
+
+/* scene-aware reveals: the picture comes up out of the dark and the words rise into place; the slow drift of a picture against the scroll (the script sets --dp) */
+html .vd-stage.reveal, html .vd-pano.reveal, html .vd-duo.reveal, html .vd-close__row.reveal, html .vd-machine__text.reveal, html .vd-facts.reveal, html .vd-close__head.reveal { opacity: 1; transform: none; }
+html.motion-on .vd-stage__art, html.motion-on .vd-pano__art, html.motion-on .vd-duo__art, html.motion-on .vd-close__art { transition: opacity 1.2s var(--ease); }
+html.motion-on .vd-stage.reveal:not(.is-visible) .vd-stage__art, html.motion-on .vd-pano.reveal:not(.is-visible) .vd-pano__art, html.motion-on .vd-duo.reveal:not(.is-visible) .vd-duo__art, html.motion-on .vd-close__row.reveal:not(.is-visible) .vd-close__art { opacity: 0; }
+html.motion-on .vd-stage__words > *, html.motion-on .vd-pano__words > *, html.motion-on .vd-duo__cap, html.motion-on .vd-close__row figcaption, html.motion-on .vd-machine__text, html.motion-on .vd-facts { transition: opacity .8s var(--ease), transform .9s var(--ease); }
+html.motion-on .vd-stage.reveal:not(.is-visible) .vd-stage__words > *, html.motion-on .vd-pano.reveal:not(.is-visible) .vd-pano__words > *, html.motion-on .vd-duo.reveal:not(.is-visible) .vd-duo__cap, html.motion-on .vd-close__row.reveal:not(.is-visible) figcaption { opacity: 0; transform: translateY(18px); }
+html.motion-on .vd-machine__text.reveal:not(.is-visible), html.motion-on .vd-facts.reveal:not(.is-visible) { opacity: 0; transform: translateY(22px); }
+html.motion-on .vd-stage__words > :nth-child(2), html.motion-on .vd-pano__words > :nth-child(2) { transition-delay: .08s; }
+html.motion-on .vd-stage__words > :nth-child(3), html.motion-on .vd-pano__words > :nth-child(3) { transition-delay: .16s; }
+html.motion-on .vd-stage__words > :nth-child(4) { transition-delay: .24s; }
+html.motion-on .vd-stage__art .gshot:not([data-zoom]), html.motion-on .vd-pano__art .gshot, html.motion-on .vd-duo__art .gshot, html.motion-on .vd-next__art .gshot { transform: translate3d(0, calc((var(--dp, .5) - .5) * -4%), 0) scale(1.05); will-change: transform; }
+html.motion-on .vd-close__art .gshot { transition: transform 1.2s var(--ease); }
+html.motion-on .vd-close__row li:hover .vd-close__art .gshot { transform: scale(1.04); }
+
+/* a visitor who asks for reduced motion has no motion class (the site's own policy), so none of this runs for them. One more case: site.css switches every animation and transition off for a system
+   that asks for reduced motion, and the site's policy lets a visitor's choice in the menu, or the server setting TV_AUTOPLAY_ALWAYS, opt back in (html.motion-on). For them the camera and the reveals would
+   be stuck at their end state, so the page gives its own timings back here, as garage.css does for its footage; without html.motion-on none of these rules applies. */
+@media (prefers-reduced-motion: reduce) {
+  html.motion-on .vd-hero__art .gshot { animation-duration: 12s !important; animation-delay: 0s !important; }
+  html.motion-on .vd-hero__copy > * { animation-duration: .8s !important; }
+  html.motion-on .vd-hero__copy > :nth-child(1) { animation-delay: .1s !important; }
+  html.motion-on .vd-hero__copy > :nth-child(2) { animation-delay: .2s !important; }
+  html.motion-on .vd-hero__copy > :nth-child(3) { animation-delay: .3s !important; }
+  html.motion-on .vd-hero__copy > :nth-child(4) { animation-delay: .4s !important; }
+  html.motion-on .vd-stage__art, html.motion-on .vd-pano__art, html.motion-on .vd-duo__art, html.motion-on .vd-close__art { transition-duration: 1.2s !important; }
+  html.motion-on .vd-stage__words > *, html.motion-on .vd-pano__words > *, html.motion-on .vd-duo__cap, html.motion-on .vd-close__row figcaption, html.motion-on .vd-machine__text, html.motion-on .vd-facts { transition-duration: .8s, .9s !important; }
+  html.motion-on .vd-duo li { transition-duration: .8s !important; }
+}
+
+/* =====================================================================
+   Tablets and phones
+   ===================================================================== */
+@media (max-width: 899px) {
+  .vd-stage { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; min-height: 0; }
+  .vd-stage__art, .vd-stage--left .vd-stage__art, .vd-stage--right .vd-stage__art { position: relative; inset: auto; width: 100%; z-index: 0; aspect-ratio: 1.45; -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent 100%); mask-image: linear-gradient(180deg, #000 70%, transparent 100%); -webkit-mask-composite: source-over; mask-composite: add; }
+  .vd-stage__shade { display: none; }
+  .vd-stage__words, .vd-stage--left .vd-stage__words { justify-self: start; width: 100%; padding: var(--s2) var(--gutter) 0; margin-top: -28px; }
+  .vd-stage__title { font-size: var(--t-h3); }
+  .vd-duo { display: grid; gap: var(--s4); }
+  .vd-duo li, .vd-duo li + li { flex: none; }
+  .vd-duo__art { height: auto; aspect-ratio: 1.45; }
+  .vd-duo__cap, .vd-duo li:first-child .vd-duo__cap, .vd-duo li:last-child .vd-duo__cap { padding-inline: var(--gutter); }
+  .vd-seq--stage_pair > .vd-duo { margin-top: var(--s4); }
+  .vd-pano__art { height: auto; aspect-ratio: 1.45; }
+  .vd-pano__shade { background: linear-gradient(0deg, rgba(10, 8, 28, .85) 0%, rgba(10, 8, 28, 0) 56%); }
+  .vd-pano__words { bottom: var(--s2); }
+  .vd-pano .vd-stage__cap { font-size: var(--t-small); border: 0; padding-top: 0; }
+  .vd-viewer__frame { aspect-ratio: 4 / 3; border-radius: var(--r-tile); }
+  .vd-viewer__nav { width: 44px; height: 44px; }
+  .vd-close__row { grid-template-columns: 1fr; }
+  .vd-close__art { aspect-ratio: 1.5; }
+  .vd-close__head h2 { font-size: var(--t-h3); }
+  .vd-next__stage { display: grid; align-items: start; min-height: 0; }
+  .vd-next__art { position: relative; inset: auto; z-index: 0; aspect-ratio: 1.45; -webkit-mask-image: linear-gradient(180deg, #000 72%, transparent 100%); mask-image: linear-gradient(180deg, #000 72%, transparent 100%); }
+  .vd-next__shade { display: none; }
+  .vd-next__words { margin-top: -28px; padding-block: 0 var(--s3); }
+  .vd-next__bar { grid-template-columns: 1fr; gap: var(--s2); }
+  .vd-all ol { justify-content: flex-start; }
+  .vd-machine::after { font-size: var(--t-h1); right: var(--gutter); }
+}
+@media (min-width: 640px) and (max-width: 899px) {
+  .vd-duo { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; align-items: start; }
+  .vd-duo__art { aspect-ratio: 1.1; }
+  .vd-duo li:first-child .vd-duo__cap { padding: 0 var(--s2) 0 var(--gutter); }
+  .vd-duo li:last-child .vd-duo__cap { padding: 0 var(--gutter) 0 var(--s2); }
+  .vd-close__row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .vd-close__art { aspect-ratio: 1; }
+}

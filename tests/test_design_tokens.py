@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 
 CSS_DIR = Path(__file__).resolve().parent.parent / "app" / "static" / "css"
-COMPONENT_FILES = ("site.css", "components.css", "pages.css", "characters.css", "garage.css", "garage_concept.css")
+COMPONENT_FILES = ("site.css", "components.css", "pages.css", "characters.css", "garage.css", "garage_concept.css", "vehicle_detail.css")
 RADII = {"var(--r-card)", "var(--r-tile)", "var(--r-pill)", "50%", "0", "inherit"}
 SIZE_TOKENS = {"micro", "small", "body", "lead", "h4", "h3", "h2", "h1", "display", "numeral"}
 

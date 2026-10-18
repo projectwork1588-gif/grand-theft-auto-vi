@@ -241,7 +241,7 @@ GARAGE_PICKS = {
                                  "text": "Rockstar shows it parked beside a stilt house on the water, in its Jason's Safehouse Vehicles screenshots."}},
     "crest-kayak": {"stage": "vehicle-crest-kayak-01", "card": "vehicle-crest-kayak-01", "card_zoom": (1.4, 0.62, 0.40), "side": "left", "vpos": "bottom", "theme": "Sunset paddle",
                     "story": "context", "gallery": [],
-                    "context": {"slug": "garage-jasons-safehouse", "focus": (0.615, 0.765), "zoom": 3.5, "flip": True, "title": "On the shore",
+                    "context": {"slug": "garage-jasons-safehouse", "focus": (0.615, 0.765), "zoom": 4, "flip": True, "title": "On the shore",
                                 "text": "The same safehouse set shows the kayak pulled up on the shore beside the house."}},
 }
 # The Garage's pictures of machines Rockstar does not name: its own set titles are the captions, and nothing more is claimed.
@@ -303,3 +303,44 @@ GARAGE_CHAPTERS = (
     {"key": "water", "title": "On the Water", "accent": "#59d6ee", "slugs": ("shitzu-squalo", "crest-kayak"),
      "line": "A bay at dusk, then a paddle into the sunset."},
 )
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Stage B: the seven vehicle pages. Nothing here states a fact about a vehicle: it says how each page is told and what each picture visibly shows.
+#   sequence   how the page after its opening is told, chosen for the pictures Rockstar has shown of that machine:
+#                stage_pair      a wide picture that bleeds off the window, then two together (three pictures)
+#                panorama_pair   a full-width picture, then two together
+#                viewer          one large picture with the others as thumbnails, previous and next
+#                close           a machine with one picture: that picture drawn closer, in three crops (see GARAGE_CLOSE)
+#                context         a smaller cut of the Rockstar scene the machine appears in (GARAGE_PICKS context), then the three crops
+#   side       which edge the first picture of a stage_pair bleeds off
+GARAGE_DETAIL = {
+    "grotti-cheetah": {"sequence": "stage_pair", "side": "right"},
+    "vapid-dominator-buggy": {"sequence": "viewer"},
+    "shitzu-squalo": {"sequence": "panorama_pair"},
+    "vapid-stanier": {"sequence": "stage_pair", "side": "left"},
+    "vapid-ganado": {"sequence": "close"},
+    "dinka-enduro": {"sequence": "context"},
+    "crest-kayak": {"sequence": "context"},
+}
+# A machine with one picture is shown closer: crops of that same picture, each (label, x, y, zoom) where (x, y) is what the label names, as fractions of the picture.
+# The labels name only what can be seen in them. The zoom is one of the values garage.css has a rule for.
+GARAGE_CLOSE = {
+    "vapid-ganado": (("The hood and its red stripes", 0.66, 0.50, 2.25), ("The grille and its four headlights", 0.79, 0.62, 2.5), ("Behind the wheel", 0.46, 0.29, 2.75)),
+    "dinka-enduro": (("The round headlight and its forks", 0.53, 0.30, 2.5), ("The green tank and its Dinka mark", 0.64, 0.36, 2.5), ("The engine and its exhaust", 0.68, 0.55, 2.25)),
+    "crest-kayak": (("The paddle catching the sun", 0.72, 0.18, 2.25), ("The paddler, back to us", 0.50, 0.36, 2.0), ("The orange hull and its Crest lettering", 0.42, 0.78, 2.5)),
+}
+# Short captions for the pictures a vehicle page shows (what each one shows, in plain words; the longer alt text above stays for screen readers).
+GARAGE_CAPTIONS = {
+    "vehicle-grotti-cheetah-02": "Headlights lit on a cobbled street at golden hour",
+    "vehicle-grotti-cheetah-03": "The rear: striped engine cover and round tail lights",
+    "vehicle-grotti-cheetah-04": "The red leather cabin, the door open",
+    "vehicle-vapid-dominator-buggy-02": "Outside a workshop, on oversized tyres",
+    "vehicle-vapid-dominator-buggy-03": "The steel bar and the yellow driving lights",
+    "vehicle-vapid-dominator-buggy-04": "The worn dashboard, flecked with mud",
+    "vehicle-shitzu-squalo-02": "From above: a white wake on dark water",
+    "vehicle-shitzu-squalo-03": "The white hull and its black Squalo lettering",
+    "vehicle-shitzu-squalo-04": "On deck, with a dolphin alongside",
+    "vehicle-vapid-stanier-02": "Two occupants through the windscreen, lit purple and pink",
+    "vehicle-vapid-stanier-03": "The Stanier script on the door, beside a chrome mirror and a wheel",
+    "vehicle-vapid-stanier-04": "The tail fin and its round red brake light under a night sky",
+}

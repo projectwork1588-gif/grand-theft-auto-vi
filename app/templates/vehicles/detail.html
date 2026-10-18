@@ -1,126 +1,158 @@
 {% extends "base.html" %}
 {% from "_components.html" import badge %}
-{% from "vehicles/_garage.html" import gshot, nameplate, rail, neighbour %}
+{% from "vehicles/_garage.html" import gshot, nameplate %}
 {% block title %}{{ vehicle.name }}{% endblock %}
-{% block description %}{{ vehicle.summary }}{% endblock %}
+{% block description %}{{ vehicle.line or vehicle.summary }}{% endblock %}
 {% block header_class %}{% endblock %}
-{% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='css/garage.css') }}"><script src="{{ url_for('static', filename='js/garage.js') }}" defer></script>{% endblock %}
-{% block content %}
-<article class="garage garage--vehicle story--{{ vehicle.story }}" data-vehicle="{{ vehicle.slug }}">
+{% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='css/garage.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/vehicle_detail.css') }}"><script src="{{ url_for('static', filename='js/vehicle_detail.js') }}" defer></script>{% endblock %}
 
-  {# ---------------------------------------------------------------- the entrance: one whole picture, the name set large beside it #}
-  <header class="vopen vopen--{{ vehicle.side }} vopen--{{ vehicle.vpos }}">
-    <div class="vopen__art">{{ gshot(vehicle.hero, '100vw', eager=true, decorative=false, cut='hero') }}</div>
-    <div class="vopen__grade" aria-hidden="true"></div>
-    <p class="vopen__numeral" aria-hidden="true">{{ '%02d' % vehicle.number }}</p>
-    <div class="vopen__copy">
-      <nav class="vcrumb" aria-label="Breadcrumb">
-        <a href="{{ url_for('pages.vehicles') }}">The Garage</a><span aria-hidden="true">/</span><a href="{{ url_for('pages.vehicles', category=vehicle.category_slug) }}#showroom">{{ vehicle.category_name }}</a>
-      </nav>
-      <p class="vopen__kicker"><span>{{ '%02d' % vehicle.number }}</span>{{ vehicle.theme }}</p>
-      {{ nameplate(vehicle, 'h1', 'vopen__plate') }}
-      <p class="vopen__sum">{{ vehicle.summary }}</p>
-      <a class="vopen__cue" href="#machine">The machine <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+{# A picture that opens full size in the site's own viewer. The caption says only what the picture shows. #}
+{% macro more(label='View larger') -%}<span class="vd-view">{{ label }}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>{%- endmacro %}
+{% macro large(p) -%}{{ image_src(p.m.embed_url, 2560) }}{%- endmacro %}
+
+{% block content %}
+{% set v = vehicle %}
+<article class="garage vd" data-vehicle="{{ v.slug }}" data-sequence="{{ v.story }}">
+
+  {# ---------------------------------------------------------------- the opening: the picture the visitor chose, the whole window, the words set where it leaves room #}
+  <header class="vd-hero vd-hero--{{ v.plate }}" data-plate="{{ v.plate }}"{% if v.subject %} data-subject="{{ v.subject }}"{% endif %}>
+    <div class="vd-hero__bloom" aria-hidden="true">{{ gshot(v.hero, '64px', cut='stage') }}</div>
+    <div class="vd-hero__art">{{ gshot(v.hero, '100vw', eager=true, decorative=false, cut='stage') }}</div>
+    <div class="vd-hero__grade" aria-hidden="true"></div>
+    <nav class="vd-crumb" aria-label="Breadcrumb">
+      <a href="{{ url_for('pages.vehicles') }}">The Garage</a><span aria-hidden="true">/</span><a href="{{ url_for('pages.vehicles', category=v.category_slug) }}#showroom">{{ v.category_name }}</a>
+    </nav>
+    <div class="vd-hero__copy">
+      <p class="vd-kicker"><span>{{ '%02d' % v.number }}</span>{% if v.theme %}<span>{{ v.theme }}</span>{% endif %}<span>{{ v.category_name }}</span></p>
+      {{ nameplate(v, 'h1', 'vd-plate') }}
+      <p class="vd-hero__line">{{ v.line }}</p>
+      <a class="vd-cue" href="#machine">The machine <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
     </div>
   </header>
 
-  <div class="vbody">
-  {# ---------------------------------------------------------------- the machine: the database description, set large, and the few verified details #}
-  <section class="vintro" id="machine" aria-labelledby="machine-title" data-ghost="{{ vehicle.model_line }}">
-    <div class="container--wide vintro__in">
-      <h2 id="machine-title" class="visually-hidden">About the {{ vehicle.name }}</h2>
-      <p class="vintro__lede">{{ vehicle.description }}</p>
-      <dl class="vcredits" aria-label="Details">
-        {% if vehicle.manufacturer %}<div><dt>Maker</dt><dd>{{ vehicle.manufacturer }}</dd></div>{% endif %}
-        <div><dt>Type</dt><dd><a href="{{ url_for('pages.vehicles', category=vehicle.category_slug) }}#showroom">{{ vehicle.category_name }}</a></dd></div>
-        {% if vehicle.source_url %}<div><dt>Source</dt><dd><a href="{{ vehicle.source_url }}" target="_blank" rel="noopener noreferrer">rockstargames.com</a></dd></div>{% endif %}
+  <div class="vd-body">
+  {# ---------------------------------------------------------------- the machine: the database's description, set large, and the few details that are recorded #}
+  <section class="vd-machine" id="machine" aria-labelledby="machine-title" data-ghost="{{ v.model_line }}">
+    <div class="container--wide vd-machine__in">
+      <div class="vd-machine__text reveal">
+        <p class="eyebrow" id="machine-title">The machine</p>
+        <p class="vd-lede">{{ v.description }}</p>
+      </div>
+      <dl class="vd-facts reveal" aria-label="Details">
+        <div><dt>No.</dt><dd>{{ '%02d' % v.number }} of {{ '%02d' % v.total }} in the Garage</dd></div>
+        {% if v.manufacturer %}<div><dt>Maker</dt><dd>{{ v.manufacturer }}</dd></div>{% endif %}
+        <div><dt>Type</dt><dd><a href="{{ url_for('pages.vehicles', category=v.category_slug) }}#showroom">{{ v.category_name }}</a></dd></div>
+        {% if v.source_url and v.source_url.startswith('https://') %}<div><dt>Source</dt><dd><a href="{{ v.source_url }}" target="_blank" rel="noopener noreferrer">rockstargames.com</a></dd></div>{% endif %}
       </dl>
     </div>
   </section>
 
-  {# ---------------------------------------------------------------- the showcase: Rockstar's other pictures, set to suit how many there are (never the one that opens the page) #}
-  {% set g = vehicle.gallery %}
-  {% if vehicle.story in ('mosaic', 'mosaic-flip') %}
-  <section class="vshow vshow--{{ vehicle.story }}" aria-label="More pictures of the {{ vehicle.name }}">
-    <div class="container--wide">
-      <ul class="mos" data-gallery>
-        <li class="mos__a"><a href="{{ image_src(g[0].m.embed_url, 2560) }}" data-lightbox data-caption="{{ g[0].alt }}"><span class="mos__art">{{ gshot(g[0], '(min-width: 900px) 56vw, 100vw', decorative=false, cut='large') }}</span><span class="mos__cap">{{ g[0].alt }}</span></a></li>
-        <li class="mos__b"><a href="{{ image_src(g[1].m.embed_url, 2560) }}" data-lightbox data-caption="{{ g[1].alt }}"><span class="mos__art">{{ gshot(g[1], '(min-width: 900px) 38vw, 100vw', decorative=false, cut='small') }}</span><span class="mos__cap">{{ g[1].alt }}</span></a></li>
-        <li class="mos__c"><a href="{{ image_src(g[2].m.embed_url, 2560) }}" data-lightbox data-caption="{{ g[2].alt }}"><span class="mos__art">{{ gshot(g[2], '(min-width: 900px) 38vw, 100vw', decorative=false, cut='small') }}</span><span class="mos__cap">{{ g[2].alt }}</span></a></li>
-      </ul>
-    </div>
+  {# ---------------------------------------------------------------- the pictures, told the way this machine's pictures want to be seen #}
+  {% set g = v.gallery %}
+  {% if v.sequence == 'stage_pair' %}
+  <section class="vd-seq vd-seq--stage_pair" aria-label="More pictures of the {{ v.name }}" data-gallery>
+    <a class="vd-stage vd-stage--{{ v.side }} reveal" href="{{ large(g[0]) }}" data-lightbox data-caption="{{ g[0].caption }}" aria-label="View larger: {{ g[0].caption }}">
+      <span class="vd-stage__art vd-pic" data-drift>{{ gshot(g[0], '(min-width: 900px) 80vw, 100vw', decorative=false, cut='stage') }}</span>
+      <span class="vd-stage__shade" aria-hidden="true"></span>
+      <span class="vd-stage__words"><span class="vd-kicker"><span>01</span><span>In pictures</span></span><span class="vd-stage__cap">{{ g[0].caption }}</span>{{ more() }}</span>
+    </a>
+    <ul class="vd-duo reveal">
+      {% for p in g[1:3] %}
+      <li><a href="{{ large(p) }}" data-lightbox data-caption="{{ p.caption }}" aria-label="View larger: {{ p.caption }}"><span class="vd-duo__art vd-pic" data-drift>{{ gshot(p, '(min-width: 900px) 56vw, 100vw', decorative=false, cut='half') }}</span><span class="vd-duo__cap"><span class="vd-kicker"><span>0{{ loop.index + 1 }}</span></span>{{ p.caption }}</span></a></li>
+      {% endfor %}
+    </ul>
   </section>
-  {% elif vehicle.story == 'panorama' %}
-  <section class="vshow vshow--panorama" aria-label="More pictures of the {{ vehicle.name }}">
-    <div class="container--wide">
-      <ul class="pano" data-gallery>
-        <li class="pano__a"><a href="{{ image_src(g[0].m.embed_url, 2560) }}" data-lightbox data-caption="{{ g[0].alt }}"><span class="pano__art">{{ gshot(g[0], '(min-width: 900px) 92vw, 100vw', decorative=false, cut='wide') }}</span><span class="mos__cap">{{ g[0].alt }}</span></a></li>
-        <li class="pano__b"><a href="{{ image_src(g[1].m.embed_url, 2560) }}" data-lightbox data-caption="{{ g[1].alt }}"><span class="pano__art">{{ gshot(g[1], '(min-width: 900px) 46vw, 100vw', decorative=false, cut='large') }}</span><span class="mos__cap">{{ g[1].alt }}</span></a></li>
-        <li class="pano__c"><a href="{{ image_src(g[2].m.embed_url, 2560) }}" data-lightbox data-caption="{{ g[2].alt }}"><span class="pano__art">{{ gshot(g[2], '(min-width: 900px) 46vw, 100vw', decorative=false, cut='large') }}</span><span class="mos__cap">{{ g[2].alt }}</span></a></li>
-      </ul>
-    </div>
+
+  {% elif v.sequence == 'panorama_pair' %}
+  <section class="vd-seq vd-seq--panorama_pair" aria-label="More pictures of the {{ v.name }}" data-gallery>
+    <a class="vd-pano reveal" href="{{ large(g[0]) }}" data-lightbox data-caption="{{ g[0].caption }}" aria-label="View larger: {{ g[0].caption }}">
+      <span class="vd-pano__art vd-pic" data-drift>{{ gshot(g[0], '100vw', decorative=false, cut='pano') }}</span>
+      <span class="vd-pano__shade" aria-hidden="true"></span>
+      <span class="vd-pano__words container--wide"><span class="vd-kicker"><span>01</span><span>In pictures</span></span><span class="vd-stage__cap">{{ g[0].caption }}</span>{{ more() }}</span>
+    </a>
+    <ul class="vd-duo reveal">
+      {% for p in g[1:3] %}
+      <li><a href="{{ large(p) }}" data-lightbox data-caption="{{ p.caption }}" aria-label="View larger: {{ p.caption }}"><span class="vd-duo__art vd-pic" data-drift>{{ gshot(p, '(min-width: 900px) 56vw, 100vw', decorative=false, cut='half') }}</span><span class="vd-duo__cap"><span class="vd-kicker"><span>0{{ loop.index + 1 }}</span></span>{{ p.caption }}</span></a></li>
+      {% endfor %}
+    </ul>
   </section>
-  {% elif vehicle.story == 'viewer' and g | length >= 2 %}
-  <section class="vshow vshow--viewer" aria-label="More pictures of the {{ vehicle.name }}" data-viewer>
+
+  {% elif v.sequence == 'viewer' %}
+  <section class="vd-seq vd-seq--viewer" aria-label="More pictures of the {{ v.name }}" data-viewer>
     <div class="container--wide">
-      <div class="viewer">
-        <div class="viewer__frame">
-          <ul class="viewer__slides">
+      <div class="vd-viewer">
+        <div class="vd-viewer__frame">
+          <ul class="vd-viewer__slides">
             {% for p in g %}
-            <li class="viewer__slide{% if loop.first %} is-active{% endif %}" data-slide{% if not loop.first %} hidden{% endif %}>{{ gshot(p, '(min-width: 1100px) 78vw, 100vw', decorative=false, eager=loop.first, cut='viewer') }}</li>
+            <li class="vd-viewer__slide{% if loop.first %} is-active{% endif %}" data-slide{% if not loop.first %} hidden{% endif %}>{{ gshot(p, '(min-width: 1100px) 78vw, 100vw', decorative=false, eager=loop.first, cut='viewer') }}</li>
             {% endfor %}
           </ul>
-          <button class="viewer__open" type="button" data-open aria-label="View this picture larger"></button>
-          <button class="viewer__nav viewer__nav--prev" type="button" data-prev aria-label="Previous picture"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-          <button class="viewer__nav viewer__nav--next" type="button" data-next aria-label="Next picture"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-          <p class="viewer__count" aria-hidden="true"><span data-index>1</span> / {{ g | length }}</p>
+          <button class="vd-viewer__open" type="button" data-open aria-label="View this picture larger"></button>
+          <button class="vd-viewer__nav vd-viewer__nav--prev" type="button" data-prev aria-label="Previous picture"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button class="vd-viewer__nav vd-viewer__nav--next" type="button" data-next aria-label="Next picture"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         </div>
-        <p class="viewer__caption" data-caption aria-hidden="true">{{ g[0].alt }}</p>
-        <ul class="viewer__thumbs" aria-label="Choose a picture">
+        <div class="vd-viewer__bar">
+          <p class="vd-viewer__caption" data-caption data-captions='{{ g | map(attribute="caption") | list | tojson }}' aria-live="polite">{{ g[0].caption }}</p>
+          <p class="vd-viewer__count" aria-hidden="true"><span data-index>1</span> / {{ g | length }}</p>
+        </div>
+        <ul class="vd-viewer__thumbs" aria-label="Choose a picture">
           {% for p in g %}
-          <li><a href="{{ image_src(p.m.embed_url, 2560) }}" data-thumb aria-label="Picture {{ loop.index }} of {{ g | length }}: {{ p.alt }}"{% if loop.first %} aria-current="true"{% endif %}>{{ gshot(p, '(min-width: 900px) 20vw, 28vw', cls='viewer__thumb', lazy=false, cut='thumb') }}</a></li>
+          <li><a href="{{ large(p) }}" data-thumb aria-label="Picture {{ loop.index }} of {{ g | length }}: {{ p.caption }}"{% if loop.first %} aria-current="true"{% endif %}>{{ gshot(p, '(min-width: 900px) 20vw, 28vw', cls='vd-viewer__thumb', lazy=false, cut='thumb') }}</a></li>
           {% endfor %}
         </ul>
         <ul data-gallery hidden>
-          {% for p in g %}<li><a href="{{ image_src(p.m.embed_url, 2560) }}" data-lightbox data-caption="{{ p.alt }}">{{ p.alt }}</a></li>{% endfor %}
+          {% for p in g %}<li><a href="{{ large(p) }}" data-lightbox data-caption="{{ p.caption }}">{{ p.caption }}</a></li>{% endfor %}
         </ul>
       </div>
     </div>
   </section>
-  {% elif vehicle.story == 'context' and vehicle.context %}
-  {% set c = vehicle.context %}
-  <section class="vshow vctx{% if c.flip %} vctx--flip{% endif %}" aria-labelledby="ctx-title">
-    <div class="container--wide vctx__in">
-      <figure class="vctx__fig" data-gallery>
-        <a href="{{ image_src(c.m.embed_url, 2560) }}" data-lightbox data-caption="{{ c.alt }}" aria-label="View the whole scene larger">
-          <span class="vctx__art">{{ gshot(c, '(min-width: 900px) ' ~ ((56 * c.zoom | float) | round | int) ~ 'vw, ' ~ ((100 * c.zoom | float) | round | int) ~ 'vw', decorative=false) }}</span>
-          <span class="vctx__more">The whole scene <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-        </a>
-      </figure>
-      <div class="vctx__text">
-        <p class="eyebrow">Rockstar&rsquo;s own screenshots</p>
-        <h2 id="ctx-title">{{ c.title }}</h2>
-        <p>{{ c.text }}</p>
-      </div>
+  {% endif %}
+
+  {# the scene Rockstar shows the machine in: a smaller, labelled cut, with the whole picture one press away #}
+  {% if v.sequence == 'context' and v.context %}
+  {% set c = v.context %}
+  <section class="vd-seq vd-seq--context" aria-labelledby="ctx-title" data-gallery>
+    <a class="vd-stage vd-stage--{{ 'left' if c.flip else 'right' }} vd-stage--scene reveal" href="{{ image_src(c.m.embed_url, 2560) }}" data-lightbox data-caption="{{ c.alt }}" aria-label="View the whole scene larger">
+      <span class="vd-stage__art vd-pic">{{ gshot(c, '(min-width: 900px) ' ~ ((70 * c.zoom | float) | round | int) ~ 'vw, ' ~ ((100 * c.zoom | float) | round | int) ~ 'vw', decorative=false) }}</span>
+      <span class="vd-stage__shade" aria-hidden="true"></span>
+      <span class="vd-stage__words"><span class="vd-kicker"><span>Rockstar&rsquo;s own screenshots</span></span><span class="vd-stage__title" id="ctx-title">{{ c.title }}</span><span class="vd-stage__cap">{{ c.text }}</span>{{ more('The whole scene') }}</span>
+    </a>
+  </section>
+  {% endif %}
+
+  {# a machine with one picture, drawn closer: crops of that picture, each named for what it shows #}
+  {% if v.close %}
+  <section class="vd-seq vd-close" aria-labelledby="close-title" data-gallery>
+    <div class="container--wide">
+      <header class="vd-close__head reveal">
+        <p class="eyebrow">In close</p>
+        <h2 id="close-title">{{ v.model_line }}, closer in</h2>
+        <a class="vd-view" href="{{ large(v.close[0]) }}" data-lightbox data-caption="{{ v.close[0].alt }}">The whole picture<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      </header>
+      <ul class="vd-close__row reveal">
+        {% for p in v.close %}
+        <li><figure><span class="vd-close__art vd-pic" data-drift>{{ gshot(p, '(min-width: 900px) 34vw, 100vw', decorative=true) }}</span><figcaption><span>0{{ loop.index }}</span>{{ p.label }}</figcaption></figure></li>
+        {% endfor %}
+      </ul>
     </div>
   </section>
   {% endif %}
 
   {# ---------------------------------------------------------------- the connected world: only what the database records #}
-  {% if vehicle.missions or vehicle.locations %}
-  <section class="vworld" aria-labelledby="world-title">
+  {% if v.missions or v.locations %}
+  <section class="vd-world" aria-labelledby="world-title">
     <div class="container--wide">
       <p class="eyebrow">The connected world</p>
       <h2 id="world-title">Where it appears</h2>
-      <div class="vworld__cols">
-        {% if vehicle.missions %}
+      <div class="vd-world__cols">
+        {% if v.missions %}
         <div><h3>Stories</h3>
-          <ul class="vworld__list">{% for m in vehicle.missions %}<li><a href="{{ url_for('pages.mission_detail', slug=m.slug) }}"><b>{{ m.title }}</b>{% if m.usage_note %}<span>{{ m.usage_note }}</span>{% endif %}</a>{% if m.content_status != 'official' %}{{ badge(m.content_status) }}{% endif %}</li>{% endfor %}</ul>
+          <ul class="vd-world__list">{% for m in v.missions %}<li><a href="{{ url_for('pages.mission_detail', slug=m.slug) }}"><b>{{ m.title }}</b>{% if m.usage_note %}<span>{{ m.usage_note }}</span>{% endif %}</a>{% if m.content_status != 'official' %}{{ badge(m.content_status) }}{% endif %}</li>{% endfor %}</ul>
         </div>
         {% endif %}
-        {% if vehicle.locations %}
+        {% if v.locations %}
         <div><h3>Places</h3>
-          <ul class="vworld__list">{% for l in vehicle.locations %}<li><a href="{{ url_for('pages.location_detail', slug=l.slug) }}"><b>{{ l.name }}</b><span>{{ l.region_name }}</span></a>{% if l.content_status != 'official' %}{{ badge(l.content_status) }}{% endif %}</li>{% endfor %}</ul>
+          <ul class="vd-world__list">{% for l in v.locations %}<li><a href="{{ url_for('pages.location_detail', slug=l.slug) }}"><b>{{ l.name }}</b><span>{{ l.region_name }}</span></a>{% if l.content_status != 'official' %}{{ badge(l.content_status) }}{% endif %}</li>{% endfor %}</ul>
         </div>
         {% endif %}
       </div>
@@ -128,20 +160,33 @@
   </section>
   {% endif %}
 
-  {# ---------------------------------------------------------------- the rest of the garage: the machines either side, then all of them #}
-  {% if vehicle.next %}
-  <section class="vnext" aria-label="More machines">
-    <div class="container--wide">
-      <div class="vnext__pair">
-        {{ neighbour(vehicle.previous, 'Previous', 'prev') }}
-        {{ neighbour(vehicle.next, 'Next', 'next') }}
-      </div>
-      <div class="vnext__all">
-        <p class="eyebrow">All machines</p>
-        {{ rail(vehicle.rail, vehicle.slug) }}
-      </div>
-      <p class="credit">Screenshots &copy; Rockstar Games. <a href="{{ url_for('pages.vehicles') }}">Back to the Garage</a></p>
+  {# ---------------------------------------------------------------- the next machine, in its own picture; then the way back and the seven #}
+  {% if v.next %}
+  {% set n = v.next %}{% set pv = v.previous %}
+  <section class="vd-next" aria-label="More machines" data-vehicle="{{ n.slug }}">
+    <a class="vd-next__stage" rel="next" data-vehicle="{{ n.slug }}" href="{{ url_for('pages.vehicle_detail', slug=n.slug) }}">
+      <span class="vd-next__art vd-pic" data-drift>{{ gshot(n.stage, '100vw', cut='stage') }}</span>
+      <span class="vd-next__shade" aria-hidden="true"></span>
+      <span class="vd-next__words container--wide">
+        <span class="vd-kicker"><span>Next</span><span>{{ '%02d' % n.number }}</span>{% if n.theme %}<span>{{ n.theme }}</span>{% endif %}</span>
+        {% if n.make_line %}<span class="vd-next__make">{{ n.make_line }}</span>{% endif %}
+        <span class="vd-next__name{% if n.model_line | length > 11 %} vd-next__name--long{% endif %}">{{ n.model_line }}</span>
+        <span class="vd-next__line">{{ n.line }}</span>
+        <span class="vd-view">Open the {{ n.model_line }}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </span>
+    </a>
+    <div class="container--wide vd-next__bar">
+      <a class="vd-prev" rel="prev" data-vehicle="{{ pv.slug }}" href="{{ url_for('pages.vehicle_detail', slug=pv.slug) }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><small>Previous</small>{{ pv.name }}</span></a>
+      <nav class="vd-all" aria-label="All machines">
+        <ol>
+          {% for e in v.rail %}
+          <li><a href="{{ url_for('pages.vehicle_detail', slug=e.slug) }}" data-vehicle="{{ e.slug }}"{% if e.slug == v.slug %} aria-current="true"{% endif %}><b>{{ '%02d' % e.number }}</b><span>{{ e.model_line }}</span></a></li>
+          {% endfor %}
+        </ol>
+      </nav>
+      <a class="vd-back" href="{{ url_for('pages.vehicles') }}">Back to the Garage<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
     </div>
+    <p class="container--wide credit vd-credit">Screenshots &copy; Rockstar Games.</p>
   </section>
   {% endif %}
   </div>
