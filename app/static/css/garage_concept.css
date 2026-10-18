@@ -216,6 +216,9 @@ html .gx-slot.reveal, html .gx-finale.reveal, html .gx-list__item.reveal, html .
 .gx-m__kicker span + span::before { content: ""; display: inline-block; width: 18px; height: 1px; margin-right: 14px; vertical-align: middle; background: currentColor; opacity: .55; }
 .gx-m__make { font: 700 var(--t-small)/1 var(--font-display); letter-spacing: var(--track-caps); text-transform: uppercase; color: var(--text-2); }
 .gx-m__name { margin: 0; font: 700 var(--t-h2)/.92 var(--font-display); letter-spacing: var(--track-tight); text-transform: uppercase; text-wrap: balance; text-shadow: 0 2px 30px rgba(7, 6, 20, .6); }
+/* two machines of equal weight: the pictures are left clear, and each name sits beneath its picture (a bike's wheels and a buggy's tyres run to the foot of the frame) */
+.gx-m--duo_a .gx-m__title, .gx-m--duo_b .gx-m__title, .gx-m--second .gx-m__title { position: static; margin-top: 4px; }
+.gx-m--duo_a .gx-m__name, .gx-m--duo_b .gx-m__name { font-size: var(--t-h3); }
 .gx-m__foot { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s1) var(--s3); }
 .gx-m__sum { max-width: 30rem; color: var(--text-2); font: 500 var(--t-small)/1.45 var(--font-text); }
 .gx-m__go { display: inline-flex; flex: none; align-items: center; gap: 10px; padding-bottom: 5px; border-bottom: 1px solid var(--line-strong); font: 700 var(--t-small)/1 var(--font-text); letter-spacing: var(--track-ui); color: var(--text); }
@@ -245,7 +248,7 @@ html.motion-on .reveal:not(.is-visible) .gx-m__foot { opacity: 0; }
 .gx-street .gx-slot--lead { grid-column: 1 / span 8; grid-row: 1; }
 .gx-street .gx-slot--second { grid-column: 9 / span 4; grid-row: 1; align-self: end; }
 .gx-m--lead .gx-pic--main { aspect-ratio: 1.78; }
-.gx-street .gx-m--second .gx-pic--main { aspect-ratio: 1.6; }
+.gx-street .gx-m--second .gx-pic--main { aspect-ratio: 1.78; }
 .gx-street .gx-m--second .gx-m__name { font-size: var(--t-h3); }
 .gx-street .gx-m--second .gx-m__foot { flex-direction: column; align-items: flex-start; }
 .gx-street__note { grid-column: 9 / span 4; grid-row: 1; align-self: start; margin: 0; padding-top: var(--s2); border-top: 2px solid var(--chapter); color: var(--text); font: 500 var(--t-lead)/1.4 var(--font-text); max-width: 22rem; }
@@ -271,8 +274,8 @@ html.motion-on .gx-customs__cell:hover .gshot { transform: scale(1.04); }
 .gx-duo { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--g-gap); align-items: start; padding-bottom: clamp(8px, 1.6vw, 24px); }
 .gx-duo .gx-slot--a { grid-column: 1 / span 7; }
 .gx-duo .gx-slot--b { grid-column: 8 / span 5; }
-.gx-m--duo_a .gx-pic--main { aspect-ratio: 1.75; }
-.gx-m--duo_b .gx-pic--main { aspect-ratio: 1.25; }
+.gx-m--duo_a .gx-pic--main { aspect-ratio: 1.9; }
+.gx-m--duo_b .gx-pic--main { aspect-ratio: 1.36; }
 
 /* ---- 4. On the Water: the bay, then a sunset that carries into the Kayak ---- */
 .gx-sea-row { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--g-gap); align-items: start; }
@@ -281,12 +284,12 @@ html.motion-on .gx-customs__cell:hover .gshot { transform: scale(1.04); }
 .gx-m--sea_a .gx-pic--main { aspect-ratio: 1.95; }
 .gx-sea-row .gx-pic--second { aspect-ratio: 1.4; }
 .gx-finale { position: relative; margin-top: clamp(8px, 1.4vw, 24px); }
-.gx-sea { position: relative; height: clamp(130px, 14vw, 200px); overflow: hidden; -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 28%, #000 62%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0, #000 28%, #000 62%, transparent 100%); }
+.gx-sea { position: relative; height: clamp(130px, 14vw, 200px); overflow: hidden; -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 28%, #000 70%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0, #000 28%, #000 70%, transparent 100%); }
 .gx-sea__still, .gx-sea__video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 62%; }
 .gx-sea__video { opacity: 0; transition: opacity .4s linear; }
 .gx-sea.is-playing .gx-sea__video { opacity: 1; }
-.gx-m--finale { display: block; margin-top: calc(clamp(130px, 14vw, 200px) * -.12); }
-.gx-m--finale .gx-pic--main { aspect-ratio: 2.8; min-height: 470px; width: 100%; border-radius: 0; box-shadow: none; }
+.gx-m--finale { display: block; margin-top: calc(clamp(130px, 14vw, 200px) * -.1); }
+.gx-m--finale .gx-pic--main { aspect-ratio: 2.8; min-height: 470px; width: 100%; border-radius: 0; box-shadow: none; -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 14%); mask-image: linear-gradient(180deg, transparent 0, #000 14%); }
 .gx-m--finale .gx-pic__veil { background: linear-gradient(180deg, var(--ground) 0%, rgba(18, 16, 42, 0) 15%), linear-gradient(90deg, rgba(10, 8, 28, .7) 0%, rgba(10, 8, 28, .18) 42%, rgba(10, 8, 28, 0) 62%), linear-gradient(0deg, rgba(10, 8, 28, .55) 0%, rgba(10, 8, 28, 0) 34%); }
 .gx-m--finale .gx-m__title { left: var(--edge); right: auto; top: 46%; bottom: auto; translate: 0 -50%; }
 .gx-m--finale .gx-m__name { font-size: var(--t-display); }
@@ -328,7 +331,7 @@ html.motion-on .gx-customs__cell:hover .gshot { transform: scale(1.04); }
   .gx-customs__cell--2 { grid-column: 1 / -1; grid-row: auto; aspect-ratio: 2.6; }
   .gx-customs__cell--3, .gx-customs__cell--4 { grid-column: auto; grid-row: auto; aspect-ratio: 1.25; }
   .gx-sea { height: 120px; }
-  .gx-m--finale { margin-top: -40px; }
+  .gx-m--finale { margin-top: -14px; }
   .gx-m--finale .gx-pic--main { aspect-ratio: 1.05; min-height: 0; }
   .gx-m--finale .gx-m__title { left: var(--gutter); top: auto; bottom: 120px; translate: none; }
   .gx-m--finale .gx-m__name { font-size: var(--t-h1); }
@@ -352,4 +355,15 @@ html.motion-on .gx-customs__cell:hover .gshot { transform: scale(1.04); }
 }
 @media (max-width: 559px) {
   .gx-m--feature .gx-pic--main, .gx-m--lead .gx-pic--main, .gx-street .gx-m--second .gx-pic--main, .gx-m--duo_a .gx-pic--main, .gx-m--duo_b .gx-pic--main, .gx-m--sea_a .gx-pic--main { aspect-ratio: 1.5; }
+}
+/* a phone: slightly shallower frames and tighter gaps so the journey stays compact (each machine still whole) */
+@media (max-width: 559px) {
+  .gx-m--feature .gx-pic--main, .gx-m--lead .gx-pic--main, .gx-street .gx-m--second .gx-pic--main, .gx-m--duo_a .gx-pic--main, .gx-m--duo_b .gx-pic--main, .gx-m--sea_a .gx-pic--main { aspect-ratio: 1.7; }
+  .gx-street .gx-slot--second, .gx-duo .gx-slot--b { margin-top: var(--s3); }
+  .gx-customs { margin-top: var(--s4); }
+  .gx-customs__head { flex-wrap: wrap; row-gap: 4px; }
+  .gx-customs__cell--1 { aspect-ratio: 2.1; }
+  .gx-customs__cell--2 { aspect-ratio: 3; }
+  .gx-customs__cell--3, .gx-customs__cell--4 { aspect-ratio: 1.5; }
+  .gx-street__note { margin-bottom: var(--s2); }
 }

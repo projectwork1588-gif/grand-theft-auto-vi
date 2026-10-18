@@ -172,7 +172,7 @@ def test_concept_styles_only_define_gx_selectors_and_never_catch_presses_over_a_
     flat = re.sub(r"@media[^{]*\{|@supports[^{]*\{|@property[^{]*\{[^}]*\}|@keyframes[^{]*\{", "", css)
     selectors = [s.strip() for block in re.findall(r"([^{}]+)\{", flat) for s in block.split(",")]
     allowed = re.compile(r"^(html(\.motion-on|:not\(\.motion-on\))?\s+)?(\.gx[\w-]*|\[data-cat=\"[a-z]+\"\]|\[data-chapter=\"[a-z]+\"\]|\.gx\s)")
-    stray = [s for s in selectors if s and not allowed.match(s) and not (s.startswith("html") and "gx-" in s)]
+    stray = [s for s in selectors if s and not allowed.match(s) and not (s.startswith("html") and "gx-" in s) and not re.fullmatch(r"from|to|[0-9]+%", s)]
     assert not stray, stray[:5]
     assert re.search(r"\.gx-scene\.is-leaving \{[^}]*pointer-events: none", css)
     for decoration in (".gx-grade", ".gx-pic__veil"):

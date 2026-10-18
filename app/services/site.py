@@ -494,9 +494,9 @@ def vehicle_index(args):
 _ROLE_SHAPES = {   # (wide screens, phones): the box each picture is cut for, width over height (the same ratios as garage_concept.css)
     "feature": {"main": (1.75, 1.6), "second": (0.853, 2.6)},
     "lead": {"main": (1.78, 1.6), "second": (1.6, 1.6)},
-    "second": {"main": (1.6, 1.6), "second": (1.6, 1.6)},
-    "duo_a": {"main": (1.75, 1.6), "second": (1.5, 1.6)},
-    "duo_b": {"main": (1.25, 1.6), "second": (1.5, 1.6)},
+    "second": {"main": (1.78, 1.6), "second": (1.6, 1.6)},
+    "duo_a": {"main": (1.9, 1.6), "second": (1.5, 1.6)},
+    "duo_b": {"main": (1.36, 1.6), "second": (1.5, 1.6)},
     "sea_a": {"main": (1.95, 1.6), "second": (1.4, 2.6)},
     "finale": {"main": (2.8, 1.05), "second": (1.5, 1.6)},
 }

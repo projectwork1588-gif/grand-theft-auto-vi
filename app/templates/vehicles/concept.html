@@ -18,7 +18,9 @@
 {# One machine: its picture with the name over its foot, and one line of words with Explore beneath. The whole block is one link. #}
 {% macro machine(v, sizes, cls='') -%}
   <a class="gx-m gx-m--{{ v.role }} {{ cls }}" href="{{ url_for('pages.vehicle_detail', slug=v.slug) }}" data-vehicle="{{ v.slug }}">
-    <span class="gx-pic gx-pic--main">{{ gshot(v.main, sizes, cut='main') }}<span class="gx-pic__veil" aria-hidden="true"></span>{{ title(v) }}</span>
+    {% set below = v.role in ('duo_a', 'duo_b', 'second') %}
+    <span class="gx-pic gx-pic--main">{{ gshot(v.main, sizes, cut='main') }}{% if not below %}<span class="gx-pic__veil" aria-hidden="true"></span>{{ title(v) }}{% endif %}</span>
+    {% if below %}{{ title(v) }}{% endif %}
     <span class="gx-m__foot"><span class="gx-m__sum">{{ v.summary }}</span><span class="gx-m__go">Explore<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span>
   </a>
 {%- endmacro %}
