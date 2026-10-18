@@ -19,11 +19,12 @@ def html(client, path):
 
 
 def machines(page):
-    return re.findall(r'class="gx-m gx-m--[a-z_]+ [^"]*" href="(/vehicles/[a-z-]+)"', page)
+    """Every machine the collection links to, in page order (a stage, a half of the diptych, or a card of a filtered list)."""
+    return re.findall(r'<a class="gx-(?:f|d|m) [^"]*" href="(/vehicles/[a-z-]+)"', page)
 
 
 def names(page):
-    return re.findall(r'<h3 class="gx-m__name">([^<]+)</h3>', page)
+    return re.findall(r'<h3 class="gx-(?:m|f)__name">([^<]+)</h3>', page)
 
 
 # ------------------------------------------------------------------ the default collection: four chapters
@@ -32,27 +33,69 @@ def test_the_default_collection_is_four_chapters_in_the_planned_order(client):
     assert re.findall(r'data-chapter="([a-z]+)"', page) == ["performance", "street", "beyond", "water"]
     assert re.findall(r'<h2 id="ch-[a-z]+">([^<]+)</h2>', page) == ["Performance", "Street &amp; Classics", "Beyond the Pavement", "On the Water"]
     assert machines(page) == [f"/vehicles/{s}" for s in CHAPTER_ORDER] and len(set(machines(page))) == 7
-    assert page.count("gx-finale reveal") == 1                                       # the Kayak closes the page
+    assert page.count("gx-f--finale") == 1 and page.rindex("gx-f--finale") > page.rindex("gx-f--sea_a")      # the Kayak closes the page, after the Squalo
     street = page.split('data-chapter="street"')[1].split('data-chapter="beyond"')[0]
-    assert "gx-customs__grid" in street and street.count("gx-customs__cell gx-customs__cell--") == 4   # the mod shop is one mosaic inside Street & Classics
+    assert "gx-customs__rail" in street and street.count('class="gx-customs__cell"') == 4                     # the mod shop is one strip inside Street & Classics
 
 
 def test_each_chapter_is_set_differently_not_as_the_same_card_repeated(client):
     page = html(client, "/garage-concept")
-    layouts = [("performance", "gx-perf"), ("street", "gx-street"), ("beyond", "gx-duo"), ("water", "gx-sea-row")]
+    layouts = [("performance", "gx-f--perf"), ("street", "gx-f--street_a"), ("street", "gx-f--street_b"), ("beyond", "gx-duo"), ("water", "gx-f--sea_a"), ("water", "gx-f--finale")]
     for key, cls in layouts:
         block = page.split(f'data-chapter="{key}"')[1].split("</section>")[0]
-        assert cls in block, key
-    roles = re.findall(r'class="gx-m gx-m--([a-z_]+) ', page)
-    assert roles == ["feature", "lead", "second", "duo_a", "duo_b", "sea_a", "finale"]  # seven machines, seven roles
+        assert cls in block, (key, cls)
+    # the zigzag: the first street machine's picture bleeds off the left edge, the second's off the right
+    assert "gx-f--street_a gx-f--art-left" in page and "gx-f--street_b gx-f--art-right" in page
+    stages = re.findall(r'<a class="gx-([fd]) gx-[fd]--([a-z_]+)', page)
+    assert [r for _, r in stages] == ["perf", "street_a", "street_b", "a", "b", "sea_a", "finale"]               # seven machines, seven places
+
+
+def test_a_machine_with_a_second_picture_shows_it_as_a_small_labelled_detail(client):
+    page = html(client, "/garage-concept")
+    assert re.findall(r'<span class="gx-f__label">([^<]+)</span>', page) == ["The cabin", "The tail fin"]
+    perf = page.split('data-chapter="performance"')[1].split("</section>")[0]
+    assert perf.index("gx-f__art") < perf.index("gx-f__inset")                                                   # the exterior leads, the cabin supports it
+
+
+def test_the_water_chapter_is_stills_only_and_has_no_video(client):
+    for path in ("/garage-concept", "/garage-concept?category=boat"):
+        page = html(client, path)
+        assert "<video" not in page and ".mp4" not in page, path
+    css = (ROOT / "app" / "static" / "css" / "garage_concept.css").read_text(encoding="utf-8")
+    js = (ROOT / "app" / "static" / "js" / "garage_concept.js").read_text(encoding="utf-8")
+    assert "sticky" not in css and "gx-sea__video" not in css and "video" not in js.replace("Leaving for a vehicle", "")   # nothing pins the page or loads a clip
 
 
 def test_the_mod_shop_keeps_rockstars_set_titles_and_invents_no_model(client):
     page = html(client, "/garage-concept")
-    grid = page.split("gx-customs__grid")[1].split("</ul>")[0]
-    assert re.findall(r"<figcaption>([^<]+)</figcaption>", grid) == ["Rideout Customs Mod Shop", "One-Eyed Willie&#39;s Mod Shop", "Classic Car Collection", "Classic Car Collection"]
-    assert not re.search(r"Cheetah|Dominator|Squalo|Stanier|Ganado|Enduro|Kayak", grid)
+    strip = page.split("gx-customs__track")[1].split("</ul>")[0]
+    assert re.findall(r"<figcaption>([^<]+)</figcaption>", strip) == ["Rideout Customs Mod Shop", "One-Eyed Willie&#39;s Mod Shop", "Classic Car Collection", "Classic Car Collection"]
+    assert not re.search(r"Cheetah|Dominator|Squalo|Stanier|Ganado|Enduro|Kayak", strip)
     assert "has not published" not in page and "not published" not in page
+
+
+def test_the_strip_and_the_chapter_index_are_reachable_without_a_pointer(client):
+    page = html(client, "/garage-concept")
+    assert re.search(r'class="gx-customs__rail[^"]*" data-strip tabindex="0" role="region" aria-label="[^"]+"', page)
+    assert page.count("data-strip-step=") == 2 and "data-strip-ctl hidden" in page                                # the buttons exist only when script can work them
+    rail = page.split("data-chapter-rail")[1].split("</nav>")[0]
+    assert re.findall(r'href="#chapter-([a-z]+)"', rail) == ["performance", "street", "beyond", "water"]
+    assert "data-chapter-rail" not in html(client, "/garage-concept?category=boat")                              # a filtered list has no chapters to point at
+
+
+def test_the_words_about_each_machine_describe_the_pictures_and_claim_nothing():
+    assert set(media_slots.GARAGE_COPY) == set(SLUGS)
+    for slug, line in media_slots.GARAGE_COPY.items():
+        assert 25 < len(line) < 90 and line.endswith("."), slug
+        assert not re.search(r"horsepower|\bhp\b|mph|km/h|top speed|fastest|price|\$|rare|limited|mission|available", line, re.I), slug
+    assert "A Dominator rebuilt for mud and dirt." not in " ".join(media_slots.GARAGE_COPY.values())
+
+
+def test_the_page_prints_the_editorial_lines_and_the_database_keeps_its_own_summary(client):
+    page = html(client, "/garage-concept")
+    for line in media_slots.GARAGE_COPY.values():
+        assert line in page
+    assert "A Dominator rebuilt for mud and dirt." not in page and "A green trail bike against a teal garage door." not in page and "A white speedboat on the bay at dusk." not in page
 
 
 def test_chapters_keep_only_the_machines_the_database_has_and_nothing_is_lost():
@@ -99,28 +142,30 @@ def test_the_opening_holds_all_seven_scenes_the_index_and_the_showcase_controls(
     page = html(client, "/garage-concept")
     stage = page.split("data-stage")[1].split("</section>")[0]
     assert stage.count("data-panel=") == 7 and stage.count("data-pick=") == 7 and stage.count('fetchpriority="high"') == 1
-    assert re.findall(r'class="gx-scene gx-scene--([a-z]+)', stage) == ["br", "br", "br", "band", "band", "ml", "ml"]
+    assert re.findall(r'class="gx-scene gx-scene--([a-z]+)', stage) == ["br", "br", "br", "wide", "wide", "ml", "ml"]
     assert stage.count('class="gbtn gx-btn"') == 7 and stage.count("data-step=") == 2 and "data-ctl hidden" in stage
     assert page.count("<h1") == 1 and "<video" not in stage
-    assert re.search(r'data-play-ui hidden', stage) and 'data-playpause aria-pressed="false" aria-label="Pause the showcase"' in stage      # the control exists only when script can run it
-    assert 'class="gx-play__bar"' in stage and "data-count" in stage
-    assert stage.count('class="gx-bloom"') == 2                                                  # the two long, low machines glow into their words
+    # one quiet pause button at the foot of the index (no large pill); it exists only when script can run it; progress is a ring on the lit number
+    assert 'data-playpause aria-pressed="false" aria-label="Pause the showcase" hidden' in stage and stage.index("data-playpause") > stage.index("gx-step--next")
+    assert "gx-play" not in stage and "data-count" not in stage and stage.count("gx-tick__ring") == 7
+    assert stage.count('class="gx-bloom"') == 7                                                  # each scene has its own colours to glow with (shown for the two long, low machines, and on a nearly square window)
+    assert stage.split('data-panel="vapid-stanier"')[1].split("gx-art")[0].count('loading="lazy"') == 0 and stage.split('data-panel="crest-kayak"')[1].split("gx-art")[0].count('loading="lazy"') == 1
     assert "Seven machines of Leonida" in page
 
 
 def test_the_showcase_clock_is_built_to_wait_and_never_to_scroll():
     js = (ROOT / "app" / "static" / "js" / "garage_concept.js").read_text(encoding="utf-8")
-    assert "dwellSeconds >= 2 && dwellSeconds <= 30 ? dwellSeconds : 7" in js                    # seven seconds a scene; 2 to 30 only as a review switch
+    assert "dwellSeconds >= 2 && dwellSeconds <= 30 ? dwellSeconds : 5" in js                    # five seconds a scene; 2 to 30 only as a review switch
     for condition in ("userPaused", "document.hidden", "holding.pointer", "holding.focus", "visible", "heading === current", "IntersectionObserver", "visibilitychange", "tv:motion"):
         assert condition in js, condition
-    assert "scrollTo(" not in js.replace("list.scrollTo", "") and "scrollIntoView" not in js and "window.scroll" not in js   # it never scrolls the page
+    assert "scrollTo(" not in js.replace("list.scrollTo", "").replace("railEl.scrollTo", "") and "scrollIntoView" not in js and "window.scroll" not in js   # it never scrolls the page
     assert "saveData" in js                                                                      # and it does not run on data saver
 
 
 def test_every_scene_has_a_considered_composition():
     assert set(media_slots.GARAGE_SCENES) == set(SLUGS)
-    assert {v["plate"] for v in media_slots.GARAGE_SCENES.values()} <= {"br", "bl", "ml", "band"}
-    assert media_slots.GARAGE_SCENES["vapid-stanier"]["plate"] == "band" and media_slots.GARAGE_SCENES["vapid-ganado"]["plate"] == "band"
+    assert {v["plate"] for v in media_slots.GARAGE_SCENES.values()} <= {"br", "bl", "ml", "wide"}
+    assert media_slots.GARAGE_SCENES["vapid-stanier"]["plate"] == "wide" and media_slots.GARAGE_SCENES["vapid-ganado"]["plate"] == "wide"
     assert media_slots.GARAGE_SCENES["dinka-enduro"]["plate"] == "ml"
     for scene in media_slots.GARAGE_SCENES.values():
         for box in scene["subject"]:
@@ -132,23 +177,13 @@ def test_machines_with_a_second_picture_are_not_shown_by_the_picture_that_opens_
     for slug in ("grotti-cheetah", "vapid-dominator-buggy", "shitzu-squalo", "vapid-stanier"):
         spread, pick = media_slots.GARAGE_SPREADS[slug], media_slots.GARAGE_PICKS[slug]
         assert spread["main"] != pick["stage"], slug
-    for slug in ("grotti-cheetah", "shitzu-squalo"):
+    for slug in ("grotti-cheetah", "vapid-stanier"):
         spread = media_slots.GARAGE_SPREADS[slug]
         assert spread["second"] not in (spread["main"], media_slots.GARAGE_PICKS[slug]["stage"]) and spread["second_label"]
         assert not re.search(r"horsepower|mph|km/h|top speed", spread["second_label"], re.I)
 
 
-# ------------------------------------------------------------------ the sea clip
-def test_the_sea_clip_is_asked_for_only_by_script_and_has_a_still_beneath_it(client):
-    page = html(client, "/garage-concept")
-    if "data-sea" in page and "gx-sea__video" in page:
-        video = re.search(r'<video[^>]*>', page).group(0)
-        assert "muted" in video and "playsinline" in video and 'preload="none"' in video and " src=" not in video and "data-src=" in video
-        assert "gx-sea__still" in page.split("data-sea")[1].split("</div>")[0]
-        assert "autoplay" not in video                                                          # script decides, and only when motion is allowed
-    assert "<video" not in html(client, "/vehicles")
-
-
+# ------------------------------------------------------------------ generated clips
 def test_garage_clips_are_servable_from_their_own_folder_and_only_that():
     assert local_media.SAFE_NAME.match("clips/garage/on-the-water.mp4") and local_media.SAFE_NAME.match("clips/garage/on-the-water.jpg")
     for bad in ("clips/garage/../secret.mp4", "clips/garage/sub/x.mp4", "garage/on-the-water.mp4", "clips/garage/On-The-Water.mp4", "clips/garage/x.exe"):
@@ -175,9 +210,8 @@ def test_concept_styles_only_define_gx_selectors_and_never_catch_presses_over_a_
     stray = [s for s in selectors if s and not allowed.match(s) and not (s.startswith("html") and "gx-" in s) and not re.fullmatch(r"from|to|[0-9]+%", s)]
     assert not stray, stray[:5]
     assert re.search(r"\.gx-scene\.is-leaving \{[^}]*pointer-events: none", css)
-    for decoration in (".gx-grade", ".gx-pic__veil"):
+    for decoration in (".gx-grade", ".gx-f__shade", ".gx-tick__ring"):
         assert re.search(re.escape(decoration) + r" \{[^}]*pointer-events: none", css), decoration
-    assert re.search(r"\.gx-sea \{[^}]*", css) and "gx-sea__video" in css
 
 
 def test_only_the_concept_page_loads_the_concept_assets(client):

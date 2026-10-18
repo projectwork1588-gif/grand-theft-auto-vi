@@ -52,10 +52,10 @@ export default async function (b) {
   // ---- 2. Pause and Play
   await open(`?dwell=${DWELL}`);
   const label1 = await ev(`document.querySelector("[data-playpause]").getAttribute("aria-label") + "|" + document.querySelector("[data-playpause]").getAttribute("aria-pressed")`);
-  report(label1 === "Pause the showcase|false", "while it plays the button says Pause", label1);
+  report(label1 === "Pause the showcase|false", "while it plays the quiet button in the index says Pause", label1);
   await ev(`document.querySelector("[data-playpause]").click(); true`);
-  const label2 = await ev(`document.querySelector("[data-playpause]").getAttribute("aria-label") + "|" + document.querySelector("[data-playpause]").getAttribute("aria-pressed") + "|" + document.querySelector("[data-playword]").textContent`);
-  report(label2 === "Play the showcase|true|Play", "after Pause the button says Play", label2);
+  const label2 = await ev(`document.querySelector("[data-playpause]").getAttribute("aria-label") + "|" + document.querySelector("[data-playpause]").getAttribute("aria-pressed")`);
+  report(label2 === "Resume the showcase|true", "after Pause the button offers to resume", label2);
   const heldAt = await shown();
   const whilePaused = await watch(DWELL * 2 + 1);
   report(whilePaused.length === 0 && (await shown()) === heldAt, "paused, it does not advance in two and a half holds", String(whilePaused.length) + " changes");
@@ -130,20 +130,12 @@ export default async function (b) {
   await b.sleep(900);
   const bigStage = new Set(requested.filter((u) => /rockstargames\.com/.test(u) && /imwidth=(1920|2560|3840)/.test(u)));
   report(bigStage.size <= 2, "at first only the first scene's large picture is fetched (not all seven)", String(bigStage.size) + " large pictures requested");
-  const video0 = requested.filter((u) => /on-the-water\.mp4/.test(u)).length;
-  report(video0 === 0, "the sea clip is not asked for while the opening is on show", String(video0));
-  await ev(`document.querySelector(".gx-finale").scrollIntoView({ block: "start" }); true`);
-  await b.sleep(4500);
-  const videoRequests = requested.filter((u) => /on-the-water\.mp4/.test(u)).length;
-  const sea = await ev(`(() => { const v = document.querySelector(".gx-sea__video"); return v ? JSON.stringify({ src: !!v.currentSrc, ended: v.ended, playing: document.querySelector(".gx-sea").classList.contains("is-playing"), muted: v.muted }) : "none"; })()`);
-  console.log("      sea clip: " + sea + ", requests " + videoRequests);
-  report(sea === "none" || (videoRequests >= 1 && videoRequests <= 3 && JSON.parse(sea).muted), "near the finale the clip is requested once (muted)", String(videoRequests));
-  await open(`?dwell=${DWELL}`, "0");
-  await ev(`window.scrollTo(0, document.documentElement.scrollHeight); true`);
-  requested.length = 0;
+  const videoAny = await ev(`document.querySelectorAll("video").length`);
+  report(videoAny === 0, "the collection has no video to load, stall or restart (every chapter is a still picture)", String(videoAny));
+  await ev(`document.querySelector(".gx-f--finale").scrollIntoView({ block: "start" }); true`);
   await b.sleep(2500);
-  report(requested.filter((u) => /on-the-water\.mp4/.test(u)).length === 0, "with motion off the clip is never asked for (the still stays)");
-
+  const videoRequests = requested.filter((u) => /\.mp4/.test(u)).length;
+  report(videoRequests === 0, "scrolling to the finale asks for no video file", String(videoRequests));
   await ev(`localStorage.clear(); true`);
   console.log(failed ? `\n${failed} FAILED` : "\nall passed");
   process.exitCode = failed ? 1 : 0;

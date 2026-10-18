@@ -384,14 +384,14 @@ def _cell_shape(span, tone):
     return {"card": ((span / 12 * _GRID_WIDTH - 20) / _ROW_HEIGHT[tone], 1.5)}
 
 
-def _garage_picture(m, shapes, zoom=None, keep_height=False):
+def _garage_picture(m, shapes, zoom=None, keep_height=False, face=None):
     """A frame ready for the `gshot` macro: the media row, what it shows, and one cut per named shape (where to place it on wide
     screens and on phones). `zoom` = (scale, x, y) draws it closer on (x, y)."""
     if not m:
         return None
     spec = media_slots.GARAGE_FRAMES.get(m["slug"], {})
-    face = spec.get("face", (0.5, 0.5))
-    phone = spec.get("phone", face)
+    phone = face or spec.get("phone", spec.get("face", (0.5, 0.5)))      # a face given here (a chapter's own framing) is used for phones too
+    face = face or spec.get("face", (0.5, 0.5))
     if zoom:
         face = phone = (zoom[1], zoom[2])
     # keep_height: a box that is wider than the picture cuts its top and bottom in step with where the subject sits (so a low subject loses more sky than road)
@@ -491,18 +491,19 @@ def vehicle_index(args):
 
 
 # ---------------------------------------------------------------- the concept: a full-screen opening and a collection told in four chapters
-_ROLE_SHAPES = {   # (wide screens, phones): the box each picture is cut for, width over height (the same ratios as garage_concept.css)
-    "feature": {"main": (1.75, 1.6), "second": (0.853, 2.6)},
-    "lead": {"main": (1.78, 1.6), "second": (1.6, 1.6)},
-    "second": {"main": (1.78, 1.6), "second": (1.6, 1.6)},
-    "duo_a": {"main": (1.9, 1.6), "second": (1.5, 1.6)},
-    "duo_b": {"main": (1.36, 1.6), "second": (1.5, 1.6)},
-    "sea_a": {"main": (1.95, 1.6), "second": (1.4, 2.6)},
-    "finale": {"main": (2.8, 1.05), "second": (1.5, 1.6)},
+_ROLE_SHAPES = {   # (wide screens, phones): the box each picture is cut for, width over height (a stage's box changes with the window, so these are the usual shape)
+    "perf": {"main": (1.6, 1.6), "second": (1.5, 1.5)},
+    "street_a": {"main": (1.7, 1.6), "second": (1.5, 1.5)},
+    "street_b": {"main": (1.7, 1.6), "second": (1.5, 1.5)},
+    "duo_a": {"main": (1.3, 1.25), "second": (1.5, 1.6)},
+    "duo_b": {"main": (1.15, 1.25), "second": (1.5, 1.6)},
+    "sea_a": {"main": (1.78, 1.2), "second": (1.5, 1.6)},
+    "finale": {"main": (1.78, 1.1), "second": (1.5, 1.6)},
+    "second": {"main": (1.78, 1.6), "second": (1.6, 1.6)},      # the plain card of a filtered list or a machine no chapter names
 }
 _SCENE_SHAPE = {"stage": (1.6, 1.4)}
-_BAND_SHAPE = {"stage": (1.95, 1.4)}
-_MOMENT_SHAPES = {"feat": (1.67, 1.9), "wide": (2.3, 2.6), "sq": (1.2, 1.25)}
+_WIDE_SHAPE = {"stage": (1.78, 1.4)}
+_MOMENT_SHAPES = {"strip": (1.78, 1.6)}
 
 
 def _concept_entry(entry, frames, role=None):
@@ -512,8 +513,8 @@ def _concept_entry(entry, frames, role=None):
     main = frames.get(pick.get("main"))
     second = frames.get(pick.get("second"))
     shapes = _ROLE_SHAPES[role]
-    return {**entry, "role": role, "cat": entry.get("category_slug") or "",
-            "main": _garage_picture(main, {"main": shapes["main"]}, pick.get("zoom")) if main else entry["card"],
+    return {**entry, "role": role, "cat": entry.get("category_slug") or "", "summary": media_slots.GARAGE_COPY.get(entry["slug"], entry.get("summary", "")),
+            "main": _garage_picture(main, {"main": shapes["main"]}, pick.get("zoom"), face=pick.get("face")) if main else entry["card"],
             "second": _garage_picture(second, {"second": shapes["second"]}) if second else None,
             "second_label": pick.get("second_label", "")}
 
@@ -540,13 +541,14 @@ def vehicle_concept(args):
     other sort or page it is an honest ordered list, so counts, ordering and empty states always mean what they say."""
     result = vehicle_index(args)
     rows = result["data"]
-    # the opening: each scene is cut for its own composition (a long low machine gets a caption band beneath it)
+    # the opening: each scene is cut for its own composition (a long low machine is drawn whole beside its words)
     for r in result["stage"]:
         scene = media_slots.GARAGE_SCENES.get(r["slug"], {})
         r["plate"] = scene.get("plate", "br")
+        r["summary"] = media_slots.GARAGE_COPY.get(r["slug"], r.get("summary", ""))
         r["subject"] = ";".join(",".join(f"{v:.2f}" for v in box) for box in scene["subject"]) if scene.get("subject") else ""
         if r["stage"]:
-            r["stage"] = _garage_picture(r["stage"]["m"], _BAND_SHAPE if r["plate"] == "band" else _SCENE_SHAPE, keep_height=True)
+            r["stage"] = _garage_picture(r["stage"]["m"], _WIDE_SHAPE if r["plate"] == "wide" else _SCENE_SHAPE, keep_height=True)
             if "px" in scene:                           # a scene may hold its picture to one side of its frame (a percent, on the stylesheet's 2 percent grid)
                 wide, phone = r["stage"]["cuts"]["stage"]
                 r["stage"]["cuts"]["stage"] = (f"{scene['px']}% {wide.split()[1]}", phone)

@@ -4,7 +4,7 @@
   "use strict";
 
   function each(list, fn) { Array.prototype.forEach.call(list, fn); }
-  var LEAVE = 1000;  // how long the scene being replaced stays under the one arriving: the length of the opening frame, in step with garage_concept.css
+  var LEAVE = 900;   // how long the scene being replaced stays under the one arriving: the length of the opening frame, in step with garage_concept.css
   var params = new URLSearchParams(window.location.search);
 
   // run `fn` once the picture has arrived and been decoded (or after a moment, so a slow connection still gets the page)
@@ -34,7 +34,6 @@
     var picks = [].slice.call(stage.querySelectorAll("[data-pick]"));
     var order = picks.map(function (a) { return a.getAttribute("data-pick"); });
     var live = stage.querySelector("[data-stage-live]");
-    var counters = stage.querySelectorAll("[data-count]");
     var current = (picks.filter(function (a) { return a.getAttribute("aria-current") === "true"; })[0] || picks[0]).getAttribute("data-pick");
     var heading = current;
     var requested = 0;
@@ -87,7 +86,7 @@
         next.style.setProperty("--oy", o[1].toFixed(1));
         void next.offsetWidth;                           // laid out as the small frame before it grows, so the opening can play
         next.classList.add("is-active", "is-entering");   // the opening plays while this class is on, and leaves nothing behind when it is off
-        window.setTimeout(function () { next.classList.remove("is-entering"); }, 1200);
+        window.setTimeout(function () { next.classList.remove("is-entering"); }, 1000);
         current = slug;
         elapsed = 0;                                     // the dwell starts when the scene is actually on show
         stage.setAttribute("data-vehicle", slug);
@@ -95,7 +94,6 @@
         picks.forEach(function (a) {
           if (a.getAttribute("data-pick") === slug) { a.setAttribute("aria-current", "true"); } else { a.removeAttribute("aria-current"); }
         });
-        each(counters, function (c) { c.textContent = ("0" + (order.indexOf(slug) + 1)).slice(-2); });
         var chosen = stage.querySelector('[data-pick="' + slug + '"]');                    // on a phone the index is a row that scrolls: keep the chosen name in view
         var list = chosen && chosen.closest(".gx-index__list");
         if (list && list.scrollWidth > list.clientWidth) { var cr = chosen.getBoundingClientRect(), lr = list.getBoundingClientRect(); list.scrollBy({ left: cr.left + cr.width / 2 - (lr.left + lr.width / 2), behavior: "smooth" }); }
@@ -110,16 +108,14 @@
     // visitor has paused it, a pointer or keyboard is on the scene's words, the index or the controls, the opening is off screen, the tab is
     // hidden, or the next picture has not arrived yet. It never scrolls the page.
     var dwellSeconds = parseFloat(params.get("dwell"));
-    var DWELL = (dwellSeconds >= 2 && dwellSeconds <= 30 ? dwellSeconds : 7) * 1000;
+    var DWELL = (dwellSeconds >= 2 && dwellSeconds <= 30 ? dwellSeconds : 5) * 1000;
     var saveData = !!(navigator.connection && navigator.connection.saveData);
     var motionOn = function () { return document.documentElement.classList.contains("motion-on"); };
     var userPaused = true;      // settled when the page is ready (the site's own script decides whether motion is on): with motion off, or on request, it starts paused; Play still works
     var holding = { pointer: false, focus: false, touchUntil: 0 };
     var visible = true;
     var rafId = 0, last = 0;
-    var playUi = stage.querySelector("[data-play-ui]");
     var playBtn = stage.querySelector("[data-playpause]");
-    var playWord = stage.querySelector("[data-playword]");
 
     var canRun = function () {
       return !userPaused && visible && !document.hidden && !holding.pointer && !holding.focus && performance.now() > holding.touchUntil && heading === current;
@@ -129,8 +125,7 @@
       stage.classList.toggle("is-paused", userPaused);
       if (playBtn) {
         playBtn.setAttribute("aria-pressed", userPaused ? "true" : "false");
-        playBtn.setAttribute("aria-label", userPaused ? "Play the showcase" : "Pause the showcase");
-        if (playWord) { playWord.textContent = userPaused ? "Play" : "Pause"; }
+        playBtn.setAttribute("aria-label", userPaused ? "Resume the showcase" : "Pause the showcase");
       }
     };
     var frame = function (now) {
@@ -148,7 +143,7 @@
     var kick = function () { if (!rafId && canRun()) { last = performance.now(); rafId = window.requestAnimationFrame(frame); } };
     window.__gxClock = function () { return { elapsed: elapsed, dwell: DWELL, userPaused: userPaused, running: !!rafId, current: current, holding: holding, visible: visible }; };
 
-    if (playUi) { playUi.hidden = false; }
+    if (playBtn) { playBtn.hidden = false; }
     paint();
     if (playBtn) {
       playBtn.addEventListener("click", function () {
@@ -156,12 +151,12 @@
         if (!userPaused) { elapsed = 0; }
         paint();
         kick();
-        if (live) { live.textContent = userPaused ? "The showcase is paused." : "The showcase is playing."; }
+        if (live) { live.textContent = userPaused ? "The showcase is paused." : "The showcase is running."; }
       });
     }
 
-    // the clock waits while a pointer is over, or focus is in, the words of the scene, the index or the controls; a touch holds it for a few seconds
-    var interactive = ".gx-copy, .gx-index, .gx-play";
+    // the clock waits while a pointer is over, or focus is in, the words of the scene or the index (the pause button is part of it); a touch holds it for a few seconds
+    var interactive = ".gx-copy, .gx-index";
     stage.addEventListener("pointerover", function (e) { if (e.pointerType === "mouse" && e.target.closest && e.target.closest(interactive)) { holding.pointer = true; } });
     stage.addEventListener("pointerout", function (e) {
       if (e.pointerType !== "mouse") { return; }
@@ -223,30 +218,114 @@
     // the first scene has its picture; the next is fetched only when it is nearly time (see the clock), never all seven at once
   }
 
-  // ---- The sea clip: a few seconds of Rockstar's own footage, played once as the finale comes into view, then it rests on its last frame ----------
-  // The still picture is always there beneath it, so nothing flashes; the video file is not asked for until the band is near the window, and not at all
-  // when motion is off, data saver is on, or the browser cannot play it.
-  each(document.querySelectorAll("[data-sea]"), function (sea) {
-    var video = sea.querySelector("video");
-    if (!video || !("IntersectionObserver" in window)) { return; }
-    var saveData = !!(navigator.connection && navigator.connection.saveData);
-    var started = false;
-    var near = new IntersectionObserver(function (entries) {
-      if (started || !entries[0].isIntersecting) { return; }
-      if (!document.documentElement.classList.contains("motion-on") || saveData || params.get("autoplay") === "0") { near.disconnect(); return; }
-      video.src = video.getAttribute("data-src");
-      video.load();
-      near.disconnect();
-      var play = new IntersectionObserver(function (e) {
-        if (started || !e[0].isIntersecting) { return; }
-        started = true;
-        play.disconnect();
-        var go = function () { var p = video.play(); if (p && p.then) { p.then(function () { sea.classList.add("is-playing"); }, function () { /* the browser said no: the still stays */ }); } };
-        if (video.readyState >= 3) { go(); } else { video.addEventListener("canplay", go, { once: true }); }
-      }, { threshold: 0.3 });
-      play.observe(sea);
-    }, { rootMargin: "700px 0px" });
-    near.observe(sea);
+  // ---- The collection --------------------------------------------------------------------------------------------
+  // Everything below is decoration or convenience; without it every chapter is complete, still and readable.
+  var motionOn = function () { return document.documentElement.classList.contains("motion-on"); };
+  var clamp01 = function (v) { return Math.max(0, Math.min(1, v)); };
+
+  // One shared scroll loop, running only while a stage's photograph is in the window: it sets how far the picture has travelled through the window (--dp, 0 to 1),
+  // which drives the slow drift of the photograph against the scroll.
+  var drifting = [].slice.call(document.querySelectorAll("[data-drift]"));
+  var seen = new Set();
+  var frameId = 0;
+  var update = function () {
+    frameId = 0;
+    var vh = window.innerHeight || 800;
+    seen.forEach(function (el) {
+      var r = el.getBoundingClientRect();
+      el.style.setProperty("--dp", clamp01((vh - r.top) / (vh + r.height)).toFixed(3));
+    });
+  };
+  var schedule = function () { if (!frameId && seen.size) { frameId = window.requestAnimationFrame(update); } };
+  if ("IntersectionObserver" in window && drifting.length) {
+    var watch = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) { seen.add(e.target); } else { seen.delete(e.target); } });
+      schedule();
+    }, { rootMargin: "80px 0px" });
+    var armed = false;
+    var arm = function () {
+      if (armed || !motionOn()) { return; }
+      armed = true;
+      drifting.forEach(function (el) { watch.observe(el); });
+    };
+    var disarm = function () {
+      armed = false;
+      watch.disconnect();
+      seen.clear();
+      drifting.forEach(function (el) { el.style.removeProperty("--dp"); });
+    };
+    document.addEventListener("tv:motion", function () { if (motionOn()) { arm(); schedule(); } else { disarm(); } });
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    var begin = function () { arm(); schedule(); };
+    if (document.readyState !== "complete") { document.addEventListener("DOMContentLoaded", begin); } else { begin(); }   // after the site's own script has set the motion class
+  }
+
+  // The chapters as a slim index at the right edge: lit for the chapter in view, shown while the collection is on screen
+  var chapterRail = document.querySelector("[data-chapter-rail]");
+  var chapters = [].slice.call(document.querySelectorAll(".gx-chapter"));
+  if (chapterRail && chapters.length && "IntersectionObserver" in window) {
+    chapterRail.hidden = false;
+    var links = {};
+    each(chapterRail.querySelectorAll("a[data-for]"), function (a) { links[a.getAttribute("data-for")] = a; });
+    var share = {};
+    var mark = function () {
+      var best = null;
+      Object.keys(share).forEach(function (k) { if (share[k] > 0 && (best === null || share[k] > share[best])) { best = k; } });
+      Object.keys(links).forEach(function (k) { if (k === best) { links[k].setAttribute("aria-current", "true"); } else { links[k].removeAttribute("aria-current"); } });
+    };
+    var chapterWatch = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { share[e.target.getAttribute("data-chapter")] = e.isIntersecting ? e.intersectionRect.height : 0; });
+      mark();
+    }, { threshold: [0, 0.05, 0.1, 0.25, 0.5, 0.75, 1], rootMargin: "-14% 0px -14% 0px" });
+    chapters.forEach(function (c) { chapterWatch.observe(c); });
+    var coll = document.querySelector(".gx-coll");
+    if (coll) { new IntersectionObserver(function (entries) { chapterRail.classList.toggle("is-on", entries[entries.length - 1].isIntersecting); }, { rootMargin: "-35% 0px -10% 0px" }).observe(coll); }
+  }
+
+  // The strip of customs and classics: previous and next, the arrow keys, and a mouse drag; touch and trackpad scroll it natively
+  each(document.querySelectorAll("[data-strip]"), function (railEl) {
+    var wrap = railEl.closest(".gx-customs");
+    var cells = [].slice.call(railEl.querySelectorAll(".gx-customs__cell"));
+    var ctl = wrap && wrap.querySelector("[data-strip-ctl]");
+    var now = wrap && wrap.querySelector("[data-strip-now]");
+    var prev = wrap && wrap.querySelector('[data-strip-step="-1"]');
+    var next = wrap && wrap.querySelector('[data-strip-step="1"]');
+    if (ctl) { ctl.hidden = false; }
+    var pad = function () { return parseFloat(getComputedStyle(railEl).paddingLeft || "0"); };
+    var index = function () {
+      var edge = railEl.scrollLeft + pad() + railEl.clientWidth * 0.3, at = 0;
+      cells.forEach(function (c, i) { if (c.offsetLeft <= edge) { at = i; } });
+      return at;
+    };
+    var sync = function () {
+      var max = railEl.scrollWidth - railEl.clientWidth;
+      if (now) { now.textContent = String(railEl.scrollLeft >= max - 4 ? cells.length : index() + 1); }
+      if (prev) { prev.disabled = railEl.scrollLeft <= 4; }
+      if (next) { next.disabled = railEl.scrollLeft >= max - 4; }
+    };
+    var go = function (by) {
+      var to = Math.max(0, Math.min(cells.length - 1, index() + by));
+      railEl.scrollTo({ left: cells[to].offsetLeft - pad(), behavior: motionOn() ? "smooth" : "auto" });
+    };
+    if (prev) { prev.addEventListener("click", function () { go(-1); }); }
+    if (next) { next.addEventListener("click", function () { go(1); }); }
+    railEl.addEventListener("scroll", sync, { passive: true });
+    window.addEventListener("resize", sync);
+    railEl.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowRight") { e.preventDefault(); go(1); }
+      if (e.key === "ArrowLeft") { e.preventDefault(); go(-1); }
+    });
+    var down = null;
+    railEl.addEventListener("pointerdown", function (e) { if (e.pointerType === "mouse" && e.button === 0) { down = { x: e.clientX, left: railEl.scrollLeft }; } });
+    window.addEventListener("pointermove", function (e) {
+      if (!down) { return; }
+      var dx = e.clientX - down.x;
+      if (Math.abs(dx) > 4) { railEl.classList.add("is-dragging"); }
+      railEl.scrollLeft = down.left - dx;
+    });
+    window.addEventListener("pointerup", function () { down = null; window.setTimeout(function () { railEl.classList.remove("is-dragging"); }, 0); });
+    sync();
   });
 
   // ---- Leaving for a vehicle's page: the chosen picture is the one that grows into it (garage.css) ----------------
@@ -254,8 +333,11 @@
     if (!e.viewTransition || !e.activation || !e.activation.entry) { return; }
     var match = /^\/vehicles\/([a-z0-9-]+)\/?$/.exec(new URL(e.activation.entry.url).pathname);
     if (!match) { return; }
-    var art = document.querySelector('.gx-m[href="/vehicles/' + match[1] + '"] .gx-pic--main') ||
-              document.querySelector('.gx-scene.is-active[data-panel="' + match[1] + '"] .gx-art');
+    var href = '[href="/vehicles/' + match[1] + '"]';
+    var scene = document.querySelector('.gx-scene.is-active[data-panel="' + match[1] + '"] .gx-art');
+    var chapter = document.querySelector('.gx-f' + href + ' .gx-f__art') || document.querySelector('.gx-d' + href + ' .gx-d__pic') || document.querySelector('.gx-m' + href + ' .gx-pic--main');
+    var onScreen = function (el) { if (!el) { return false; } var r = el.getBoundingClientRect(); return r.bottom > 0 && r.top < window.innerHeight; };
+    var art = onScreen(scene) ? scene : (chapter || scene);   // the picture the visitor pressed: the opening's if it is in the window, otherwise the chapter's
     if (art) { art.style.viewTransitionName = "vehicle-art"; }
   });
 
