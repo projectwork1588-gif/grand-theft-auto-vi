@@ -154,10 +154,8 @@ def test_the_opening_holds_all_seven_scenes_the_index_and_the_showcase_controls(
     assert re.findall(r'class="gx-scene gx-scene--([a-z]+)', stage) == ["br", "br", "br", "tr", "tr", "ml", "ml"]
     assert stage.count('class="gbtn gx-btn"') == 7 and stage.count("data-step=") == 2 and "data-ctl hidden" in stage
     assert page.count("<h1") == 1 and "<video" not in stage
-    # one small, quiet pause button beside the page's title (not in the index, no large pill); it exists only when script can run it; progress is a ring on the lit number
-    assert 'data-playpause aria-pressed="false" aria-label="Pause the showcase" hidden' in stage
-    head = stage.split('class="gx-head"')[1].split("</div>\n    <nav")[0]
-    assert "data-playpause" in head and "data-playpause" not in stage.split('class="gx-index"')[1]
+    # no play or pause control anywhere in the opening (it just runs); progress is a ring on the lit number
+    assert "data-playpause" not in page and "gx-pause" not in page and not re.search(r"(?i)(pause|resume) the showcase", page)
     assert "gx-play " not in stage and "data-count" not in stage and stage.count("gx-tick__ring") == 7
     assert stage.count('class="gx-bloom"') == 7                                                  # each scene has its own colours to glow with (shown for the two long, low machines, and on a nearly square window)
     assert len(re.findall(r'class="gx-bloom" aria-hidden="true">\s*<img[^>]*loading="lazy"', stage)) == 7                # none of them is fetched before it is shown
@@ -171,7 +169,9 @@ def test_the_showcase_clock_is_built_to_wait_and_never_to_scroll():
         assert condition in js, condition
     assert "scrollTo(" not in js.replace("list.scrollTo", "").replace("railEl.scrollTo", "") and "scrollIntoView" not in js and "window.scroll" not in js   # it never scrolls the page
     assert "saveData" in js                                                                      # and it does not run on data saver
-    assert 'var interactive = ".gx-copy";' in js                                                 # only the words and Explore hold the clock: a choice in the index never stops it
+    assert 'var interactive = ".gx-copy";' in js
+    assert "playBtn" not in js and "data-playpause" not in js and "Pause the showcase" not in js    # the removed control leaves no dead code behind
+    assert 'classList.toggle("is-paused", userPaused || document.hidden || !visible)' in js        # the camera stops with the clock                                                 # only the words and Explore hold the clock: a choice in the index never stops it
 
 
 def test_every_scene_has_a_considered_composition():
@@ -222,6 +222,10 @@ def test_concept_styles_only_define_gx_selectors_and_never_catch_presses_over_a_
     stray = [s for s in selectors if s and not allowed.match(s) and not (s.startswith("html") and "gx-" in s) and not re.fullmatch(r"from|to|[0-9]+%", s)]
     assert not stray, stray[:5]
     assert re.search(r"\.gx-scene\.is-leaving \{[^}]*pointer-events: none", css)
+    assert ".gx-pause" not in css and "gx-drift" not in css                                         # no leftovers of the removed control or the old settle
+    assert "@keyframes gx-push" in css and "html.motion-on .gx-scene.is-active .gx-art .gshot, html.motion-on .gx-scene.is-leaving .gx-art .gshot" in css   # the camera runs under the arriving scene and the one leaving
+    assert not re.search(r"@keyframes gx-push \{[^}]*(width|height|top|left|margin|padding)", css)  # it only transforms: nothing is laid out again
+    assert not re.search(r"is-leaving \.gx-art \.gshot \{[^}]*transform: none", css)                # and the scene being replaced is never snapped back
     for decoration in (".gx-grade", ".gx-f__shade", ".gx-tick__ring"):
         assert re.search(re.escape(decoration) + r" \{[^}]*pointer-events: none", css), decoration
 
@@ -231,3 +235,19 @@ def test_only_the_concept_page_loads_the_concept_assets(client):
         assert "garage_concept" not in html(client, path), path
     page = html(client, "/garage-concept")
     assert "garage_concept.css" in page and "garage_concept.js" in page
+
+
+def test_every_scene_has_its_own_small_camera_move_that_cannot_bare_an_edge():
+    css = (ROOT / "app" / "static" / "css" / "garage_concept.css").read_text(encoding="utf-8")
+    for slug in SLUGS:
+        rule = re.search(r'\.gx-scene\[data-vehicle="' + slug + r'"\] \.gx-art \.gshot \{([^}]*)\}', css)
+        assert rule, slug
+        values = {k: float(v) for k, v in re.findall(r"--(fx|fy|zf|dx|dy):\s*(-?[0-9.]+)%?", rule.group(1))}
+        assert set(values) == {"fx", "fy", "zf", "dx", "dy"}, slug
+        assert 20 <= values["fx"] <= 80 and 20 <= values["fy"] <= 80, slug                           # centred on the machine, never at an edge
+        assert 1.02 <= values["zf"] <= 1.07, slug                                                    # a push of two to seven percent: restrained
+        # the drift must stay inside the margin the push opens up on the side it bares: (zoom - 1) times the distance from the centre to that edge
+        margin_x = (values["zf"] - 1) * 100 * min(values["fx"], 100 - values["fx"]) / 100
+        margin_y = (values["zf"] - 1) * 100 * min(values["fy"], 100 - values["fy"]) / 100
+        assert abs(values["dx"]) <= margin_x and abs(values["dy"]) <= margin_y, slug
+    assert css.count("animation: gx-push 5s") == 1 and "gx-open .7s" in css                        # one camera, over a little longer than a scene's three seconds and its opening

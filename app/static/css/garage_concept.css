@@ -117,27 +117,26 @@ html.motion-on .gx-open { transition: --tint .9s var(--ease); }
 .gx-step svg { width: 20px; height: 20px; filter: drop-shadow(0 1px 6px rgba(7, 6, 20, .8)); }
 .gx-step:hover { color: var(--text); }
 .gx-step:focus-visible { outline: 2px solid var(--text); outline-offset: -4px; border-radius: 50%; }
-/* pause and resume: one small, quiet button beside the title of the page (the showcase can be stopped at any time; it is also a tab stop with a name) */
-.gx-pause { display: grid; place-items: center; align-self: flex-end; width: 40px; height: 40px; margin-bottom: -4px; border: 1px solid rgba(255, 255, 255, .22); border-radius: 50%; background: rgba(10, 8, 28, .34); color: rgba(245, 240, 235, .72); cursor: pointer; pointer-events: auto; backdrop-filter: blur(4px); transition: background var(--dur-2), color var(--dur-2), border-color var(--dur-2); }
-.gx-pause[hidden] { display: none; }
-.gx-pause svg { width: 16px; height: 16px; }
-.gx-pause .i-play { display: none; }
-.gx-pause[aria-pressed="true"] .i-play { display: block; }
-.gx-pause[aria-pressed="true"] .i-pause { display: none; }
-.gx-pause:hover { color: var(--text); border-color: var(--text); background: rgba(10, 8, 28, .6); }
-.gx-pause:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
-
 /* ---- scene changes: the new scene opens as a frame at its own number in the index and grows until it fills its place; the old one stays beneath it ---- */
 html.motion-on .gx-scene.is-entering .gx-art { animation: gx-open .7s cubic-bezier(.7, 0, .2, 1) backwards; }
 html.motion-on .gx-scene.is-entering .gx-bloom { animation: gx-bloom .7s ease-out backwards; }
 @keyframes gx-open { from { clip-path: inset(calc(var(--oy, 50) * 1% - 5%) calc(100% - var(--ox, 96) * 1% - 3%) calc(100% - var(--oy, 50) * 1% - 5%) calc(var(--ox, 96) * 1% - 3%) round 28px); } to { clip-path: inset(0 0 0 0 round 0px); } }
 @keyframes gx-bloom { from { opacity: 0; } to { opacity: 1; } }
 html.motion-on .gx-scene.is-leaving .gx-grade, html.motion-on .gx-scene.is-leaving .gx-copy { opacity: 0; transition: opacity .2s var(--ease); }
-html.motion-on .gx-scene .gx-art .gshot { transform: scale(1.07); will-change: transform; }
-html.motion-on .gx-scene.is-active .gx-art .gshot { animation: gx-drift 5s cubic-bezier(.2, .6, .2, 1) both; }
-@keyframes gx-drift { from { transform: scale(1.07); } to { transform: scale(1); } }
-.gx-open.is-paused .gx-scene.is-active .gx-art .gshot { animation-play-state: paused; }
-html.motion-on .gx-scene.is-leaving .gx-art .gshot { transform: none; transition: none; }
+/* the camera: a slow push-in with a small drift, on the picture only (a transform, so nothing is laid out again); the words stay still. Each scene has its own centre (--fx, --fy: where the
+   machine sits), how far the camera goes (--zf) and which way it drifts (--dx, --dy, a fraction of a percent). The movement starts from the picture exactly as it rests, so there is no jump when it
+   begins, and the scene being replaced keeps moving under the one arriving instead of snapping back. The scale always outgrows the drift, so no edge is ever bared. */
+html.motion-on .gx-scene.is-active .gx-art .gshot, html.motion-on .gx-scene.is-leaving .gx-art .gshot { transform-origin: var(--fx, 50%) var(--fy, 50%); will-change: transform; animation: gx-push 5s cubic-bezier(.3, .15, .45, 1) both; }
+@keyframes gx-push { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(var(--dx, 0%), var(--dy, 0%), 0) scale(var(--zf, 1.05)); } }
+html.motion-on .gx-open.is-paused .gx-scene .gx-art .gshot { animation-play-state: paused; }
+.gx-scene[data-vehicle="grotti-cheetah"] .gx-art .gshot { --fx: 36%; --fy: 70%; --zf: 1.06; --dx: -.7%; --dy: -.3%; }
+.gx-scene[data-vehicle="vapid-dominator-buggy"] .gx-art .gshot { --fx: 30%; --fy: 52%; --zf: 1.055; --dx: -.6%; --dy: 0%; }
+.gx-scene[data-vehicle="shitzu-squalo"] .gx-art .gshot { --fx: 30%; --fy: 68%; --zf: 1.055; --dx: -.5%; --dy: .2%; }
+.gx-scene[data-vehicle="vapid-stanier"] .gx-art .gshot { --fx: 55%; --fy: 60%; --zf: 1.035; --dx: .4%; --dy: 0%; }
+.gx-scene[data-vehicle="vapid-ganado"] .gx-art .gshot { --fx: 52%; --fy: 58%; --zf: 1.035; --dx: -.4%; --dy: 0%; }
+.gx-scene[data-vehicle="dinka-enduro"] .gx-art .gshot { --fx: 56%; --fy: 50%; --zf: 1.04; --dx: -.3%; --dy: 0%; }
+.gx-scene[data-vehicle="crest-kayak"] .gx-art .gshot { --fx: 58%; --fy: 60%; --zf: 1.03; --dx: -.3%; --dy: -.2%; }
+/* a visitor who asks for reduced motion has no motion class (the site's own policy, site.js: the system setting, data saver and the visitor's choice in the menu), so none of this runs for them */
 html.motion-on .gx-scene .gx-copy > * { opacity: 0; transform: translateY(18px); }
 html.motion-on .gx-scene.is-active .gx-copy > * { opacity: 1; transform: none; transition: opacity .45s var(--ease), transform .6s var(--ease); }
 html.motion-on .gx-scene.is-active .gx-copy > :nth-child(1) { transition-delay: .18s; }

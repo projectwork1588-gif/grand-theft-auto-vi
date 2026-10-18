@@ -55,7 +55,7 @@ export default async function (b) {
   }
   console.log("      first stops: " + stops.slice(0, 14).join(" > "));
   ok(stops.some((s) => s.startsWith("Explore the")), "the Explore button is a tab stop");
-  ok(stops.some((s) => /^(Pause|Resume) the showcase/.test(s)), "the quiet pause button in the index is a tab stop with a name");
+  ok(!stops.some((s) => /(pause|resume|play) the showcase/i.test(s)), "there is no play or pause control among the tab stops (the showcase just runs)");
   ok(stops.filter((s) => /Previous machine|Next machine/.test(s)).length === 2, "the two arrows are tab stops");
   ok(stops.filter((s) => /, (Sports|Off-road|Boats|Sedans|Muscle|Motorcycles)\|/.test(s)).length >= 7, "the seven numbers in the index are tab stops, each named with its category");
 

@@ -15,7 +15,7 @@
     var decode = function () { if (img.decode) { img.decode().then(once, once); } else { once(); } };
     if (img.complete && img.naturalWidth) { decode(); }
     else { img.addEventListener("load", decode, { once: true }); img.addEventListener("error", once, { once: true }); }
-    window.setTimeout(once, 1200);
+    window.setTimeout(once, 8000);   // a slow link: the showcase waits for the picture rather than show an empty frame
   }
 
   // a picture that cannot be fetched leaves its tinted frame, never a broken-image icon
@@ -112,22 +112,17 @@
     var DWELL = (dwellSeconds >= 2 && dwellSeconds <= 30 ? dwellSeconds : 3) * 1000;
     var saveData = !!(navigator.connection && navigator.connection.saveData);
     var motionOn = function () { return document.documentElement.classList.contains("motion-on"); };
-    var userPaused = true;      // settled when the page is ready (the site's own script decides whether motion is on): with motion off, or on request, it starts paused; Play still works
+    var userPaused = true;      // settled when the page is ready (the site's own script decides whether motion is on): with motion off (reduced motion, the site's switch, data saver) or ?autoplay=0 the showcase waits for a choice and does not cycle by itself
     var holding = { pointer: false, focus: false, touchUntil: 0 };
     var visible = true;
     var rafId = 0, last = 0;
-    var playBtn = stage.querySelector("[data-playpause]");
 
     var canRun = function () {
       return !userPaused && visible && !document.hidden && !holding.pointer && !holding.focus && performance.now() > holding.touchUntil && heading === current;
     };
     var paint = function () {
       stage.style.setProperty("--p", Math.min(1, elapsed / DWELL).toFixed(3));
-      stage.classList.toggle("is-paused", userPaused);
-      if (playBtn) {
-        playBtn.setAttribute("aria-pressed", userPaused ? "true" : "false");
-        playBtn.setAttribute("aria-label", userPaused ? "Resume the showcase" : "Pause the showcase");
-      }
+      stage.classList.toggle("is-paused", userPaused || document.hidden || !visible);   // the camera movement stops with the clock: nothing moves in a hidden tab or an opening that is out of the window
     };
     var frame = function (now) {
       rafId = 0;
@@ -135,7 +130,8 @@
       last = now;
       if (canRun()) {
         elapsed += dt;
-        if (elapsed >= 250 && order.length > 1) { warm(order[(order.indexOf(current) + 1) % order.length]); }   // fetch only the next picture, once this one is on show
+        if (elapsed >= 250 && order.length > 1) { warm(order[(order.indexOf(current) + 1) % order.length]); }   // fetch the next picture once this one is on show, and the one after it a little later (never all seven at once)
+        if (elapsed >= 1100 && order.length > 2) { warm(order[(order.indexOf(current) + 2) % order.length]); }
         if (elapsed >= DWELL) { elapsed = 0; step(1, true); }
         paint();
       }
@@ -144,17 +140,7 @@
     var kick = function () { if (!rafId && canRun()) { last = performance.now(); rafId = window.requestAnimationFrame(frame); } };
     window.__gxClock = function () { return { elapsed: elapsed, dwell: DWELL, userPaused: userPaused, running: !!rafId, current: current, holding: holding, visible: visible }; };
 
-    if (playBtn) { playBtn.hidden = false; }
     paint();
-    if (playBtn) {
-      playBtn.addEventListener("click", function () {
-        userPaused = !userPaused;
-        if (!userPaused) { elapsed = 0; }
-        paint();
-        kick();
-        if (live) { live.textContent = userPaused ? "The showcase is paused." : "The showcase is running."; }
-      });
-    }
 
     // the clock waits while a pointer is over, or focus is in, the words of the scene (its Explore must not move under a press); a touch there holds it for a few seconds. Choosing a number in the index never stops it: the chosen machine is shown, its hold starts again and the next follows.
     var interactive = ".gx-copy";
@@ -168,9 +154,9 @@
     stage.addEventListener("pointerdown", function (e) { if (e.pointerType !== "mouse" && e.target.closest && e.target.closest(interactive)) { holding.touchUntil = performance.now() + 5000; window.setTimeout(kick, 5100); } });
     stage.addEventListener("focusin", function (e) { if (e.target.closest && e.target.closest(interactive)) { holding.focus = true; } });
     stage.addEventListener("focusout", function (e) { var to = e.relatedTarget; holding.focus = !!(to && to.closest && to.closest(interactive) && stage.contains(to)); kick(); });
-    document.addEventListener("visibilitychange", kick);
+    document.addEventListener("visibilitychange", function () { paint(); kick(); });
     if ("IntersectionObserver" in window) {
-      new IntersectionObserver(function (entries) { visible = entries[entries.length - 1].intersectionRatio >= 0.35; kick(); }, { threshold: [0, 0.35, 0.6, 1] }).observe(stage);
+      new IntersectionObserver(function (entries) { visible = entries[entries.length - 1].intersectionRatio >= 0.35; paint(); kick(); }, { threshold: [0, 0.35, 0.6, 1] }).observe(stage);
     }
     document.addEventListener("tv:motion", function () {          // the site's own motion switch: off pauses it, on lets it run again
       if (!motionOn()) { userPaused = true; } else if (params.get("autoplay") !== "0") { userPaused = false; elapsed = 0; }

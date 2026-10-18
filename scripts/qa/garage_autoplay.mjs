@@ -1,4 +1,4 @@
-// The Garage opening's automatic showcase, checked in a real browser: 01 to 07 and round to 01, the hold on each scene, Pause and Play, a choice
+// The Garage opening's automatic showcase, checked in a real browser: 01 to 07 and round to 01, the hold on each scene, a choice
 // resetting the hold, the clock waiting for a pointer, for focus, for the opening to leave the window and for a hidden tab, motion switched off,
 // the page never scrolling by itself, and the pictures and the sea clip being fetched only when needed.
 //   TL_BASE=http://127.0.0.1:5059 node scripts/qa/cdp.mjs scripts/qa/garage_autoplay.mjs        (exit status 1 on any failure)
@@ -13,18 +13,20 @@ export default async function (b) {
   await b.colorScheme(false);
   await b.send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
   await b.send("Network.enable");
-  await b.send("Network.setCacheDisabled", { cacheDisabled: true });          // so a picture that is shown again is fetched again, and the requests mean what they say
+  await b.send("Network.setCacheDisabled", { cacheDisabled: false });         // the timing checks run with Rockstar's pictures already in the cache (a first fetch over a slow link is the network's time, not the showcase's); the fetch check at the end switches it off
   await b.send("Emulation.setFocusEmulationEnabled", { enabled: true });      // a headless page is not focused by default, and a focus event would never fire
   const requested = [];
   b.on((d) => { if (d.method === "Network.requestWillBeSent") { requested.push(d.params.request.url); } });
   const ev = (x) => b.eval(x);
   const shown = () => ev(`document.querySelector("[data-stage]").getAttribute("data-vehicle")`);
   const clock = () => ev(`JSON.stringify(window.__gxClock ? window.__gxClock() : null)`).then(JSON.parse);
-  const open = async (query, motion = "1") => {
+  // `preload`: every opening picture is asked for and waited for, so the timing checks measure the showcase and not the speed of Rockstar's server (a first fetch over a slow link can take seconds)
+  const open = async (query, motion = "1", preload = true) => {
     await b.open(BASE + "/about", 100);
     await ev(`localStorage.setItem("tv-motion", "${motion}"); true`);
     await b.open(BASE + PAGE + query, 800);
     for (let i = 0; i < 40 && !(await ev(`!!window.__gxClock`).catch(() => false)); i++) { await b.sleep(100); }
+    if (preload) { await ev(`new Promise((done) => { const imgs = [...document.querySelectorAll(".gx-art img")]; imgs.forEach((i) => { i.loading = "eager"; }); const t0 = Date.now(); const check = () => (imgs.every((i) => i.complete) || Date.now() - t0 > 40000 ? done(true) : setTimeout(check, 100)); check(); })`); }
   };
   // watch the shown machine for `seconds`, returning each change as [machine, seconds since the start]
   const watch = async (seconds, every = 100) => {
@@ -33,6 +35,9 @@ export default async function (b) {
     return changes;
   };
 
+  // warm the cache once: every opening picture is asked for and waited for
+  await open("?autoplay=0");
+  await ev(`new Promise((done) => { const imgs = [...document.querySelectorAll(".gx-art img")]; imgs.forEach((i) => { i.loading = "eager"; }); const t0 = Date.now(); const check = () => (imgs.every((i) => i.complete) || Date.now() - t0 > 30000 ? done(true) : setTimeout(check, 100)); check(); })`);
   // ---- 1. it starts on the Cheetah and goes 01 to 07 and round to 01, holding each scene
   await open(`?dwell=${DWELL}`);
   report((await shown()) === "grotti-cheetah", "it starts with the Cheetah (01)");
@@ -49,19 +54,12 @@ export default async function (b) {
   const barMoves = await ev(`getComputedStyle(document.querySelector("[data-stage]")).getPropertyValue("--p")`);
   report(parseFloat(barMoves) >= 0, "the progress value is published for the bar", barMoves);
 
-  // ---- 2. Pause and Play
+  // ---- 2. there is no play or pause control: the showcase simply runs (its camera stops with it when the tab is hidden or the opening is out of the window, see garage_camera.mjs)
   await open(`?dwell=${DWELL}`);
-  const label1 = await ev(`document.querySelector("[data-playpause]").getAttribute("aria-label") + "|" + document.querySelector("[data-playpause]").getAttribute("aria-pressed")`);
-  report(label1 === "Pause the showcase|false", "while it plays the quiet button beside the page title says Pause", label1);
-  await ev(`document.querySelector("[data-playpause]").click(); true`);
-  const label2 = await ev(`document.querySelector("[data-playpause]").getAttribute("aria-label") + "|" + document.querySelector("[data-playpause]").getAttribute("aria-pressed")`);
-  report(label2 === "Resume the showcase|true", "after Pause the button offers to resume", label2);
-  const heldAt = await shown();
-  const whilePaused = await watch(DWELL * 2 + 1);
-  report(whilePaused.length === 0 && (await shown()) === heldAt, "paused, it does not advance in two and a half holds", String(whilePaused.length) + " changes");
-  await ev(`document.querySelector("[data-playpause]").click(); true`);
-  const afterPlay = await watch(DWELL + 2.5);
-  report(afterPlay.length >= 1, "pressing Play sets it going again", afterPlay.map((c) => c[0]).join(","));
+  const noCtl = await ev(`document.querySelectorAll("[data-playpause], .gx-pause, .gx-play").length + [...document.querySelectorAll("[data-stage] button")].filter((x) => /pause|play|resume/i.test(x.getAttribute("aria-label") || x.textContent)).length`);
+  report(noCtl === 0, "there is no visible play or pause control", String(noCtl));
+  const running = await clock();
+  report(running.userPaused === false && running.running === true, "it starts running by itself", JSON.stringify({ paused: running.userPaused, running: running.running }));
 
   // ---- 3. a choice responds at once, sets the hold back to nothing, and never stops the showcase: pressed with a real mouse (which then stays on the index) or the keyboard
   const press = async (slug) => {
@@ -145,20 +143,22 @@ export default async function (b) {
 
   // ---- 6. motion switched off (the site's own switch), and the page's own off switch
   await open(`?dwell=${DWELL}`, "0");
-  const off = await ev(`document.querySelector("[data-playpause]").getAttribute("aria-pressed") + "|" + document.documentElement.classList.contains("motion-on")`);
-  report(off === "true|false", "with motion off it starts paused and offers Play", off);
+  const off = await ev(`document.documentElement.classList.contains("motion-on") + "|" + (window.__gxClock().userPaused)`);
+  report(off === "false|true", "with motion off it waits for a choice and does not cycle by itself", off);
   const offMoves = await watch(DWELL * 2 + 1);
   report(offMoves.length === 0, "with motion off it does not advance by itself", String(offMoves.length) + " changes");
-  await ev(`document.querySelector("[data-playpause]").click(); true`);
-  const playedOff = await watch(DWELL + 2.5);
-  report(playedOff.length >= 1, "a visitor who presses Play gets it, with the plain fade", playedOff.map((c) => c[0]).join(","));
+  await press("grotti-cheetah");
+  await ev(`document.querySelector('[data-pick="vapid-stanier"]').click(); true`);
+  await b.sleep(700);
+  report((await shown()) === "vapid-stanier", "with motion off a choice still shows its scene at once, with the plain fade");
   await open(`?autoplay=0&dwell=${DWELL}`);
   const zero = await watch(DWELL * 2 + 1);
   report(zero.length === 0 && (await clock()).userPaused === true, "?autoplay=0 starts it paused");
 
   // ---- 7. what is fetched: one big picture at first, the next only when it is nearly time, and the clip only when the finale is near
+  await b.send("Network.setCacheDisabled", { cacheDisabled: true });
   requested.length = 0;
-  await open(`?dwell=${DWELL * 2}`);
+  await open(`?dwell=${DWELL * 2}`, "1", false);
   await b.sleep(900);
   const bigStage = new Set(requested.filter((u) => /rockstargames\.com/.test(u) && /imwidth=(1920|2560|3840)/.test(u)));
   report(bigStage.size <= 2, "at first only the first scene's large picture is fetched (not all seven)", String(bigStage.size) + " large pictures requested");
