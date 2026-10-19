@@ -674,27 +674,64 @@ def vehicle_detail(slug):
 
 
 # ---------------------------------------------------------------- regions
+def _official(rows):
+    """Only what is Rockstar's. The database also holds places and stories invented by Team Valkyrie (content_status 'demo'); the Regions pages never present
+    them as part of Leonida (they stay in the database, the API and the Locations and Stories pages, where they are labelled as originals)."""
+    return [r for r in rows if r.get("content_status") == "official"]
+
+
 def region_index(args):
     result = regions.list_regions(args)
     result["data"] = _in_rockstar_order(result["data"])
     _attach_covers("region", result["data"], regions_repo.ids_by_slug, media_slots.REGION_STAGE)
+    ids = regions_repo.ids_by_slug([r["slug"] for r in result["data"]])
+    pictures = media.counts("region", ids.values())
+    for number, r in enumerate(result["data"], 1):
+        r["number"] = number
+        r["pictures"] = pictures.get(ids.get(r["slug"]), 0)
+        r["people"] = [c["full_name"] for c in regions_repo.characters_based_in(ids[r["slug"]])]
+        r["location_count"] = 0   # invented places are not Rockstar's, so the index never counts them
+    result["total"] = len(result["data"])
     result["hero_cover"] = _page_cover("regions")
     return result
 
 
 def region_detail(slug):
     region, region_id = regions.get_region_with_id(slug)
-    region["missions"] = missions_repo.in_region(region_id)
-    stage_slug = media_slots.REGION_STAGE.get(slug)
-    stage = media.by_slugs([stage_slug]).get(stage_slug) if stage_slug else None
-    gallery = media.for_entity("region", region_id, limit=16)
-    if stage:
-        gallery = [stage] + [m for m in gallery if m["slug"] != stage["slug"]]
-    region["gallery"] = gallery
-    region["cover"] = gallery[0] if gallery else None
-    others = _in_rockstar_order(regions_repo.list_all())
-    region["other_regions"] = [r for r in others if r["slug"] != slug]
-    _attach_covers("region", region["other_regions"], regions_repo.ids_by_slug, media_slots.REGION_STAGE)
+    region["locations"] = _official(region["locations"])
+    region["missions"] = _official(missions_repo.in_region(region_id))
+    art = media_slots.REGION_ART.get(slug, {})
+    frames = media.for_entity("region", region_id, limit=24)
+    by_slug = {m["slug"]: m for m in frames}
+    stage = by_slug.get(art.get("hero")) or by_slug.get(media_slots.REGION_STAGE.get(slug)) or (frames[0] if frames else None)
+    postcard = next((m for m in frames if m["media_type"] == "artwork" and m is not stage), None)
+    region["hero"], region["postcard"] = stage, postcard
+    region["plate"] = art.get("plate", "bl")
+    # the pictures after the opening and the postcard, grouped as the art direction says; any picture it does not name follows, so nothing Rockstar published for the region is lost
+    used = {m["slug"] for m in (stage, postcard) if m}
+    groups = []
+    for names in art.get("story", ()):
+        group = [by_slug[n] for n in names if n in by_slug and n not in used]
+        used.update(m["slug"] for m in group)
+        if group:
+            groups.append(group)
+    rest = [m for m in frames if m["slug"] not in used]
+    if rest:
+        groups.append(rest[:3])
+        groups.extend([m] for m in rest[3:])
+    region["groups"] = groups
+    region["picture_count"] = len(frames)
+    region["shots"] = sum(1 for m in frames if m["media_type"] == "screenshot")
+    ordered = _in_rockstar_order(regions_repo.list_all())
+    _attach_covers("region", ordered, regions_repo.ids_by_slug, media_slots.REGION_STAGE)
+    me = next((i for i, r in enumerate(ordered) if r["slug"] == slug), 0)
+    for i, r in enumerate(ordered, 1):
+        r["number"] = i
+    region["number"], region["total"] = me + 1, len(ordered)
+    region["all_regions"] = ordered
+    region["previous"] = ordered[(me - 1) % len(ordered)] if len(ordered) > 1 else None
+    region["next"] = ordered[(me + 1) % len(ordered)] if len(ordered) > 1 else None
+    region["other_regions"] = [r for r in ordered if r["slug"] != slug]
     return region
 
 

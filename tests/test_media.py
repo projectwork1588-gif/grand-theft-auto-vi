@@ -79,6 +79,10 @@ def test_hostile_media_urls_are_never_rendered(client, monkeypatch):
         assert "evil.example/pic.jpg" not in page and "javascript:alert" not in page, path
         if path.startswith("/characters"):
             continue  # the cast pages draw no picture at all rather than a placeholder
+        if path.startswith("/regions"):
+            # the Regions pages draw no picture at all rather than a broken one: the frame keeps its tint and the words stay readable
+            assert "<img" not in page.split("<main")[1].split("</main>")[0] and "<h1" in page, path
+            continue
         assert "media__fallback" in page, path  # original fallback artwork is used instead
 
 

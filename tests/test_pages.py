@@ -366,19 +366,18 @@ def test_concept_vehicles_have_no_public_page(client):
 # ------------------------------------------------------------------ regions and locations
 def test_regions_page_lists_all_six_official_regions(client):
     page = html(client, "/regions")
-    for region in ("Vice City", "Leonida Keys", "Grassrivers", "Port Gellhorn", "Ambrosia", "Mount Kalaga"):
-        assert f"<h2>{region}</h2>" in page, region
-    assert page.count('class="region-feature') >= 6 and "3 places to explore" in page and "1 place to explore" in page
+    features = re.findall(r'<h2 class="rg-title rg-title--feature" id="f-[a-z-]+">([^<]+)</h2>', page)
+    assert features == ["Vice City", "Leonida Keys", "Grassrivers", "Port Gellhorn", "Ambrosia", "Mount Kalaga"]
+    assert page.count('class="rg-feature') >= 6 and "place to explore" not in page and "places to explore" not in page    # the invented places are no part of Leonida here
     assert "in the database" not in page
 
 
 def test_region_detail_page(client):
     page = html(client, "/regions/vice-city")
-    assert "<h1>Vice City</h1>" in page and "https://www.rockstargames.com/VI/only-in-leonida" in page
-    assert 'href="/locations/sunset-pier-boardwalk"' in page and 'href="/characters/boobie-ike"' in page
-    assert 'href="/characters/delia-marsh"' not in page                                # original characters are not placed here
-    assert 'href="/missions/ledger-of-favours"' in page and "Elsewhere in Leonida" in page
-    assert 'href="/regions/ambrosia"' in page and "Gallery" in page
+    assert re.search(r'<h1 class="rg-title">Vice City</h1>', page) and "https://www.rockstargames.com/VI/only-in-leonida" in page
+    assert 'href="/characters/boobie-ike"' in page and 'href="/characters/delia-marsh"' not in page      # original characters are not placed here
+    assert 'href="/locations/' not in page and 'href="/missions/' not in page                          # invented places and stories are not presented as Vice City
+    assert 'href="/regions/leonida-keys"' in page and 'rel="prev"' in page and "Rockstar's own pictures" in page
 
 
 def test_locations_listing_filters(client):
@@ -483,7 +482,7 @@ def test_malformed_search_text_is_safe(client):
 def test_regions_follow_rockstars_order_on_pages_but_the_api_stays_alphabetical(client):
     expected = ["Vice City", "Leonida Keys", "Grassrivers", "Port Gellhorn", "Ambrosia", "Mount Kalaga"]
     page = html(client, "/regions")
-    assert re.findall(r"<h2>([^<]+)</h2>", page.split('aria-label="Regions of Leonida"')[1].split("</section>")[0]) == expected
+    assert re.findall(r'<h2 class="rg-title rg-title--feature" id="f-[a-z-]+">([^<]+)</h2>', page) == expected
     home = html(client, "/")
     assert re.findall(r'<h3 class="regions__name">([^<]+)</h3>', home) == expected
     api_names = [r["name"] for r in client.get("/api/v1/regions").get_json()["data"]]
@@ -866,7 +865,7 @@ def test_images_ask_for_what_the_layout_needs(client):
 
 
 def test_detail_galleries_are_full_width_and_leave_no_empty_cells(client):
-    for path, minimum in (("/characters/jason-duval", 2), ("/regions/vice-city", 2)):
+    for path, minimum in (("/characters/jason-duval", 2),):
         page = html(client, path)
         assert 'class="container gallery-page"' in page or 'class="p-gallery"' in page, path
         gallery = page.split('class="bento bento--')[1].split("</ul>")[0]

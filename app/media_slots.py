@@ -344,3 +344,24 @@ GARAGE_CAPTIONS = {
     "vehicle-vapid-stanier-03": "The Stanier script on the door, beside a chrome mirror and a wheel",
     "vehicle-vapid-stanier-04": "The tail fin and its round red brake light under a night sky",
 }
+
+
+# ---------------------------------------------------------------- Leonida / Regions: each region's own page
+# Art direction for /regions/<slug>. Every picture is one of Rockstar's own screenshots or postcards already linked to the region in the database; this only
+# says which one opens the page, on which side the words sit ("bl" lower left, "tl" upper left, "br" lower right) and how the pictures after the postcard are
+# grouped (a group of one is a full-width picture, two a pair, three a strip). A slug that is not in the database is skipped, and a region with fewer pictures
+# simply has a shorter page; nothing here states a fact about a region.
+REGION_ART = {
+    "vice-city": {"hero": "shot-vice-city-01", "plate": "tl",
+                  "story": (("shot-vice-city-10",), ("shot-vice-city-08", "shot-vice-city-03"), ("shot-vice-city-11", "shot-vice-city-09", "shot-vice-city-02"), ("shot-vice-city-04",))},
+    "leonida-keys": {"hero": "shot-leonida-keys-01", "plate": "bl",
+                     "story": (("shot-leonida-keys-05",), ("shot-leonida-keys-02", "shot-leonida-keys-03"), ("shot-leonida-keys-06",))},
+    "grassrivers": {"hero": "shot-grassrivers-05", "plate": "bl",
+                    "story": (("shot-grassrivers-04",), ("shot-grassrivers-02", "shot-grassrivers-01"), ("shot-grassrivers-03",))},
+    "port-gellhorn": {"hero": "shot-port-gellhorn-06", "plate": "bl",
+                      "story": (("shot-port-gellhorn-01", "shot-port-gellhorn-02"),)},
+    "ambrosia": {"hero": "shot-ambrosia-04", "plate": "bl",
+                 "story": (("shot-ambrosia-01",), ("shot-ambrosia-02",))},
+    "mount-kalaga": {"hero": "shot-mount-kalaga-04", "plate": "bl",
+                     "story": (("shot-mount-kalaga-02",), ("shot-mount-kalaga-01", "shot-mount-kalaga-03"), ("shot-mount-kalaga-05", "shot-mount-kalaga-06"))},
+}

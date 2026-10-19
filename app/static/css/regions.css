@@ -1,0 +1,260 @@
+/* =====================================================================
+   Leonida / Regions: the index (/regions) and the six region pages (/regions/<slug>).
+   One system, six identities: every region has its own tint and its own opening (which picture, where the words sit, where the camera goes), but the same
+   grammar: an opening of the whole window, the description, Rockstar's own pictures told in groups, and on to the next region. Every picture is one of Rockstar's
+   own screenshots or postcards; nothing here states a fact. Tokens only. Motion is decoration: it sits under html.motion-on and every composition is complete without it.
+   ===================================================================== */
+
+.rg { --edge: max(var(--gutter), calc((100vw - var(--max-wide)) / 2)); --tint: var(--label); background: var(--ground); }
+[data-region="vice-city"] { --tint: #ff77ab; }
+[data-region="leonida-keys"] { --tint: #52d8ea; }
+[data-region="grassrivers"] { --tint: #86dc86; }
+[data-region="port-gellhorn"] { --tint: #ff9f63; }
+[data-region="ambrosia"] { --tint: #f4bb4f; }
+[data-region="mount-kalaga"] { --tint: #93d5a6; }
+.rg .container--wide { width: auto; margin-inline: var(--edge); }
+.rg h1, .rg h2, .rg p, .rg ol, .rg ul, .rg dl, .rg figure { margin: 0; }
+.rg ol, .rg ul { padding: 0; list-style: none; }
+
+.rshot { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; }
+.rg-kicker { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font: 700 var(--t-micro)/1.2 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--tint); }
+.rg-kicker span:first-child { color: var(--text); }
+.rg-kicker span + span::before { content: ""; display: inline-block; width: 18px; height: 1px; margin-right: 14px; vertical-align: middle; background: currentColor; opacity: .55; }
+.rg-title { font: 700 var(--t-display)/.9 var(--font-display); letter-spacing: var(--track-tight); text-transform: uppercase; text-wrap: balance; color: var(--text); }
+.rg-title, .rg-hero__line, .rg-kicker { text-shadow: 0 1px 3px rgba(7, 6, 20, .5), 0 2px 28px rgba(7, 6, 20, .75); }
+.rg-hero__line { max-width: 24rem; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, .28); color: var(--text-2); font: 500 var(--t-lead)/1.4 var(--font-text); }
+.rg-h { font: 700 var(--t-h3)/1 var(--font-display); letter-spacing: var(--track-tight); text-transform: uppercase; color: var(--text); }
+.rg-go, .rg-back { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding-bottom: 2px; border-bottom: 1px solid var(--line-strong); font: 700 var(--t-small)/1 var(--font-text); letter-spacing: var(--track-ui); color: var(--text); text-decoration: none; transition: border-color var(--dur-1) var(--ease), color var(--dur-1) var(--ease); }
+.rg-go svg, .rg-back svg, .rg-cue svg { width: 18px; height: 18px; transition: transform var(--dur-1) var(--ease); }
+.rg-go:hover, .rg-go:focus-visible, .rg-back:hover, .rg-back:focus-visible { border-color: var(--tint); color: var(--text); }
+.rg-go:hover svg, .rg-go:focus-visible svg, .rg-back:hover svg, .rg-back:focus-visible svg { transform: translateX(5px); }
+.rg a:focus-visible { outline: 2px solid var(--text); outline-offset: 4px; }
+
+/* =====================================================================
+   A region's opening: the whole window
+   ===================================================================== */
+.rg-hero { position: relative; isolation: isolate; overflow: hidden; background: var(--ground); height: clamp(600px, 100svh, 980px); }
+.rg-hero__art { position: absolute; inset: 0; overflow: hidden; background: var(--card); }
+.rg-hero__art::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(10, 8, 28, .62) 0, rgba(10, 8, 28, 0) 24%); }
+.rg-hero__grade { position: absolute; inset: 0; pointer-events: none; }
+.rg-hero--bl .rg-hero__grade { background: radial-gradient(70% 70% at 6% 96%, color-mix(in srgb, var(--tint) 20%, transparent), transparent 70%),
+  linear-gradient(0deg, rgba(10, 8, 28, .82) 0%, rgba(10, 8, 28, .36) 30%, rgba(10, 8, 28, 0) 56%), linear-gradient(90deg, rgba(10, 8, 28, .6) 0%, rgba(10, 8, 28, 0) 46%); }
+.rg-hero--tl .rg-hero__grade { background: radial-gradient(60% 60% at 8% 16%, color-mix(in srgb, var(--tint) 16%, transparent), transparent 70%),
+  linear-gradient(180deg, rgba(10, 8, 28, .74) 0%, rgba(10, 8, 28, .34) 32%, rgba(10, 8, 28, 0) 56%), linear-gradient(90deg, rgba(10, 8, 28, .5) 0%, rgba(10, 8, 28, 0) 42%), linear-gradient(0deg, rgba(10, 8, 28, .5) 0%, rgba(10, 8, 28, 0) 24%); }
+.rg-crumb { position: absolute; z-index: 4; left: var(--edge); top: calc(var(--header-h) + 16px); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--text-2); text-shadow: 0 1px 14px rgba(7, 6, 20, .85); }
+.rg-crumb a { display: inline-flex; align-items: center; min-height: 28px; color: var(--text-2); text-decoration: none; }
+.rg-crumb a:hover { color: var(--text); }
+.rg-hero__copy { position: absolute; z-index: 3; left: var(--edge); display: grid; gap: 14px; justify-items: start; max-width: min(34rem, 88vw); }
+.rg-hero__copy > * { margin: 0; }
+.rg-hero--bl .rg-hero__copy { bottom: clamp(48px, 10vh, 110px); }
+.rg-hero--tl .rg-hero__copy { top: calc(var(--header-h) + 64px); }
+.rg-cue { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font: 700 var(--t-small)/1 var(--font-text); letter-spacing: var(--track-ui); color: var(--text); text-decoration: none; text-shadow: 0 1px 12px rgba(7, 6, 20, .9); }
+.rg-cue:hover { color: var(--tint); }
+.rg-cue:hover svg { transform: translateY(4px); }
+@media (min-width: 900px) and (max-width: 1199px) { .rg-title { font-size: var(--t-h1); } }
+
+/* the camera: a slow push-in with a small drift on the picture only (a transform: nothing is laid out again); the words stay still. It starts from the picture as it rests and
+   the scale always outgrows the drift, so no edge is bared. Each region has its own centre (the side away from the words), distance and drift. */
+html.motion-on .rg-hero__art .rshot { transform-origin: var(--fx, 60%) var(--fy, 50%); will-change: transform; animation: rg-push 14s cubic-bezier(.3, .12, .4, 1) both; }
+@keyframes rg-push { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(var(--dx, 0%), var(--dy, 0%), 0) scale(var(--zf, 1.05)); } }
+[data-region="vice-city"] .rg-hero__art .rshot { --fx: 62%; --fy: 70%; --zf: 1.07; --dx: -1%; --dy: -.4%; object-position: 50% 62%; }
+[data-region="leonida-keys"] .rg-hero__art .rshot { --fx: 66%; --fy: 38%; --zf: 1.06; --dx: -1.2%; --dy: .4%; }
+[data-region="grassrivers"] .rg-hero__art .rshot { --fx: 64%; --fy: 42%; --zf: 1.06; --dx: -1%; --dy: .3%; }
+[data-region="port-gellhorn"] .rg-hero__art .rshot { --fx: 66%; --fy: 50%; --zf: 1.06; --dx: -1%; --dy: 0%; }
+[data-region="ambrosia"] .rg-hero__art .rshot { --fx: 64%; --fy: 40%; --zf: 1.06; --dx: -.8%; --dy: .3%; }
+[data-region="mount-kalaga"] .rg-hero__art .rshot { --fx: 66%; --fy: 50%; --zf: 1.06; --dx: -1%; --dy: 0%; }
+html.motion-on .rg-hero__copy > * { animation: rg-rise .8s var(--ease) backwards; }
+html.motion-on .rg-hero__copy > :nth-child(1) { animation-delay: .1s; }
+html.motion-on .rg-hero__copy > :nth-child(2) { animation-delay: .2s; }
+html.motion-on .rg-hero__copy > :nth-child(3) { animation-delay: .3s; }
+html.motion-on .rg-hero__copy > :nth-child(4) { animation-delay: .4s; }
+@keyframes rg-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+
+/* =====================================================================
+   About: the database's description set large, and the few details that are recorded
+   ===================================================================== */
+.rg-body { position: relative; }
+.rg-about { position: relative; overflow: hidden; padding-block: clamp(56px, 8vw, 112px) clamp(40px, 6vw, 88px); scroll-margin-top: calc(var(--header-h) - 20px); }
+.rg-about::before { content: ""; position: absolute; left: -10%; top: -30%; width: 70%; height: 130%; pointer-events: none; background: radial-gradient(closest-side, color-mix(in srgb, var(--tint) 13%, transparent), transparent); }
+.rg-about__in { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); gap: clamp(32px, 6vw, 96px); align-items: end; }
+.rg-about__text { display: grid; gap: 18px; justify-items: start; }
+.rg-about__text .eyebrow { color: var(--tint); }
+.rg-lede { max-width: 34ch; font: 500 var(--t-h3)/1.28 var(--font-text); letter-spacing: var(--track-tight); color: var(--text); text-wrap: pretty; }
+.rg-prov { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.rg-prov a, .rg-facts a { color: var(--text); text-decoration-color: var(--line-strong); text-underline-offset: 4px; }
+.rg-prov a:hover, .rg-facts a:hover { color: var(--tint); }
+.rg-note { max-width: 44ch; font: 500 var(--t-small)/1.5 var(--font-text); color: var(--text-3); }
+.rg-facts { display: grid; border-top: 1px solid var(--line); }
+.rg-facts > div { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.rg-facts dt { font: 700 var(--t-micro)/1.2 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--text-3); flex: none; }
+.rg-facts dd { margin: 0; font: 600 var(--t-small)/1.4 var(--font-text); color: var(--text); text-align: right; }
+
+.rg-people { padding-block: 0 clamp(40px, 6vw, 80px); }
+.rg-people .rg-h { margin-bottom: 18px; }
+.rg-people__list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 0 clamp(24px, 4vw, 64px); border-top: 1px solid var(--line); }
+.rg-people__list a { display: grid; grid-template-columns: 1fr auto; gap: 2px 16px; align-items: center; padding: 18px 0; border-bottom: 1px solid var(--line); color: var(--text); text-decoration: none; }
+.rg-people__name { font: 700 var(--t-lead)/1.2 var(--font-text); }
+.rg-people__role, .rg-people__note { grid-column: 1; font: 500 var(--t-small)/1.4 var(--font-text); color: var(--text-3); }
+.rg-people__go { grid-row: 1 / span 3; grid-column: 2; }
+.rg-people__go svg { width: 20px; height: 20px; transition: transform var(--dur-1) var(--ease); }
+.rg-people__list a:hover .rg-people__name, .rg-people__list a:focus-visible .rg-people__name { color: var(--tint); }
+.rg-people__list a:hover svg, .rg-people__list a:focus-visible svg { transform: translateX(5px); }
+
+/* =====================================================================
+   Rockstar's own pictures
+   ===================================================================== */
+.rg-pics { display: grid; gap: clamp(14px, 2vw, 28px); padding-bottom: clamp(48px, 7vw, 96px); }
+.rg-pics__head .eyebrow { color: var(--tint); }
+.rg-pics a { display: block; color: inherit; text-decoration: none; }
+.rg-pics a:focus-visible { outline-offset: -6px; }
+.rg-pics [class$="__art"] { position: relative; display: block; overflow: hidden; background: var(--card); }
+.rg-pics [class$="__art"] .rshot { transition: transform 1.2s var(--ease); }
+.rg-pics a:hover .rshot, .rg-pics a:focus-visible .rshot { transform: scale(1.025); }
+/* the postcard: Rockstar's artwork for the region, framed, with its note beside it */
+.rg .rg-postcard { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 3fr); gap: clamp(20px, 4vw, 64px); align-items: end; margin-inline: var(--edge); }
+.rg-postcard__art { aspect-ratio: 16 / 9; border-radius: var(--r-card); }
+.rg-postcard__cap { display: grid; gap: 10px; align-content: end; font: 500 var(--t-small)/1.5 var(--font-text); color: var(--text-2); }
+.rg-postcard__cap b { font: 700 var(--t-micro)/1.2 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--tint); }
+/* a picture across the whole window, or inset */
+.rg-one--full .rg-one__art { aspect-ratio: 21 / 9; max-height: 86svh; }
+.rg .rg-one--inset { margin-inline: var(--edge); }
+.rg-one--inset .rg-one__art { aspect-ratio: 16 / 9; border-radius: var(--r-card); }
+/* two together, the second a little lower */
+.rg-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(12px, 1.6vw, 24px); align-items: start; }
+.rg-pair li:nth-child(2) { margin-top: clamp(0px, 6vw, 88px); }
+.rg-pair__art { aspect-ratio: 4 / 3; border-radius: var(--r-card); }
+/* three: one wide, two beside it */
+.rg-strip { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr); gap: clamp(12px, 1.6vw, 24px); align-items: stretch; }
+.rg-strip__art { aspect-ratio: 8 / 9; border-radius: var(--r-card); }
+.rg-strip li:first-child .rg-strip__art { aspect-ratio: 4 / 3; }
+.rg-credit { max-width: 62ch; font: 500 var(--t-micro)/1.6 var(--font-text); color: var(--text-3); }
+
+/* =====================================================================
+   On to the next region
+   ===================================================================== */
+.rg-next { display: grid; }
+.rg-next__stage { position: relative; isolation: isolate; overflow: hidden; display: grid; align-content: end; min-height: clamp(380px, 62svh, 640px); color: var(--text); text-decoration: none; }
+.rg-next__art { position: absolute; inset: 0; z-index: -2; background: var(--card); }
+.rg-next__art .rshot { transition: transform 1.4s var(--ease); }
+.rg-next__stage:hover .rshot, .rg-next__stage:focus-visible .rshot { transform: scale(1.03); }
+.rg-next__shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(0deg, rgba(10, 8, 28, .86) 0%, rgba(10, 8, 28, .3) 46%, rgba(10, 8, 28, .1) 100%), linear-gradient(90deg, rgba(10, 8, 28, .55) 0%, rgba(10, 8, 28, 0) 56%); }
+.rg-next__words { display: grid; gap: 12px; justify-items: start; padding: 0 var(--edge) clamp(36px, 6vw, 72px); }
+.rg-next__kicker { display: inline-flex; gap: 14px; font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--text-2); }
+.rg-next__name { font: 700 var(--t-h1)/.92 var(--font-display); letter-spacing: var(--track-tight); text-transform: uppercase; text-shadow: 0 2px 30px rgba(7, 6, 20, .6); }
+.rg-next__go { display: inline-flex; align-items: center; gap: 10px; font: 700 var(--t-small)/1 var(--font-text); letter-spacing: var(--track-ui); }
+.rg-next__go svg { width: 18px; height: 18px; transition: transform var(--dur-1) var(--ease); }
+.rg-next__stage:hover .rg-next__go svg, .rg-next__stage:focus-visible .rg-next__go svg { transform: translateX(6px); }
+.rg-next__stage:focus-visible { outline: 2px solid var(--text); outline-offset: -6px; }
+.rg-next__bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 32px; padding-block: 28px 40px; }
+.rg-prev { display: inline-flex; align-items: center; gap: 12px; min-height: 44px; color: var(--text); text-decoration: none; font: 700 var(--t-small)/1.2 var(--font-text); }
+.rg-prev small { display: block; font: 700 var(--t-micro)/1.2 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--text-3); }
+.rg-prev:hover { color: var(--tint); }
+.rg-all { display: flex; flex-wrap: wrap; gap: 4px 22px; }
+.rg-all a { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; font: 600 var(--t-small)/1 var(--font-text); color: var(--text-3); text-decoration: none; }
+.rg-all a b { font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); }
+.rg-all a:hover, .rg-all a[aria-current] { color: var(--text); }
+.rg-all a[aria-current] { box-shadow: 0 2px 0 var(--tint); }
+
+/* =====================================================================
+   The index: an opening with the six regions to choose from, then each region in its own picture
+   ===================================================================== */
+.rg-intro { position: relative; isolation: isolate; overflow: hidden; display: grid; align-content: end; gap: clamp(28px, 5vh, 56px); min-height: clamp(640px, 100svh, 1000px); padding: calc(var(--header-h) + 40px) var(--edge) clamp(28px, 5vh, 48px); background: var(--ground); }
+.rg-intro__art { position: absolute; inset: 0; z-index: -2; background: var(--card); }
+.rg-intro__art .rshot { object-position: 50% 30%; }
+.rg-intro__grade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(10, 8, 28, .6) 0%, rgba(10, 8, 28, 0) 52%), linear-gradient(0deg, rgba(10, 8, 28, .92) 0%, rgba(10, 8, 28, .52) 36%, rgba(10, 8, 28, .12) 66%, rgba(10, 8, 28, .5) 100%); }
+.rg-intro__copy { display: grid; gap: 16px; justify-items: start; max-width: 44rem; }
+.rg-intro__copy > * { margin: 0; }
+html.motion-on .rg-intro__copy > * { animation: rg-rise .8s var(--ease) backwards; }
+html.motion-on .rg-intro__copy > :nth-child(2) { animation-delay: .12s; }
+html.motion-on .rg-intro__copy > :nth-child(3) { animation-delay: .24s; }
+.rg-index ol { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: clamp(8px, 1.2vw, 16px); }
+.rg-index a { position: relative; display: grid; align-content: end; gap: 2px; min-height: clamp(96px, 14vh, 150px); padding: 12px 14px; overflow: hidden; isolation: isolate; border-radius: var(--r-tile); color: var(--text); text-decoration: none; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); transition: box-shadow var(--dur-1) var(--ease), transform var(--dur-1) var(--ease); }
+.rg-index__art { position: absolute; inset: 0; z-index: -2; }
+.rg-index a::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(0deg, rgba(10, 8, 28, .88) 0%, rgba(10, 8, 28, .2) 70%); }
+.rg-index__no { font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); color: var(--text-2); }
+.rg-index__name { font: 700 var(--t-small)/1.15 var(--font-text); letter-spacing: var(--track-ui); }
+.rg-index a:hover, .rg-index a:focus-visible { box-shadow: inset 0 0 0 2px var(--text); transform: translateY(-3px); }
+[data-jump="vice-city"], [data-feature="vice-city"] { --tint: #ff77ab; }
+[data-jump="leonida-keys"], [data-feature="leonida-keys"] { --tint: #52d8ea; }
+[data-jump="grassrivers"], [data-feature="grassrivers"] { --tint: #86dc86; }
+[data-jump="port-gellhorn"], [data-feature="port-gellhorn"] { --tint: #ff9f63; }
+[data-jump="ambrosia"], [data-feature="ambrosia"] { --tint: #f4bb4f; }
+[data-jump="mount-kalaga"], [data-feature="mount-kalaga"] { --tint: #93d5a6; }
+
+/* the compact index that follows the reader down the page */
+.rg-jump { position: fixed; z-index: 35; left: 0; right: 0; top: var(--header-h); padding: 8px var(--edge); background: color-mix(in srgb, var(--ground) 86%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid var(--line);
+  transform: translateY(-140%); opacity: 0; pointer-events: none; visibility: hidden; transition: transform var(--dur-1) var(--ease), opacity var(--dur-1) var(--ease), visibility 0s linear var(--dur-1); }
+.rg-jump.is-on { transform: none; opacity: 1; pointer-events: auto; visibility: visible; transition-delay: 0s; }
+.rg-jump ol { display: flex; gap: 4px clamp(10px, 2vw, 28px); overflow-x: auto; scrollbar-width: none; }
+.rg-jump a { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; white-space: nowrap; font: 600 var(--t-small)/1 var(--font-text); color: var(--text-3); text-decoration: none; box-shadow: 0 2px 0 transparent; transition: color var(--dur-1) var(--ease), box-shadow var(--dur-1) var(--ease); }
+.rg-jump a b { font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); }
+.rg-jump a:hover, .rg-jump a[aria-current] { color: var(--text); }
+.rg-jump a[aria-current] { box-shadow: 0 2px 0 var(--tint); }
+
+.rg-feature { position: relative; isolation: isolate; overflow: hidden; display: flex; align-items: center; min-height: min(86svh, 780px); scroll-margin-top: calc(var(--header-h) + 44px); }
+.rg-feature__art { position: absolute; inset: 0; z-index: -2; background: var(--card); }
+.rg-feature__shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(13, 11, 32, .88) 0%, rgba(13, 11, 32, .5) 36%, rgba(13, 11, 32, 0) 64%), linear-gradient(0deg, rgba(13, 11, 32, .5) 0%, rgba(13, 11, 32, 0) 30%); }
+.rg-feature--flip .rg-feature__shade { background: linear-gradient(270deg, rgba(13, 11, 32, .88) 0%, rgba(13, 11, 32, .5) 36%, rgba(13, 11, 32, 0) 64%), linear-gradient(0deg, rgba(13, 11, 32, .5) 0%, rgba(13, 11, 32, 0) 30%); }
+.rg .rg-feature__inner { display: flex; flex: 1 1 0; min-width: 0; }
+.rg-feature--flip .rg-feature__inner { justify-content: flex-end; text-align: right; }
+.rg-feature__text { display: grid; gap: 16px; justify-items: start; max-width: 30rem; padding-block: 64px; }
+.rg-feature--flip .rg-feature__text { justify-items: end; }
+.rg-title--feature { font-size: var(--t-h1); line-height: .92; }
+.rg-feature__sum { font: 500 var(--t-lead)/1.5 var(--font-text); color: #f3ecf2; text-shadow: 0 1px 18px rgba(7, 6, 20, .8); }
+.rg-feature__meta { display: grid; gap: 4px; font: 600 var(--t-small)/1.4 var(--font-text); color: var(--text-2); text-shadow: 0 1px 12px rgba(7, 6, 20, .85); }
+.rg-feature__meta:empty { display: none; }
+[data-feature="vice-city"] .rshot { object-position: 50% 62%; }
+.rg-title--wide { font-size: var(--t-display); }
+
+.rg-source { display: grid; gap: 14px; max-width: 70ch; padding-block: clamp(48px, 7vw, 96px); }
+.rg-source p { font: 500 var(--t-body)/1.6 var(--font-text); color: var(--text-2); }
+
+/* a visitor who asks for reduced motion has no motion class (the site's own policy), so none of the motion above runs for them. One more case: site.css switches every animation and
+   transition off for a system that asks for reduced motion, and the site's policy lets a visitor's choice in the menu, or the server setting TV_AUTOPLAY_ALWAYS, opt back in
+   (html.motion-on). For them the camera would be stuck at its end state, so the page gives its own timings back here; without html.motion-on none of these rules applies. */
+@media (prefers-reduced-motion: reduce) {
+  html.motion-on .rg-hero__art .rshot { animation-duration: 14s !important; animation-delay: 0s !important; }
+  html.motion-on .rg-hero__copy > *, html.motion-on .rg-intro__copy > * { animation-duration: .8s !important; }
+  html.motion-on .rg-hero__copy > :nth-child(1) { animation-delay: .1s !important; }
+  html.motion-on .rg-hero__copy > :nth-child(2), html.motion-on .rg-intro__copy > :nth-child(2) { animation-delay: .2s !important; }
+  html.motion-on .rg-hero__copy > :nth-child(3), html.motion-on .rg-intro__copy > :nth-child(3) { animation-delay: .3s !important; }
+  html.motion-on .rg-hero__copy > :nth-child(4) { animation-delay: .4s !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rg-pics [class$="__art"] .rshot, .rg-next__art .rshot, .rg-index a { transition: none; }
+  .rg-pics a:hover .rshot, .rg-pics a:focus-visible .rshot, .rg-next__stage:hover .rshot, .rg-next__stage:focus-visible .rshot, .rg-index a:hover, .rg-index a:focus-visible { transform: none; }
+}
+
+/* =====================================================================
+   Tablets and phones: the picture on top, the words beneath it
+   ===================================================================== */
+@media (max-width: 899px) {
+  .rg-hero { height: auto; display: grid; grid-template-columns: minmax(0, 1fr); padding-top: calc(var(--header-h) + 4px); }
+  .rg-hero__art { position: relative; inset: auto; grid-row: 2; aspect-ratio: 1.45; }
+  .rg-hero__art::after { background: linear-gradient(0deg, var(--ground) 0%, rgba(18, 16, 42, 0) 38%); }
+  .rg-hero__grade { display: none; }
+  .rg-crumb { position: relative; inset: auto; grid-row: 1; padding: var(--s1) var(--gutter) var(--s1); }
+  .rg-hero__copy, .rg-hero--bl .rg-hero__copy, .rg-hero--tl .rg-hero__copy { position: relative; inset: auto; grid-row: 3; max-width: none; margin: 0; padding: var(--s1) var(--gutter) clamp(28px, 6vw, 48px); }
+  .rg-title { font-size: var(--t-h1); }
+  .rg-hero__line { font-size: var(--t-body); max-width: 30rem; }
+  .rg-about__in { grid-template-columns: 1fr; align-items: start; }
+  .rg-lede { font-size: var(--t-lead); }
+  .rg .rg-postcard { grid-template-columns: 1fr; }
+  .rg-one--full .rg-one__art { aspect-ratio: 16 / 10; }
+  .rg-pair, .rg-strip { grid-template-columns: 1fr; }
+  .rg-pair li:nth-child(2) { margin-top: 0; }
+  .rg-pair__art, .rg-strip__art, .rg-strip li:first-child .rg-strip__art { aspect-ratio: 16 / 10; }
+  .rg-next__name { font-size: var(--t-h2); }
+  .rg-next__bar { flex-direction: column; align-items: flex-start; }
+  .rg-intro { min-height: 0; padding-top: calc(var(--header-h) + 28px); }
+  .rg-title--wide { font-size: var(--t-h1); }
+  .rg-index ol { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rg-index a { min-height: 92px; }
+  .rg-feature { min-height: 0; display: grid; }
+  .rg-feature__art { position: relative; inset: auto; z-index: 0; aspect-ratio: 1.4; }
+  .rg-feature__shade { display: none; }
+  .rg-feature__inner, .rg-feature--flip .rg-feature__inner { justify-content: flex-start; text-align: left; }
+  .rg-feature__text, .rg-feature--flip .rg-feature__text { justify-items: start; padding-block: 28px 44px; }
+  .rg-jump { display: none; }
+}
+@media (min-width: 560px) and (max-width: 899px) { .rg-index ol { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

@@ -1,27 +1,71 @@
 {% extends "base.html" %}
-{% from "_components.html" import picture, page_hero %}
+{% from "regions/_region.html" import rshot, arrow, down %}
 {% block title %}Leonida{% endblock %}
-{% block description %}The six regions of Leonida in Grand Theft Auto VI, from Leonida Keys to Ambrosia, with the places, people and stories of each.{% endblock %}
-{% block content %}
-{{ page_hero('The state of Leonida', 'Six regions, one state', 'Open a region to see its places, the people who live there and the stories that pass through.', cover=hero_cover) }}
+{% block description %}The six regions of Leonida in Grand Theft Auto VI, from Vice City to Mount Kalaga, shown in Rockstar's own screenshots and postcards.{% endblock %}
+{% block header_class %}{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='css/regions.css') }}"><script src="{{ url_for('static', filename='js/regions.js') }}" defer></script>{% endblock %}
 
-<section class="region-features" aria-label="Regions of Leonida">
-  {% for r in data %}
-  <article class="region-feature{% if loop.index is even %} region-feature--flip{% endif %}">
-    {{ picture(r.cover, fallback=r.name, sizes='100vw', alt='', cls='region-feature__img') }}
-    <div class="region-feature__shade" aria-hidden="true"></div>
-    <div class="container region-feature__inner">
-      <div class="region-feature__text reveal">
-        <p class="eyebrow">{{ '%02d' | format(loop.index) }}</p>
-        <h2>{{ r.name }}</h2>
-        <p class="region-feature__sum">{{ r.summary }}</p>
-        {% if r.location_count %}<p class="region-feature__meta">{{ r.location_count }} place{{ '' if r.location_count == 1 else 's' }} to explore</p>{% endif %}
-        <a class="btn" href="{{ url_for('pages.region_detail', slug=r.slug) }}">Explore {{ r.name }}</a>
-      </div>
+{% block content %}
+<div class="rg rg--index">
+
+  {# ---------------------------------------------------------------- the opening, with the six regions to choose from #}
+  <header class="rg-intro" id="top">
+    <div class="rg-intro__art">{{ rshot(hero_cover, '100vw', eager=true, decorative=true) }}</div>
+    <div class="rg-intro__grade" aria-hidden="true"></div>
+    <div class="rg-intro__copy">
+      <p class="rg-kicker"><span>The state of Leonida</span><span>{{ total }} regions</span></p>
+      <h1 class="rg-title rg-title--wide">Six regions, one state</h1>
+      <p class="rg-hero__line">From the neon of Vice City to the national park of Mount Kalaga. Choose a region to see Rockstar&rsquo;s own pictures of it.</p>
     </div>
-  </article>
-  {% else %}
-  <div class="container"><div class="empty"><h2>No regions yet</h2></div></div>
-  {% endfor %}
-</section>
+    <nav class="rg-index" aria-label="Regions of Leonida">
+      <ol>
+        {% for r in data %}
+        <li><a href="#{{ r.slug }}" data-jump="{{ r.slug }}">
+          <span class="rg-index__art">{{ rshot(r.cover, '(min-width: 900px) 15vw, 45vw', decorative=true) }}</span>
+          <span class="rg-index__no">{{ '%02d' % r.number }}</span>
+          <span class="rg-index__name">{{ r.name }}</span>
+        </a></li>
+        {% endfor %}
+      </ol>
+    </nav>
+  </header>
+
+  {# ---------------------------------------------------------------- a compact index that follows the reader down the page (shown by script once the opening has gone) #}
+  <nav class="rg-jump" aria-label="Jump to a region" data-jump-bar hidden>
+    <ol>
+      {% for r in data %}<li><a href="#{{ r.slug }}" data-jump="{{ r.slug }}"><b>{{ '%02d' % r.number }}</b><span>{{ r.name }}</span></a></li>{% endfor %}
+    </ol>
+  </nav>
+
+  {# ---------------------------------------------------------------- the six regions, in the order Rockstar lists them #}
+  <div class="rg-features">
+    {% for r in data %}
+    <section class="rg-feature{% if loop.index is even %} rg-feature--flip{% endif %}" id="{{ r.slug }}" data-feature="{{ r.slug }}" data-region="{{ r.slug }}" aria-labelledby="f-{{ r.slug }}">
+      <div class="rg-feature__art">{{ rshot(r.cover, '100vw', decorative=true) }}</div>
+      <div class="rg-feature__shade" aria-hidden="true"></div>
+      <div class="rg-feature__inner container--wide">
+        <div class="rg-feature__text reveal">
+          <p class="rg-kicker"><span>{{ '%02d' % r.number }}</span><span>of {{ '%02d' % total }}</span></p>
+          <h2 class="rg-title rg-title--feature" id="f-{{ r.slug }}">{{ r.name }}</h2>
+          <p class="rg-feature__sum">{{ r.summary }}</p>
+          <p class="rg-feature__meta">
+            {% if r.pictures %}<span>{{ r.pictures }} of Rockstar&rsquo;s pictures</span>{% endif %}
+            {% if r.people %}<span>Based here: {{ r.people | join(', ') }}</span>{% endif %}
+          </p>
+          <a class="rg-go" href="{{ url_for('pages.region_detail', slug=r.slug) }}">Explore {{ r.name }}{{ arrow() }}</a>
+        </div>
+      </div>
+    </section>
+    {% else %}
+    <div class="container"><div class="empty"><h2>No regions yet</h2></div></div>
+    {% endfor %}
+  </div>
+
+  {# ---------------------------------------------------------------- what this page is built from #}
+  <aside class="rg-source container--wide" aria-labelledby="source-title">
+    <h2 class="rg-h" id="source-title">What is confirmed</h2>
+    <p>Rockstar&rsquo;s official site names these six regions and shows each in its own screenshots and postcards. It says little about them in words, so these pages say little too: what you read here is taken from Rockstar&rsquo;s own site, and every picture is Rockstar&rsquo;s, shown with its credit. Where Rockstar has not said, nothing is made up. Team Valkyrie is an unofficial fan project, not affiliated with Rockstar Games or Take-Two Interactive.</p>
+    <p><a class="rg-back" href="{{ url_for('pages.characters') }}">Meet the people of Leonida {{ arrow() }}</a></p>
+  </aside>
+</div>
 {% endblock %}
