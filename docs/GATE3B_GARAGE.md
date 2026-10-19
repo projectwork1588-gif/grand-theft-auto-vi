@@ -1,5 +1,7 @@
 # Gate 3B: the Garage, "Machines of Leonida" (version 2)
 
+> **Current state (integration):** `/vehicles` now serves the cinematic landing that was built as the `/garage-concept` prototype (`vehicles/concept.html`, `garage_concept.css/js`, `site.vehicle_concept`); `/garage-concept` is a 301 redirect to `/vehicles` that keeps the query string. The seven vehicle pages (`vehicles/detail.html`, `vehicle_detail.css/js`) are the Stage B redesign. `vehicles/index.html` and `garage.js`, described below, are no longer served and are kept unchanged; `garage.css` is still loaded (it holds the picture cuts every Garage page uses). The rest of this note records version 2 as it was built.
+
 Version 1 (commits `b4a9f35`, `c6459f2`) was rated 4/10 by the owner. Version 2 (`46d0718` onward) is a redesign of the Garage page and the vehicle pages. This note
 records the audit, the direction, the behaviour and how to run and check it. Code: `app/templates/vehicles/`, `app/static/css/garage.css`, `app/static/js/garage.js`, the
 Garage section of `app/services/site.py` and the end of `app/media_slots.py`. Nothing outside the Garage loads the new stylesheet or script.

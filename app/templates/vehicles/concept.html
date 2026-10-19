@@ -4,7 +4,7 @@
 {% block title %}Garage{% endblock %}
 {% block description %}Machines of Leonida: the vehicles Rockstar has shown from Grand Theft Auto VI, in its own screenshots.{% endblock %}
 {% block header_class %}{% endblock %}
-{% block head_extra %}<meta name="robots" content="noindex"><link rel="stylesheet" href="{{ url_for('static', filename='css/garage.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/garage_concept.css') }}"><script src="{{ url_for('static', filename='js/garage_concept.js') }}" defer></script>{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='css/garage.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/garage_concept.css') }}"><script src="{{ url_for('static', filename='js/garage_concept.js') }}" defer></script>{% endblock %}
 
 {# The name set over the foot of a picture: a kicker (number and mood), the maker small and the model large. Used by the plain card of a filtered list. #}
 {% macro title(v) -%}
@@ -94,13 +94,13 @@
         <div class="ctl">
           {% if categories | length > 1 %}
           <nav class="ctl__cats" aria-label="Vehicle categories">
-            <a href="{{ url_for('pages.garage_concept', q=filters.q, sort=(filters.sort if filters.sort != 'featured' else none)) }}#showroom"{% if not filters.category %} aria-current="true"{% endif %}>All</a>
+            <a href="{{ url_for('pages.vehicles', q=filters.q, sort=(filters.sort if filters.sort != 'featured' else none)) }}#showroom"{% if not filters.category %} aria-current="true"{% endif %}>All</a>
             {% for c in categories %}
-            <a class="gx-catlink" data-cat="{{ c.slug }}" href="{{ url_for('pages.garage_concept', category=c.slug, q=filters.q, sort=(filters.sort if filters.sort != 'featured' else none)) }}#showroom"{% if filters.category == c.slug %} aria-current="true"{% endif %}><i aria-hidden="true"></i>{{ c.name }}<small>{{ c.vehicle_count }}</small></a>
+            <a class="gx-catlink" data-cat="{{ c.slug }}" href="{{ url_for('pages.vehicles', category=c.slug, q=filters.q, sort=(filters.sort if filters.sort != 'featured' else none)) }}#showroom"{% if filters.category == c.slug %} aria-current="true"{% endif %}><i aria-hidden="true"></i>{{ c.name }}<small>{{ c.vehicle_count }}</small></a>
             {% endfor %}
           </nav>
           {% endif %}
-          <form class="ctl__form" method="get" action="{{ url_for('pages.garage_concept') }}#showroom" role="search" aria-label="Search and sort the collection">
+          <form class="ctl__form" method="get" action="{{ url_for('pages.vehicles') }}#showroom" role="search" aria-label="Search and sort the collection">
             <label class="ctl__search"><span class="visually-hidden">Search by name or maker</span>
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
               <input type="search" name="q" value="{{ filters.q or '' }}" placeholder="Search" maxlength="100" autocomplete="off" enterkeyhint="search">
@@ -118,7 +118,7 @@
       <p class="gresult" role="status" aria-live="polite"{% if not active %} hidden{% endif %}>
         {% if pagination.total %}<b>{{ pagination.total }}</b> {{ 'machine' if pagination.total == 1 else 'machines' }}{% else %}No machines{% endif %}
         {% if category_name %} in <b>{{ category_name }}</b>{% endif %}{% if filters.q %} matching <b>&ldquo;{{ filters.q }}&rdquo;</b>{% endif %}
-        {% if active %}<a class="gresult__clear" href="{{ url_for('pages.garage_concept') }}#showroom">Clear</a>{% endif %}
+        {% if active %}<a class="gresult__clear" href="{{ url_for('pages.vehicles') }}#showroom">Clear</a>{% endif %}
       </p>
     </div>
 
@@ -195,7 +195,7 @@
       <div class="gempty">
         <h3>No machine matches that</h3>
         <p>{% if filters.q %}Nothing is named or made &ldquo;{{ filters.q }}&rdquo;{% if category_name %} in {{ category_name }}{% endif %}. Try a shorter word.{% else %}There is nothing in that category yet.{% endif %}</p>
-        <a class="gbtn" href="{{ url_for('pages.garage_concept') }}#showroom">Show the whole collection</a>
+        <a class="gbtn" href="{{ url_for('pages.vehicles') }}#showroom">Show the whole collection</a>
       </div>
     </div>
     {% endif %}

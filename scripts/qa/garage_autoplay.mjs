@@ -4,7 +4,7 @@
 //   TL_BASE=http://127.0.0.1:5059 node scripts/qa/cdp.mjs scripts/qa/garage_autoplay.mjs        (exit status 1 on any failure)
 // The hold is shortened to 2.5 s with ?dwell=2.5 (the page accepts 2 to 30 s) so the whole round fits in a minute; the default is 3 s (one extra check below runs at the default).
 const BASE = process.env.TL_BASE || "http://127.0.0.1:5059";
-const PAGE = process.env.AUTOPLAY_PATH || "/garage-concept";
+const PAGE = process.env.AUTOPLAY_PATH || "/vehicles";
 const DWELL = 2.5;
 let failed = 0;
 const report = (ok, label, detail = "") => { if (!ok) { failed++; } console.log((ok ? "PASS  " : "FAIL  ") + label + (detail ? "  (" + detail + ")" : "")); };

@@ -1,7 +1,7 @@
 // Layout shift while the Garage landing page loads, cycles and is scrolled from top to bottom, at desktop and phone sizes (Chrome's own layout-shift entries).
-//   TL_BASE=http://127.0.0.1:5059 CLS_PATH=/garage-concept node scripts/qa/cdp.mjs scripts/qa/garage_cls.mjs
+//   TL_BASE=http://127.0.0.1:5059 CLS_PATH=/vehicles node scripts/qa/cdp.mjs scripts/qa/garage_cls.mjs
 const BASE = process.env.TL_BASE || "http://127.0.0.1:5059";
-const PATH = process.env.CLS_PATH || "/garage-concept?dwell=3";
+const PATH = process.env.CLS_PATH || "/vehicles?dwell=3";
 export default async function (b) {
   await b.colorScheme(false);
   await b.open(BASE + "/about", 100);

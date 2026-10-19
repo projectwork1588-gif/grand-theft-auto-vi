@@ -1,4 +1,4 @@
-"""The Garage concept (/garage-concept): a full-screen opening that cycles through the seven machines by itself, and the same MySQL-backed collection told in four chapters by default and as an honest ordered list when filtered."""
+"""The Garage concept (/vehicles): a full-screen opening that cycles through the seven machines by itself, and the same MySQL-backed collection told in four chapters by default and as an honest ordered list when filtered."""
 import re
 from pathlib import Path
 
@@ -29,7 +29,7 @@ def names(page):
 
 # ------------------------------------------------------------------ the default collection: four chapters
 def test_the_default_collection_is_four_chapters_in_the_planned_order(client):
-    page = html(client, "/garage-concept")
+    page = html(client, "/vehicles")
     assert re.findall(r'data-chapter="([a-z]+)"', page) == ["performance", "street", "beyond", "water"]
     assert re.findall(r'<h2 id="ch-[a-z]+">([^<]+)</h2>', page) == ["Performance", "Street &amp; Classics", "Beyond the Pavement", "On the Water"]
     assert machines(page) == [f"/vehicles/{s}" for s in CHAPTER_ORDER] and len(set(machines(page))) == 7
@@ -39,7 +39,7 @@ def test_the_default_collection_is_four_chapters_in_the_planned_order(client):
 
 
 def test_each_chapter_is_set_differently_not_as_the_same_card_repeated(client):
-    page = html(client, "/garage-concept")
+    page = html(client, "/vehicles")
     layouts = [("performance", "gx-f--perf"), ("street", "gx-f--street_a"), ("street", "gx-f--street_b"), ("beyond", "gx-duo"), ("water", "gx-f--sea_a"), ("water", "gx-f--finale")]
     for key, cls in layouts:
         block = page.split(f'data-chapter="{key}"')[1].split("</section>")[0]
@@ -51,14 +51,14 @@ def test_each_chapter_is_set_differently_not_as_the_same_card_repeated(client):
 
 
 def test_a_machine_with_a_second_picture_shows_it_as_a_small_labelled_detail(client):
-    page = html(client, "/garage-concept")
+    page = html(client, "/vehicles")
     assert re.findall(r'<span class="gx-f__label">([^<]+)</span>', page) == ["The cabin", "The tail fin", "On deck"]
     perf = page.split('data-chapter="performance"')[1].split("</section>")[0]
     assert perf.index("gx-f__art") < perf.index("gx-f__inset")                                                   # the exterior leads, the cabin supports it
 
 
 def test_the_water_chapter_is_two_clean_stages_with_a_horizon_between_and_no_overlap(client):
-    page = html(client, "/garage-concept")
+    page = html(client, "/vehicles")
     water = page.split('data-chapter="water"')[1].split("</section>")[0]
     assert water.index("gx-f--sea_a") < water.index("gx-sea__horizon") < water.index("gx-f--finale")          # the Squalo, a line of low sun, then the Kayak
     css = (ROOT / "app" / "static" / "css" / "garage_concept.css").read_text(encoding="utf-8")
@@ -67,7 +67,7 @@ def test_the_water_chapter_is_two_clean_stages_with_a_horizon_between_and_no_ove
 
 
 def test_the_water_chapter_is_stills_only_and_has_no_video(client):
-    for path in ("/garage-concept", "/garage-concept?category=boat"):
+    for path in ("/vehicles", "/vehicles?category=boat"):
         page = html(client, path)
         assert "<video" not in page and ".mp4" not in page, path
     css = (ROOT / "app" / "static" / "css" / "garage_concept.css").read_text(encoding="utf-8")
@@ -76,7 +76,7 @@ def test_the_water_chapter_is_stills_only_and_has_no_video(client):
 
 
 def test_the_mod_shop_keeps_rockstars_set_titles_and_invents_no_model(client):
-    page = html(client, "/garage-concept")
+    page = html(client, "/vehicles")
     strip = page.split("gx-customs__track")[1].split("</ul>")[0]
     assert re.findall(r"<figcaption>([^<]+)</figcaption>", strip) == ["Rideout Customs Mod Shop", "One-Eyed Willie&#39;s Mod Shop", "Classic Car Collection", "Classic Car Collection"]
     assert not re.search(r"Cheetah|Dominator|Squalo|Stanier|Ganado|Enduro|Kayak", strip)
@@ -84,12 +84,12 @@ def test_the_mod_shop_keeps_rockstars_set_titles_and_invents_no_model(client):
 
 
 def test_the_strip_and_the_chapter_index_are_reachable_without_a_pointer(client):
-    page = html(client, "/garage-concept")
+    page = html(client, "/vehicles")
     assert re.search(r'class="gx-customs__rail[^"]*" data-strip tabindex="0" role="region" aria-label="[^"]+"', page)
     assert page.count("data-strip-step=") == 2 and "data-strip-ctl hidden" in page                                # the buttons exist only when script can work them
     rail = page.split("data-chapter-rail")[1].split("</nav>")[0]
     assert re.findall(r'href="#chapter-([a-z]+)"', rail) == ["performance", "street", "beyond", "water"]
-    assert "data-chapter-rail" not in html(client, "/garage-concept?category=boat")                              # a filtered list has no chapters to point at
+    assert "data-chapter-rail" not in html(client, "/vehicles?category=boat")                              # a filtered list has no chapters to point at
 
 
 def test_the_words_about_each_machine_describe_the_pictures_and_claim_nothing():
@@ -101,7 +101,7 @@ def test_the_words_about_each_machine_describe_the_pictures_and_claim_nothing():
 
 
 def test_the_page_prints_the_editorial_lines_and_the_database_keeps_its_own_summary(client):
-    page = html(client, "/garage-concept")
+    page = html(client, "/vehicles")
     for line in media_slots.GARAGE_COPY.values():
         assert line in page
     assert "A Dominator rebuilt for mud and dirt." not in page and "A green trail bike against a teal garage door." not in page and "A white speedboat on the bay at dusk." not in page
@@ -123,32 +123,33 @@ def test_the_chapter_lines_are_visual_themes_not_claims():
 
 # ------------------------------------------------------------------ a filtered collection is an honest list
 def test_any_filter_search_sort_or_page_gives_an_ordered_list_not_chapters(client):
-    for path in ("/garage-concept?category=boat", "/garage-concept?q=vapid", "/garage-concept?sort=name_asc", "/garage-concept?per_page=3&page=2"):
+    for path in ("/vehicles?category=boat", "/vehicles?q=vapid", "/vehicles?sort=name_asc", "/vehicles?per_page=3&page=2"):
         page = html(client, path)
         assert "data-chapter=" not in page and "gx-customs" not in page and "gx-finale" not in page and "data-sea" not in page, path
         assert 'class="container--wide gx-list"' in page, path
 
 
 def test_the_list_keeps_the_databases_counts_and_ordering(client):
-    assert sorted(names(html(client, "/garage-concept?category=boat"))) == ["Kayak", "Squalo"]
-    assert names(html(client, "/garage-concept?q=kayak")) == ["Kayak"]
-    asc = names(html(client, "/garage-concept?sort=name_asc"))
-    assert len(asc) == 7 and names(html(client, "/garage-concept?sort=name_desc")) == list(reversed(asc))
-    live = re.findall(r'<h3 class="tile__model">([^<]+)</h3>', html(client, "/vehicles?sort=name_desc"))
-    assert names(html(client, "/garage-concept?sort=name_desc")) == live                          # the same order as the live Garage, machine for machine
-    assert len(machines(html(client, "/garage-concept?per_page=3&page=2"))) == 3
-    assert "<b>2</b> machines in <b>Boats</b>" in re.sub(r"\s+", " ", html(client, "/garage-concept?category=boat"))
+    assert sorted(names(html(client, "/vehicles?category=boat"))) == ["Kayak", "Squalo"]
+    assert names(html(client, "/vehicles?q=kayak")) == ["Kayak"]
+    asc = names(html(client, "/vehicles?sort=name_asc"))
+    assert len(asc) == 7 and names(html(client, "/vehicles?sort=name_desc")) == list(reversed(asc))
+    slugs = [h.rsplit("/", 1)[1] for h in machines(html(client, "/vehicles?sort=name_desc"))]
+    api = [v["slug"] for v in client.get("/api/v1/vehicles?status=official&sort=name_desc").get_json()["data"]]
+    assert slugs == api                                                                      # the same order as the database's own query, machine for machine
+    assert len(machines(html(client, "/vehicles?per_page=3&page=2"))) == 3
+    assert "<b>2</b> machines in <b>Boats</b>" in re.sub(r"\s+", " ", html(client, "/vehicles?category=boat"))
 
 
 def test_an_empty_search_and_bad_input_are_handled(client):
-    page = html(client, "/garage-concept?q=zzzz")
-    assert "No machine matches that" in page and machines(page) == [] and 'href="/garage-concept#showroom"' in page
-    assert client.get("/garage-concept?sort=cheapest").status_code == 400 and client.get("/garage-concept?page=0").status_code == 400
+    page = html(client, "/vehicles?q=zzzz")
+    assert "No machine matches that" in page and machines(page) == [] and 'href="/vehicles#showroom"' in page
+    assert client.get("/vehicles?sort=cheapest").status_code == 400 and client.get("/vehicles?page=0").status_code == 400
 
 
 # ------------------------------------------------------------------ the opening
 def test_the_opening_holds_all_seven_scenes_the_index_and_the_showcase_controls(client):
-    page = html(client, "/garage-concept")
+    page = html(client, "/vehicles")
     stage = page.split("data-stage")[1].split("</section>")[0]
     assert stage.count("data-panel=") == 7 and stage.count("data-pick=") == 7 and stage.count('fetchpriority="high"') == 1
     assert re.findall(r'class="gx-scene gx-scene--([a-z]+)', stage) == ["br", "br", "br", "tr", "tr", "ml", "ml"]
@@ -205,7 +206,7 @@ def test_garage_clips_are_servable_from_their_own_folder_and_only_that():
 # ------------------------------------------------------------------ technical guards
 def test_the_concept_uses_no_inline_styles_and_every_cut_it_uses_is_in_the_stylesheet(client):
     garage = (ROOT / "app" / "static" / "css" / "garage.css").read_text(encoding="utf-8")
-    for path in ("/garage-concept", "/garage-concept?category=boat"):
+    for path in ("/vehicles", "/vehicles?category=boat"):
         page = html(client, path)
         assert not re.search(r"<[^>]+\sstyle=", page)
         for attr in ("data-px", "data-py", "data-pxn", "data-pyn", "data-zoom", "data-zx", "data-zy"):
@@ -230,10 +231,10 @@ def test_concept_styles_only_define_gx_selectors_and_never_catch_presses_over_a_
         assert re.search(re.escape(decoration) + r" \{[^}]*pointer-events: none", css), decoration
 
 
-def test_only_the_concept_page_loads_the_concept_assets(client):
-    for path in ("/", "/characters", "/vehicles", "/vehicles/crest-kayak", "/about"):
+def test_only_the_garage_landing_loads_the_landing_assets(client):
+    for path in ("/", "/characters", "/vehicles/crest-kayak", "/about"):
         assert "garage_concept" not in html(client, path), path
-    page = html(client, "/garage-concept")
+    page = html(client, "/vehicles")
     assert "garage_concept.css" in page and "garage_concept.js" in page
 
 

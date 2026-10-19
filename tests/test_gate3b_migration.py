@@ -27,7 +27,13 @@ def page(client, path):
 
 
 def tiles(text):
-    return re.findall(r'<h3 class="tile__model">([^<]+)</h3>', text)
+    """The names a filtered list of the Garage shows (cards), in order."""
+    return re.findall(r'<h3 class="gx-(?:m|f)__name">([^<]+)</h3>', text)
+
+
+def cards(text):
+    """Every machine the Garage landing links to (a stage, a half of the pair, or a card)."""
+    return re.findall(r'<a class="gx-(?:f|d|m) [^"]*" href="/vehicles/([a-z-]+)"', text)
 
 
 def rows(sql):
@@ -62,7 +68,7 @@ def test_a_database_without_006_shows_five_machines_and_never_claims_seven(app):
         assert official_slugs() == FIVE
         landing = page(client, "/vehicles")
         assert "Five machines of Leonida" in landing and "Seven" not in landing
-        assert len(tiles(landing)) == 5
+        assert len(cards(landing)) == 5
         stage = landing.split("data-stage")[1].split("</section>")[0]
         assert stage.count("data-panel=") == 5 and stage.count("data-pick=") == 5       # the lineup is the five, not seven with two empty
         assert not re.search(r"Dinka|Enduro|Kayak|Crest", landing)                      # nothing names a vehicle the database lacks
@@ -90,7 +96,7 @@ def test_running_006_gives_seven_machines_and_every_route_works(app):
         assert official_slugs() == SEVEN
 
         landing = page(client, "/vehicles")
-        assert "Seven machines of Leonida" in landing and len(tiles(landing)) == 7
+        assert "Seven machines of Leonida" in landing and len(cards(landing)) == 7
         stage = landing.split("data-stage")[1].split("</section>")[0]
         assert stage.count("data-panel=") == 7 and stage.count("data-pick=") == 7
         for slug in SEVEN:
@@ -100,9 +106,9 @@ def test_running_006_gives_seven_machines_and_every_route_works(app):
         assert tiles(page(client, "/vehicles?category=motorcycle")) == ["Enduro Motorcycle"]
         asc = tiles(page(client, "/vehicles?sort=name_asc"))
         assert len(asc) == 7 and tiles(page(client, "/vehicles?sort=name_desc")) == list(reversed(asc))
-        assert len(re.findall(r'class="tile tile--s', page(client, "/vehicles?per_page=2&page=4"))) == 1
+        assert len(re.findall(r'<a class="gx-m ', page(client, "/vehicles?per_page=2&page=4"))) == 1
         assert len(client.get("/api/v1/vehicles?status=official&per_page=50").get_json()["data"]) == 7
-        assert landing.count('class="customs"') == 1
+        assert landing.count("gx-customs__track") == 1
     finally:
         init_database(TestingConfig, seed=True, reset=True)
 

@@ -9,8 +9,9 @@
 | `/` | Cinematic homepage: hero, the two leads, cast stage, region explorer, garage showroom, stories and official connections, trailers and screenshots |
 | `/characters` | **Official cast only** (Gate 3A). An editorial page: opening, jump bar, the two leads, the six around them, the relationship network. The Explore panel (query: `q`, `region`, `sort` (**cast** (the default on the pages), name_asc, name_desc, newest), `page`, `per_page`) switches the page to a results list. A `status` in the query is ignored, so original characters can never appear here |
 | `/characters/<slug>` | Official profile: hero, story with the motion portrait, connections with faces, gallery, previous and next. An original character's slug is a styled 404 |
-| `/vehicles` | Garage rows: **official vehicles only**. Query: `q`, `category`, `sort` (featured, name_asc, name_desc, category), `page`, `per_page` |
-| `/vehicles/<slug>` | Detail with an official image gallery. Concept vehicles return a styled 404 here (they have no public page) |
+| `/vehicles` | The Garage: a cinematic landing (an opening that cycles through the seven machines, then the collection told in chapters, the mod-shop strip and the Kayak finale). **Official vehicles only.** Query: `q`, `category`, `sort` (featured, name_asc, name_desc, category), `page`, `per_page`; with any filter, search, other sort or page the collection is an ordered list, exactly as the database returned it. Template `vehicles/concept.html`, service `site.vehicle_concept`. Development-only query: `autoplay=0` stops the opening's clock, `dwell=2..30` sets its hold in seconds |
+| `/garage-concept` | **Compatibility redirect** (301) to `/vehicles`, keeping the query string. The Garage's former prototype address; kept so earlier links still work |
+| `/vehicles/<slug>` | One machine's page (Stage B): a full-window opening, the database description, a sequence chosen for its pictures (stage pair, viewer, panorama pair, close crops or a labelled scene cut), previous and next, and a way back to `/vehicles`. Template `vehicles/detail.html`, service `site.vehicle_detail`. Concept vehicles return a styled 404 here (they have no public page) |
 | `/regions` | Six full-width features in Rockstar's order |
 | `/regions/<slug>` | Detail: locations, people based there, stories, gallery, other regions |
 | `/locations` | Index. Query: `q`, `region`, `type`, `status`, `sort` (region, name_asc, name_desc, newest), `page`, `per_page` |
@@ -28,7 +29,7 @@
 |------|-------|
 | `/characters`, `/characters/<slug>` | Phase 1 shape, one behaviour change (Gate 3A): **official characters by default**. `?sort=cast` lists the eight in the Characters section's final presentation order (the default stays alphabetical for the API); `?include=original` is the documented switch that also returns the three original demo characters (for the DBMS demonstration); `?status=demo` needs it (otherwise 400). The detail payload gained a `regions` list (where Rockstar's own text places the person); no field was removed |
 | `/regions`, `/regions/<slug>` | Phase 1, unchanged |
-| `/vehicles`, `/vehicles/<slug>`, `/vehicle-categories` | New. The API serves the whole table (13 vehicles). Use `?status=official` for the public garage. `sort=featured` gives editorial order. `/vehicle-categories?status=official` counts official vehicles only |
+| `/vehicles`, `/vehicles/<slug>`, `/vehicle-categories` | New. The API serves the whole table (15 vehicles). Use `?status=official` for the public garage. `sort=featured` gives editorial order. `/vehicle-categories?status=official` counts official vehicles only |
 | `/missions`, `/missions/<slug>` | New. Lists include cast, vehicle and location counts |
 | `/locations`, `/locations/<slug>` | New |
 

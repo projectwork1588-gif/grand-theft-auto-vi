@@ -1,11 +1,11 @@
 // One screenshot per chapter of the Garage landing page (the whole section, at full width), for before and after comparisons.
-//   SEC_BASE=http://127.0.0.1:5059 SEC_OUT=dir/ SEC_W=1440 SEC_PATH=/garage-concept?autoplay=0 node scripts/qa/cdp.mjs scripts/qa/section_shots.mjs
+//   SEC_BASE=http://127.0.0.1:5059 SEC_OUT=dir/ SEC_W=1440 SEC_PATH=/vehicles?autoplay=0 node scripts/qa/cdp.mjs scripts/qa/section_shots.mjs
 // The window is made as tall as the page, every picture is loaded and decoded, motion is off (so nothing waits to be revealed), and each chapter is cut out by its box.
 import { mkdirSync } from "node:fs";
 const BASE = process.env.SEC_BASE || "http://127.0.0.1:5059";
 const OUT = process.env.SEC_OUT || "review/sections/";
 const W = Number(process.env.SEC_W || 1440);
-const PATH = process.env.SEC_PATH || "/garage-concept?autoplay=0";
+const PATH = process.env.SEC_PATH || "/vehicles?autoplay=0";
 const CHAPTERS = (process.env.SEC_CHAPTERS || "performance,street,beyond,water").split(",");
 const EXTRA = (process.env.SEC_EXTRA || "").split(";").filter(Boolean).map((x) => x.split(":"));     // name:css-selector pairs for other parts, e.g. customs:.gx-customs
 

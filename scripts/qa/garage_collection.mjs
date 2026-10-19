@@ -12,7 +12,7 @@ export default async function (b) {
   await b.send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
   await b.open(BASE + "/about", 100);
   await ev(`localStorage.setItem("tv-motion", "1"); true`);
-  await b.open(BASE + "/garage-concept?autoplay=0", 2000);
+  await b.open(BASE + "/vehicles?autoplay=0", 2000);
 
   // ---- the strip of customs and classics
   await ev(`document.querySelector(".gx-customs").scrollIntoView({ block: "center" }); true`);
@@ -99,7 +99,7 @@ export default async function (b) {
   await b.send("Network.setBlockedURLs", { urls: ["*rockstargames.com*"] });
   await b.open(BASE + "/about", 100);
   await ev(`localStorage.setItem("tv-motion", "1"); true`);
-  await b.open(BASE + "/garage-concept?autoplay=0", 2500);
+  await b.open(BASE + "/vehicles?autoplay=0", 2500);
   await ev(`document.querySelectorAll("img").forEach((i) => { i.loading = "eager"; }); true`);
   await b.sleep(2500);
   const fail = JSON.parse(await ev(`JSON.stringify({ imgs: document.querySelectorAll("img.gshot").length, broken: document.querySelectorAll("img.gshot.is-broken").length, words: [...document.querySelectorAll(".gx-f__words h3, .gx-d__words h3, .gx-scene.is-active .plate")].filter((e) => e.getBoundingClientRect().height > 0 && getComputedStyle(e).visibility !== "hidden").length, side: document.documentElement.scrollWidth > document.documentElement.clientWidth, h: document.documentElement.scrollHeight })`));
@@ -112,7 +112,7 @@ export default async function (b) {
   // ---- the motion switch: with motion off nothing waits for an animation, and the strip and the index still work
   await b.open(BASE + "/about", 100);
   await ev(`localStorage.setItem("tv-motion", "0"); true`);
-  await b.open(BASE + "/garage-concept?autoplay=0", 1800);
+  await b.open(BASE + "/vehicles?autoplay=0", 1800);
   await ev(`scrollTo(0, 1200); true`); await b.sleep(600);
   const still = JSON.parse(await ev(`JSON.stringify({ motion: document.documentElement.classList.contains("motion-on"), hidden: [...document.querySelectorAll(".gx-f__art, .gx-d__pic, .gx-f__words > *")].filter((e) => getComputedStyle(e).opacity !== "1").length, drift: [...document.querySelectorAll(".gx-f__art .gshot")].filter((i) => getComputedStyle(i).transform !== "none").length })`));
   ok(!still.motion && still.hidden === 0 && still.drift === 0, "motion off: every picture and line of words is shown, and no picture drifts", JSON.stringify(still));

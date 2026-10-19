@@ -102,9 +102,9 @@ def test_the_stylesheet_and_script_are_local_and_the_script_is_enhancement_only(
     assert "@import" not in css and "http://" not in css
 
 
-def test_the_garage_landing_and_concept_are_untouched_by_the_detail_work(client):
-    assert client.get("/vehicles").status_code == 200 and client.get("/garage-concept").status_code == 200
+def test_the_detail_stylesheet_belongs_to_the_detail_pages_only(client):
     assert "vehicle_detail.css" not in client.get("/vehicles").get_data(as_text=True)
+    assert "vehicle_detail.css" in page(client, "grotti-cheetah")
 
 
 def test_an_unknown_slug_is_a_clean_404(client):

@@ -8,7 +8,7 @@
 //   TL_BASE=http://127.0.0.1:5059 TITLES_OUT=dir/ node scripts/qa/cdp.mjs scripts/qa/garage_titles.mjs      (exit status 1 on any crossing)
 import { mkdirSync } from "node:fs";
 const BASE = process.env.TL_BASE || "http://127.0.0.1:5059";
-const PAGE = process.env.TITLES_PATH || "/garage-concept?autoplay=0";      // the automatic clock off, so a scene is measured where it rests
+const PAGE = process.env.TITLES_PATH || "/vehicles?autoplay=0";      // the automatic clock off, so a scene is measured where it rests
 const OUT = process.env.TITLES_OUT || "";
 const SIZES = (process.env.TITLES_SIZES || "1920x1080,1440x900,1366x768,1280x720").split(",").map((s) => s.split("x").map(Number));
 let failed = 0;

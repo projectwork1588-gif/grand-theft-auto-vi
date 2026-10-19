@@ -1,7 +1,7 @@
 // Frame timing of the Garage opening in this browser (headless Chrome, SOFTWARE rendering: not a GPU laptop or a phone, so it is a pessimistic floor, not a claim about real hardware).
-//   TL_BASE=http://127.0.0.1:5059 FRAMES_PATH="/garage-concept?autoplay=0" node scripts/qa/cdp.mjs scripts/qa/garage_frames.mjs
+//   TL_BASE=http://127.0.0.1:5059 FRAMES_PATH="/vehicles?autoplay=0" node scripts/qa/cdp.mjs scripts/qa/garage_frames.mjs
 const BASE = process.env.TL_BASE || "http://127.0.0.1:5059";
-const PATH = process.env.FRAMES_PATH || "/garage-concept?autoplay=0";
+const PATH = process.env.FRAMES_PATH || "/vehicles?autoplay=0";
 export default async function (b) {
   await b.colorScheme(false);
   await b.send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });

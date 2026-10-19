@@ -1,9 +1,9 @@
 // The same window on several pages, scrolled to the same steps: for a side-by-side judgement of art direction and pacing.
-//   CMP_OUT=dir/ CMP_ROUTES=/,/characters,/garage-concept CMP_W=1440 CMP_H=900 CMP_STEPS=4 node scripts/qa/cdp.mjs scripts/qa/viewport_compare.mjs
+//   CMP_OUT=dir/ CMP_ROUTES=/,/characters,/vehicles CMP_W=1440 CMP_H=900 CMP_STEPS=4 node scripts/qa/cdp.mjs scripts/qa/viewport_compare.mjs
 import { mkdirSync } from "node:fs";
 const BASE = process.env.TL_BASE || "http://127.0.0.1:5059";
 const OUT = process.env.CMP_OUT || "review/compare/";
-const ROUTES = (process.env.CMP_ROUTES || "/,/characters,/garage-concept").split(",");
+const ROUTES = (process.env.CMP_ROUTES || "/,/characters,/vehicles").split(",");
 const W = Number(process.env.CMP_W || 1440), H = Number(process.env.CMP_H || 900), STEPS = Number(process.env.CMP_STEPS || 4);
 const name = (r) => (r.replace(/^\//, "").replace(/[\/?&=]+/g, "_") || "home");
 

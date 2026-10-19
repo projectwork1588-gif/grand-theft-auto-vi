@@ -136,13 +136,10 @@ def test_the_opening_shows_one_machine_and_a_lineup_of_seven(client):
     page = html(client, "/vehicles")
     stage = page.split("data-stage")[1].split("</section>")[0]
     assert stage.count("data-panel=") == 7 and stage.count("data-pick=") == 7
-    panels = re.findall(r'<article class="scene[^"]*" id="scene-([a-z-]+)" data-panel="[a-z-]+" data-vehicle="[a-z-]+"( hidden)?>', stage)
-    assert [p[0] for p in panels] == OFFICIAL
-    assert [bool(p[1]) for p in panels] == [False] + [True] * 6        # only the first is on show; the rest load on demand
-    assert stage.count('fetchpriority="high"') == 1
+    assert re.findall(r'data-panel="([a-z-]+)"', stage) == OFFICIAL            # all seven, in the Garage's own order
+    assert stage.count('fetchpriority="high"') == 1                            # only the first picture is fetched at once
     assert 'aria-current="true"' in stage and page.count("<h1") == 1
-    assert "<video" not in stage and "autoplay" not in stage.lower()
-    assert "data-ctl hidden" in stage                                  # the arrows exist only when script can make them work
+    assert "<video" not in stage and "data-ctl hidden" in stage                # the arrows exist only when script can make them work
 
 
 def test_each_lineup_link_works_without_script(client):
@@ -169,11 +166,11 @@ def test_the_page_transition_and_depth_effects_are_off_for_reduced_motion():
 # ------------------------------------------------------------------ the collection
 def test_the_collection_uses_the_planned_arrangement_and_links_each_tile(client):
     page = html(client, "/vehicles")
-    spans = re.findall(r'class="tile tile--s(\d+) reveal"', page)
-    assert [int(s) for s in spans] == [s for row in site.garage_rows(7) for s in row]
+    slugs = [h.rsplit("/", 1)[1] for h in re.findall(r'<a class="gx-(?:f|d|m) [^"]*" href="(/vehicles/[a-z-]+)"', page)]
+    assert sorted(slugs) == sorted(OFFICIAL) and len(set(slugs)) == 7            # every machine once, each linked to its own page
+    assert slugs[:2] == ["grotti-cheetah", "vapid-stanier"]                      # the chapters open with the Cheetah and the Stanier
     for slug in OFFICIAL:
-        assert f'class="tile__link" href="/vehicles/{slug}"' in page
-    assert tile_models(page)[:2] == ["Cheetah", "Dominator Buggy"]
+        assert f'href="/vehicles/{slug}" data-pick="{slug}"' in page             # and the opening's index reaches each one too
 
 
 def test_the_headline_counts_the_collection_and_does_not_overclaim(client):
@@ -211,13 +208,14 @@ def test_every_sort_option_orders_the_tiles(client):
 
 
 def test_search_is_a_real_query_not_a_filter_on_the_page(client):
-    assert tile_models(html(client, "/vehicles?q=grotti")) == ["Cheetah"]
-    assert tile_models(html(client, "/vehicles?q=kayak")) == ["Kayak"]
-    assert tile_models(html(client, "/vehicles?q=%25")) == []                 # a percent sign is text, not a wildcard
-    assert tile_models(html(client, "/vehicles?q=%27%3B+DROP+TABLE+vehicles%3B--")) == []
-    assert len(tile_models(html(client, "/vehicles"))) == 7                   # and nothing was dropped
-    assert len(tile_models(html(client, "/vehicles?category=boat"))) == 2     # the Squalo and the Kayak
-    assert tile_models(html(client, "/vehicles?category=motorcycle")) == ["Enduro Motorcycle"]
+    names = lambda path: re.findall(r'<h3 class="gx-(?:m|f)__name">([^<]+)</h3>', html(client, path))
+    assert names("/vehicles?q=grotti") == ["Cheetah"]
+    assert names("/vehicles?q=kayak") == ["Kayak"]
+    assert names("/vehicles?q=%25") == []                                      # a percent sign is text, not a wildcard
+    assert names("/vehicles?q=%27%3B+DROP+TABLE+vehicles%3B--") == []
+    assert len(re.findall(r'<a class="gx-(?:f|d|m) ', html(client, "/vehicles"))) == 7      # and nothing was dropped
+    assert len(names("/vehicles?category=boat")) == 2                          # the Squalo and the Kayak
+    assert names("/vehicles?category=motorcycle") == ["Enduro Motorcycle"]
 
 
 def test_an_empty_search_shows_a_clear_way_back(client):
@@ -229,7 +227,7 @@ def test_an_empty_search_shows_a_clear_way_back(client):
 def test_pagination_still_works_when_there_are_more_vehicles_than_a_page(client):
     page = html(client, "/vehicles?per_page=2&page=2")
     assert 'aria-label="Pagination"' in page and 'rel="prev"' in page and 'rel="next"' in page
-    assert len(re.findall(r'class="tile tile--s', page)) == 2
+    assert len(re.findall(r'<a class="gx-m ', page)) == 2
 
 
 def test_a_bad_sort_or_page_is_refused_not_ignored(client):
@@ -244,10 +242,10 @@ def test_the_public_garage_never_lists_a_concept_vehicle(client):
 
 def test_the_customs_band_names_no_model_and_shows_only_on_the_whole_collection(client):
     page = html(client, "/vehicles")
-    band = page.split('class="customs"')[1].split("</section>")[0]
-    assert band.count("<figure>") == 4 and "Rideout Customs Mod Shop" in band and "One-Eyed Willie" in band
+    band = page.split("gx-customs__track")[1].split("</ul>")[0]
+    assert band.count("<figure") == 4 and "Rideout Customs Mod Shop" in band and "One-Eyed Willie" in band
     assert not re.search(r"Cheetah|Dominator|Squalo|Stanier|Ganado|Enduro|Kayak", band)
-    assert 'class="customs"' not in html(client, "/vehicles?category=boat") and 'class="customs"' not in html(client, "/vehicles?q=vapid")
+    assert "gx-customs__track" not in html(client, "/vehicles?category=boat") and "gx-customs__track" not in html(client, "/vehicles?q=vapid")
 
 
 # ------------------------------------------------------------------ the vehicle pages
@@ -342,8 +340,8 @@ def test_the_sticky_curtain_is_only_for_a_single_picture_vehicle_and_off_for_red
 
 def test_the_collection_copy_does_not_name_a_vehicle_the_database_may_lack(client):
     page = html(client, "/vehicles")
-    lede = re.search(r'class="coll__lede">([^<]+)<', page).group(1)
-    assert "kayak" not in lede.lower() and "motorcycle" not in lede.lower()
+    heading = re.search(r'<h2 id="coll-title">([^<]+)</h2>', page).group(1)
+    assert heading == "Seven machines of Leonida"                              # the count is the database's, written out
 
 
 def test_connected_world_lists_missions_and_places_with_their_labels(client, app):

@@ -24,7 +24,7 @@ export default async function (b) {
     await b.send("Emulation.setDeviceMetricsOverride", { width: w, height: h, deviceScaleFactor: 1, mobile: w < 700 });
     await b.open(BASE + "/about", 100);
     await ev(`localStorage.setItem("tv-motion", "${motion}"); true`);
-    await b.open(BASE + "/garage-concept" + query, 1500);
+    await b.open(BASE + "/vehicles" + query, 1500);
   };
   // the scale and the shift of a scene's picture, and whether it still covers its frame
   const look = (slug) => ev(`(() => { const p = document.querySelector('[data-panel="${slug}"]'); const i = p.querySelector(".gx-art img"); const a = p.querySelector(".gx-art").getBoundingClientRect(); const r = i.getBoundingClientRect();
@@ -122,7 +122,7 @@ export default async function (b) {
     await b.send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
     await b.open(RM + "/about", 100);
     await ev(`localStorage.removeItem("tv-motion"); true`);
-    await b.open(RM + "/garage-concept?dwell=2", 1800);
+    await b.open(RM + "/vehicles?dwell=2", 1800);
     const red = await ev(`JSON.stringify({ motion: document.documentElement.classList.contains("motion-on"), anim: document.querySelector(".gx-scene.is-active .gx-art img").getAnimations().length, shown: document.querySelector("[data-stage]").getAttribute("data-vehicle") })`).then(JSON.parse);
     await b.sleep(4600);
     const still = await ev(`document.querySelector("[data-stage]").getAttribute("data-vehicle")`);
@@ -131,7 +131,7 @@ export default async function (b) {
     await b.sleep(900);
     ok(await ev(`document.querySelector('[data-panel="vapid-stanier"]').classList.contains("is-active")`), "reduced motion: choosing a scene still works");
     await ev(`localStorage.setItem("tv-motion", "1"); true`);
-    await b.open(RM + "/garage-concept?dwell=2", 1800);
+    await b.open(RM + "/vehicles?dwell=2", 1800);
     const first = await ev(`document.querySelector("[data-stage]").getAttribute("data-vehicle")`);
     await b.sleep(3600);
     ok((await ev(`document.querySelector("[data-stage]").getAttribute("data-vehicle")`)) !== first, "reduced motion, but the visitor has switched motion on in the menu: the showcase runs");
@@ -145,7 +145,7 @@ export default async function (b) {
   await b.colorScheme(false);
   await b.open(BASE + "/about", 100);
   await ev(`localStorage.setItem("tv-motion", "0"); true`);
-  await b.open(BASE + "/garage-concept?dwell=2", 1800);
+  await b.open(BASE + "/vehicles?dwell=2", 1800);
   const off = await ev(`JSON.stringify({ motion: document.documentElement.classList.contains("motion-on"), anim: document.querySelector(".gx-scene.is-active .gx-art img").getAnimations().length, shown: document.querySelector("[data-stage]").getAttribute("data-vehicle"), clock: window.__gxClock().userPaused })`).then(JSON.parse);
   await b.sleep(4400);
   ok(!off.motion && off.anim === 0 && off.clock === true && (await ev(`document.querySelector("[data-stage]").getAttribute("data-vehicle")`)) === off.shown, "the visitor's Motion switch set to Off wins over TV_AUTOPLAY_ALWAYS: no camera, no cycling", JSON.stringify(off));

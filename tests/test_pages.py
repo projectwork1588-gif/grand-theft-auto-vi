@@ -26,7 +26,12 @@ def results(text):
 
 
 def garage_names(text):
-    return re.findall(r'<h3 class="tile__model">([^<]+)</h3>', text)
+    """The machines the Garage landing names, in page order: a stage's or a card's name (the whole collection is told in chapters, so its order is the chapters')."""
+    return re.findall(r'<h3 class="gx-(?:m|f)__name">([^<]+)</h3>', text)
+
+
+def garage_links(text):
+    return re.findall(r'<a class="gx-(?:f|d|m) [^"]*" href="/vehicles/([a-z-]+)"', text)
 
 
 def visible_text(page):
@@ -316,12 +321,12 @@ def test_landing_portraits_are_wired_for_the_motion_policy(client, local_clips):
 # ------------------------------------------------------------------ vehicles
 def test_garage_shows_only_official_vehicles_with_official_images(client):
     page = html(client, "/vehicles")
-    assert garage_names(page) == ["Cheetah", "Dominator Buggy", "Squalo", "Stanier", "Ganado Retro Build", "Enduro Motorcycle", "Kayak"]
+    assert sorted(garage_links(page)) == sorted(["grotti-cheetah", "vapid-dominator-buggy", "shitzu-squalo", "vapid-stanier", "vapid-ganado", "dinka-enduro", "crest-kayak"])
     for concept in ("Corvina GT", "Bruiser V8", "Meridian Sedan", "Swampfox Airboat", "Tidewalker Skiff", "Zephyr 250"):
         assert concept not in page, concept            # concept vehicles are not in the public garage
     assert "badge--demo" not in page and "Fictional demo" not in page and "vehicles.svg" not in page
     assert page.count("rockstargames.com/VI/_next/static/media/") >= 7 and "ULTIMATE_EDITION_GROTTI_CHEETAH" in page
-    assert page.count('class="tile tile--') == 7 and "product" not in page.lower()
+    assert len(garage_links(page)) == 7 and "product" not in page.lower()
 
 
 def test_garage_filters_search_sorting_and_pagination(client):

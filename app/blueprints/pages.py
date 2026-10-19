@@ -1,5 +1,5 @@
 """Server-rendered catalogue and detail pages. Each route: read the request, call a service, render a template."""
-from flask import Blueprint, render_template, request
+from flask import Blueprint, redirect, render_template, request, url_for
 
 from ..services import site
 
@@ -18,13 +18,14 @@ def character_detail(slug):
 
 @pages_bp.route("/vehicles")
 def vehicles():
-    return render_template("vehicles/index.html", **site.vehicle_index(request.args))
+    return render_template("vehicles/concept.html", **site.vehicle_concept(request.args))
 
 
 @pages_bp.route("/garage-concept")
 def garage_concept():
-    """Stage A prototype of the redesigned Garage (not linked from the site; removed or promoted to /vehicles after the owner decides)."""
-    return render_template("vehicles/concept.html", **site.vehicle_concept(request.args))
+    """The Garage's old prototype address, kept so earlier links still work: it goes to /vehicles with the query string unchanged."""
+    query = request.query_string.decode("utf-8", "replace")
+    return redirect(url_for("pages.vehicles") + ("?" + query if query else ""), code=301)
 
 
 @pages_bp.route("/vehicles/<slug>")
