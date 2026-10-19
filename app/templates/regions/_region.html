@@ -2,10 +2,11 @@
 
 {# One of Rockstar's own pictures, drawn to fill its frame (the frame's stylesheet rule decides which part of the picture stays in view). `sizes` must describe the width
    the picture is really drawn at. A picture that is only decoration beside a heading keeps alt empty; one that is the content carries its database title. #}
-{% macro rshot(m, sizes, eager=false, decorative=false, cls='') -%}
+{% macro rshot(m, sizes, eager=false, decorative=false, cls='', ctx='') -%}
   {% if m and image_src(m.embed_url, 1920) %}
+  {% set cut = m.cut[ctx] if (ctx and m.cut and ctx in m.cut) else none %}
   <img class="rshot {{ cls }}" src="{{ image_src(m.embed_url, 1920) }}" srcset="{{ image_srcset(m.embed_url, (640, 960, 1280, 1920, 2560)) }}" sizes="{{ sizes }}"
-       alt="{{ '' if decorative else m.title }}" {% if eager %}fetchpriority="high"{% else %}loading="lazy"{% endif %} decoding="async" referrerpolicy="no-referrer">
+       alt="{{ '' if decorative else m.title }}"{% if cut %} data-px="{{ cut[0] }}" data-py="{{ cut[1] }}" data-pxn="{{ cut[2] }}" data-pyn="{{ cut[3] }}"{% endif %} {% if eager %}fetchpriority="high"{% else %}loading="lazy"{% endif %} decoding="async" referrerpolicy="no-referrer">
   {% endif %}
 {%- endmacro %}
 
@@ -16,6 +17,6 @@
 {% macro down() -%}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>{%- endmacro %}
 
 {# A picture that opens full size in the site's own viewer: the frame is the link, so the whole picture is the target and it takes a visible focus ring. #}
-{% macro lb(m, sizes, cls='', eager=false) -%}
-  {% if m and image_src(m.embed_url, 1920) %}<a class="rg-lb {{ cls }}" href="{{ opens(m) }}" data-lightbox data-caption="{{ m.title }}">{{ rshot(m, sizes, eager=eager) }}</a>{% endif %}
+{% macro lb(m, sizes, cls='', eager=false, ctx='') -%}
+  {% if m and image_src(m.embed_url, 1920) %}<a class="rg-lb {{ cls }}" href="{{ opens(m) }}" data-lightbox data-caption="{{ m.title }}">{{ rshot(m, sizes, eager=eager, ctx=ctx) }}</a>{% endif %}
 {%- endmacro %}

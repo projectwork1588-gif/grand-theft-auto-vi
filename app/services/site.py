@@ -674,6 +674,30 @@ def vehicle_detail(slug):
 
 
 # ---------------------------------------------------------------- regions
+def _region_pos(box, fx, fy):
+    """The CSS object-position ("X Y", each on a five-percent grid) that centres the point (fx, fy) of a 16:9 picture in a box of the given width over height."""
+    px = py = 0.5
+    if box >= _IMAGE_ASPECT:                          # a box wider than the picture: it is cut at the top and bottom
+        window = _IMAGE_ASPECT / box
+        if window < 0.999:
+            py = (fy - 0.5 * window) / (1 - window)
+    else:                                              # a narrower box: it is cut at the sides
+        window = box / _IMAGE_ASPECT
+        px = (fx - 0.5 * window) / (1 - window)
+    return tuple(int(round(min(1.0, max(0.0, v)) * 20)) * 5 for v in (px, py))
+
+
+def _with_cuts(m):
+    """Give a Regions picture its crop for every box the pages draw it in: m["cut"][box] = (x, y, x on narrow screens, y on narrow screens). The picture itself is never cropped:
+    the viewer opens the whole of it."""
+    if m is None or "cut" in m:
+        return m
+    focus = media_slots.REGION_FOCUS.get(m["slug"], (0.5, 0.5))
+    point = (lambda name: focus.get(name, focus["*"])) if isinstance(focus, dict) else (lambda name: focus)
+    m["cut"] = {name: _region_pos(wide, *point(name)) + _region_pos(narrow, *point(name)) for name, (wide, narrow) in media_slots.REGION_BOXES.items()}
+    return m
+
+
 def _official(rows):
     """Only what is Rockstar's. The database also holds places and stories invented by Team Valkyrie (content_status 'demo'); the Regions pages never present
     them as part of Leonida (they stay in the database, the API and the Locations and Stories pages, where they are labelled as originals)."""
@@ -694,7 +718,8 @@ def region_index(args):
         r["pictures"] = pictures.get(ids.get(r["slug"]), 0)
         r["people"] = [c["full_name"] for c in regions_repo.characters_based_in(ids[r["slug"]])]
         r["location_count"] = 0   # invented places are not Rockstar's, so the index never counts them
-        r["pics"] = [found[n] for n in art.get("feature", ()) if n in found] or ([r["cover"]] if r.get("cover") else [])
+        r["pics"] = [_with_cuts(found[n]) for n in art.get("feature", ()) if n in found] or ([_with_cuts(r["cover"])] if r.get("cover") else [])
+        _with_cuts(r.get("cover"))
     result["total"] = len(result["data"])
     result["hero_cover"] = _page_cover("regions")
     return result
@@ -721,6 +746,8 @@ def region_detail(slug):
             used.add(name)
     pics.extend(m for m in frames if m["slug"] not in used)
     region["pics"] = pics
+    for m in (stage, postcard, region["intro"], *pics):
+        _with_cuts(m)
     region["picture_count"] = len(frames)
     region["shots"] = sum(1 for m in frames if m["media_type"] == "screenshot")
     ordered = _in_rockstar_order(regions_repo.list_all())
@@ -729,6 +756,8 @@ def region_detail(slug):
     for i, r in enumerate(ordered, 1):
         r["number"] = i
     region["number"], region["total"] = me + 1, len(ordered)
+    for r in ordered:
+        _with_cuts(r.get("cover"))
     region["all_regions"] = ordered
     region["previous"] = ordered[(me - 1) % len(ordered)] if len(ordered) > 1 else None
     region["next"] = ordered[(me + 1) % len(ordered)] if len(ordered) > 1 else None

@@ -217,3 +217,65 @@ def test_home_and_the_navigation_still_lead_to_the_regions(client):
     for slug in SLUGS:
         assert f'href="/regions/{slug}"' in home
     assert re.search(r'<a[^>]*aria-current="page"[^>]*href="/regions"|<a[^>]*href="/regions"[^>]*aria-current="page"', page(client, "/regions/ambrosia"))
+
+
+# ------------------------------------------------------------------ framing: every picture is cut around its subject, never stretched, and the viewer still opens the whole of it
+def _visible(box, px, py):
+    """The window (x0, x1, y0, y1), as fractions of a 16:9 picture, that a box of this width over height shows at object-position px, py (percent)."""
+    ratio = 16 / 9
+    if box >= ratio:
+        window = ratio / box
+        y0 = py / 100 * (1 - window)
+        return 0.0, 1.0, y0, y0 + window
+    window = box / ratio
+    x0 = px / 100 * (1 - window)
+    return x0, x0 + window, 0.0, 1.0
+
+
+def test_every_picture_has_a_focal_point_and_the_art_direction_names_only_pictures_that_have_one():
+    named = {name for art in media_slots.REGION_ART.values() for name in ((art["hero"], art["intro"]) + art["story"] + art["feature"]) if name}
+    assert named <= set(media_slots.REGION_FOCUS), sorted(named - set(media_slots.REGION_FOCUS))
+    for slug, focus in media_slots.REGION_FOCUS.items():
+        points = focus.values() if isinstance(focus, dict) else [focus]
+        assert all(0 <= x <= 1 and 0 <= y <= 1 for x, y in points), slug
+
+
+@pytest.mark.parametrize("slug", sorted(media_slots.REGION_FOCUS))
+def test_the_subject_stays_in_view_in_every_box_the_picture_is_drawn_in(app, slug):
+    from app.services.site import _with_cuts
+    focus = media_slots.REGION_FOCUS[slug]
+    m = _with_cuts({"slug": slug})
+    for name, (wide, narrow) in media_slots.REGION_BOXES.items():
+        point = (focus.get(name, focus["*"]) if isinstance(focus, dict) else focus)
+        px, py, pxn, pyn = m["cut"][name]
+        for box, (x, y) in ((wide, (px, py)), (narrow, (pxn, pyn))):
+            x0, x1, y0, y1 = _visible(box, x, y)
+            assert x0 - 0.03 <= point[0] <= x1 + 0.03 and y0 - 0.03 <= point[1] <= y1 + 0.03, (slug, name, box, point, (x0, x1, y0, y1))
+            assert all(v % 5 == 0 and 0 <= v <= 100 for v in (px, py, pxn, pyn))                 # on the grid the stylesheet has rules for
+
+
+def test_the_stylesheet_has_a_rule_for_every_position_the_service_can_give(client):
+    css = (ROOT / "app" / "static" / "css" / "regions.css").read_text(encoding="utf-8")
+    for attr in ("px", "py", "pxn", "pyn"):
+        for v in range(0, 101, 5):
+            assert f'.rshot[data-{attr}="{v}"] {{ --{attr}: {v}%; }}' in css, (attr, v)
+    for slug in SLUGS:
+        p = page(client, f"/regions/{slug}")
+        used = set(re.findall(r'data-p[xy]n?="(\d+)"', p))
+        assert used and all(int(v) % 5 == 0 for v in used), slug
+
+
+@pytest.mark.parametrize("slug", SLUGS)
+def test_pictures_carry_their_crop_as_data_and_the_viewer_gets_the_whole_picture(client, slug):
+    p = page(client, f"/regions/{slug}")
+    imgs = re.findall(r"<img [^>]*class=\"rshot[^>]*>", p)
+    assert imgs and sum('data-px="' in tag for tag in imgs) >= len(imgs) - 1       # every picture but, at most, the postcard (a full 16:9 card) is framed
+    for href in re.findall(r'<a class="rg-lb[^"]*" href="([^"]+)"', p):
+        assert "imwidth=2560" in href and "object" not in href and "crop" not in href      # the viewer's link is the picture itself, at its largest, uncropped
+    assert 'style="' not in p.split("<body")[1]                                         # the CSP forbids inline styles
+
+
+def test_the_two_pictures_whose_defining_detail_is_at_an_edge_name_a_second_point():
+    focus = media_slots.REGION_FOCUS
+    assert isinstance(focus["shot-port-gellhorn-01"], dict) and focus["shot-port-gellhorn-01"]["narrow"][0] < 0.3        # the Starlet Motel sign, not the middle of the road
+    assert isinstance(focus["shot-port-gellhorn-02"], dict) and focus["shot-port-gellhorn-02"]["narrow"][0] < 0.5       # the man in the foreground, not the pair

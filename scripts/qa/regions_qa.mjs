@@ -34,6 +34,8 @@ export default async function (b) {
       const over = await b.eval(`Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) - window.innerWidth`);
       report(over <= 0, `${tag}: no horizontal overflow`, over + "px");
       report(problems.length === 0, `${tag}: no console, page or request errors`, problems.slice(0, 3).join(" | "));
+      const odd = await b.eval(`[...document.querySelectorAll("img.rshot")].filter((i) => i.complete && i.naturalWidth > 0 && Math.abs(i.naturalWidth / i.naturalHeight - 16 / 9) > 0.02).map((i) => i.currentSrc.slice(-40) + " " + i.naturalWidth + "x" + i.naturalHeight).join(", ")`);
+      report(odd === "", `${tag}: every picture is the 16:9 the framing assumes (so none is stretched or mis-framed)`, odd);
       const blank = await b.eval(`[...document.querySelectorAll("img.rshot")].filter((i) => i.complete && i.naturalWidth === 0 && i.currentSrc).length`);
       report(blank === 0, `${tag}: no broken pictures`, blank + " broken");
       await b.eval(`window.scrollTo(0, 0); true`);

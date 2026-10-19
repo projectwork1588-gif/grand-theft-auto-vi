@@ -357,7 +357,7 @@ GARAGE_CAPTIONS = {
 #   feature   the two pictures of the region's showcase on the landing page: the main one and a second
 REGION_ART = {
     "vice-city": {"hero": "shot-vice-city-11", "intro": "shot-vice-city-03", "feature": ("shot-vice-city-01", "shot-vice-city-10"),
-                  "story": ("shot-vice-city-01", "shot-vice-city-10", "shot-vice-city-08", "shot-vice-city-02", "shot-vice-city-09", "shot-vice-city-04")},
+                  "story": ("shot-vice-city-01", "shot-vice-city-10", "shot-vice-city-08", "shot-vice-city-02", "shot-vice-city-04", "shot-vice-city-09")},
     "leonida-keys": {"hero": "shot-leonida-keys-01", "intro": "shot-leonida-keys-06", "feature": ("shot-leonida-keys-01", "shot-leonida-keys-05"),
                      "story": ("shot-leonida-keys-05", "shot-leonida-keys-02", "shot-leonida-keys-03")},
     "grassrivers": {"hero": "shot-grassrivers-05", "intro": "shot-grassrivers-03", "feature": ("shot-grassrivers-05", "shot-grassrivers-04"),
@@ -368,4 +368,37 @@ REGION_ART = {
                  "story": ("shot-ambrosia-01", "shot-ambrosia-02")},
     "mount-kalaga": {"hero": "shot-mount-kalaga-04", "intro": "shot-mount-kalaga-03", "feature": ("shot-mount-kalaga-04", "shot-mount-kalaga-02"),
                      "story": ("shot-mount-kalaga-02", "shot-mount-kalaga-01", "shot-mount-kalaga-05", "shot-mount-kalaga-06")},
+}
+
+
+# Where the subject of each Leonida / Regions picture is, as fractions of the picture (across, down), found by looking at every one of Rockstar's pictures. Every one is 16:9,
+# so a box of any other shape shows a window of it; the page centres that window on this point (clamped to the picture) for each shape it draws the picture in. A picture
+# that is not listed rests at its centre. A picture whose defining detail is not where its centre of interest is (a sign at one edge, a building at the other) may name a second
+# point for the narrow boxes. Nothing here states a fact about a region.
+REGION_FOCUS = {
+    "shot-vice-city-01": (0.50, 0.52), "shot-vice-city-02": (0.83, 0.45), "shot-vice-city-03": (0.54, 0.50), "shot-vice-city-04": (0.50, 0.30),
+    "shot-vice-city-08": (0.58, 0.45), "shot-vice-city-09": (0.45, 0.62), "shot-vice-city-10": (0.38, 0.45), "shot-vice-city-11": (0.42, 0.40),
+    "shot-leonida-keys-01": (0.66, 0.58), "shot-leonida-keys-02": (0.48, 0.45), "shot-leonida-keys-03": (0.50, 0.45), "shot-leonida-keys-05": (0.50, 0.55),
+    "shot-leonida-keys-06": (0.58, 0.45),
+    "shot-grassrivers-01": (0.57, 0.45), "shot-grassrivers-02": (0.66, 0.48), "shot-grassrivers-03": (0.27, 0.62), "shot-grassrivers-04": (0.50, 0.55),
+    "shot-grassrivers-05": (0.66, 0.50),
+    "shot-port-gellhorn-01": {"*": (0.50, 0.45), "narrow": (0.24, 0.32), "side": (0.24, 0.32), "about": (0.24, 0.32)},
+    "shot-port-gellhorn-02": {"*": (0.50, 0.40), "narrow": (0.38, 0.40), "side": (0.38, 0.40), "about": (0.38, 0.40)},
+    "shot-port-gellhorn-06": (0.40, 0.60),
+    "shot-ambrosia-01": (0.60, 0.55), "shot-ambrosia-02": (0.75, 0.55), "shot-ambrosia-04": (0.32, 0.52),
+    "shot-mount-kalaga-01": (0.52, 0.45), "shot-mount-kalaga-02": (0.48, 0.38), "shot-mount-kalaga-03": (0.20, 0.55), "shot-mount-kalaga-04": (0.58, 0.60),
+    "shot-mount-kalaga-05": (0.50, 0.55), "shot-mount-kalaga-06": (0.52, 0.65),
+}
+# The boxes the pages draw a picture in, width over height: (wide screens, tablets and phones). A box is a shape, not a size, so the focal point holds at every width.
+REGION_BOXES = {
+    "hero": (1.15, 1.45),     # the opening: the panel's picture beside the words / the picture above them
+    "main": (1.6, 1.5),       # a showcase's main picture
+    "side": (0.8, 0.8),       # a showcase's second picture, a narrow one beside it
+    "wide": (1.6, 1.5),       # a gallery picture in a wide slot
+    "narrow": (0.875, 1.5),   # a gallery picture in a narrow slot
+    "pano": (2.33, 1.5),      # an odd last gallery picture across the page
+    "about": (0.8, 1.33),     # the picture beside the description
+    "thumb": (1.6, 1.6),      # the strip of six
+    "stage": (3.0, 1.15),     # the next region
+    "tile": (1.5, 1.85),      # the six choices in the landing opening
 }

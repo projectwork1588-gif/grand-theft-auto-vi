@@ -13,7 +13,7 @@
 
   {# ---------------------------------------------------------------- the opening: the same for every region, the picture and its crop are the region's own #}
   <header class="rgh">
-    <div class="rgh__art">{{ rshot(r.hero, '(min-width: 900px) 70vw, 100vw', eager=true) }}</div>
+    <div class="rgh__art">{{ rshot(r.hero, '(min-width: 1024px) 70vw, 100vw', eager=true, ctx='hero') }}</div>
     <nav class="rg-crumb" aria-label="Breadcrumb">
       <a href="{{ url_for('pages.regions') }}">Leonida</a><span aria-hidden="true">/</span><span aria-current="page">Region {{ '%02d' % r.number }}</span>
     </nav>
@@ -46,7 +46,7 @@
           {% if r.locations %}<div><dt>Places</dt><dd>{% for l in r.locations %}<a href="{{ url_for('pages.location_detail', slug=l.slug) }}">{{ l.name }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</dd></div>{% endif %}
         </dl>
       </div>
-      {% if r.intro %}<div class="rga__pic reveal">{{ lb(r.intro, '(min-width: 900px) 40vw, 100vw') }}</div>{% endif %}
+      {% if r.intro %}<div class="rga__pic reveal">{{ lb(r.intro, '(min-width: 1024px) 40vw, 100vw', ctx='about') }}</div>{% endif %}
     </div>
   </section>
 
@@ -75,12 +75,12 @@
     <div class="rgs__head container--wide reveal"><p class="eyebrow" id="pics-title">Rockstar&rsquo;s own pictures</p></div>
     {% if p %}
     <div class="rgs__grid container--wide" data-n="{{ p | length }}">
-      {% for m in p %}<div class="rgs__cell reveal">{{ lb(m, '(min-width: 900px) 56vw, 100vw') }}</div>{% endfor %}
+      {% for m in p %}<div class="rgs__cell reveal">{{ lb(m, '(min-width: 1024px) 56vw, 100vw', ctx=('pano' if (loop.last and loop.index is odd) else ('wide' if loop.index % 4 in (0, 1) else 'narrow'))) }}</div>{% endfor %}
     </div>
     {% endif %}
     {% if r.postcard and image_src(r.postcard.embed_url, 1920) %}
     <figure class="rg-postcard container--wide reveal">
-      <div class="rg-postcard__pic">{{ lb(r.postcard, '(min-width: 900px) 62vw, 100vw') }}</div>
+      <div class="rg-postcard__pic">{{ lb(r.postcard, '(min-width: 1024px) 62vw, 100vw') }}</div>
       <figcaption class="rg-postcard__cap">
         <b>The postcard</b>
         <span>Rockstar&rsquo;s own artwork for {{ r.name }}. Select it to open it full size.</span>
@@ -97,7 +97,7 @@
   {% if r.next %}
   <nav class="rgn" aria-label="More regions">
     <a class="rgn__stage" href="{{ url_for('pages.region_detail', slug=r.next.slug) }}" rel="next" data-region-link="{{ r.next.slug }}" data-region="{{ r.next.slug }}">
-      <span class="rgn__art">{{ rshot(r.next.cover, '100vw', decorative=true) }}</span>
+      <span class="rgn__art">{{ rshot(r.next.cover, '100vw', decorative=true, ctx='stage') }}</span>
       <span class="rgn__shade" aria-hidden="true"></span>
       <span class="rgn__words">
         <span class="rgn__kicker"><span>Next region</span><span>{{ '%02d' % r.next.number }} of {{ '%02d' % r.total }}</span></span>
@@ -112,7 +112,7 @@
     <ol class="rgn__strip container--wide" aria-label="All regions">
       {% for x in r.all_regions %}
       <li><a href="{{ url_for('pages.region_detail', slug=x.slug) }}"{% if x.slug == r.slug %} aria-current="page"{% endif %}>
-        <span class="rgn__thumb">{{ rshot(x.cover, '(min-width: 900px) 16vw, 45vw', decorative=true) }}</span>
+        <span class="rgn__thumb">{{ rshot(x.cover, '(min-width: 1024px) 16vw, 45vw', decorative=true, ctx='thumb') }}</span>
         <span class="rgn__lbl"><b>{{ '%02d' % x.number }}</b> {{ x.name }}</span>
       </a></li>
       {% endfor %}

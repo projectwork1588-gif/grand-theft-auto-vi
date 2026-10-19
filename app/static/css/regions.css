@@ -17,7 +17,8 @@
 .rg h1, .rg h2, .rg p, .rg ol, .rg ul, .rg dl, .rg figure, .rg dd { margin: 0; }
 .rg ol, .rg ul { padding: 0; list-style: none; }
 
-.rshot { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; }
+.rshot { display: block; width: 100%; height: 100%; object-fit: cover; object-position: var(--px, 50%) var(--py, 50%); }
+@media (max-width: 1023px) { .rshot { object-position: var(--pxn, var(--px, 50%)) var(--pyn, var(--py, 50%)); } }
 .rg-lb { display: block; position: absolute; inset: 0; color: inherit; text-decoration: none; }
 .rg-lb:focus-visible { outline: 2px solid var(--text); outline-offset: -6px; }
 .rg-lb .rshot { transition: transform 1.2s var(--ease); }
@@ -40,6 +41,14 @@
 /* the region's number, large and outlined, above its name */
 .rgh__no, .rgf__no { display: block; font: 700 var(--t-h1)/.8 var(--font-display); letter-spacing: var(--track-caps); color: transparent; -webkit-text-stroke: 1px rgba(255, 255, 255, .34); user-select: none; }
 
+
+/* where the subject of each picture rests in the box it is drawn in: media_slots.REGION_FOCUS and REGION_BOXES say where, the service turns that into a position on a five-percent
+   grid for wide screens (data-px, data-py) and for tablets and phones (data-pxn, data-pyn), and these rules are the grid, because the site's CSP forbids inline styles. */
+.rshot[data-px="0"] { --px: 0%; } .rshot[data-px="5"] { --px: 5%; } .rshot[data-px="10"] { --px: 10%; } .rshot[data-px="15"] { --px: 15%; } .rshot[data-px="20"] { --px: 20%; } .rshot[data-px="25"] { --px: 25%; } .rshot[data-px="30"] { --px: 30%; } .rshot[data-px="35"] { --px: 35%; } .rshot[data-px="40"] { --px: 40%; } .rshot[data-px="45"] { --px: 45%; } .rshot[data-px="50"] { --px: 50%; } .rshot[data-px="55"] { --px: 55%; } .rshot[data-px="60"] { --px: 60%; } .rshot[data-px="65"] { --px: 65%; } .rshot[data-px="70"] { --px: 70%; } .rshot[data-px="75"] { --px: 75%; } .rshot[data-px="80"] { --px: 80%; } .rshot[data-px="85"] { --px: 85%; } .rshot[data-px="90"] { --px: 90%; } .rshot[data-px="95"] { --px: 95%; } .rshot[data-px="100"] { --px: 100%; }
+.rshot[data-py="0"] { --py: 0%; } .rshot[data-py="5"] { --py: 5%; } .rshot[data-py="10"] { --py: 10%; } .rshot[data-py="15"] { --py: 15%; } .rshot[data-py="20"] { --py: 20%; } .rshot[data-py="25"] { --py: 25%; } .rshot[data-py="30"] { --py: 30%; } .rshot[data-py="35"] { --py: 35%; } .rshot[data-py="40"] { --py: 40%; } .rshot[data-py="45"] { --py: 45%; } .rshot[data-py="50"] { --py: 50%; } .rshot[data-py="55"] { --py: 55%; } .rshot[data-py="60"] { --py: 60%; } .rshot[data-py="65"] { --py: 65%; } .rshot[data-py="70"] { --py: 70%; } .rshot[data-py="75"] { --py: 75%; } .rshot[data-py="80"] { --py: 80%; } .rshot[data-py="85"] { --py: 85%; } .rshot[data-py="90"] { --py: 90%; } .rshot[data-py="95"] { --py: 95%; } .rshot[data-py="100"] { --py: 100%; }
+.rshot[data-pxn="0"] { --pxn: 0%; } .rshot[data-pxn="5"] { --pxn: 5%; } .rshot[data-pxn="10"] { --pxn: 10%; } .rshot[data-pxn="15"] { --pxn: 15%; } .rshot[data-pxn="20"] { --pxn: 20%; } .rshot[data-pxn="25"] { --pxn: 25%; } .rshot[data-pxn="30"] { --pxn: 30%; } .rshot[data-pxn="35"] { --pxn: 35%; } .rshot[data-pxn="40"] { --pxn: 40%; } .rshot[data-pxn="45"] { --pxn: 45%; } .rshot[data-pxn="50"] { --pxn: 50%; } .rshot[data-pxn="55"] { --pxn: 55%; } .rshot[data-pxn="60"] { --pxn: 60%; } .rshot[data-pxn="65"] { --pxn: 65%; } .rshot[data-pxn="70"] { --pxn: 70%; } .rshot[data-pxn="75"] { --pxn: 75%; } .rshot[data-pxn="80"] { --pxn: 80%; } .rshot[data-pxn="85"] { --pxn: 85%; } .rshot[data-pxn="90"] { --pxn: 90%; } .rshot[data-pxn="95"] { --pxn: 95%; } .rshot[data-pxn="100"] { --pxn: 100%; }
+.rshot[data-pyn="0"] { --pyn: 0%; } .rshot[data-pyn="5"] { --pyn: 5%; } .rshot[data-pyn="10"] { --pyn: 10%; } .rshot[data-pyn="15"] { --pyn: 15%; } .rshot[data-pyn="20"] { --pyn: 20%; } .rshot[data-pyn="25"] { --pyn: 25%; } .rshot[data-pyn="30"] { --pyn: 30%; } .rshot[data-pyn="35"] { --pyn: 35%; } .rshot[data-pyn="40"] { --pyn: 40%; } .rshot[data-pyn="45"] { --pyn: 45%; } .rshot[data-pyn="50"] { --pyn: 50%; } .rshot[data-pyn="55"] { --pyn: 55%; } .rshot[data-pyn="60"] { --pyn: 60%; } .rshot[data-pyn="65"] { --pyn: 65%; } .rshot[data-pyn="70"] { --pyn: 70%; } .rshot[data-pyn="75"] { --pyn: 75%; } .rshot[data-pyn="80"] { --pyn: 80%; } .rshot[data-pyn="85"] { --pyn: 85%; } .rshot[data-pyn="90"] { --pyn: 90%; } .rshot[data-pyn="95"] { --pyn: 95%; } .rshot[data-pyn="100"] { --pyn: 100%; }
+
 /* =====================================================================
    A region's opening: the picture on a slant, the words beside it
    ===================================================================== */
@@ -61,13 +70,6 @@
 .rgh__copy > * { margin: 0; }
 .rgh__copy::before { content: ""; width: 72px; height: 3px; background: var(--tint); }
 
-/* where the camera rests: each region's picture is cut for its own subject */
-[data-region="vice-city"] .rgh__art .rshot { object-position: 36% 50%; }
-[data-region="leonida-keys"] .rgh__art .rshot { object-position: 60% 50%; }
-[data-region="grassrivers"] .rgh__art .rshot { object-position: 58% 50%; }
-[data-region="port-gellhorn"] .rgh__art .rshot { object-position: 38% 50%; }
-[data-region="ambrosia"] .rgh__art .rshot { object-position: 28% 50%; }
-[data-region="mount-kalaga"] .rgh__art .rshot { object-position: 56% 50%; }
 html.motion-on .rgh__art .rshot { transform-origin: 50% 50%; will-change: transform; animation: rg-push 16s cubic-bezier(.3, .12, .4, 1) both; }
 @keyframes rg-push { from { transform: scale(1); } to { transform: scale(1.05); } }
 html.motion-on .rgh__copy > * { animation: rg-rise .8s var(--ease) backwards; }
@@ -82,7 +84,7 @@ html.motion-on .rgh__copy > :nth-child(5) { animation-delay: .36s; }
    About: the description, beside a picture of the region when Rockstar has shown enough
    ===================================================================== */
 .rg-body { position: relative; }
-.rga { padding-block: clamp(56px, 8vw, 112px) clamp(24px, 4vw, 56px); scroll-margin-top: calc(var(--header-h) - 20px); }
+.rga { padding-block: clamp(48px, 6vw, 88px) clamp(24px, 4vw, 56px); scroll-margin-top: calc(var(--header-h) - 20px); }
 .rga__in { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: clamp(32px, 6vw, 96px); align-items: center; }
 .rga--plain .rga__in { grid-template-columns: minmax(0, 1fr); }
 .rga__text { display: grid; gap: 18px; justify-items: start; }
@@ -118,10 +120,10 @@ html.motion-on .rgh__copy > :nth-child(5) { animation-delay: .36s; }
 .rgs__head .eyebrow { color: var(--tint); }
 .rgs__grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: clamp(8px, 1.2vw, 18px); align-items: end; }
 .rgs__cell { position: relative; overflow: hidden; border-radius: var(--r-tile); background: var(--card); }
-.rgs__cell:nth-child(4n + 1) { grid-column: 1 / 9; aspect-ratio: 3 / 2; }
-.rgs__cell:nth-child(4n + 2) { grid-column: 9 / 13; aspect-ratio: 4 / 5; }
-.rgs__cell:nth-child(4n + 3) { grid-column: 1 / 5; aspect-ratio: 4 / 5; }
-.rgs__cell:nth-child(4n + 4) { grid-column: 5 / 13; aspect-ratio: 3 / 2; }
+.rgs__cell:nth-child(4n + 1) { grid-column: 1 / 9; aspect-ratio: 16 / 10; }
+.rgs__cell:nth-child(4n + 2) { grid-column: 9 / 13; aspect-ratio: 7 / 8; }
+.rgs__cell:nth-child(4n + 3) { grid-column: 1 / 5; aspect-ratio: 7 / 8; }
+.rgs__cell:nth-child(4n + 4) { grid-column: 5 / 13; aspect-ratio: 16 / 10; }
 .rgs__cell:last-child:nth-child(odd) { grid-column: 1 / -1; aspect-ratio: 21 / 9; }
 .rg-postcard { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); gap: clamp(20px, 3vw, 48px); align-items: end; margin-top: clamp(16px, 3vw, 40px); }
 .rg-postcard__pic { position: relative; overflow: hidden; aspect-ratio: 16 / 9; border-radius: var(--r-card); background: var(--card); }
@@ -204,7 +206,7 @@ html.motion-on .rg-intro__copy > :nth-child(3) { animation-delay: .24s; }
 .rgf__meta:empty { display: none; }
 .rgf__pics { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: clamp(8px, 1.2vw, 16px); align-items: stretch; }
 .rgf__main, .rgf__side { position: relative; display: block; overflow: hidden; border-radius: var(--r-card); background: var(--card); }
-.rgf__main { aspect-ratio: 4 / 3; }
+.rgf__main { aspect-ratio: 16 / 10; }
 .rgf__side .rshot { position: absolute; inset: 0; }
 .rgf--flip .rgf__pics { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
 .rgf--flip .rgf__main { order: 2; }
@@ -249,6 +251,7 @@ html.motion-on .rg-intro__copy > :nth-child(3) { animation-delay: .24s; }
   .rgh__copy::before { display: none; }
   .rgh__no { display: none; }
   .rg-hero__line { font-size: var(--t-body); max-width: 30rem; }
+  .rga { padding-top: 32px; }
   .rga__in { grid-template-columns: minmax(0, 1fr); }
   .rga__pic { aspect-ratio: 4 / 3; max-height: none; }
   .rg-lede { font-size: var(--t-lead); max-width: 34ch; }

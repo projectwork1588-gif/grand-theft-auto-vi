@@ -21,7 +21,7 @@
       <ol>
         {% for r in data %}
         <li><a href="#{{ r.slug }}" data-jump="{{ r.slug }}">
-          <span class="rg-index__art">{{ rshot(r.cover, '(min-width: 900px) 15vw, 45vw', decorative=true) }}</span>
+          <span class="rg-index__art">{{ rshot(r.cover, '(min-width: 1024px) 15vw, 45vw', decorative=true, ctx='tile') }}</span>
           <span class="rg-index__no">{{ '%02d' % r.number }}</span>
           <span class="rg-index__name">{{ r.name }}</span>
         </a></li>
@@ -55,8 +55,8 @@
           <a class="rg-go" href="{{ url_for('pages.region_detail', slug=r.slug) }}">Explore {{ r.name }}{{ arrow() }}</a>
         </div>
         <div class="rgf__pics reveal" aria-hidden="true">
-          <span class="rgf__main">{{ rshot(p[0], '(min-width: 900px) 46vw, 100vw', decorative=true) }}</span>
-          {% if p | length > 1 %}<span class="rgf__side">{{ rshot(p[1], '(min-width: 900px) 24vw, 100vw', decorative=true) }}</span>{% endif %}
+          <span class="rgf__main">{{ rshot(p[0], '(min-width: 1024px) 46vw, 100vw', decorative=true, ctx='main') }}</span>
+          {% if p | length > 1 %}<span class="rgf__side">{{ rshot(p[1], '(min-width: 1024px) 24vw, 100vw', decorative=true, ctx='side') }}</span>{% endif %}
         </div>
       </div>
     </section>
