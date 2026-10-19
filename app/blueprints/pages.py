@@ -43,9 +43,16 @@ def region_detail(slug):
     return render_template("regions/detail.html", region=site.region_detail(slug))
 
 
+@pages_bp.route("/music")
+def music():
+    return render_template("music/index.html", **site.music_page())
+
+
 @pages_bp.route("/locations")
 def locations():
-    return render_template("locations/index.html", **site.location_index(request.args))
+    """The old Places index. Its places were Team Valkyrie's own, not Rockstar's, so the section is now the Music page; the places themselves, their pages (/locations/<slug>, which
+    the stories and characters that use them still link to) and the API are untouched. The old filters (q, region, type, sort, page) mean nothing on the Music page and are dropped."""
+    return redirect(url_for("pages.music"), code=302)
 
 
 @pages_bp.route("/locations/<slug>")

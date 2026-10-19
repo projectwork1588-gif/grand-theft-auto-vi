@@ -155,7 +155,7 @@ def test_local_clip_route_is_empty_without_built_loops(client):
 # ------------------------------------------------------------------ list pages render
 @pytest.mark.parametrize("path,heading", [
     ("/characters", "The people of Leonida"), ("/vehicles", "Machines of Leonida"), ("/regions", "Six regions, one state"),
-    ("/locations", "Places of Leonida"), ("/missions", "Tales from Leonida"),
+    ("/music", "The music of Grand Theft Auto VI"), ("/missions", "Tales from Leonida"),
 ])
 def test_catalogue_pages_render(client, path, heading):
     page = html(client, path)
@@ -380,13 +380,25 @@ def test_region_detail_page(client):
     assert 'href="/regions/leonida-keys"' in page and 'rel="prev"' in page and re.search(r"Rockstar(?:&rsquo;|&#39;|')s own pictures", page)
 
 
-def test_locations_listing_filters(client):
-    assert len(names(html(client, "/locations"), "place__name")) == 8
-    assert names(html(client, "/locations?q=marina"), "place__name") == ["Coral Hook Marina"]
-    assert len(names(html(client, "/locations?region=vice-city"), "place__name")) == 3
-    assert len(names(html(client, "/locations?type=waterfront"), "place__name")) == 3
-    assert names(html(client, "/locations?sort=name_desc&per_page=2"), "place__name") == ["Sunset Pier Boardwalk", "Smokestack Row"]
-    assert "Rockstar has not published a place-by-place guide" in html(client, "/locations")
+def test_the_old_places_index_goes_to_the_music_page_and_the_places_themselves_are_untouched(client, app):
+    """Team Valkyrie's own places are not Rockstar's, so the Locations section became Music. The index redirects (its filters mean nothing there); the places, their pages and their query
+    logic stay, because the stories, the characters and the API still use them."""
+    for query in ("", "?q=marina", "?region=vice-city&type=waterfront&sort=name_desc&page=2", "?type=castle"):
+        response = client.get("/locations" + query)
+        assert response.status_code == 302 and response.headers["Location"].endswith("/music")
+    from werkzeug.datastructures import MultiDict
+
+    from app.services import site
+    with app.test_request_context():
+        def listed(**args):
+            return [r["name"] for r in site.location_index(MultiDict(args))["data"]]
+        assert len(listed()) == 8
+        assert listed(q="marina") == ["Coral Hook Marina"]
+        assert len(listed(region="vice-city")) == 3 and len(listed(type="waterfront")) == 3
+        assert listed(sort="name_desc", per_page="2") == ["Sunset Pier Boardwalk", "Smokestack Row"]
+        with pytest.raises(Exception, match="(?i)valid|type|problem|bad"):
+            site.location_index(MultiDict({"type": "castle"}))
+    assert client.get("/api/v1/locations").get_json()["pagination"]["total"] == 8             # the API still serves all eight, each marked demo
 
 
 def test_location_detail_page_labels_region_artwork_honestly(client):
@@ -451,8 +463,7 @@ def test_footer_is_short_and_has_no_developer_links(client):
 # ------------------------------------------------------------------ invalid input and routes
 @pytest.mark.parametrize("path", [
     "/characters?sort=password", "/characters?region=NOT-A-SLUG", "/characters?page=0", "/characters?q=" + "x" * 81,
-    "/vehicles?sort=price", "/vehicles?category=Bad Slug", "/missions?type=raid", "/locations?type=castle",
-    "/locations?region=NOT-A-SLUG", "/regions?status=maybe",
+    "/vehicles?sort=price", "/vehicles?category=Bad Slug", "/missions?type=raid", "/regions?status=maybe",
 ])
 def test_invalid_parameters_give_a_styled_400_page(client, path):
     response = client.get(path)
@@ -473,9 +484,9 @@ def test_unknown_routes_and_slugs_give_a_styled_404_page(client, path):
 
 def test_malformed_search_text_is_safe(client):
     for payload in ("' OR '1'='1", "'; DROP TABLE characters; --", "%", "_", "<script>alert(1)</script>", "‮", "a%00b"):
-        for path in ("/characters", "/vehicles", "/missions", "/locations"):
+        for path in ("/characters", "/vehicles", "/missions", "/music", "/locations"):
             response = client.get(path, query_string={"q": payload})
-            assert response.status_code in (200, 400), (path, payload)
+            assert response.status_code in (200, 302, 400), (path, payload)
     assert len(people(html(client, "/characters"))) == 8   # nothing was damaged
 
 
@@ -499,7 +510,7 @@ def test_pager_window_helper():
 
 # ------------------------------------------------------------------ design refinement (Team Valkyrie feedback)
 PUBLIC_PAGES = ("/", "/characters", "/characters/jason-duval", "/characters/cal-hampton", "/vehicles", "/vehicles/shitzu-squalo",
-                "/regions", "/regions/vice-city", "/locations", "/locations/pelican-quay-terminal", "/missions",
+                "/regions", "/regions/vice-city", "/music", "/locations/pelican-quay-terminal", "/missions",
                 "/missions/harbour-lights", "/about", "/credits")
 
 
@@ -523,7 +534,7 @@ def test_brand_lockup_is_in_the_header_and_footer(client):
 def test_menu_lists_every_section_and_the_project_pages(client):
     page = html(client, "/characters")
     menu = page.split('id="site-menu"')[1].split("</nav>")[0]
-    for label in ("Characters", "Garage", "Leonida", "Locations", "Stories", "About the project", "Credits and legal", "Watch the trailers"):
+    for label in ("Characters", "Garage", "Leonida", "Music", "Stories", "About the project", "Credits and legal", "Watch the trailers"):
         assert label in menu, label
     assert 'aria-current="page"' in menu and "Not affiliated with" in menu
     assert 'aria-controls="site-menu"' in page and 'aria-expanded="false"' in page
@@ -533,7 +544,7 @@ def test_menu_lists_every_section_and_the_project_pages(client):
 def test_header_has_inline_navigation_with_the_current_section_marked(client):
     page = html(client, "/vehicles")
     header = page.split('class="header-nav"')[1].split("</nav>")[0]
-    for label in ("Characters", "Garage", "Leonida", "Locations", "Stories"):
+    for label in ("Characters", "Garage", "Leonida", "Music", "Stories"):
         assert f">{label}</a>" in header, label
     assert header.count('aria-current="page"') == 1 and '<a href="/vehicles" aria-current="page">Garage</a>' in header
     # one primary navigation landmark for assistive technology: the overlay menu has its own label
@@ -615,7 +626,7 @@ def test_closing_band_replaces_the_plain_statistics_block(client):
 
 def test_catalogue_pages_have_cinematic_official_backdrops(client):
     for path, fragment in (("/characters", "Jason_and_Lucia_Beach_landscape"), ("/vehicles", "GROTTI_CHEETAH_02"), ("/regions", "Vice_City_10"),
-                           ("/locations", "Port_Gellhorn_06"), ("/missions", "Vice_City_11")):
+                           ("/music", "hero-background-desktop"), ("/missions", "Vice_City_11")):
         assert fragment in html(client, path), path
 
 

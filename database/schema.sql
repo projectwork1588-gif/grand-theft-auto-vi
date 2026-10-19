@@ -15,6 +15,10 @@
 
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS music_tracks;
+DROP TABLE IF EXISTS music_releases;
+DROP TABLE IF EXISTS station_preview_tracks;
+DROP TABLE IF EXISTS radio_stations;
 DROP TABLE IF EXISTS media_vehicles;
 DROP TABLE IF EXISTS media_regions;
 DROP TABLE IF EXISTS media_locations;
@@ -390,4 +394,80 @@ CREATE TABLE media_vehicles (
         REFERENCES media_assets (media_id) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_medv_vehicle FOREIGN KEY (vehicle_id)
         REFERENCES vehicles (vehicle_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- ---------------------------------------------------------------------
+-- Music: the radio stations, the score and the album Rockstar shows on its own Music page.
+-- Every row is official (source_url required); nothing here is audio. Mirrors database/migrations/008_music.sql.
+-- ---------------------------------------------------------------------
+CREATE TABLE radio_stations (
+    station_id      SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    slug            VARCHAR(60)   NOT NULL,
+    name            VARCHAR(80)   NOT NULL,
+    hosts           VARCHAR(120)  NULL,
+    description     VARCHAR(500)  NOT NULL,
+    logo_url        VARCHAR(500)  NULL,
+    background_url  VARCHAR(500)  NULL,
+    sort_order      TINYINT UNSIGNED NOT NULL,
+    content_status  ENUM('official','fan','demo') NOT NULL,
+    source_url      VARCHAR(500)  NULL,
+    source_note     VARCHAR(500)  NULL,
+    verified_on     DATE          NULL,
+    created_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (station_id),
+    UNIQUE KEY uq_radio_stations_slug (slug),
+    UNIQUE KEY uq_radio_stations_name (name),
+    KEY ix_radio_stations_order (sort_order),
+    CONSTRAINT ck_radio_stations_official_source
+        CHECK (content_status <> 'official' OR source_url IS NOT NULL)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE station_preview_tracks (
+    station_id   SMALLINT UNSIGNED NOT NULL,
+    sort_order   TINYINT UNSIGNED  NOT NULL,
+    title        VARCHAR(160)      NOT NULL,
+    artists      VARCHAR(200)      NOT NULL,
+    PRIMARY KEY (station_id, sort_order),
+    CONSTRAINT fk_station_preview_station FOREIGN KEY (station_id)
+        REFERENCES radio_stations (station_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE music_releases (
+    release_id       SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    slug             VARCHAR(60)   NOT NULL,
+    kind             ENUM('score','album') NOT NULL,
+    title            VARCHAR(160)  NOT NULL,
+    byline           VARCHAR(160)  NULL,
+    description      TEXT          NOT NULL,
+    release_note     VARCHAR(120)  NULL,
+    track_count      SMALLINT UNSIGNED NULL,
+    label            VARCHAR(80)   NULL,
+    artwork_url      VARCHAR(500)  NULL,
+    primary_url      VARCHAR(500)  NULL,
+    primary_label    VARCHAR(80)   NULL,
+    secondary_url    VARCHAR(500)  NULL,
+    secondary_label  VARCHAR(80)   NULL,
+    content_status   ENUM('official','fan','demo') NOT NULL,
+    source_url       VARCHAR(500)  NULL,
+    source_note      VARCHAR(500)  NULL,
+    verified_on      DATE          NULL,
+    created_at       TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (release_id),
+    UNIQUE KEY uq_music_releases_slug (slug),
+    CONSTRAINT ck_music_releases_official_source
+        CHECK (content_status <> 'official' OR source_url IS NOT NULL)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE music_tracks (
+    track_id    INT UNSIGNED      NOT NULL AUTO_INCREMENT,
+    release_id  SMALLINT UNSIGNED NOT NULL,
+    sort_order  TINYINT UNSIGNED  NOT NULL,
+    title       VARCHAR(200)      NOT NULL,
+    artists     VARCHAR(200)      NOT NULL,
+    listen_url  VARCHAR(500)      NULL,
+    is_score    TINYINT(1)        NOT NULL DEFAULT 0,
+    PRIMARY KEY (track_id),
+    UNIQUE KEY uq_music_tracks_order (release_id, sort_order),
+    CONSTRAINT fk_music_tracks_release FOREIGN KEY (release_id)
+        REFERENCES music_releases (release_id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

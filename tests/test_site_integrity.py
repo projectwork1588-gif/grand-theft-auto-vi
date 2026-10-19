@@ -61,7 +61,7 @@ def test_every_internal_link_resolves(client):
     html_pages = [p for p, r in pages.items() if "text/html" in r.content_type]
     # homepage + 5 list pages + 11 characters + 8 vehicles + 6 regions + 8 locations + 5 missions
     assert len(html_pages) >= 44, len(html_pages)
-    assert {"/", "/characters", "/vehicles", "/regions", "/locations", "/missions"} <= set(html_pages)
+    assert {"/", "/characters", "/vehicles", "/regions", "/music", "/missions"} <= set(html_pages)
 
 
 def test_static_assets_referenced_by_pages_exist(client):
@@ -89,7 +89,7 @@ def test_every_page_is_well_formed_accessible_html(client):
 
 
 def test_filter_forms_are_labelled_and_keyboard_usable(client):
-    for path in ("/characters", "/locations", "/missions"):
+    for path in ("/characters", "/missions"):
         page = client.get(path).get_data(as_text=True)
         assert 'role="search"' in page and "aria-label=" in page
         controls = len(re.findall(r"<(?:input|select)\b", page))

@@ -9,6 +9,7 @@ EXPECTED_TABLES = {
     "vehicle_categories", "vehicles", "missions", "mission_characters", "mission_vehicles",
     "mission_locations", "favourite_characters", "favourite_vehicles", "favourite_missions",
     "favourite_locations", "media_assets", "media_characters", "media_locations", "media_regions", "media_vehicles",
+    "radio_stations", "station_preview_tracks", "music_releases", "music_tracks",      # Music (migration 008)
 }
 
 
@@ -49,7 +50,7 @@ def test_foreign_keys_are_defined(cur):
         "SELECT COUNT(*) AS n FROM information_schema.REFERENTIAL_CONSTRAINTS "
         "WHERE CONSTRAINT_SCHEMA = DATABASE()"
     )
-    assert cur.fetchone()["n"] == 29  # 23 from Phase 1, media_regions (2), media_vehicles (2) and character_regions (2, Gate 3A)
+    assert cur.fetchone()["n"] == 31  # 23 from Phase 1, media_regions (2), media_vehicles (2), character_regions (2, Gate 3A), station_preview_tracks (1) and music_tracks (1)
 
 
 def test_composite_primary_keys_exist(cur):
@@ -58,7 +59,7 @@ def test_composite_primary_keys_exist(cur):
         "WHERE TABLE_SCHEMA = DATABASE() AND CONSTRAINT_NAME = 'PRIMARY' "
         "GROUP BY TABLE_NAME HAVING COUNT(*) > 1"
     )
-    assert len(cur.fetchall()) == 13  # 10 from Phase 1, media_regions, media_vehicles and character_regions
+    assert len(cur.fetchall()) == 14  # 10 from Phase 1, media_regions, media_vehicles, character_regions and station_preview_tracks
 
 
 def test_pool_connection_from_flask_app(app_context):

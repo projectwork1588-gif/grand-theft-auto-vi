@@ -1,0 +1,152 @@
+/* =====================================================================
+   Music (/music): the radio stations, the score and the album Rockstar shows on its own Music page, with their sources.
+   Rockstar's own pictures and words, set in the site's own grammar: an opening, the score, the radio as six cards, the album with its singles, and a note on what is confirmed.
+   Nothing here plays audio, so nothing here pretends to: every control is a link to the page that does. Tokens only. Motion is the site's own reveal and nothing else.
+   ===================================================================== */
+
+.mu { --edge: max(var(--gutter), calc((100vw - var(--max-wide)) / 2)); --tint: #ff8cc0; background: var(--ground); }
+.mu .container--wide { width: auto; margin-inline: var(--edge); }
+.mu h1, .mu h2, .mu h3, .mu p, .mu ol, .mu ul, .mu dl, .mu dd, .mu figure, .mu blockquote { margin: 0; }
+.mu ol, .mu ul { padding: 0; list-style: none; }
+.mu-img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.mu a:focus-visible { outline: 2px solid var(--text); outline-offset: 4px; }
+
+.mu-kicker { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font: 700 var(--t-micro)/1.2 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--tint); }
+.mu-kicker span:first-child { color: var(--text); }
+.mu-kicker span + span::before { content: ""; display: inline-block; width: 18px; height: 1px; margin-right: 14px; vertical-align: middle; background: currentColor; opacity: .55; }
+.mu-h { font: 700 var(--t-h2)/.96 var(--font-display); letter-spacing: var(--track-tight); text-transform: uppercase; text-wrap: balance; color: var(--text); }
+.mu-h--small { font-size: var(--t-h3); }
+.mu .eyebrow { color: var(--tint); }
+.mu-quote { max-width: 46ch; font: 500 var(--t-lead)/1.5 var(--font-text); color: var(--text-2); text-wrap: pretty; }
+.mu-quote cite { display: block; margin-top: 10px; font: 700 var(--t-micro)/1.2 var(--font-text); font-style: normal; letter-spacing: var(--track-label); text-transform: uppercase; color: var(--text-3); }
+.mu-note { max-width: 70ch; font: 500 var(--t-small)/1.55 var(--font-text); color: var(--text-3); }
+.mu-src { font: 500 var(--t-small)/1.5 var(--font-text); color: var(--text-3); }
+.mu-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+
+/* a link that leaves the site */
+.mu-ext { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; color: var(--text); font: 700 var(--t-small)/1.2 var(--font-text); letter-spacing: var(--track-ui); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 5px; }
+.mu-ext svg { flex: none; width: 16px; height: 16px; transition: transform var(--dur-1) var(--ease); }
+.mu-ext:hover, .mu-ext:focus-visible { color: var(--tint); text-decoration-color: var(--tint); }
+.mu-ext:hover svg, .mu-ext:focus-visible svg { transform: translate(2px, -2px); }
+.mu-ext--strong { font-size: var(--t-body); }
+.mu-btn { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 22px; border-radius: var(--r-pill); background: var(--text); color: var(--ground); font: 700 var(--t-small)/1 var(--font-text); letter-spacing: var(--track-ui); text-decoration: none; transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease); }
+.mu-btn svg { width: 16px; height: 16px; }
+.mu-btn:hover, .mu-btn:focus-visible { background: var(--tint); color: var(--ground); }
+.mu-btn--ghost { background: transparent; color: var(--text); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.mu-btn--ghost:hover, .mu-btn--ghost:focus-visible { background: rgba(255, 255, 255, .1); color: var(--text); box-shadow: inset 0 0 0 1px var(--tint); }
+
+/* =====================================================================
+   The opening
+   ===================================================================== */
+.mu-hero { position: relative; isolation: isolate; overflow: hidden; display: grid; align-content: end; min-height: clamp(560px, 86svh, 820px); padding: calc(var(--header-h) + 40px) var(--edge) clamp(36px, 6vh, 64px); background: var(--ground); }
+.mu-hero__art { position: absolute; inset: 0; z-index: -2; background: var(--card); }
+.mu-hero__art .mu-img { object-position: 50% 58%; }
+.mu-hero::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(90deg, rgba(10, 8, 28, .66) 0%, rgba(10, 8, 28, 0) 56%), linear-gradient(0deg, var(--ground) 0%, rgba(10, 8, 28, .7) 22%, rgba(10, 8, 28, .12) 60%, rgba(10, 8, 28, .45) 100%); }
+.mu-hero__copy { display: grid; gap: 16px; justify-items: start; max-width: 46rem; }
+.mu-title { font: 700 var(--t-display)/.9 var(--font-display); letter-spacing: var(--track-tight); text-transform: uppercase; text-wrap: balance; color: var(--text); text-shadow: 0 2px 28px rgba(7, 6, 20, .6); }
+.mu-lede { max-width: 34rem; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, .28); font: 500 var(--t-lead)/1.45 var(--font-text); color: var(--text-2); text-shadow: 0 1px 18px rgba(7, 6, 20, .8); }
+.mu-jump ol { display: flex; flex-wrap: wrap; gap: 8px 10px; }
+.mu-jump a { display: inline-flex; align-items: baseline; gap: 10px; min-height: 44px; padding: 12px 18px; border-radius: var(--r-pill); background: rgba(10, 8, 28, .6); box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--text); font: 700 var(--t-small)/1 var(--font-text); letter-spacing: var(--track-ui); text-decoration: none; transition: background var(--dur-1) var(--ease), box-shadow var(--dur-1) var(--ease); }
+.mu-jump a b { font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); color: var(--tint); }
+.mu-jump a small { font: 600 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--text-3); }
+.mu-jump a:hover, .mu-jump a:focus-visible { background: rgba(255, 255, 255, .12); box-shadow: inset 0 0 0 1px var(--tint); }
+html.motion-on .mu-hero__copy > * { animation: mu-rise .8s var(--ease) backwards; }
+html.motion-on .mu-hero__copy > :nth-child(2) { animation-delay: .1s; }
+html.motion-on .mu-hero__copy > :nth-child(3) { animation-delay: .2s; }
+html.motion-on .mu-hero__copy > :nth-child(4) { animation-delay: .3s; }
+@keyframes mu-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+
+.mu-empty { display: grid; gap: 14px; max-width: 60ch; padding-block: clamp(48px, 7vw, 96px); }
+.mu-empty p { font: 500 var(--t-body)/1.6 var(--font-text); color: var(--text-2); }
+.mu-empty code { padding: 2px 6px; border-radius: var(--r-tile); background: var(--card); font-size: var(--t-small); }
+
+/* =====================================================================
+   The score
+   ===================================================================== */
+.mu-score { padding-block: clamp(56px, 8vw, 112px); scroll-margin-top: calc(var(--header-h) - 8px); }
+.mu-score__in { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(32px, 6vw, 96px); align-items: center; }
+.mu-score__text { display: grid; gap: 18px; justify-items: start; }
+.mu-justice { display: block; width: min(14rem, 60%); height: auto; }
+.mu-score__pic { position: relative; overflow: hidden; aspect-ratio: 2.4 / 1; border-radius: var(--r-card); background: var(--card); }
+
+/* =====================================================================
+   The radio: six stations, each in the banner and logo Rockstar's page gives it
+   ===================================================================== */
+.mu-radio { position: relative; isolation: isolate; overflow: hidden; padding-block: clamp(56px, 8vw, 112px); border-top: 1px solid var(--line); scroll-margin-top: calc(var(--header-h) - 8px); }
+.mu-radio__bg { position: absolute; inset: 0; z-index: -2; opacity: .22; }
+.mu-radio::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(180deg, var(--ground) 0%, rgba(18, 16, 42, .6) 30%, var(--ground) 100%); }
+.mu-radio__in { display: grid; gap: clamp(28px, 4vw, 56px); }
+.mu-radio__head { display: grid; gap: 16px; justify-items: start; }
+.mu-stations { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(16px, 2vw, 28px); }
+.mu-st article { display: grid; grid-template-rows: auto 1fr; height: 100%; overflow: hidden; border-radius: var(--r-card); background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
+.mu-st__banner { position: relative; aspect-ratio: 5 / 2; overflow: hidden; background: var(--ground-2); }
+.mu-st__logo { position: absolute; inset: 0; margin: auto; width: auto; height: 72%; max-width: 78%; object-fit: contain; }
+.mu-st__body { display: grid; align-content: start; gap: 10px; padding: clamp(20px, 2.4vw, 32px); }
+.mu-st__no { font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); color: var(--tint); }
+.mu-st__name { font: 700 var(--t-h3)/1 var(--font-display); letter-spacing: var(--track-tight); text-transform: uppercase; color: var(--text); }
+.mu-st__with { font: 700 var(--t-small)/1.3 var(--font-text); letter-spacing: var(--track-ui); color: var(--text-2); }
+.mu-st__desc { max-width: 48ch; font: 500 var(--t-body)/1.55 var(--font-text); color: var(--text); }
+.mu-st__heard { display: grid; gap: 8px; margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--line); }
+.mu-st__label { font: 700 var(--t-micro)/1.2 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--text-3); }
+.mu-st__heard ul { display: grid; gap: 6px; }
+.mu-st__heard li { display: grid; gap: 1px; font: 500 var(--t-small)/1.35 var(--font-text); color: var(--text-3); }
+.mu-st__heard li b { font-weight: 700; color: var(--text); }
+.mu-st .mu-actions { margin-top: 8px; }
+
+/* =====================================================================
+   The album
+   ===================================================================== */
+.mu-album { position: relative; isolation: isolate; overflow: hidden; padding-block: clamp(56px, 8vw, 112px); border-top: 1px solid var(--line); scroll-margin-top: calc(var(--header-h) - 8px); }
+.mu-album__bg { position: absolute; inset: 0 0 auto 0; height: min(70%, 640px); z-index: -2; opacity: .3; -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 100%); mask-image: linear-gradient(180deg, #000 0%, transparent 100%); }
+.mu-album__in { display: grid; gap: clamp(36px, 5vw, 72px); }
+.mu-album__top { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(32px, 6vw, 96px); align-items: center; }
+.mu-album__art { position: relative; overflow: hidden; aspect-ratio: 1 / 1; max-width: 34rem; border-radius: var(--r-card); background: var(--card); box-shadow: 0 30px 80px rgba(0, 0, 0, .5); }
+.mu-album__text { display: grid; gap: 18px; justify-items: start; }
+.mu-facts { display: flex; flex-wrap: wrap; gap: 0 clamp(24px, 4vw, 56px); width: 100%; padding-top: 16px; border-top: 1px solid var(--line); }
+.mu-facts > div { display: grid; gap: 6px; padding-block: 4px; }
+.mu-facts dt { font: 700 var(--t-micro)/1.2 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--text-3); }
+.mu-facts dd { font: 600 var(--t-body)/1.35 var(--font-text); color: var(--text); }
+.mu-singles { display: grid; gap: 16px; }
+.mu-singles ol { border-top: 1px solid var(--line); }
+.mu-singles li { display: grid; grid-template-columns: 3rem minmax(0, 1fr) auto; gap: 8px 20px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.mu-singles__no { font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); color: var(--tint); }
+.mu-singles__main { display: grid; gap: 2px; min-width: 0; }
+.mu-singles__main b { font: 700 var(--t-lead)/1.25 var(--font-text); color: var(--text); overflow-wrap: anywhere; }
+.mu-singles__main span { font: 500 var(--t-small)/1.4 var(--font-text); color: var(--text-3); }
+.mu-singles__go { white-space: nowrap; }
+
+/* =====================================================================
+   What is confirmed
+   ===================================================================== */
+.mu-source { border-top: 1px solid var(--line); background: var(--ground-2); }
+.mu-source__in { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 14px clamp(24px, 6vw, 96px); align-items: start; padding-block: clamp(40px, 6vw, 72px); }
+.mu-source__in > div { display: grid; gap: 14px; max-width: 70ch; }
+.mu-source__in p { font: 500 var(--t-body)/1.6 var(--font-text); color: var(--text-2); }
+
+@media (prefers-reduced-motion: reduce) {
+  html.motion-on .mu-hero__copy > * { animation-duration: .8s !important; }
+  html.motion-on .mu-hero__copy > :nth-child(2) { animation-delay: .1s !important; }
+  html.motion-on .mu-hero__copy > :nth-child(3) { animation-delay: .2s !important; }
+  html.motion-on .mu-hero__copy > :nth-child(4) { animation-delay: .3s !important; }
+  .mu-ext svg { transition: none; }
+  .mu-ext:hover svg, .mu-ext:focus-visible svg { transform: none; }
+}
+
+/* =====================================================================
+   Tablets and phones
+   ===================================================================== */
+@media (max-width: 1023px) {
+  .mu-hero { min-height: 0; padding-top: calc(var(--header-h) + 72px); }
+  .mu-title { font-size: var(--t-h1); }
+  .mu-score__in, .mu-album__top { grid-template-columns: minmax(0, 1fr); }
+  .mu-score__pic { order: -1; }
+  .mu-stations { grid-template-columns: minmax(0, 1fr); }
+  .mu-album__art { max-width: 26rem; }
+  .mu-source__in { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 600px) {
+  .mu-singles li { grid-template-columns: 2.4rem minmax(0, 1fr); }
+  .mu-singles__go { grid-column: 2; justify-self: start; }
+  .mu-hero { padding-bottom: 32px; }
+  .mu-btn { width: 100%; justify-content: center; }
+}

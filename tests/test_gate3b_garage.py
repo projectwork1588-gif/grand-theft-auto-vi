@@ -384,7 +384,7 @@ def test_garage_styles_only_define_garage_selectors():
 
 
 def test_other_sections_do_not_load_the_garage_assets(client):
-    for path in ("/", "/characters", "/characters/jason-duval", "/regions", "/locations", "/missions", "/about"):
+    for path in ("/", "/characters", "/characters/jason-duval", "/regions", "/music", "/locations/neon-row-district", "/missions", "/about"):
         page = html(client, path)
         assert "garage.css" not in page and "garage.js" not in page, path
 

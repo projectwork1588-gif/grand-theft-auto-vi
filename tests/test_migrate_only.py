@@ -44,7 +44,7 @@ def test_the_plan_for_one_migration_lists_only_that_migration_and_changes_nothin
     assert migrate_db.main(ONLY + ["--plan"]) == 0
     out = capsys.readouterr().out
     assert "006_gate3b_garage.sql" in out and "All checks passed" in out and "--plan given: nothing was changed" in out
-    for other in ("001_phase2_media.sql", "002_phase2_garage.sql", "003_concept_copy.sql", "004_leonida_in_motion.sql", "005_gate3a_cast.sql", "007_region_wording.sql"):
+    for other in ("001_phase2_media.sql", "002_phase2_garage.sql", "003_concept_copy.sql", "004_leonida_in_motion.sql", "005_gate3a_cast.sql", "007_region_wording.sql", "008_music.sql"):
         assert other not in out
     assert fingerprint(EVERYTHING) == before
 

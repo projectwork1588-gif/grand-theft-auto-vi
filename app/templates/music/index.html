@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Music{% endblock %}
+{% block description %}The radio stations, the score and the album Rockstar has shown for Grand Theft Auto VI, set out with their sources and linked to Rockstar's own pages.{% endblock %}
+{% block header_class %}{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='css/music.css') }}">{% endblock %}
+
+{# One of Rockstar's own pictures, from its own image address (a bad row draws nothing); sizes says the width it is really drawn at #}
+{% macro mimg(url, sizes, alt='', cls='', eager=false) -%}
+  {% if url and image_src(url, 1920) %}<img class="mu-img {{ cls }}" src="{{ image_src(url, 1920) }}" srcset="{{ image_srcset(url, (640, 960, 1280, 1920, 2560)) }}" sizes="{{ sizes }}" alt="{{ alt }}" {% if eager %}fetchpriority="high"{% else %}loading="lazy"{% endif %} decoding="async" referrerpolicy="no-referrer">{% endif %}
+{%- endmacro %}
+
+{# A link that leaves the site: it opens in a new tab, says so, and carries the destination's own name #}
+{% macro out(url, label, cls='mu-ext') -%}
+  {% if url %}<a class="{{ cls }}" href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ label }}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="visually-hidden"> (opens in a new tab)</span></a>{% endif %}
+{%- endmacro %}
+
+{% block content %}
+<div class="mu">
+
+  {# ---------------------------------------------------------------- the opening #}
+  <header class="mu-hero">
+    <div class="mu-hero__art">{{ mimg(art.hero, '100vw', eager=true) }}</div>
+    <div class="mu-hero__copy">
+      <p class="mu-kicker"><span>Music</span><span>Grand Theft Auto VI</span></p>
+      <h1 class="mu-title">The music of Grand Theft Auto VI</h1>
+      <p class="mu-lede">The radio stations, the score and the album Rockstar has shown so far, set out with their sources. The sound itself plays on Rockstar&rsquo;s own pages, and every link here opens them.</p>
+      {% if not empty %}
+      <nav class="mu-jump" aria-label="On this page">
+        <ol>
+          {% if score %}<li><a href="#score"><b>01</b>Score</a></li>{% endif %}
+          {% if stations %}<li><a href="#radio"><b>02</b>Radio <small>{{ stations | length }} stations</small></a></li>{% endif %}
+          {% if album %}<li><a href="#album"><b>03</b>The Album</a></li>{% endif %}
+        </ol>
+      </nav>
+      {% endif %}
+    </div>
+  </header>
+
+  {% if empty %}
+  <section class="mu-empty container--wide">
+    <h2 class="mu-h">The music data is not loaded yet</h2>
+    <p>This page reads Rockstar&rsquo;s radio stations, score and album from the database. They are added by migration 008 (<code>python -m scripts.migrate_db --only 008_music.sql</code>); until then there is nothing here to show. Rockstar&rsquo;s own page is <a href="https://www.rockstargames.com/VI/music" target="_blank" rel="noopener noreferrer">rockstargames.com/VI/music</a>.</p>
+  </section>
+  {% else %}
+
+  {# ---------------------------------------------------------------- the score #}
+  {% if score %}
+  <section class="mu-score" id="score" aria-labelledby="score-title">
+    <div class="mu-score__in container--wide">
+      <div class="mu-score__text reveal">
+        <p class="eyebrow">Score</p>
+        <h2 class="mu-h" id="score-title">{{ score.title }}</h2>
+        {% if art.justice %}<img class="mu-justice" src="{{ image_src(art.justice, 1280) }}" alt="Justice" loading="lazy" decoding="async" referrerpolicy="no-referrer">{% endif %}
+        <p class="mu-quote">{{ score.description }}</p>
+        <p class="mu-actions">{{ out(score.primary, score.primary_label or 'Listen now', 'mu-btn') }}</p>
+        <p class="mu-src">{{ out(score.source, "Rockstar's Music page") }}{% if score.checked %} &middot; checked {{ score.checked }}{% endif %}</p>
+      </div>
+      <figure class="mu-score__pic reveal">{{ mimg(score.art, '(min-width: 1024px) 52vw, 100vw', alt='Rockstar artwork for the score: a seaplane over the water at sunset') }}</figure>
+    </div>
+  </section>
+  {% endif %}
+
+  {# ---------------------------------------------------------------- the radio #}
+  {% if stations %}
+  <section class="mu-radio" id="radio" aria-labelledby="radio-title">
+    <div class="mu-radio__bg" aria-hidden="true">{{ mimg(art.radio, '100vw') }}</div>
+    <div class="mu-radio__in container--wide">
+      <div class="mu-radio__head reveal">
+        <p class="eyebrow">Radio</p>
+        <h2 class="mu-h" id="radio-title">Broadcasting live across Leonida</h2>
+        <p class="mu-quote">&ldquo;Spanning stations dedicated to everything from Classic Rock to Talk Radio, Grand Theft Auto VI features the biggest and widest-ranging selection of in-game radio and podcasts yet.&rdquo;<cite>Rockstar Games, on its Music page</cite></p>
+      </div>
+      <ol class="mu-stations">
+        {% for s in stations %}
+        <li class="mu-st reveal" id="st-{{ s.slug }}">
+          <article aria-labelledby="st-{{ s.slug }}-name">
+            <div class="mu-st__banner">
+              {{ mimg(s.banner, '(min-width: 1024px) 46vw, 100vw') }}
+              {% if s.logo %}<img class="mu-st__logo" src="{{ image_src(s.logo, 1280) }}" srcset="{{ image_srcset(s.logo, (640, 960, 1280)) }}" sizes="(min-width: 1024px) 30vw, 70vw" alt="{{ s.name }} logo" loading="lazy" decoding="async" referrerpolicy="no-referrer">{% endif %}
+            </div>
+            <div class="mu-st__body">
+              <p class="mu-st__no" aria-hidden="true">{{ '%02d' % s.number }}</p>
+              <h3 class="mu-st__name" id="st-{{ s.slug }}-name">{{ s.name }}</h3>
+              {% if s.hosts %}<p class="mu-st__with">With {{ s.hosts }}</p>{% endif %}
+              <p class="mu-st__desc">{{ s.description }}</p>
+              {% if s.tracks %}
+              <div class="mu-st__heard">
+                <p class="mu-st__label">Heard in Rockstar&rsquo;s preview</p>
+                <ul>{% for t in s.tracks %}<li><b>{{ t.title }}</b><span>{{ t.artists }}</span></li>{% endfor %}</ul>
+              </div>
+              {% endif %}
+              <p class="mu-actions">{{ out(s.source, 'Hear the preview on Rockstar\'s site') }}</p>
+            </div>
+          </article>
+        </li>
+        {% endfor %}
+      </ol>
+      <p class="mu-note">The songs listed are the ones Rockstar&rsquo;s Music page names for each station&rsquo;s preview. They are what that preview plays, not a full playlist, and Rockstar has not published one.</p>
+    </div>
+  </section>
+  {% endif %}
+
+  {# ---------------------------------------------------------------- the album #}
+  {% if album %}
+  <section class="mu-album" id="album" aria-labelledby="album-title">
+    <div class="mu-album__bg" aria-hidden="true">{{ mimg(art.album, '100vw') }}</div>
+    <div class="mu-album__in container--wide">
+      <div class="mu-album__top">
+        <figure class="mu-album__art reveal">{{ mimg(album.art, '(min-width: 1024px) 34vw, 80vw', alt='The artwork of Grand Theft Auto VI: The Album') }}</figure>
+        <div class="mu-album__text reveal">
+          <p class="eyebrow">Soundtrack</p>
+          <h2 class="mu-h" id="album-title">{{ album.title }}</h2>
+          <p class="mu-quote">{{ album.description }}</p>
+          <dl class="mu-facts" aria-label="About the album">
+            {% if album.release_note %}<div><dt>Release</dt><dd>{{ album.release_note }}</dd></div>{% endif %}
+            {% if album.track_count %}<div><dt>Tracks</dt><dd>{{ album.track_count }} original tracks</dd></div>{% endif %}
+            {% if album.label %}<div><dt>Label</dt><dd>{{ album.label }}</dd></div>{% endif %}
+          </dl>
+          <p class="mu-actions">{{ out(album.primary, album.primary_label or 'Pre-save', 'mu-btn') }}{{ out(album.secondary, album.secondary_label or 'Pre-order', 'mu-btn mu-btn--ghost') }}</p>
+          <p class="mu-src">{{ out(album.source, "Rockstar's Music page") }}{% if album.label %} &middot; label named on {{ out('https://www.gtavi-thealbum.com', 'gtavi-thealbum.com') }}{% endif %}</p>
+        </div>
+      </div>
+      {% if album.singles %}
+      <div class="mu-singles reveal">
+        <h3 class="mu-h mu-h--small" id="singles-title">Singles</h3>
+        <ol aria-labelledby="singles-title">
+          {% for t in album.singles %}
+          <li>
+            <span class="mu-singles__no" aria-hidden="true">{{ '%02d' % t.sort_order }}</span>
+            <span class="mu-singles__main"><b>{{ t.title }}</b><span>{{ t.artists }}{% if t.is_score %} &middot; from the score&rsquo;s composers{% endif %}</span></span>
+            {{ out(t.link, 'Play full track', 'mu-ext mu-singles__go') }}
+          </li>
+          {% endfor %}
+        </ol>
+        <p class="mu-note">These are the nine singles Rockstar&rsquo;s Music page lists. The album has {{ album.track_count or 'more' }} tracks in all, and the singles listed can change, so Rockstar&rsquo;s page is the authority.</p>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+  {# ---------------------------------------------------------------- what is confirmed #}
+  <aside class="mu-source" aria-labelledby="mu-source-title">
+    <div class="mu-source__in container--wide">
+      <h2 class="mu-h" id="mu-source-title">What is confirmed</h2>
+      <div>
+        <p>Everything on this page is taken from Rockstar&rsquo;s own Music page{% if checked %}, read on {{ checked }}{% endif %}, and from the album&rsquo;s own site for its label. The pictures, logos and artwork are Rockstar&rsquo;s, shown with their credit. This page hosts and plays no audio: previews and full tracks play on Rockstar&rsquo;s page and on the links it gives.</p>
+        <p>Which of these songs play in the game, and how the radio is arranged, Rockstar has not said beyond its own pages, and nothing here goes further. Team Valkyrie is an unofficial fan project, not affiliated with Rockstar Games, Take-Two Interactive or any label or artist named.</p>
+        <p>{{ out('https://www.rockstargames.com/VI/music', "Open Rockstar's Music page", 'mu-ext mu-ext--strong') }}</p>
+      </div>
+    </div>
+  </aside>
+  {% endif %}
+</div>
+{% endblock %}

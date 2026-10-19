@@ -10,7 +10,7 @@ from .. import local_media, media_slots, media_urls
 from ..repositories import characters as characters_repo
 from ..repositories import media, missions as missions_repo, regions as regions_repo
 from ..repositories import vehicles as vehicles_repo
-from . import characters, locations, missions, regions, validation as v, vehicles
+from . import characters, locations, missions, music, regions, validation as v, vehicles
 
 
 # ---------------------------------------------------------------- small helpers
@@ -766,6 +766,13 @@ def region_detail(slug):
 
 
 # ---------------------------------------------------------------- locations
+def music_page():
+    """The Music page: Rockstar's stations, score and album from the database, and the pictures Rockstar's own Music page uses for its sections."""
+    data = music.page()
+    data["art"] = {name: music.safe_image(url) for name, url in media_slots.MUSIC_ART.items()}
+    return data
+
+
 def location_index(args):
     result = locations.list_locations(args)
     result["regions"] = regions_repo.list_all()

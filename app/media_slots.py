@@ -402,3 +402,14 @@ REGION_BOXES = {
     "stage": (3.0, 1.15),     # the next region
     "tile": (1.5, 1.85),      # the six choices in the landing opening
 }
+
+
+# Pictures Rockstar's own Music page (https://www.rockstargames.com/VI/music) uses for its sections, drawn behind the matching sections of /music. They are Rockstar's, hot-linked from
+# its own image address and credited on the page; the station logos and banners, the album artwork and the score's picture are the database's (radio_stations, music_releases).
+_MUSIC = "https://www.rockstargames.com/VI/_next/static/media/"
+MUSIC_ART = {
+    "hero": _MUSIC + "hero-background-desktop.05jwq4z-sjai_.jpg",
+    "radio": _MUSIC + "radio-background-desktop.0hl~wc1-j9tqg.jpg",
+    "album": _MUSIC + "album-background-desktop.0sxn7hogv.8xn.jpg",
+    "justice": _MUSIC + "logo.05h5_srpthcjv.svg",
+}
