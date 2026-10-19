@@ -14,3 +14,8 @@
 
 {% macro arrow() -%}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>{%- endmacro %}
 {% macro down() -%}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>{%- endmacro %}
+
+{# A picture that opens full size in the site's own viewer: the frame is the link, so the whole picture is the target and it takes a visible focus ring. #}
+{% macro lb(m, sizes, cls='', eager=false) -%}
+  {% if m and image_src(m.embed_url, 1920) %}<a class="rg-lb {{ cls }}" href="{{ opens(m) }}" data-lightbox data-caption="{{ m.title }}">{{ rshot(m, sizes, eager=eager) }}</a>{% endif %}
+{%- endmacro %}

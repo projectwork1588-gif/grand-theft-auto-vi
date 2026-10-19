@@ -686,11 +686,16 @@ def region_index(args):
     _attach_covers("region", result["data"], regions_repo.ids_by_slug, media_slots.REGION_STAGE)
     ids = regions_repo.ids_by_slug([r["slug"] for r in result["data"]])
     pictures = media.counts("region", ids.values())
+    wanted = {n for r in result["data"] for n in media_slots.REGION_ART.get(r["slug"], {}).get("feature", ())}
+    found = media.by_slugs(wanted)
     for number, r in enumerate(result["data"], 1):
+        art = media_slots.REGION_ART.get(r["slug"], {})
         r["number"] = number
         r["pictures"] = pictures.get(ids.get(r["slug"]), 0)
         r["people"] = [c["full_name"] for c in regions_repo.characters_based_in(ids[r["slug"]])]
         r["location_count"] = 0   # invented places are not Rockstar's, so the index never counts them
+        r["look"] = art.get("look", "horizon")
+        r["pics"] = [found[n] for n in art.get("feature", ()) if n in found] or ([r["cover"]] if r.get("cover") else [])
     result["total"] = len(result["data"])
     result["hero_cover"] = _page_cover("regions")
     return result
@@ -705,21 +710,20 @@ def region_detail(slug):
     by_slug = {m["slug"]: m for m in frames}
     stage = by_slug.get(art.get("hero")) or by_slug.get(media_slots.REGION_STAGE.get(slug)) or (frames[0] if frames else None)
     postcard = next((m for m in frames if m["media_type"] == "artwork" and m is not stage), None)
-    region["hero"], region["postcard"] = stage, postcard
-    region["plate"] = art.get("plate", "bl")
-    # the pictures after the opening and the postcard, grouped as the art direction says; any picture it does not name follows, so nothing Rockstar published for the region is lost
-    used = {m["slug"] for m in (stage, postcard) if m}
-    groups = []
-    for names in art.get("story", ()):
-        group = [by_slug[n] for n in names if n in by_slug and n not in used]
-        used.update(m["slug"] for m in group)
-        if group:
-            groups.append(group)
-    rest = [m for m in frames if m["slug"] not in used]
-    if rest:
-        groups.append(rest[:3])
-        groups.extend([m] for m in rest[3:])
-    region["groups"] = groups
+    intro = by_slug.get(art.get("intro") or "")
+    region["hero"], region["postcard"], region["intro"] = stage, postcard, (intro if intro is not stage else None)
+    region["hero_look"], region["side"], region["intro_side"] = art.get("hero_look", "wide"), art.get("side", "right"), art.get("intro_side", "right")
+    region["seq"] = art.get("seq", "mosaic")
+    # the pictures after the opening, the one beside the description and the postcard, in the art direction's order; any picture it does not name follows, so nothing
+    # Rockstar published for the region is lost
+    used = {m["slug"] for m in (stage, postcard, region["intro"]) if m}
+    pics = []
+    for name in art.get("story", ()):
+        if name in by_slug and name not in used:
+            pics.append(by_slug[name])
+            used.add(name)
+    pics.extend(m for m in frames if m["slug"] not in used)
+    region["pics"] = pics
     region["picture_count"] = len(frames)
     region["shots"] = sum(1 for m in frames if m["media_type"] == "screenshot")
     ordered = _in_rockstar_order(regions_repo.list_all())

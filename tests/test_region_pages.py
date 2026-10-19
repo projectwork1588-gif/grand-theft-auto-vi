@@ -57,7 +57,7 @@ def test_the_index_states_what_is_confirmed_and_counts_only_rockstars_pictures(c
 def test_every_region_page_has_the_shared_skeleton(client, slug):
     p = page(client, f"/regions/{slug}")
     assert p.count("<h1") == 1 and 'class="rg-title"' in p and f'data-region="{slug}"' in p
-    assert re.search(r'class="rg-hero rg-hero--(bl|tl)"', p) and 'id="about"' in p and 'href="#about"' in p
+    assert re.search(r'<header class="rgh rgh--(wide|split|mist|cut|centre|frame)', p) and 'id="about"' in p and 'href="#about"' in p
     assert 'class="rg-crumb"' in p and 'href="/regions"' in p and 'aria-label="All regions"' in p
     assert "Rockstar" in p and "not affiliated with Rockstar Games" in p                # attribution and the disclaimer
     assert "regions.css" in p
@@ -79,7 +79,7 @@ def test_previous_and_next_walk_all_six_regions_and_come_back_round(client):
 def test_the_page_shows_all_of_the_regions_pictures_once_each_and_only_rockstars(app, client, slug):
     with app.app_context():
         region = site.region_detail(slug)
-        shown = [m["slug"] for m in (region["hero"], region["postcard"]) if m] + [m["slug"] for g in region["groups"] for m in g]
+        shown = [m["slug"] for m in (region["hero"], region["postcard"], region["intro"]) if m] + [m["slug"] for m in region["pics"]]
         everything = [m["slug"] for m in media_repo.for_entity("region", regions_repo.ids_by_slug([slug])[slug], limit=24)]
     assert sorted(shown) == sorted(everything) and len(set(shown)) == len(shown)
     p = page(client, f"/regions/{slug}")
@@ -89,25 +89,64 @@ def test_the_page_shows_all_of_the_regions_pictures_once_each_and_only_rockstars
 
 
 @pytest.mark.parametrize("slug", SLUGS)
-def test_every_picture_opens_full_size_in_the_sites_viewer_with_its_title(client, slug):
+def test_every_picture_but_the_opening_opens_full_size_in_the_sites_viewer_with_its_title(app, client, slug):
+    with app.app_context():
+        expected = site.region_detail(slug)["picture_count"] - 1                      # every picture of the region but the one that opens the page
     p = page(client, f"/regions/{slug}")
-    gallery = p.split("data-gallery")[1].split("</section>")[0]
-    links = re.findall(r'<a href="(https://www\.rockstargames\.com/[^"]+imwidth=2560)" data-lightbox data-caption="([^"]+)"', gallery)
-    assert len(links) == gallery.count("data-lightbox") >= 3
+    links = re.findall(r'<a class="rg-lb[^"]*" href="(https://www\.rockstargames\.com/[^"]+imwidth=2560)" data-lightbox data-caption="([^"]+)"', p)
+    assert len(links) == p.count("data-lightbox") == expected >= 3
     assert all("official" in title.lower() or "postcard" in title.lower() for _, title in links)
+    assert p.count("data-gallery") == 1 and p.index("data-gallery") < p.index('id="about"')      # one viewer group, so previous and next run through them all
 
 
 def test_the_postcard_is_shown_as_rockstars_own_artwork(client):
     p = page(client, "/regions/port-gellhorn")
-    assert "The postcard" in p and "Rockstar's own artwork for Port Gellhorn" in p and "Port Gellhorn postcard (official artwork)" in p
+    assert "The postcard" in p and re.search(r"Rockstar(?:&rsquo;|&#39;|')s own artwork for Port Gellhorn", p) and "Port Gellhorn postcard (official artwork)" in p
 
 
-def test_each_region_is_composed_differently_not_one_template_with_six_backgrounds(app):
-    with app.app_context():
-        shapes = {slug: [len(g) for g in site.region_detail(slug)["groups"]] for slug in SLUGS}
-    assert shapes["vice-city"] == [1, 2, 3, 1] and shapes["port-gellhorn"] == [2] and shapes["ambrosia"] == [1, 1]
-    assert len({tuple(v) for v in shapes.values()}) >= 5
-    assert {media_slots.REGION_ART[s]["plate"] for s in SLUGS} == {"tl", "bl"}
+def test_each_region_is_composed_differently_not_one_template_with_six_backgrounds(client):
+    art = media_slots.REGION_ART
+    assert len({art[s]["hero_look"] for s in SLUGS}) == 6 and len({art[s]["seq"] for s in SLUGS}) == 6 and len({art[s]["look"] for s in SLUGS}) == 6
+    assert [art[s]["seq"] for s in SLUGS] == ["mosaic", "reel", "depth", "diagonal", "diptych", "curtain"]
+    for slug in SLUGS:
+        p = page(client, f"/regions/{slug}")
+        assert f'data-seq="{art[slug]["seq"]}"' in p and f'class="rgs rgs--{art[slug]["seq"]}"' in p and f"rgh--{art[slug]['hero_look']}" in p
+    landing = page(client, "/regions")
+    assert re.findall(r'<section class="rgf rgf--([a-z]+)"', landing) == ["neon", "horizon", "overgrown", "cut", "dusk", "scale"]
+
+
+def test_the_reel_has_controls_only_for_script_and_a_keyboard_reachable_track(client):
+    p = page(client, "/regions/leonida-keys")
+    assert 'data-reel-track tabindex="0" role="region"' in p and "data-reel-ctl hidden" in p and p.count("data-reel-step=") == 2
+    assert p.count('class="rgs__slide"') == 3
+
+
+def test_the_curtain_is_an_ordinary_stack_of_pictures_for_reduced_motion(client):
+    css = (ROOT / "app" / "static" / "css" / "regions.css").read_text(encoding="utf-8")
+    assert ".rgs__sheet { position: relative; height: 70svh" in css.split("@media (prefers-reduced-motion: reduce) {")[2]
+    assert page(client, "/regions/mount-kalaga").count('class="rgs__sheet') == 4
+
+
+# ------------------------------------------------------------------ wording that Rockstar's own pages support (migration 007)
+def test_no_region_is_described_as_the_territory_of_a_character_unless_rockstars_text_says_so(client):
+    texts = {}
+    for slug in SLUGS:
+        body = client.get(f"/api/v1/regions/{slug}").get_json()
+        d = body.get("data", body)
+        texts[slug] = d["summary"] + " " + d["description"]
+    for slug in ("grassrivers", "port-gellhorn"):
+        assert "Real Dimez" not in texts[slug] and "Raul" not in texts[slug] and "turf" not in texts[slug] and "heist" not in texts[slug], slug
+    assert "Boobie Ike" in texts["vice-city"] and "Jason" in texts["leonida-keys"] and "Brian Heder" in texts["leonida-keys"]       # Rockstar's own text places these
+
+
+def test_migration_007_changes_only_the_wording_of_two_regions_and_the_seed_mirrors_it():
+    sql = (ROOT / "database" / "migrations" / "007_region_wording.sql").read_text(encoding="utf-8")
+    statements = [line for line in sql.splitlines() if line.startswith("UPDATE")]
+    assert len(statements) == 2 and all(line.startswith("UPDATE regions SET summary = ") and "WHERE slug = '" in line and "content_status = 'official'" in line for line in statements)
+    assert {re.search(r"WHERE slug = '([a-z-]+)'", line).group(1) for line in statements} == {"grassrivers", "port-gellhorn"}
+    assert not re.search(r"\b(DROP|DELETE|TRUNCATE|INSERT|ALTER)\b", re.sub(r"--.*", "", sql), re.I)
+    seed = (ROOT / "database" / "seed.sql").read_text(encoding="utf-8")
+    assert all(line in seed for line in statements)                                       # a fresh database built from the seed ends in the same state
 
 
 # ------------------------------------------------------------------ official content only
@@ -143,7 +182,7 @@ def test_characters_are_listed_only_where_the_database_places_them(client):
     keys = page(client, "/regions/leonida-keys")
     assert 'href="/characters/jason-duval"' in keys and 'href="/characters/brian-heder"' in keys
     for slug in ("grassrivers", "port-gellhorn", "ambrosia", "mount-kalaga"):
-        assert 'href="/characters/' not in page(client, f"/regions/{slug}").split('id="about"')[1].split("rg-next")[0], slug
+        assert 'href="/characters/' not in page(client, f"/regions/{slug}").split('id="about"')[1].split('class="rgn"')[0], slug
     assert 'href="/characters/delia-marsh"' not in keys
 
 
@@ -159,7 +198,7 @@ def test_hostile_database_values_are_escaped_and_an_unsafe_source_is_not_linked(
 def test_a_region_without_pictures_still_renders_without_empty_frames(client, monkeypatch):
     monkeypatch.setattr(media_repo, "for_entity", lambda *a, **k: [])
     p = page(client, "/regions/ambrosia")
-    assert p.count("<h1") == 1 and "rg-pics" not in p and "<img class=\"rshot" not in p.split('class="rg-next"')[0] and 'id="about"' in p
+    assert p.count("<h1") == 1 and 'class="rgs ' not in p and "<img class=\"rshot" not in p.split('class="rgn"')[0] and 'id="about"' in p
 
 
 def test_an_unknown_region_is_a_clean_404(client):
@@ -168,7 +207,7 @@ def test_an_unknown_region_is_a_clean_404(client):
 
 def test_the_stylesheet_gives_reduced_motion_its_due(client):
     css = (ROOT / "app" / "static" / "css" / "regions.css").read_text(encoding="utf-8")
-    assert "prefers-reduced-motion: reduce" in css and "html.motion-on .rg-hero__art .rshot" in css and "@import" not in css
+    assert "prefers-reduced-motion: reduce" in css and "html.motion-on .rgh__art .rshot" in css and "@import" not in css
     assert "animation: rg-push" in css and css.count("html.motion-on") >= 4              # the camera exists only under the site's own motion class
 
 

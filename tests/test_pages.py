@@ -368,7 +368,7 @@ def test_regions_page_lists_all_six_official_regions(client):
     page = html(client, "/regions")
     features = re.findall(r'<h2 class="rg-title rg-title--feature" id="f-[a-z-]+">([^<]+)</h2>', page)
     assert features == ["Vice City", "Leonida Keys", "Grassrivers", "Port Gellhorn", "Ambrosia", "Mount Kalaga"]
-    assert page.count('class="rg-feature') >= 6 and "place to explore" not in page and "places to explore" not in page    # the invented places are no part of Leonida here
+    assert page.count('class="rgf rgf--') == 6 and "place to explore" not in page and "places to explore" not in page    # the invented places are no part of Leonida here
     assert "in the database" not in page
 
 
@@ -377,7 +377,7 @@ def test_region_detail_page(client):
     assert re.search(r'<h1 class="rg-title">Vice City</h1>', page) and "https://www.rockstargames.com/VI/only-in-leonida" in page
     assert 'href="/characters/boobie-ike"' in page and 'href="/characters/delia-marsh"' not in page      # original characters are not placed here
     assert 'href="/locations/' not in page and 'href="/missions/' not in page                          # invented places and stories are not presented as Vice City
-    assert 'href="/regions/leonida-keys"' in page and 'rel="prev"' in page and "Rockstar's own pictures" in page
+    assert 'href="/regions/leonida-keys"' in page and 'rel="prev"' in page and re.search(r"Rockstar(?:&rsquo;|&#39;|')s own pictures", page)
 
 
 def test_locations_listing_filters(client):

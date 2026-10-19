@@ -1,23 +1,34 @@
 {% extends "base.html" %}
 {% from "_components.html" import badge %}
-{% from "regions/_region.html" import rshot, opens, arrow, down %}
+{% from "regions/_region.html" import rshot, opens, arrow, down, lb %}
 {% block title %}{{ region.name }}{% endblock %}
 {% block description %}{{ region.summary }}{% endblock %}
 {% block header_class %}{% endblock %}
-{% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='css/regions.css') }}">{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='css/regions.css') }}"><script src="{{ url_for('static', filename='js/regions.js') }}" defer></script>{% endblock %}
+
+{# the six regions as numerals, so any region is one press away from any other #}
+{% macro switcher(r) -%}
+  <ol class="rg-switch" aria-label="Regions of Leonida">
+    {% for x in r.all_regions %}<li><a href="{{ url_for('pages.region_detail', slug=x.slug) }}" aria-label="{{ '%02d' % x.number }} {{ x.name }}"{% if x.slug == r.slug %} aria-current="page"{% endif %}><b>{{ '%02d' % x.number }}</b><span>{{ x.name }}</span></a></li>{% endfor %}
+  </ol>
+{%- endmacro %}
 
 {% block content %}
 {% set r = region %}
-<article class="rg" data-region="{{ r.slug }}">
+{% set p = r.pics %}
+<article class="rg rg--detail" data-region="{{ r.slug }}" data-seq="{{ r.seq }}">
 
-  {# ---------------------------------------------------------------- the opening: one of Rockstar's own pictures, the whole window, the words set where it leaves room #}
-  <header class="rg-hero rg-hero--{{ r.plate }}">
-    <div class="rg-hero__art">{{ rshot(r.hero, '100vw', eager=true) }}</div>
-    <div class="rg-hero__grade" aria-hidden="true"></div>
+  {# ---------------------------------------------------------------- the opening: each region is opened its own way #}
+  <header class="rgh rgh--{{ r.hero_look }}{% if r.hero_look in ('split', 'cut') %} rgh--{{ r.side }}{% endif %}">
+    <div class="rgh__art">{{ rshot(r.hero, '100vw', eager=true) }}</div>
+    <div class="rgh__grade" aria-hidden="true"></div>
+    {% if r.hero_look == 'mist' %}<span class="rgh__mist" aria-hidden="true"></span>{% endif %}
     <nav class="rg-crumb" aria-label="Breadcrumb">
       <a href="{{ url_for('pages.regions') }}">Leonida</a><span aria-hidden="true">/</span><span aria-current="page">Region {{ '%02d' % r.number }}</span>
     </nav>
-    <div class="rg-hero__copy">
+    {{ switcher(r) }}
+    <span class="rgh__no" aria-hidden="true">{{ '%02d' % r.number }}</span>
+    <div class="rgh__copy">
       <p class="rg-kicker"><span>{{ '%02d' % r.number }}</span><span>of {{ '%02d' % r.total }} regions</span></p>
       <h1 class="rg-title">{{ r.name }}</h1>
       <p class="rg-hero__line">{{ r.summary }}</p>
@@ -25,24 +36,26 @@
     </div>
   </header>
 
-  <div class="rg-body">
-  {# ---------------------------------------------------------------- what the database says, and what Rockstar's own pictures add #}
-  <section class="rg-about" id="about" aria-labelledby="about-title">
-    <div class="container--wide rg-about__in">
-      <div class="rg-about__text reveal">
+  <div class="rg-body" data-gallery>
+  {# ---------------------------------------------------------------- the description beside a picture of the region, the few recorded details in one row beneath #}
+  <section class="rga rga--{{ r.intro_side }}{% if not r.intro %} rga--plain{% endif %}" id="about" aria-labelledby="about-title">
+    <span class="rga__ghost" aria-hidden="true">{{ '%02d' % r.number }}</span>
+    <div class="rga__in container--wide">
+      <div class="rga__text reveal">
         <p class="eyebrow" id="about-title">About {{ r.name }}</p>
         <p class="rg-lede">{{ r.description }}</p>
         <p class="rg-prov">{{ badge(r.content_status) }}{% if r.source_url and r.source_url.startswith('https://') %} <a href="{{ r.source_url }}" target="_blank" rel="noopener noreferrer">Source on rockstargames.com</a>{% endif %}</p>
         {% if r.source_note %}<p class="rg-note">{{ r.source_note }}</p>{% endif %}
       </div>
-      <dl class="rg-facts reveal" aria-label="Details">
-        <div><dt>Region</dt><dd>{{ '%02d' % r.number }} of {{ '%02d' % r.total }}</dd></div>
-        {% if r.picture_count %}<div><dt>Rockstar's pictures</dt><dd>{{ r.shots }} screenshot{{ '' if r.shots == 1 else 's' }}{% if r.postcard %} and its postcard{% endif %}</dd></div>{% endif %}
-        {% if r.characters %}<div><dt>Based here</dt><dd>{% for c in r.characters %}<a href="{{ url_for('pages.character_detail', slug=c.slug) }}">{{ c.full_name }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</dd></div>{% endif %}
-        {% if r.missions %}<div><dt>Stories</dt><dd>{% for m in r.missions %}<a href="{{ url_for('pages.mission_detail', slug=m.slug) }}">{{ m.title }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</dd></div>{% endif %}
-        {% if r.locations %}<div><dt>Places</dt><dd>{% for l in r.locations %}<a href="{{ url_for('pages.location_detail', slug=l.slug) }}">{{ l.name }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</dd></div>{% endif %}
-      </dl>
+      {% if r.intro %}<div class="rga__pic reveal">{{ lb(r.intro, '(min-width: 900px) 38vw, 100vw') }}</div>{% endif %}
     </div>
+    <dl class="rga__facts container--wide reveal" aria-label="Details">
+      <div><dt>Region</dt><dd>{{ '%02d' % r.number }} of {{ '%02d' % r.total }}</dd></div>
+      {% if r.picture_count %}<div><dt>Rockstar's pictures</dt><dd>{{ r.shots }} screenshot{{ '' if r.shots == 1 else 's' }}{% if r.postcard %} and its postcard{% endif %}</dd></div>{% endif %}
+      {% if r.characters %}<div><dt>Based here</dt><dd>{% for c in r.characters %}<a href="{{ url_for('pages.character_detail', slug=c.slug) }}">{{ c.full_name }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</dd></div>{% endif %}
+      {% if r.missions %}<div><dt>Stories</dt><dd>{% for m in r.missions %}<a href="{{ url_for('pages.mission_detail', slug=m.slug) }}">{{ m.title }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</dd></div>{% endif %}
+      {% if r.locations %}<div><dt>Places</dt><dd>{% for l in r.locations %}<a href="{{ url_for('pages.location_detail', slug=l.slug) }}">{{ l.name }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</dd></div>{% endif %}
+    </dl>
   </section>
 
   {# ---------------------------------------------------------------- the people Rockstar's own text places here #}
@@ -64,61 +77,92 @@
   </section>
   {% endif %}
 
-  {# ---------------------------------------------------------------- Rockstar's pictures: the postcard, then the screenshots in groups, each opening full size #}
-  {% if r.postcard or r.groups %}
-  <section class="rg-pics" aria-labelledby="pics-title" data-gallery>
-    <div class="container--wide rg-pics__head reveal">
-      <p class="eyebrow" id="pics-title">Rockstar's own pictures</p>
+  {# ---------------------------------------------------------------- Rockstar's pictures, each region told its own way; every one opens full size #}
+  {% if p or r.postcard %}
+  <section class="rgs rgs--{{ r.seq }}" aria-labelledby="pics-title">
+    <div class="rgs__head container--wide reveal"><p class="eyebrow" id="pics-title">Rockstar&rsquo;s own pictures</p></div>
+
+    {% if p and r.seq == 'mosaic' %}
+    <div class="rgs__grid container--wide">
+      {% for m in p %}<div class="rgs__cell rgs__cell--{{ loop.index }} reveal">{{ lb(m, '(min-width: 900px) 56vw, 100vw') }}</div>{% endfor %}
     </div>
+
+    {% elif p and r.seq == 'reel' %}
+    <div class="rgs__reel" data-reel>
+      <div class="rgs__track" data-reel-track tabindex="0" role="region" aria-label="Pictures of {{ r.name }}; scroll sideways for more">
+        {% for m in p %}<div class="rgs__slide">{{ lb(m, '(min-width: 900px) 70vw, 88vw') }}</div>{% endfor %}
+      </div>
+      <div class="rgs__ctl container--wide" data-reel-ctl hidden>
+        <span class="rgs__count" aria-hidden="true"><b data-reel-now>1</b> / {{ p | length }}</span>
+        <span class="rgs__bar" aria-hidden="true"><i data-reel-bar></i></span>
+        <button class="rgs__btn" type="button" data-reel-step="-1" aria-label="Previous picture"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="rgs__btn" type="button" data-reel-step="1" aria-label="Next picture"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+    </div>
+
+    {% elif p and r.seq == 'depth' %}
+    <div class="rgs__stack container--wide">
+      {% for m in p %}<div class="rgs__layer rgs__layer--{{ loop.index }} reveal">{{ lb(m, '(min-width: 900px) 52vw, 100vw') }}</div>{% endfor %}
+    </div>
+
+    {% elif p and r.seq == 'diagonal' %}
+    <div class="rgs__cuts">
+      {% for m in p %}<div class="rgs__cut rgs__cut--{{ loop.index }} reveal">{{ lb(m, '(min-width: 900px) 80vw, 100vw') }}</div>{% endfor %}
+    </div>
+
+    {% elif p and r.seq == 'diptych' %}
+    <div class="rgs__duo">
+      {% for m in p[:2] %}<div class="rgs__half rgs__half--{{ loop.index }} reveal">{{ lb(m, '(min-width: 900px) 50vw, 100vw') }}</div>{% endfor %}
+    </div>
+    {% if p | length > 2 %}<div class="rgs__grid container--wide">{% for m in p[2:] %}<div class="rgs__cell reveal">{{ lb(m, '(min-width: 900px) 56vw, 100vw') }}</div>{% endfor %}</div>{% endif %}
+
+    {% elif p and r.seq == 'curtain' %}
+    <div class="rgs__curtain">
+      {% for m in p %}<div class="rgs__sheet rgs__sheet--{{ loop.index }}">{{ lb(m, '100vw') }}</div>{% endfor %}
+    </div>
+
+    {% elif p %}
+    <div class="rgs__grid container--wide">{% for m in p %}<div class="rgs__cell reveal">{{ lb(m, '(min-width: 900px) 56vw, 100vw') }}</div>{% endfor %}</div>
+    {% endif %}
+
+    {# the postcard: Rockstar's own artwork for the region, on a field of its colour #}
     {% if r.postcard and image_src(r.postcard.embed_url, 1920) %}
     <figure class="rg-postcard reveal">
-      <a href="{{ opens(r.postcard) }}" data-lightbox data-caption="{{ r.postcard.title }}">
-        <span class="rg-postcard__art">{{ rshot(r.postcard, '(min-width: 900px) 62vw, 100vw') }}</span>
-      </a>
-      <figcaption class="rg-postcard__cap"><b>The postcard</b>Rockstar's own artwork for {{ r.name }}. Select it to open it full size.</figcaption>
+      <div class="rg-postcard__in container--wide">
+        <div class="rg-postcard__pic">{{ lb(r.postcard, '(min-width: 900px) 56vw, 100vw') }}</div>
+        <figcaption class="rg-postcard__cap"><b>The postcard</b>Rockstar&rsquo;s own artwork for {{ r.name }}. Select it to open it full size.</figcaption>
+      </div>
     </figure>
     {% endif %}
-    {% for g in r.groups %}
-    {% set n = g | length %}
-    {% if n == 1 %}
-    <figure class="rg-one rg-one--{{ 'full' if loop.first else 'inset' }} reveal">
-      <a href="{{ opens(g[0]) }}" data-lightbox data-caption="{{ g[0].title }}"><span class="rg-one__art">{{ rshot(g[0], '100vw' if loop.first else '(min-width: 900px) 78vw, 100vw') }}</span></a>
-    </figure>
-    {% elif n == 2 %}
-    <ul class="rg-pair container--wide">
-      {% for m in g %}<li class="reveal"><a href="{{ opens(m) }}" data-lightbox data-caption="{{ m.title }}"><span class="rg-pair__art">{{ rshot(m, '(min-width: 900px) 48vw, 100vw') }}</span></a></li>{% endfor %}
-    </ul>
-    {% else %}
-    <ul class="rg-strip container--wide">
-      {% for m in g %}<li class="reveal"><a href="{{ opens(m) }}" data-lightbox data-caption="{{ m.title }}"><span class="rg-strip__art">{{ rshot(m, '(min-width: 900px) 32vw, 100vw') }}</span></a></li>{% endfor %}
-    </ul>
-    {% endif %}
-    {% endfor %}
     <p class="container--wide rg-credit">Screenshots and artwork &copy; Rockstar Games, shown as they publish them. Team Valkyrie is an unofficial fan project and is not affiliated with Rockstar Games or Take-Two Interactive.</p>
   </section>
   {% endif %}
 
-  {# ---------------------------------------------------------------- on to the next region, and back #}
+  {# ---------------------------------------------------------------- on to the next region, with all six in view #}
   {% if r.next %}
-  <nav class="rg-next" aria-label="More regions">
-    <a class="rg-next__stage" href="{{ url_for('pages.region_detail', slug=r.next.slug) }}" rel="next" data-region-link="{{ r.next.slug }}">
-      <span class="rg-next__art">{{ rshot(r.next.cover, '100vw', decorative=true) }}</span>
-      <span class="rg-next__shade" aria-hidden="true"></span>
-      <span class="rg-next__words">
-        <span class="rg-next__kicker"><span>Next region</span><span>{{ '%02d' % r.next.number }}</span></span>
-        <span class="rg-next__name">{{ r.next.name }}</span>
-        <span class="rg-next__go">Open {{ r.next.name }}{{ arrow() }}</span>
+  <nav class="rgn" aria-label="More regions">
+    <a class="rgn__stage" href="{{ url_for('pages.region_detail', slug=r.next.slug) }}" rel="next" data-region-link="{{ r.next.slug }}" data-region="{{ r.next.slug }}">
+      <span class="rgn__art">{{ rshot(r.next.cover, '100vw', decorative=true) }}</span>
+      <span class="rgn__shade" aria-hidden="true"></span>
+      <span class="rgn__big" aria-hidden="true">{{ '%02d' % r.next.number }}</span>
+      <span class="rgn__words">
+        <span class="rgn__kicker"><span>Next region</span><span>{{ '%02d' % r.next.number }} of {{ '%02d' % r.total }}</span></span>
+        <span class="rgn__name">{{ r.next.name }}</span>
+        <span class="rgn__go">Open {{ r.next.name }}{{ arrow() }}</span>
       </span>
     </a>
-    <div class="container--wide rg-next__bar">
+    <div class="rgn__bar container--wide">
       {% if r.previous %}<a class="rg-prev" href="{{ url_for('pages.region_detail', slug=r.previous.slug) }}" rel="prev" data-region-link="{{ r.previous.slug }}"><span aria-hidden="true">&larr;</span> <span><small>Previous</small>{{ r.previous.name }}</span></a>{% endif %}
-      <ol class="rg-all" aria-label="All regions">
-        {% for x in r.all_regions %}
-        <li><a href="{{ url_for('pages.region_detail', slug=x.slug) }}"{% if x.slug == r.slug %} aria-current="page"{% endif %}><b>{{ '%02d' % x.number }}</b> {{ x.name }}</a></li>
-        {% endfor %}
-      </ol>
       <a class="rg-back" href="{{ url_for('pages.regions') }}">All regions {{ arrow() }}</a>
     </div>
+    <ol class="rgn__strip container--wide" aria-label="All regions">
+      {% for x in r.all_regions %}
+      <li><a href="{{ url_for('pages.region_detail', slug=x.slug) }}"{% if x.slug == r.slug %} aria-current="page"{% endif %}>
+        <span class="rgn__thumb">{{ rshot(x.cover, '(min-width: 900px) 16vw, 45vw', decorative=true) }}</span>
+        <span class="rgn__lbl"><b>{{ '%02d' % x.number }}</b> {{ x.name }}</span>
+      </a></li>
+      {% endfor %}
+    </ol>
   </nav>
   {% endif %}
   </div>

@@ -1,22 +1,27 @@
 /* =====================================================================
    Leonida / Regions: the index (/regions) and the six region pages (/regions/<slug>).
-   One system, six identities: every region has its own tint and its own opening (which picture, where the words sit, where the camera goes), but the same
-   grammar: an opening of the whole window, the description, Rockstar's own pictures told in groups, and on to the next region. Every picture is one of Rockstar's
-   own screenshots or postcards; nothing here states a fact. Tokens only. Motion is decoration: it sits under html.motion-on and every composition is complete without it.
+   One grammar, six compositions. The words, the numerals, the source credits and the way back are shared; everything else is the region's own: its opening (a window
+   split on a slant, a wide horizon, a haze, a hard diagonal, a dusk, a frame), its landing composition, and the way its pictures are told (a contact sheet, a reel, an
+   overgrowth, a cut, a diptych, a curtain). Every picture is one of Rockstar's own screenshots or postcards and nothing here states a fact. Tokens only. Motion is
+   decoration: it sits under html.motion-on and every composition is complete without it.
    ===================================================================== */
 
 .rg { --edge: max(var(--gutter), calc((100vw - var(--max-wide)) / 2)); --tint: var(--label); background: var(--ground); }
-[data-region="vice-city"] { --tint: #ff77ab; }
-[data-region="leonida-keys"] { --tint: #52d8ea; }
-[data-region="grassrivers"] { --tint: #86dc86; }
-[data-region="port-gellhorn"] { --tint: #ff9f63; }
-[data-region="ambrosia"] { --tint: #f4bb4f; }
-[data-region="mount-kalaga"] { --tint: #93d5a6; }
+[data-region="vice-city"], [data-jump="vice-city"], [data-feature="vice-city"] { --tint: #ff77ab; }
+[data-region="leonida-keys"], [data-jump="leonida-keys"], [data-feature="leonida-keys"] { --tint: #52d8ea; }
+[data-region="grassrivers"], [data-jump="grassrivers"], [data-feature="grassrivers"] { --tint: #86dc86; }
+[data-region="port-gellhorn"], [data-jump="port-gellhorn"], [data-feature="port-gellhorn"] { --tint: #ff9f63; }
+[data-region="ambrosia"], [data-jump="ambrosia"], [data-feature="ambrosia"] { --tint: #f4bb4f; }
+[data-region="mount-kalaga"], [data-jump="mount-kalaga"], [data-feature="mount-kalaga"] { --tint: #93d5a6; }
 .rg .container--wide { width: auto; margin-inline: var(--edge); }
-.rg h1, .rg h2, .rg p, .rg ol, .rg ul, .rg dl, .rg figure { margin: 0; }
+.rg h1, .rg h2, .rg p, .rg ol, .rg ul, .rg dl, .rg figure, .rg dd { margin: 0; }
 .rg ol, .rg ul { padding: 0; list-style: none; }
 
 .rshot { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; }
+.rg-lb { display: block; position: absolute; inset: 0; color: inherit; text-decoration: none; }
+.rg-lb:focus-visible { outline: 2px solid var(--text); outline-offset: -6px; }
+.rg-lb .rshot { transition: transform 1.2s var(--ease); }
+.rg-lb:hover .rshot, .rg-lb:focus-visible .rshot { transform: scale(1.03); }
 .rg-kicker { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font: 700 var(--t-micro)/1.2 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--tint); }
 .rg-kicker span:first-child { color: var(--text); }
 .rg-kicker span + span::before { content: ""; display: inline-block; width: 18px; height: 1px; margin-right: 14px; vertical-align: middle; background: currentColor; opacity: .55; }
@@ -29,67 +34,130 @@
 .rg-go:hover, .rg-go:focus-visible, .rg-back:hover, .rg-back:focus-visible { border-color: var(--tint); color: var(--text); }
 .rg-go:hover svg, .rg-go:focus-visible svg, .rg-back:hover svg, .rg-back:focus-visible svg { transform: translateX(5px); }
 .rg a:focus-visible { outline: 2px solid var(--text); outline-offset: 4px; }
-
-/* =====================================================================
-   A region's opening: the whole window
-   ===================================================================== */
-.rg-hero { position: relative; isolation: isolate; overflow: hidden; background: var(--ground); height: clamp(600px, 100svh, 980px); }
-.rg-hero__art { position: absolute; inset: 0; overflow: hidden; background: var(--card); }
-.rg-hero__art::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(10, 8, 28, .62) 0, rgba(10, 8, 28, 0) 24%); }
-.rg-hero__grade { position: absolute; inset: 0; pointer-events: none; }
-.rg-hero--bl .rg-hero__grade { background: radial-gradient(70% 70% at 6% 96%, color-mix(in srgb, var(--tint) 20%, transparent), transparent 70%),
-  linear-gradient(0deg, rgba(10, 8, 28, .82) 0%, rgba(10, 8, 28, .36) 30%, rgba(10, 8, 28, 0) 56%), linear-gradient(90deg, rgba(10, 8, 28, .6) 0%, rgba(10, 8, 28, 0) 46%); }
-.rg-hero--tl .rg-hero__grade { background: radial-gradient(60% 60% at 8% 16%, color-mix(in srgb, var(--tint) 16%, transparent), transparent 70%),
-  linear-gradient(180deg, rgba(10, 8, 28, .74) 0%, rgba(10, 8, 28, .34) 32%, rgba(10, 8, 28, 0) 56%), linear-gradient(90deg, rgba(10, 8, 28, .5) 0%, rgba(10, 8, 28, 0) 42%), linear-gradient(0deg, rgba(10, 8, 28, .5) 0%, rgba(10, 8, 28, 0) 24%); }
-.rg-crumb { position: absolute; z-index: 4; left: var(--edge); top: calc(var(--header-h) + 16px); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--text-2); text-shadow: 0 1px 14px rgba(7, 6, 20, .85); }
-.rg-crumb a { display: inline-flex; align-items: center; min-height: 28px; color: var(--text-2); text-decoration: none; }
-.rg-crumb a:hover { color: var(--text); }
-.rg-hero__copy { position: absolute; z-index: 3; left: var(--edge); display: grid; gap: 14px; justify-items: start; max-width: min(34rem, 88vw); }
-.rg-hero__copy > * { margin: 0; }
-.rg-hero--bl .rg-hero__copy { bottom: clamp(48px, 10vh, 110px); }
-.rg-hero--tl .rg-hero__copy { top: calc(var(--header-h) + 64px); }
 .rg-cue { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font: 700 var(--t-small)/1 var(--font-text); letter-spacing: var(--track-ui); color: var(--text); text-decoration: none; text-shadow: 0 1px 12px rgba(7, 6, 20, .9); }
 .rg-cue:hover { color: var(--tint); }
 .rg-cue:hover svg { transform: translateY(4px); }
-@media (min-width: 900px) and (max-width: 1199px) { .rg-title { font-size: var(--t-h1); } }
-
-/* the camera: a slow push-in with a small drift on the picture only (a transform: nothing is laid out again); the words stay still. It starts from the picture as it rests and
-   the scale always outgrows the drift, so no edge is bared. Each region has its own centre (the side away from the words), distance and drift. */
-html.motion-on .rg-hero__art .rshot { transform-origin: var(--fx, 60%) var(--fy, 50%); will-change: transform; animation: rg-push 14s cubic-bezier(.3, .12, .4, 1) both; }
-@keyframes rg-push { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(var(--dx, 0%), var(--dy, 0%), 0) scale(var(--zf, 1.05)); } }
-[data-region="vice-city"] .rg-hero__art .rshot { --fx: 62%; --fy: 70%; --zf: 1.07; --dx: -1%; --dy: -.4%; object-position: 50% 62%; }
-[data-region="leonida-keys"] .rg-hero__art .rshot { --fx: 66%; --fy: 38%; --zf: 1.06; --dx: -1.2%; --dy: .4%; }
-[data-region="grassrivers"] .rg-hero__art .rshot { --fx: 64%; --fy: 42%; --zf: 1.06; --dx: -1%; --dy: .3%; }
-[data-region="port-gellhorn"] .rg-hero__art .rshot { --fx: 66%; --fy: 50%; --zf: 1.06; --dx: -1%; --dy: 0%; }
-[data-region="ambrosia"] .rg-hero__art .rshot { --fx: 64%; --fy: 40%; --zf: 1.06; --dx: -.8%; --dy: .3%; }
-[data-region="mount-kalaga"] .rg-hero__art .rshot { --fx: 66%; --fy: 50%; --zf: 1.06; --dx: -1%; --dy: 0%; }
-html.motion-on .rg-hero__copy > * { animation: rg-rise .8s var(--ease) backwards; }
-html.motion-on .rg-hero__copy > :nth-child(1) { animation-delay: .1s; }
-html.motion-on .rg-hero__copy > :nth-child(2) { animation-delay: .2s; }
-html.motion-on .rg-hero__copy > :nth-child(3) { animation-delay: .3s; }
-html.motion-on .rg-hero__copy > :nth-child(4) { animation-delay: .4s; }
-@keyframes rg-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+/* an outlined numeral: drawn large behind the words, never read */
+.rgh__no, .rga__ghost, .rgf__no, .rgn__big { position: absolute; z-index: 0; pointer-events: none; user-select: none; font: 700 var(--t-numeral)/.8 var(--font-display); letter-spacing: var(--track-caps); color: transparent; -webkit-text-stroke: 1px rgba(255, 255, 255, .2); }
 
 /* =====================================================================
-   About: the database's description set large, and the few details that are recorded
+   The region's opening: each region is opened its own way
+   ===================================================================== */
+.rgh { position: relative; isolation: isolate; overflow: hidden; background: var(--ground); height: clamp(620px, 100svh, 1000px); }
+.rgh__art { position: absolute; inset: 0; overflow: hidden; background: var(--card); }
+.rgh__art::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(10, 8, 28, .62) 0, rgba(10, 8, 28, 0) 24%); }
+.rgh__grade { position: absolute; inset: 0; pointer-events: none; }
+.rg-crumb { position: absolute; z-index: 4; left: var(--edge); top: calc(var(--header-h) + 16px); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--text-2); text-shadow: 0 1px 14px rgba(7, 6, 20, .85); }
+.rg-crumb a { display: inline-flex; align-items: center; min-height: 28px; color: var(--text-2); text-decoration: none; }
+.rg-crumb a:hover { color: var(--text); }
+/* the six regions as numerals: any region is one press from any other; the current one carries its name */
+.rg-switch { position: absolute; z-index: 4; right: var(--edge); top: calc(var(--header-h) + 14px); display: flex; gap: 2px 4px; align-items: center; }
+.rg-switch a { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding-inline: 8px; border-radius: var(--r-pill); font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); color: var(--text-2); text-decoration: none; text-shadow: 0 1px 12px rgba(7, 6, 20, .85); transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease); }
+.rg-switch a span { display: none; letter-spacing: var(--track-ui); text-transform: none; font-weight: 600; font-size: var(--t-small); }
+.rg-switch a[aria-current] { background: rgba(10, 8, 28, .55); color: var(--text); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.rg-switch a[aria-current] span { display: inline; }
+.rg-switch a:hover, .rg-switch a:focus-visible { background: rgba(10, 8, 28, .55); color: var(--text); }
+.rgh__copy { position: absolute; z-index: 3; display: grid; gap: 14px; justify-items: start; }
+.rgh__copy > * { margin: 0; }
+
+/* wide (Leonida Keys): open water and sky edge to edge, the name drawn out along the foot of the picture in a single line */
+.rgh--wide .rgh__grade { background: linear-gradient(0deg, rgba(8, 18, 40, .86) 0%, rgba(8, 18, 40, .3) 30%, rgba(8, 18, 40, 0) 54%); }
+.rgh--wide .rgh__copy { left: var(--edge); right: var(--edge); bottom: clamp(36px, 8vh, 84px); grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 12px 40px; }
+.rgh--wide .rg-kicker, .rgh--wide .rg-title { grid-column: 1 / -1; }
+.rgh--wide .rg-title { white-space: nowrap; letter-spacing: var(--track-caps); }
+.rgh--wide .rg-hero__line { grid-column: 1; max-width: 26rem; }
+.rgh--wide .rg-cue { grid-column: 2; align-self: end; }
+.rgh--wide .rgh__no { right: var(--edge); top: 24%; }
+
+/* mist (Grassrivers): the name high in the canopy, a slow haze drifting between the picture and the reader */
+.rgh--mist .rgh__grade { background: radial-gradient(70% 70% at 8% 14%, color-mix(in srgb, var(--tint) 16%, transparent), transparent 70%), linear-gradient(180deg, rgba(8, 22, 14, .74) 0%, rgba(8, 22, 14, .3) 34%, rgba(8, 22, 14, 0) 58%), linear-gradient(0deg, rgba(8, 22, 14, .6) 0%, rgba(8, 22, 14, 0) 30%); }
+.rgh--mist .rgh__copy { left: var(--edge); top: calc(var(--header-h) + 78px); max-width: min(34rem, 88vw); }
+.rgh__mist { position: absolute; inset: -10%; z-index: 1; pointer-events: none; opacity: .55; background: radial-gradient(40% 30% at 20% 70%, rgba(214, 240, 214, .28), transparent 70%), radial-gradient(50% 34% at 76% 62%, rgba(214, 240, 214, .22), transparent 72%), radial-gradient(36% 28% at 52% 88%, rgba(214, 240, 214, .2), transparent 70%); filter: blur(24px); }
+.rgh--mist .rgh__no { right: var(--edge); bottom: 8%; }
+
+/* centre (Ambrosia): the name centred under a low sun, everything warm and level */
+.rgh--centre .rgh__grade { background: radial-gradient(60% 50% at 50% 100%, color-mix(in srgb, var(--tint) 26%, transparent), transparent 72%), linear-gradient(0deg, rgba(20, 10, 8, .84) 0%, rgba(20, 10, 8, .36) 34%, rgba(20, 10, 8, 0) 60%), linear-gradient(90deg, rgba(20, 10, 8, .4) 0%, rgba(20, 10, 8, 0) 30%, rgba(20, 10, 8, 0) 70%, rgba(20, 10, 8, .4) 100%); }
+.rgh--centre .rgh__copy { left: 0; right: 0; bottom: clamp(40px, 9vh, 96px); justify-items: center; text-align: center; padding-inline: var(--edge); }
+.rgh--centre .rg-title { letter-spacing: var(--track-caps); }
+.rgh--centre .rg-hero__line { text-align: center; max-width: 28rem; border-top: 0; padding-top: 0; }
+.rgh--centre .rgh__no { left: 50%; top: 22%; translate: -50% 0; }
+
+/* frame (Mount Kalaga): the picture set into a great deal of room, the name laid across its lower edge */
+.rgh--frame { height: auto; padding: calc(var(--header-h) + 64px) var(--edge) 0; }
+.rgh--frame .rgh__art { position: relative; inset: auto; height: clamp(420px, 68svh, 740px); border-radius: var(--r-card); }
+.rgh--frame .rgh__grade { inset: calc(var(--header-h) + 64px) var(--edge) auto var(--edge); height: clamp(420px, 68svh, 740px); border-radius: var(--r-card); background: linear-gradient(0deg, rgba(10, 8, 28, .5) 0%, rgba(10, 8, 28, 0) 36%); }
+.rgh--frame .rgh__copy { position: relative; margin-top: calc(-1 * clamp(56px, 9vw, 128px)); padding-bottom: clamp(36px, 6vw, 72px); grid-template-columns: minmax(0, 1fr) minmax(0, 24rem); align-items: end; gap: 14px clamp(24px, 5vw, 80px); }
+.rgh--frame .rg-kicker { grid-column: 1 / -1; }
+.rgh--frame .rg-title { grid-column: 1; }
+.rgh--frame .rg-hero__line { grid-column: 2; grid-row: 2 / span 2; align-self: end; }
+.rgh--frame .rg-cue { grid-column: 2; }
+.rgh--frame .rg-crumb { top: calc(var(--header-h) + 18px); }
+.rgh--frame .rgh__no { right: var(--edge); top: 56%; }
+
+/* split (Vice City): the window divided on a slant, the picture on one side, the words and a neon glow on the other */
+.rgh--split .rgh__art, .rgh--cut .rgh__art { right: 0; left: auto; width: 66%; }
+.rgh--split .rgh__art { clip-path: polygon(13% 0, 100% 0, 100% 100%, 0 100%); }
+.rgh--split .rgh__grade { background: radial-gradient(46% 60% at 20% 58%, color-mix(in srgb, var(--tint) 26%, transparent), transparent 72%), linear-gradient(90deg, rgba(14, 8, 28, 0) 40%, rgba(14, 8, 28, .34) 100%); }
+.rgh--split .rgh__copy { left: var(--edge); top: 50%; translate: 0 -46%; max-width: min(30rem, 40vw); }
+.rgh--split .rgh__no { left: calc(var(--edge) - .1em); top: 14%; }
+.rgh--split .rg-title { font-size: var(--t-h1); text-shadow: 0 0 34px color-mix(in srgb, var(--tint) 46%, transparent), 0 2px 28px rgba(7, 6, 20, .7); }
+.rgh--split .rgh__copy::before { content: ""; width: 72px; height: 3px; background: var(--tint); box-shadow: 0 0 24px var(--tint); }
+
+/* cut (Port Gellhorn): the same split, turned over and cut hard, a hazard stripe along the edge */
+.rgh--cut .rgh__art { left: 0; right: auto; width: 66%; clip-path: polygon(0 0, 100% 0, 82% 100%, 0 100%); }
+.rgh--cut .rgh__grade { background: linear-gradient(270deg, rgba(20, 12, 8, 0) 40%, rgba(20, 12, 8, .38) 100%), radial-gradient(40% 50% at 82% 60%, color-mix(in srgb, var(--tint) 18%, transparent), transparent 72%); }
+.rgh--cut::after { content: ""; position: absolute; z-index: 2; inset: 0; pointer-events: none; clip-path: polygon(66% 0, calc(66% + 14px) 0, calc(54.1% + 14px) 100%, 54.1% 100%); background: repeating-linear-gradient(135deg, var(--tint) 0 10px, #1b1410 10px 20px); opacity: .9; }
+.rgh--cut .rgh__copy { right: var(--edge); top: 50%; translate: 0 -46%; max-width: min(27rem, 34vw); justify-items: end; text-align: right; }
+.rgh--cut .rg-title { font-size: var(--t-h1); }
+.rgh--cut .rgh__no { right: var(--edge); top: 14%; }
+.rgh--cut .rg-hero__line { text-align: right; }
+
+/* the camera: a slow push-in with a small drift on the picture only (a transform: nothing is laid out again); the words stay still. It starts from the picture as it
+   rests and the scale always outgrows the drift, so no edge is bared. Each region has its own centre, distance and drift. */
+html.motion-on .rgh__art .rshot { transform-origin: var(--fx, 60%) var(--fy, 50%); will-change: transform; animation: rg-push 14s cubic-bezier(.3, .12, .4, 1) both; }
+@keyframes rg-push { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(var(--dx, 0%), var(--dy, 0%), 0) scale(var(--zf, 1.05)); } }
+[data-region="vice-city"] .rgh__art .rshot { --fx: 40%; --fy: 66%; --zf: 1.07; --dx: 1%; --dy: -.4%; object-position: 50% 62%; }
+[data-region="leonida-keys"] .rgh__art .rshot { --fx: 66%; --fy: 38%; --zf: 1.06; --dx: -1.2%; --dy: .4%; }
+[data-region="grassrivers"] .rgh__art .rshot { --fx: 64%; --fy: 52%; --zf: 1.06; --dx: -1%; --dy: .3%; }
+[data-region="port-gellhorn"] .rgh__art .rshot { --fx: 34%; --fy: 50%; --zf: 1.06; --dx: 1%; --dy: 0%; }
+[data-region="ambrosia"] .rgh__art .rshot { --fx: 50%; --fy: 44%; --zf: 1.06; --dx: 0%; --dy: .3%; }
+[data-region="mount-kalaga"] .rgh__art .rshot { --fx: 60%; --fy: 52%; --zf: 1.05; --dx: -.8%; --dy: 0%; }
+html.motion-on .rgh__copy > * { animation: rg-rise .8s var(--ease) backwards; }
+html.motion-on .rgh__copy > :nth-child(1) { animation-delay: .1s; }
+html.motion-on .rgh__copy > :nth-child(2) { animation-delay: .2s; }
+html.motion-on .rgh__copy > :nth-child(3) { animation-delay: .3s; }
+html.motion-on .rgh__copy > :nth-child(4) { animation-delay: .4s; }
+@keyframes rg-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+html.motion-on .rgh__mist { animation: rg-mist 38s ease-in-out infinite alternate; }
+@keyframes rg-mist { from { transform: translate3d(-4%, 0, 0); } to { transform: translate3d(4%, -2%, 0); } }
+
+/* =====================================================================
+   About: the description beside a picture of the region, the recorded details in one row
    ===================================================================== */
 .rg-body { position: relative; }
-.rg-about { position: relative; overflow: hidden; padding-block: clamp(56px, 8vw, 112px) clamp(40px, 6vw, 88px); scroll-margin-top: calc(var(--header-h) - 20px); }
-.rg-about::before { content: ""; position: absolute; left: -10%; top: -30%; width: 70%; height: 130%; pointer-events: none; background: radial-gradient(closest-side, color-mix(in srgb, var(--tint) 13%, transparent), transparent); }
-.rg-about__in { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); gap: clamp(32px, 6vw, 96px); align-items: end; }
-.rg-about__text { display: grid; gap: 18px; justify-items: start; }
-.rg-about__text .eyebrow { color: var(--tint); }
-.rg-lede { max-width: 34ch; font: 500 var(--t-h3)/1.28 var(--font-text); letter-spacing: var(--track-tight); color: var(--text); text-wrap: pretty; }
+.rga { position: relative; overflow: hidden; padding-block: clamp(64px, 9vw, 128px) clamp(32px, 5vw, 72px); scroll-margin-top: calc(var(--header-h) - 20px); }
+.rga::before { content: ""; position: absolute; left: -10%; top: -20%; width: 70%; height: 130%; pointer-events: none; background: radial-gradient(closest-side, color-mix(in srgb, var(--tint) 13%, transparent), transparent); }
+.rga__ghost { right: var(--edge); top: .3em; }
+.rga--left .rga__ghost { right: auto; left: var(--edge); }
+.rga__in { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: clamp(32px, 6vw, 96px); align-items: center; }
+.rga--left .rga__in { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+.rga--left .rga__pic { order: -1; }
+.rga--plain .rga__in { grid-template-columns: minmax(0, 1fr); }
+.rga__text { display: grid; gap: 18px; justify-items: start; }
+.rga__text .eyebrow { color: var(--tint); }
+.rg-lede { max-width: 30ch; font: 500 var(--t-h3)/1.26 var(--font-text); letter-spacing: var(--track-tight); color: var(--text); text-wrap: pretty; }
+.rga--plain .rg-lede { max-width: 36ch; font-size: var(--t-h2); line-height: 1.12; }
 .rg-prov { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
-.rg-prov a, .rg-facts a { color: var(--text); text-decoration-color: var(--line-strong); text-underline-offset: 4px; }
-.rg-prov a:hover, .rg-facts a:hover { color: var(--tint); }
+.rg-prov a, .rga__facts a { color: var(--text); text-decoration-color: var(--line-strong); text-underline-offset: 4px; }
+.rg-prov a:hover, .rga__facts a:hover { color: var(--tint); }
 .rg-note { max-width: 44ch; font: 500 var(--t-small)/1.5 var(--font-text); color: var(--text-3); }
-.rg-facts { display: grid; border-top: 1px solid var(--line); }
-.rg-facts > div { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line); }
-.rg-facts dt { font: 700 var(--t-micro)/1.2 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--text-3); flex: none; }
-.rg-facts dd { margin: 0; font: 600 var(--t-small)/1.4 var(--font-text); color: var(--text); text-align: right; }
+.rga__pic { position: relative; aspect-ratio: 4 / 5; max-height: 78svh; overflow: hidden; border-radius: var(--r-card); background: var(--card); box-shadow: 0 30px 80px rgba(0, 0, 0, .45), 0 0 0 1px var(--line); }
+.rga__facts { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 0 clamp(28px, 5vw, 72px); margin-top: clamp(36px, 5vw, 72px); padding-top: 20px; border-top: 1px solid var(--line); }
+.rga__facts > div { display: grid; gap: 6px; padding-block: 6px; }
+.rga__facts dt { font: 700 var(--t-micro)/1.2 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--text-3); }
+.rga__facts dd { font: 600 var(--t-body)/1.35 var(--font-text); color: var(--text); }
 
-.rg-people { padding-block: 0 clamp(40px, 6vw, 80px); }
+.rg-people { padding-block: clamp(8px, 2vw, 24px) clamp(40px, 6vw, 80px); }
 .rg-people .rg-h { margin-bottom: 18px; }
 .rg-people__list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 0 clamp(24px, 4vw, 64px); border-top: 1px solid var(--line); }
 .rg-people__list a { display: grid; grid-template-columns: 1fr auto; gap: 2px 16px; align-items: center; padding: 18px 0; border-bottom: 1px solid var(--line); color: var(--text); text-decoration: none; }
@@ -101,62 +169,108 @@ html.motion-on .rg-hero__copy > :nth-child(4) { animation-delay: .4s; }
 .rg-people__list a:hover svg, .rg-people__list a:focus-visible svg { transform: translateX(5px); }
 
 /* =====================================================================
-   Rockstar's own pictures
+   Rockstar's pictures: six ways to be told
    ===================================================================== */
-.rg-pics { display: grid; gap: clamp(14px, 2vw, 28px); padding-bottom: clamp(48px, 7vw, 96px); }
-.rg-pics__head .eyebrow { color: var(--tint); }
-.rg-pics a { display: block; color: inherit; text-decoration: none; }
-.rg-pics a:focus-visible { outline-offset: -6px; }
-.rg-pics [class$="__art"] { position: relative; display: block; overflow: hidden; background: var(--card); }
-.rg-pics [class$="__art"] .rshot { transition: transform 1.2s var(--ease); }
-.rg-pics a:hover .rshot, .rg-pics a:focus-visible .rshot { transform: scale(1.025); }
-/* the postcard: Rockstar's artwork for the region, framed, with its note beside it */
-.rg .rg-postcard { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 3fr); gap: clamp(20px, 4vw, 64px); align-items: end; margin-inline: var(--edge); }
-.rg-postcard__art { aspect-ratio: 16 / 9; border-radius: var(--r-card); }
+.rgs { display: grid; grid-template-columns: minmax(0, 1fr); gap: clamp(14px, 2vw, 28px); padding-bottom: clamp(24px, 4vw, 56px); }
+.rgs > * { min-width: 0; }
+.rgs__head .eyebrow { color: var(--tint); }
+.rgs [class*="__cell"], .rgs [class*="__layer"], .rgs [class*="__slide"], .rgs [class*="__half"], .rgs [class*="__cut"], .rgs [class*="__sheet"], .rg-postcard__pic { position: relative; overflow: hidden; background: var(--card); }
+
+/* a contact sheet (Vice City): pictures of different sizes locked into one grid, as a photographer's table might hold them */
+.rgs__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: clamp(8px, 1.2vw, 18px); }
+.rgs__cell { aspect-ratio: 4 / 3; border-radius: var(--r-tile); }
+@media (min-width: 900px) {
+  .rgs--mosaic .rgs__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-rows: clamp(48px, 6.2vw, 96px); }
+  .rgs--mosaic .rgs__cell { aspect-ratio: auto; }
+  .rgs--mosaic .rgs__cell--1 { grid-column: 1 / 8; grid-row: 1 / 4; }
+  .rgs--mosaic .rgs__cell--2 { grid-column: 8 / 13; grid-row: 1 / 6; }
+  .rgs--mosaic .rgs__cell--3 { grid-column: 1 / 4; grid-row: 4 / 7; }
+  .rgs--mosaic .rgs__cell--4 { grid-column: 4 / 8; grid-row: 4 / 7; }
+  .rgs--mosaic .rgs__cell--5 { grid-column: 8 / 13; grid-row: 6 / 9; }
+  .rgs--mosaic .rgs__cell--6 { grid-column: 1 / 8; grid-row: 7 / 9; }
+}
+
+/* a reel (Leonida Keys): one picture after another along the coast, swiped, scrolled or stepped */
+.rgs__track { display: flex; gap: clamp(10px, 1.4vw, 20px); overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: var(--edge); padding: 4px var(--edge) 18px; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+.rgs__track:focus-visible { outline: 2px solid var(--text); outline-offset: -4px; }
+.rgs__slide { flex: 0 0 min(80vw, 1080px); aspect-ratio: 16 / 9; scroll-snap-align: center; border-radius: var(--r-card); }
+.rgs__ctl { display: flex; align-items: center; gap: 12px; }
+.rgs__ctl[hidden] { display: none; }
+.rgs__count { font: 700 var(--t-small)/1 var(--font-text); letter-spacing: var(--track-ui); color: var(--text-2); }
+.rgs__count b { color: var(--text); }
+.rgs__bar { flex: 1; height: 2px; background: var(--line); position: relative; overflow: hidden; }
+.rgs__bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: var(--tint); transform-origin: 0 50%; transform: scaleX(var(--dp, .2)); }
+.rgs__btn { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line-strong); background: transparent; color: var(--text); cursor: pointer; transition: background var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease); }
+.rgs__btn svg { width: 20px; height: 20px; }
+.rgs__btn:hover, .rgs__btn:focus-visible { background: rgba(255, 255, 255, .1); border-color: var(--tint); }
+.rgs__btn:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+
+/* an overgrowth (Grassrivers): pictures laid over each other, one reaching into the next, as the reeds do */
+.rgs__stack { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-rows: clamp(44px, 6.4vw, 100px); gap: 0; padding-block: clamp(0px, 2vw, 24px); }
+.rgs__layer { border-radius: var(--r-card); box-shadow: 0 30px 70px rgba(0, 0, 0, .5); }
+.rgs__layer--1 { grid-column: 1 / 9; grid-row: 1 / 6; z-index: 1; }
+.rgs__layer--2 { grid-column: 8 / 13; grid-row: 3 / 9; z-index: 2; }
+.rgs__layer--3 { grid-column: 3 / 8; grid-row: 6 / 11; z-index: 3; }
+
+/* a cut (Port Gellhorn): two pictures laid on a hard diagonal, the first cut off, the second cut into it */
+.rgs__cuts { display: grid; }
+.rgs__cut { aspect-ratio: 21 / 9; }
+.rgs__cut--1 { clip-path: polygon(0 0, 100% 0, 100% 86%, 0 100%); }
+.rgs__cut--2 { margin-top: calc(-1 * clamp(24px, 5vw, 80px)); clip-path: polygon(0 14%, 100% 0, 100% 100%, 0 100%); }
+
+/* a diptych (Ambrosia): two tall pictures side by side under one light, a seam of warmth between */
+.rgs__duo { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; }
+.rgs__half { aspect-ratio: 4 / 5; max-height: 92svh; }
+.rgs__duo::after { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 3px; translate: -50% 0; pointer-events: none; background: linear-gradient(180deg, transparent, var(--tint) 20%, var(--tint) 80%, transparent); box-shadow: 0 0 40px var(--tint); opacity: .8; }
+
+/* a curtain (Mount Kalaga): each picture fills the window and the next draws over it, a descent through the park */
+.rgs__curtain { display: block; }
+.rgs__sheet { position: sticky; top: 0; height: 100svh; border-radius: var(--r-card); box-shadow: 0 -30px 60px rgba(0, 0, 0, .5); }
+.rgs__sheet:first-child { box-shadow: none; }
+
+/* the postcard: Rockstar's own artwork for the region, on a field of its colour */
+.rg-postcard { margin-top: clamp(24px, 4vw, 56px); padding-block: clamp(40px, 6vw, 88px); background: radial-gradient(60% 90% at 70% 50%, color-mix(in srgb, var(--tint) 18%, transparent), transparent 72%), linear-gradient(180deg, var(--ground) 0%, var(--ground-2) 100%); }
+.rg-postcard__in { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 3fr); gap: clamp(20px, 4vw, 64px); align-items: end; }
+.rg-postcard__pic { aspect-ratio: 16 / 9; border-radius: var(--r-card); box-shadow: 0 30px 80px rgba(0, 0, 0, .5); }
 .rg-postcard__cap { display: grid; gap: 10px; align-content: end; font: 500 var(--t-small)/1.5 var(--font-text); color: var(--text-2); }
 .rg-postcard__cap b { font: 700 var(--t-micro)/1.2 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--tint); }
-/* a picture across the whole window, or inset */
-.rg-one--full .rg-one__art { aspect-ratio: 21 / 9; max-height: 86svh; }
-.rg .rg-one--inset { margin-inline: var(--edge); }
-.rg-one--inset .rg-one__art { aspect-ratio: 16 / 9; border-radius: var(--r-card); }
-/* two together, the second a little lower */
-.rg-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(12px, 1.6vw, 24px); align-items: start; }
-.rg-pair li:nth-child(2) { margin-top: clamp(0px, 6vw, 88px); }
-.rg-pair__art { aspect-ratio: 4 / 3; border-radius: var(--r-card); }
-/* three: one wide, two beside it */
-.rg-strip { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr); gap: clamp(12px, 1.6vw, 24px); align-items: stretch; }
-.rg-strip__art { aspect-ratio: 8 / 9; border-radius: var(--r-card); }
-.rg-strip li:first-child .rg-strip__art { aspect-ratio: 4 / 3; }
-.rg-credit { max-width: 62ch; font: 500 var(--t-micro)/1.6 var(--font-text); color: var(--text-3); }
+.rg-credit { max-width: 62ch; padding-top: 20px; font: 500 var(--t-micro)/1.6 var(--font-text); color: var(--text-3); }
 
 /* =====================================================================
-   On to the next region
+   On to the next region, with all six in view
    ===================================================================== */
-.rg-next { display: grid; }
-.rg-next__stage { position: relative; isolation: isolate; overflow: hidden; display: grid; align-content: end; min-height: clamp(380px, 62svh, 640px); color: var(--text); text-decoration: none; }
-.rg-next__art { position: absolute; inset: 0; z-index: -2; background: var(--card); }
-.rg-next__art .rshot { transition: transform 1.4s var(--ease); }
-.rg-next__stage:hover .rshot, .rg-next__stage:focus-visible .rshot { transform: scale(1.03); }
-.rg-next__shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(0deg, rgba(10, 8, 28, .86) 0%, rgba(10, 8, 28, .3) 46%, rgba(10, 8, 28, .1) 100%), linear-gradient(90deg, rgba(10, 8, 28, .55) 0%, rgba(10, 8, 28, 0) 56%); }
-.rg-next__words { display: grid; gap: 12px; justify-items: start; padding: 0 var(--edge) clamp(36px, 6vw, 72px); }
-.rg-next__kicker { display: inline-flex; gap: 14px; font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--text-2); }
-.rg-next__name { font: 700 var(--t-h1)/.92 var(--font-display); letter-spacing: var(--track-tight); text-transform: uppercase; text-shadow: 0 2px 30px rgba(7, 6, 20, .6); }
-.rg-next__go { display: inline-flex; align-items: center; gap: 10px; font: 700 var(--t-small)/1 var(--font-text); letter-spacing: var(--track-ui); }
-.rg-next__go svg { width: 18px; height: 18px; transition: transform var(--dur-1) var(--ease); }
-.rg-next__stage:hover .rg-next__go svg, .rg-next__stage:focus-visible .rg-next__go svg { transform: translateX(6px); }
-.rg-next__stage:focus-visible { outline: 2px solid var(--text); outline-offset: -6px; }
-.rg-next__bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 32px; padding-block: 28px 40px; }
+.rgn { display: grid; }
+.rgn__stage { position: relative; isolation: isolate; overflow: hidden; display: grid; align-content: end; min-height: clamp(400px, 66svh, 680px); color: var(--text); text-decoration: none; }
+.rgn__art { position: absolute; inset: 0; z-index: -2; background: var(--card); }
+.rgn__art .rshot { transition: transform 1.4s var(--ease); }
+.rgn__stage:hover .rshot, .rgn__stage:focus-visible .rshot { transform: scale(1.03); }
+.rgn__shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(0deg, rgba(10, 8, 28, .86) 0%, rgba(10, 8, 28, .3) 46%, rgba(10, 8, 28, .1) 100%), linear-gradient(90deg, rgba(10, 8, 28, .55) 0%, rgba(10, 8, 28, 0) 56%); }
+.rgn__big { right: var(--edge); bottom: -.04em; z-index: 0; -webkit-text-stroke-color: rgba(255, 255, 255, .3); }
+.rgn__words { position: relative; z-index: 1; display: grid; gap: 12px; justify-items: start; padding: 0 var(--edge) clamp(36px, 6vw, 72px); }
+.rgn__kicker { display: inline-flex; gap: 14px; font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--text-2); }
+.rgn__name { font: 700 var(--t-h1)/.92 var(--font-display); letter-spacing: var(--track-tight); text-transform: uppercase; text-shadow: 0 2px 30px rgba(7, 6, 20, .6); }
+.rgn__go { display: inline-flex; align-items: center; gap: 10px; font: 700 var(--t-small)/1 var(--font-text); letter-spacing: var(--track-ui); }
+.rgn__go svg { width: 18px; height: 18px; transition: transform var(--dur-1) var(--ease); }
+.rgn__stage:hover .rgn__go svg, .rgn__stage:focus-visible .rgn__go svg { transform: translateX(6px); }
+.rgn__stage:focus-visible { outline: 2px solid var(--text); outline-offset: -6px; }
+.rgn__bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 32px; padding-block: 28px 8px; }
 .rg-prev { display: inline-flex; align-items: center; gap: 12px; min-height: 44px; color: var(--text); text-decoration: none; font: 700 var(--t-small)/1.2 var(--font-text); }
 .rg-prev small { display: block; font: 700 var(--t-micro)/1.2 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--text-3); }
 .rg-prev:hover { color: var(--tint); }
-.rg-all { display: flex; flex-wrap: wrap; gap: 4px 22px; }
-.rg-all a { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; font: 600 var(--t-small)/1 var(--font-text); color: var(--text-3); text-decoration: none; }
-.rg-all a b { font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); }
-.rg-all a:hover, .rg-all a[aria-current] { color: var(--text); }
-.rg-all a[aria-current] { box-shadow: 0 2px 0 var(--tint); }
+/* all six, as pictures: the current one dimmed, the others one press away */
+.rgn__strip { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: clamp(8px, 1.2vw, 16px); padding-block: 8px clamp(40px, 6vw, 72px); }
+.rgn__strip a { display: grid; gap: 8px; color: var(--text-2); text-decoration: none; font: 600 var(--t-small)/1.2 var(--font-text); }
+.rgn__thumb { position: relative; display: block; overflow: hidden; aspect-ratio: 16 / 10; border-radius: var(--r-tile); background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
+.rgn__thumb .rshot { transition: transform var(--dur-1) var(--ease), opacity var(--dur-1) var(--ease); }
+.rgn__strip a:hover .rshot, .rgn__strip a:focus-visible .rshot { transform: scale(1.06); }
+.rgn__strip a[aria-current] .rshot { opacity: .4; }
+.rgn__lbl b { margin-right: 6px; font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); color: var(--text-3); }
+.rgn__strip a[aria-current] { color: var(--text); }
+.rgn__strip a[aria-current] .rgn__thumb { box-shadow: inset 0 0 0 2px var(--tint); }
+.rgn__strip a:hover { color: var(--text); }
 
 /* =====================================================================
-   The index: an opening with the six regions to choose from, then each region in its own picture
+   The index: an opening with the six regions to choose from, then each region composed on its own terms
    ===================================================================== */
 .rg-intro { position: relative; isolation: isolate; overflow: hidden; display: grid; align-content: end; gap: clamp(28px, 5vh, 56px); min-height: clamp(640px, 100svh, 1000px); padding: calc(var(--header-h) + 40px) var(--edge) clamp(28px, 5vh, 48px); background: var(--ground); }
 .rg-intro__art { position: absolute; inset: 0; z-index: -2; background: var(--card); }
@@ -174,12 +288,7 @@ html.motion-on .rg-intro__copy > :nth-child(3) { animation-delay: .24s; }
 .rg-index__no { font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); color: var(--text-2); }
 .rg-index__name { font: 700 var(--t-small)/1.15 var(--font-text); letter-spacing: var(--track-ui); }
 .rg-index a:hover, .rg-index a:focus-visible { box-shadow: inset 0 0 0 2px var(--text); transform: translateY(-3px); }
-[data-jump="vice-city"], [data-feature="vice-city"] { --tint: #ff77ab; }
-[data-jump="leonida-keys"], [data-feature="leonida-keys"] { --tint: #52d8ea; }
-[data-jump="grassrivers"], [data-feature="grassrivers"] { --tint: #86dc86; }
-[data-jump="port-gellhorn"], [data-feature="port-gellhorn"] { --tint: #ff9f63; }
-[data-jump="ambrosia"], [data-feature="ambrosia"] { --tint: #f4bb4f; }
-[data-jump="mount-kalaga"], [data-feature="mount-kalaga"] { --tint: #93d5a6; }
+.rg-title--wide { font-size: var(--t-display); }
 
 /* the compact index that follows the reader down the page */
 .rg-jump { position: fixed; z-index: 35; left: 0; right: 0; top: var(--header-h); padding: 8px var(--edge); background: color-mix(in srgb, var(--ground) 86%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid var(--line);
@@ -191,70 +300,171 @@ html.motion-on .rg-intro__copy > :nth-child(3) { animation-delay: .24s; }
 .rg-jump a:hover, .rg-jump a[aria-current] { color: var(--text); }
 .rg-jump a[aria-current] { box-shadow: 0 2px 0 var(--tint); }
 
-.rg-feature { position: relative; isolation: isolate; overflow: hidden; display: flex; align-items: center; min-height: min(86svh, 780px); scroll-margin-top: calc(var(--header-h) + 44px); }
-.rg-feature__art { position: absolute; inset: 0; z-index: -2; background: var(--card); }
-.rg-feature__shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(13, 11, 32, .88) 0%, rgba(13, 11, 32, .5) 36%, rgba(13, 11, 32, 0) 64%), linear-gradient(0deg, rgba(13, 11, 32, .5) 0%, rgba(13, 11, 32, 0) 30%); }
-.rg-feature--flip .rg-feature__shade { background: linear-gradient(270deg, rgba(13, 11, 32, .88) 0%, rgba(13, 11, 32, .5) 36%, rgba(13, 11, 32, 0) 64%), linear-gradient(0deg, rgba(13, 11, 32, .5) 0%, rgba(13, 11, 32, 0) 30%); }
-.rg .rg-feature__inner { display: flex; flex: 1 1 0; min-width: 0; }
-.rg-feature--flip .rg-feature__inner { justify-content: flex-end; text-align: right; }
-.rg-feature__text { display: grid; gap: 16px; justify-items: start; max-width: 30rem; padding-block: 64px; }
-.rg-feature--flip .rg-feature__text { justify-items: end; }
+/* every region on the landing: the same words, six compositions */
+.rgf { position: relative; isolation: isolate; overflow: hidden; display: grid; align-items: center; min-height: min(92svh, 860px); scroll-margin-top: calc(var(--header-h) + 44px); background: var(--ground); }
+.rgf__no { left: var(--edge); top: 6%; z-index: 0; }
+.rgf__words { position: relative; z-index: 2; display: grid; gap: 14px; justify-items: start; max-width: 30rem; }
+.rgf__words > * { margin: 0; }
+.rgf__sum { font: 500 var(--t-lead)/1.5 var(--font-text); color: #f3ecf2; text-shadow: 0 1px 18px rgba(7, 6, 20, .8); }
+.rgf__meta { display: grid; gap: 4px; font: 600 var(--t-small)/1.4 var(--font-text); color: var(--text-2); text-shadow: 0 1px 12px rgba(7, 6, 20, .85); }
+.rgf__meta:empty { display: none; }
+.rgf [class*="__p--"], .rgf__a, .rgf__b, .rgf__band, .rgf__inset { overflow: hidden; background: var(--card); }
 .rg-title--feature { font-size: var(--t-h1); line-height: .92; }
-.rg-feature__sum { font: 500 var(--t-lead)/1.5 var(--font-text); color: #f3ecf2; text-shadow: 0 1px 18px rgba(7, 6, 20, .8); }
-.rg-feature__meta { display: grid; gap: 4px; font: 600 var(--t-small)/1.4 var(--font-text); color: var(--text-2); text-shadow: 0 1px 12px rgba(7, 6, 20, .85); }
-.rg-feature__meta:empty { display: none; }
-[data-feature="vice-city"] .rshot { object-position: 50% 62%; }
-.rg-title--wide { font-size: var(--t-display); }
+
+/* neon (Vice City): a wall of three tall pictures under a pink glow, the name set across their edge */
+.rgf--neon { background: radial-gradient(52% 70% at 86% 30%, color-mix(in srgb, var(--tint) 22%, transparent), transparent 72%), radial-gradient(40% 50% at 100% 100%, rgba(120, 80, 255, .22), transparent 70%), var(--ground); padding-block: clamp(48px, 8vw, 96px); }
+.rgf--neon .rgf__wall { position: absolute; z-index: 1; right: var(--edge); top: 50%; translate: 0 -50%; width: min(62vw, 880px); height: min(76svh, 640px); display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: clamp(8px, 1.2vw, 16px); }
+.rgf--neon .rgf__p--1, .rgf--neon .rgf__p--2, .rgf--neon .rgf__p--3 { border-radius: var(--r-tile); box-shadow: 0 0 60px color-mix(in srgb, var(--tint) 30%, transparent), 0 24px 60px rgba(0, 0, 0, .5); }
+.rgf--neon .rgf__p--1 { margin-bottom: 14%; }
+.rgf--neon .rgf__p--2 { margin-top: 12%; }
+.rgf--neon .rgf__p--3 { margin-top: 4%; margin-bottom: 22%; }
+.rgf__words--neon { margin-left: var(--edge); max-width: min(34rem, 46vw); }
+.rgf__words--neon .rg-title { font-size: var(--t-display); line-height: .84; margin-right: -14vw; text-shadow: 0 0 36px color-mix(in srgb, var(--tint) 50%, transparent), 0 2px 28px rgba(7, 6, 20, .8); }
+
+/* horizon (Leonida Keys): one wide band of sea and sky, the name drawn out along the horizon, a second picture set into the corner of the first */
+.rgf--horizon { align-content: start; gap: clamp(20px, 3vw, 40px); background: linear-gradient(180deg, #0c2a4a 0%, var(--ground) 46%); padding-bottom: clamp(48px, 7vw, 96px); }
+.rgf--horizon .rgf__band { position: relative; z-index: 0; aspect-ratio: 21 / 8; width: 100%; -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent 100%); mask-image: linear-gradient(180deg, #000 70%, transparent 100%); background: transparent; }
+.rgf--horizon .rgf__inset { position: absolute; z-index: 3; right: var(--edge); top: calc(var(--header-h) + clamp(24px, 3vw, 56px)); width: min(24vw, 360px); aspect-ratio: 4 / 3; border-radius: var(--r-card); box-shadow: 0 24px 70px rgba(0, 0, 0, .55), 0 0 0 1px rgba(255, 255, 255, .2); }
+.rgf__words--horizon { max-width: none; width: calc(100% - 2 * var(--edge)); margin-inline: var(--edge); grid-template-columns: minmax(0, 1fr) minmax(0, 26rem); gap: 10px clamp(24px, 6vw, 96px); align-items: end; margin-top: calc(-1 * clamp(8px, 4vw, 56px)); }
+.rgf__words--horizon .rg-kicker { grid-column: 1 / -1; }
+.rgf__words--horizon .rg-title { grid-column: 1; font: 700 var(--t-h1)/.9 var(--font-display); letter-spacing: var(--track-label); white-space: nowrap; }
+.rgf__words--horizon .rgf__sum, .rgf__words--horizon .rgf__meta, .rgf__words--horizon .rg-go { grid-column: 2; }
+.rgf__words--horizon .rgf__sum { grid-row: 2 / span 2; align-self: end; }
+
+/* overgrown (Grassrivers): two pictures with soft, feathered edges, one growing over the other, in a haze */
+.rgf--overgrown { background: radial-gradient(70% 80% at 30% 40%, rgba(40, 90, 50, .28), transparent 70%), var(--ground); }
+.rgf--overgrown .rgf__a { position: absolute; z-index: 0; left: -2%; top: 2%; width: 72%; height: 92%; -webkit-mask-image: radial-gradient(ellipse closest-side at 50% 50%, #000 58%, transparent 100%); mask-image: radial-gradient(ellipse closest-side at 50% 50%, #000 58%, transparent 100%); background: transparent; }
+.rgf--overgrown .rgf__b { position: absolute; z-index: 1; right: 4%; bottom: 6%; width: 34%; aspect-ratio: 3 / 4; -webkit-mask-image: radial-gradient(ellipse closest-side at 50% 50%, #000 52%, transparent 100%); mask-image: radial-gradient(ellipse closest-side at 50% 50%, #000 52%, transparent 100%); background: transparent; }
+.rgf__haze { position: absolute; z-index: 1; inset: -6%; pointer-events: none; background: radial-gradient(44% 30% at 30% 78%, rgba(200, 235, 200, .2), transparent 72%), radial-gradient(50% 32% at 74% 40%, rgba(200, 235, 200, .16), transparent 72%); filter: blur(22px); }
+.rgf__words--overgrown { margin-left: var(--edge); align-self: end; margin-bottom: clamp(36px, 8vh, 88px); }
+
+/* cut (Port Gellhorn): two pictures cut on a hard diagonal, a hazard stripe in the seam */
+.rgf--cut { background: #14100e; }
+.rgf--cut .rgf__a, .rgf--cut .rgf__b { position: absolute; inset: 0; background: transparent; }
+.rgf--cut .rgf__a { z-index: 0; clip-path: polygon(0 0, 61% 0, 49% 100%, 0 100%); }
+.rgf--cut .rgf__b { z-index: 0; clip-path: polygon(64% 0, 100% 0, 100% 100%, 52% 100%); }
+.rgf--cut .rgf__a .rshot { object-position: 26% 50%; }
+.rgf--cut .rgf__b .rshot { object-position: 80% 50%; }
+.rgf--cut::before { content: ""; position: absolute; z-index: 1; inset: 0; pointer-events: none; clip-path: polygon(61% 0, 64% 0, 52% 100%, 49% 100%); background: repeating-linear-gradient(135deg, var(--tint) 0 10px, #1b1410 10px 20px); }
+.rgf--cut::after { content: ""; position: absolute; z-index: 1; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgba(14, 10, 8, .78) 0%, rgba(14, 10, 8, .3) 40%, rgba(14, 10, 8, 0) 60%), linear-gradient(0deg, rgba(14, 10, 8, .5) 0%, rgba(14, 10, 8, 0) 34%); }
+.rgf__words--cut { margin-left: var(--edge); max-width: min(26rem, 38vw); }
+.rgf__words--cut .rg-title { font-size: var(--t-display); line-height: .84; }
+
+/* dusk (Ambrosia): one picture at its darkest and warmest, the name so large that the horizon cuts it off */
+.rgf--dusk { align-items: end; min-height: min(96svh, 900px); background: #140a06; }
+.rgf--dusk .rgf__a { position: absolute; inset: 0; z-index: 0; }
+.rgf--dusk .rgf__a::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(20, 10, 6, .92) 0%, rgba(20, 10, 6, .42) 40%, rgba(20, 10, 6, .1) 72%), radial-gradient(50% 40% at 50% 100%, color-mix(in srgb, var(--tint) 24%, transparent), transparent 72%); }
+.rgf--dusk .rgf__b { position: absolute; z-index: 1; right: var(--edge); top: 12%; width: min(22vw, 320px); aspect-ratio: 3 / 4; border-radius: var(--r-card); box-shadow: 0 24px 70px rgba(0, 0, 0, .6), 0 0 0 1px rgba(255, 255, 255, .18); }
+.rgf__words--dusk { max-width: none; width: 100%; box-sizing: border-box; padding-inline: var(--edge); grid-template-columns: minmax(0, 1fr) minmax(0, 24rem); gap: 8px clamp(24px, 5vw, 80px); align-items: end; padding-bottom: 0; }
+.rgf__words--dusk .rg-title { grid-column: 1 / -1; grid-row: 4; margin-top: clamp(8px, 2vw, 24px); font: 700 var(--t-numeral)/.78 var(--font-display); letter-spacing: var(--track-caps); margin-bottom: -.16em; text-shadow: 0 0 40px color-mix(in srgb, var(--tint) 32%, transparent); }
+.rgf__words--dusk .rg-kicker { grid-column: 1; grid-row: 1; }
+.rgf__words--dusk .rgf__sum { grid-column: 1; grid-row: 2; }
+.rgf__words--dusk .rgf__meta { grid-column: 1; grid-row: 3; }
+.rgf__words--dusk .rg-go { grid-column: 2; grid-row: 2 / span 2; justify-self: end; align-self: end; }
+
+/* scale (Mount Kalaga): a great deal of room around one tall frame and one long thin one, the name small beside them */
+.rgf--scale { background: linear-gradient(180deg, var(--ground) 0%, #0d1a14 100%); padding-block: clamp(56px, 9vw, 120px); }
+.rgf--scale .rgf__b { position: absolute; z-index: 0; left: 0; right: 0; top: 0; height: 22%; opacity: .75; -webkit-mask-image: linear-gradient(180deg, #000 30%, transparent 100%); mask-image: linear-gradient(180deg, #000 30%, transparent 100%); background: transparent; }
+.rgf--scale .rgf__a { position: absolute; z-index: 1; right: calc(var(--edge) + 4vw); top: 50%; translate: 0 -46%; width: min(34vw, 520px); aspect-ratio: 3 / 4; border-radius: var(--r-tile); box-shadow: 0 40px 100px rgba(0, 0, 0, .6), 0 0 0 1px rgba(255, 255, 255, .16); }
+.rgf--scale::before { content: ""; position: absolute; z-index: 1; left: calc(var(--edge) + 2px); top: 18%; bottom: 8%; width: 1px; background: linear-gradient(180deg, transparent, var(--tint), transparent); }
+.rgf__words--scale { margin-left: calc(var(--edge) + 40px); max-width: 24rem; }
+.rgf__words--scale .rg-title { font-size: var(--t-h2); }
+.rgf--scale .rgf__no { left: auto; right: var(--edge); top: auto; bottom: 4%; }
 
 .rg-source { display: grid; gap: 14px; max-width: 70ch; padding-block: clamp(48px, 7vw, 96px); }
 .rg-source p { font: 500 var(--t-body)/1.6 var(--font-text); color: var(--text-2); }
 
-/* a visitor who asks for reduced motion has no motion class (the site's own policy), so none of the motion above runs for them. One more case: site.css switches every animation and
-   transition off for a system that asks for reduced motion, and the site's policy lets a visitor's choice in the menu, or the server setting TV_AUTOPLAY_ALWAYS, opt back in
-   (html.motion-on). For them the camera would be stuck at its end state, so the page gives its own timings back here; without html.motion-on none of these rules applies. */
+/* =====================================================================
+   Motion: all of it decoration, none of it needed to read or use a page.
+   Pictures drift against the scroll where the browser can tie an animation to it; without that, they simply sit.
+   ===================================================================== */
+@supports (animation-timeline: view()) {
+  html.motion-on .rgf--overgrown .rgf__a, html.motion-on .rgf--cut .rgf__a, html.motion-on .rgf--cut .rgf__b, html.motion-on .rgf--dusk .rgf__a, html.motion-on .rgf--horizon .rgf__band, html.motion-on .rgf--neon .rgf__p--1, html.motion-on .rgf--neon .rgf__p--3 { animation: rg-drift-a linear both; animation-timeline: view(); animation-range: entry 0% exit 100%; }
+  html.motion-on .rgf__inset, html.motion-on .rgf--neon .rgf__p--2, html.motion-on .rgs__layer--2, html.motion-on .rgf--overgrown .rgf__b, html.motion-on .rgf--dusk .rgf__b { animation: rg-drift-b linear both; animation-timeline: view(); animation-range: entry 0% exit 100%; }
+  html.motion-on .rgs__layer--1, html.motion-on .rgs__layer--3, html.motion-on .rga__pic { animation: rg-drift-c linear both; animation-timeline: view(); animation-range: entry 0% exit 100%; }
+  @keyframes rg-drift-a { from { transform: translate3d(0, -3%, 0); } to { transform: translate3d(0, 3%, 0); } }
+  @keyframes rg-drift-b { from { transform: translate3d(0, 7%, 0); } to { transform: translate3d(0, -7%, 0); } }
+  @keyframes rg-drift-c { from { transform: translate3d(0, 2%, 0); } to { transform: translate3d(0, -2%, 0); } }
+}
+
+/* a visitor who asks for reduced motion has no motion class (the site's own policy), so none of the motion above runs for them. One more case: site.css switches every
+   animation and transition off for a system that asks for reduced motion, and the site's policy lets a visitor's choice in the menu, or the server setting
+   TV_AUTOPLAY_ALWAYS, opt back in (html.motion-on). For them the camera would be stuck at its end state, so the page gives its own timings back here; without
+   html.motion-on none of these rules applies. */
 @media (prefers-reduced-motion: reduce) {
-  html.motion-on .rg-hero__art .rshot { animation-duration: 14s !important; animation-delay: 0s !important; }
-  html.motion-on .rg-hero__copy > *, html.motion-on .rg-intro__copy > * { animation-duration: .8s !important; }
-  html.motion-on .rg-hero__copy > :nth-child(1) { animation-delay: .1s !important; }
-  html.motion-on .rg-hero__copy > :nth-child(2), html.motion-on .rg-intro__copy > :nth-child(2) { animation-delay: .2s !important; }
-  html.motion-on .rg-hero__copy > :nth-child(3), html.motion-on .rg-intro__copy > :nth-child(3) { animation-delay: .3s !important; }
-  html.motion-on .rg-hero__copy > :nth-child(4) { animation-delay: .4s !important; }
+  html.motion-on .rgh__art .rshot { animation-duration: 14s !important; animation-delay: 0s !important; }
+  html.motion-on .rgh__mist { animation-duration: 38s !important; }
+  html.motion-on .rgh__copy > *, html.motion-on .rg-intro__copy > * { animation-duration: .8s !important; }
+  html.motion-on .rgh__copy > :nth-child(1) { animation-delay: .1s !important; }
+  html.motion-on .rgh__copy > :nth-child(2), html.motion-on .rg-intro__copy > :nth-child(2) { animation-delay: .2s !important; }
+  html.motion-on .rgh__copy > :nth-child(3), html.motion-on .rg-intro__copy > :nth-child(3) { animation-delay: .3s !important; }
+  html.motion-on .rgh__copy > :nth-child(4) { animation-delay: .4s !important; }
+  html.motion-on .rgf__a, html.motion-on .rgf__b, html.motion-on .rgf__band, html.motion-on .rgf__inset, html.motion-on [class*="rgf__p--"], html.motion-on .rgs__layer, html.motion-on .rga__pic { animation-duration: auto !important; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .rg-pics [class$="__art"] .rshot, .rg-next__art .rshot, .rg-index a { transition: none; }
-  .rg-pics a:hover .rshot, .rg-pics a:focus-visible .rshot, .rg-next__stage:hover .rshot, .rg-next__stage:focus-visible .rshot, .rg-index a:hover, .rg-index a:focus-visible { transform: none; }
+  .rg-lb .rshot, .rgn__art .rshot, .rgn__thumb .rshot, .rg-index a { transition: none; }
+  .rg-lb:hover .rshot, .rg-lb:focus-visible .rshot, .rgn__stage:hover .rshot, .rgn__stage:focus-visible .rshot, .rgn__strip a:hover .rshot, .rg-index a:hover, .rg-index a:focus-visible { transform: none; }
+  .rgs__sheet { position: relative; height: 70svh; box-shadow: none; }
+  .rgs__track { scroll-behavior: auto; }
 }
 
 /* =====================================================================
-   Tablets and phones: the picture on top, the words beneath it
+   Tablets and phones: the picture first, the words beneath it; each region keeps what is its own
    ===================================================================== */
+@media (min-width: 900px) and (max-width: 1199px) { .rg-title { font-size: var(--t-h1); } .rgh--wide .rg-title { font-size: var(--t-h1); } }
+@media (max-width: 1100px) { .rgn__strip { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 899px) {
-  .rg-hero { height: auto; display: grid; grid-template-columns: minmax(0, 1fr); padding-top: calc(var(--header-h) + 4px); }
-  .rg-hero__art { position: relative; inset: auto; grid-row: 2; aspect-ratio: 1.45; }
-  .rg-hero__art::after { background: linear-gradient(0deg, var(--ground) 0%, rgba(18, 16, 42, 0) 38%); }
-  .rg-hero__grade { display: none; }
-  .rg-crumb { position: relative; inset: auto; grid-row: 1; padding: var(--s1) var(--gutter) var(--s1); }
-  .rg-hero__copy, .rg-hero--bl .rg-hero__copy, .rg-hero--tl .rg-hero__copy { position: relative; inset: auto; grid-row: 3; max-width: none; margin: 0; padding: var(--s1) var(--gutter) clamp(28px, 6vw, 48px); }
-  .rg-title { font-size: var(--t-h1); }
+  .rgh, .rgh--frame { height: auto; display: grid; grid-template-columns: minmax(0, 1fr); padding: calc(var(--header-h) + 4px) 0 0; }
+  .rgh__art, .rgh--frame .rgh__art, .rgh--split .rgh__art, .rgh--cut .rgh__art { position: relative; inset: auto; grid-row: 3; width: 100%; height: auto; aspect-ratio: 1.45; clip-path: none; border-radius: 0; }
+  .rgh--cut::after, .rgh__no, .rgh__mist { display: none; }
+  .rgh__art::after { background: linear-gradient(0deg, var(--ground) 0%, rgba(18, 16, 42, 0) 38%); }
+  .rgh__grade, .rgh--frame .rgh__grade { display: none; }
+  .rg-crumb { position: relative; inset: auto; grid-row: 1; padding: var(--s2) var(--gutter) var(--s1); }
+  .rg-switch { position: relative; inset: auto; grid-row: 2; padding: 0 calc(var(--gutter) - 8px) var(--s1); overflow-x: auto; }
+  .rgh__copy, .rgh--wide .rgh__copy, .rgh--mist .rgh__copy, .rgh--centre .rgh__copy, .rgh--frame .rgh__copy, .rgh--split .rgh__copy, .rgh--cut .rgh__copy { position: relative; inset: auto; translate: none; grid-row: 4; max-width: none; display: grid; grid-template-columns: minmax(0, 1fr); justify-items: start; text-align: left; margin: 0; padding: var(--s1) var(--gutter) clamp(28px, 6vw, 48px); }
+  .rgh--wide .rg-title { white-space: normal; }
+  .rgh--wide .rg-kicker, .rgh--wide .rg-title, .rgh--wide .rg-hero__line, .rgh--wide .rg-cue, .rgh--frame .rg-kicker, .rgh--frame .rg-title, .rgh--frame .rg-hero__line, .rgh--frame .rg-cue { grid-column: 1; grid-row: auto; }
+  .rgh--centre .rg-hero__line, .rgh--cut .rg-hero__line { text-align: left; border-top: 1px solid var(--line-strong); padding-top: 12px; }
+  .rgh--split .rgh__copy::before { display: none; }
+  .rg-title, .rgh--split .rg-title, .rgh--cut .rg-title { font-size: var(--t-h1); }
   .rg-hero__line { font-size: var(--t-body); max-width: 30rem; }
-  .rg-about__in { grid-template-columns: 1fr; align-items: start; }
-  .rg-lede { font-size: var(--t-lead); }
-  .rg .rg-postcard { grid-template-columns: 1fr; }
-  .rg-one--full .rg-one__art { aspect-ratio: 16 / 10; }
-  .rg-pair, .rg-strip { grid-template-columns: 1fr; }
-  .rg-pair li:nth-child(2) { margin-top: 0; }
-  .rg-pair__art, .rg-strip__art, .rg-strip li:first-child .rg-strip__art { aspect-ratio: 16 / 10; }
-  .rg-next__name { font-size: var(--t-h2); }
-  .rg-next__bar { flex-direction: column; align-items: flex-start; }
+  .rga__in, .rga--left .rga__in { grid-template-columns: minmax(0, 1fr); }
+  .rga--left .rga__pic { order: 0; }
+  .rga__pic { aspect-ratio: 4 / 3; max-height: none; }
+  .rg-lede, .rga--plain .rg-lede { font-size: var(--t-lead); max-width: 34ch; }
+  .rga__ghost { display: none; }
+  .rg-postcard__in { grid-template-columns: 1fr; }
+  .rgs__track { padding-inline: var(--gutter); }
+  .rgs__slide { flex-basis: 88vw; }
+  .rgs__stack { grid-template-columns: minmax(0, 1fr); grid-auto-rows: auto; gap: 14px; }
+  .rgs__layer--1, .rgs__layer--2, .rgs__layer--3 { grid-column: 1; grid-row: auto; aspect-ratio: 16 / 10; }
+  .rgs__cut { aspect-ratio: 16 / 10; }
+  .rgs__duo { grid-template-columns: 1fr; }
+  .rgs__half { aspect-ratio: 16 / 10; }
+  .rgs__duo::after { display: none; }
+  .rgs__sheet { position: relative; height: auto; aspect-ratio: 16 / 10; border-radius: var(--r-tile); box-shadow: none; margin-bottom: 12px; }
+  .rgs__curtain { padding-inline: var(--gutter); }
+  .rgn__name { font-size: var(--t-h2); }
+  .rgn__big { display: none; }
+  .rgn__bar { flex-direction: column; align-items: flex-start; }
+  .rgn__strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* the landing */
   .rg-intro { min-height: 0; padding-top: calc(var(--header-h) + 28px); }
   .rg-title--wide { font-size: var(--t-h1); }
   .rg-index ol { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .rg-index a { min-height: 92px; }
-  .rg-feature { min-height: 0; display: grid; }
-  .rg-feature__art { position: relative; inset: auto; z-index: 0; aspect-ratio: 1.4; }
-  .rg-feature__shade { display: none; }
-  .rg-feature__inner, .rg-feature--flip .rg-feature__inner { justify-content: flex-start; text-align: left; }
-  .rg-feature__text, .rg-feature--flip .rg-feature__text { justify-items: start; padding-block: 28px 44px; }
+  .rgf { min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; padding-block: 0 clamp(28px, 6vw, 44px); gap: 0; }
+  .rgf__wall, .rgf__band, .rgf--overgrown .rgf__a, .rgf--cut .rgf__a, .rgf--dusk .rgf__a, .rgf--scale .rgf__a { position: relative; inset: auto; width: 100%; height: auto; aspect-ratio: 1.4; translate: none; clip-path: none; }
+  .rgf--neon .rgf__wall { position: relative; right: auto; top: auto; translate: none; width: 100%; height: auto; aspect-ratio: 1.4; }
+  .rgf--neon .rgf__p--1, .rgf--neon .rgf__p--2, .rgf--neon .rgf__p--3 { margin: 0; border-radius: 0; box-shadow: none; }
+  .rgf--neon .rgf__p--2 { margin-top: 10%; }
+  .rgf--cut .rgf__b, .rgf__b, .rgf__inset, .rgf--dusk .rgf__b, .rgf--scale .rgf__b, .rgf--overgrown .rgf__b, .rgf--horizon .rgf__inset { display: none; }
+  .rgf--cut::before, .rgf--cut::after, .rgf--scale::before, .rgf__haze, .rgf__no { display: none; }
+  .rgf--overgrown .rgf__a, .rgf--scale .rgf__a { -webkit-mask-image: none; mask-image: none; border-radius: 0; box-shadow: none; }
+  .rgf--horizon .rgf__band { aspect-ratio: 16 / 9; -webkit-mask-image: none; mask-image: none; }
+  .rgf__words, .rgf__words--neon, .rgf__words--horizon, .rgf__words--overgrown, .rgf__words--cut, .rgf__words--dusk, .rgf__words--scale { margin: 0; max-width: none; width: auto; padding: clamp(24px, 6vw, 36px) var(--gutter) 0; grid-template-columns: minmax(0, 1fr); align-self: start; }
+  .rgf__words--neon .rg-title, .rgf__words--dusk .rg-title, .rgf__words--cut .rg-title, .rgf__words--horizon .rg-title, .rgf__words--scale .rg-title { font: 700 var(--t-h1)/.92 var(--font-display); letter-spacing: var(--track-tight); margin: 0; white-space: normal; }
+  .rgf__words--horizon .rg-kicker, .rgf__words--horizon .rg-title, .rgf__words--horizon .rgf__sum, .rgf__words--horizon .rgf__meta, .rgf__words--horizon .rg-go, .rgf__words--dusk .rg-title, .rgf__words--dusk .rg-kicker, .rgf__words--dusk .rgf__sum, .rgf__words--dusk .rgf__meta, .rgf__words--dusk .rg-go { grid-column: 1; grid-row: auto; justify-self: start; }
   .rg-jump { display: none; }
 }
-@media (min-width: 560px) and (max-width: 899px) { .rg-index ol { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 560px) and (max-width: 899px) { .rg-index ol { grid-template-columns: repeat(3, minmax(0, 1fr)); } .rgn__strip { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

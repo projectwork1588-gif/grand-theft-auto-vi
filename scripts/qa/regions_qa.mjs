@@ -39,7 +39,7 @@ export default async function (b) {
       await b.eval(`window.scrollTo(0, 0); true`);
       await b.sleep(400);
       // the words of the opening are inside the window and below the header; nothing is cut off
-      const words = JSON.parse(await b.eval(`(() => { const copy = document.querySelector(".rg-hero__copy, .rg-intro__copy"); const hb = document.querySelector(".site-header").getBoundingClientRect(); const r = copy.getBoundingClientRect();
+      const words = JSON.parse(await b.eval(`(() => { const copy = document.querySelector(".rgh__copy, .rg-intro__copy"); const hb = document.querySelector(".site-header").getBoundingClientRect(); const r = copy.getBoundingClientRect();
         const t = copy.querySelector("h1").getBoundingClientRect(); return JSON.stringify({ l: r.left, r: r.right, t: t.top, b: t.bottom, hb: hb.bottom, w: window.innerWidth }); })()`));
       report(words.l >= 0 && words.r <= words.w + 1 && words.t >= words.hb - 1, `${tag}: the words of the opening are on the screen and clear of the header`, JSON.stringify(words));
       if (path === "/regions") {
@@ -56,7 +56,7 @@ export default async function (b) {
   await b.send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
   for (const slug of SLUGS) {
     await b.open(BASE + "/regions/" + slug, 1500);
-    const cam = JSON.parse(await b.eval(`(() => { const im = document.querySelector(".rg-hero__art img.rshot"); return JSON.stringify({ n: im.getAnimations().length, motion: document.documentElement.classList.contains("motion-on") }); })()`));
+    const cam = JSON.parse(await b.eval(`(() => { const im = document.querySelector(".rgh__art img.rshot"); return JSON.stringify({ n: im.getAnimations().length, motion: document.documentElement.classList.contains("motion-on") }); })()`));
     if (process.env.QA_REDUCE === "1") { console.log(`INFO  ${slug}: camera animations ${cam.n}, motion-on ${cam.motion}`); }
     else { report(cam.n > 0 && cam.motion, `${slug}: the camera runs`, JSON.stringify(cam)); }
     await b.eval(`document.querySelector('a[href="#about"]').click(); true`);
