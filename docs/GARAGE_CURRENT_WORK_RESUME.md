@@ -1,8 +1,27 @@
-# Garage: current work and how to resume
+# Garage: status and history
 
-Paused on 2026-10-18 at the owner's request. Resume only when the owner writes: "Claude, resume Team Valkyrie Garage from yesterday's checkpoint." Do not restart or redo anything below that is marked done. Do not ask for the original prompt again.
+## CURRENT STATE (authoritative, 2026-10-19)
 
-## Scope and boundaries (unchanged)
+**The Garage is finished, integrated and published to GitHub (`origin/main`, integration commit `b14d624`). It is approved and frozen against cosmetic changes: only genuine defects are in scope.**
+
+* **`/vehicles` is the cinematic Garage landing** (opening that cycles through the seven machines, the collection told in chapters, the mod-shop strip, the Kayak finale; MySQL-backed search, category, sort and paging; with any filter, search, other sort or page it is an ordered list). Template `vehicles/concept.html`, service `site.vehicle_concept`, assets `garage.css` (picture cuts) + `garage_concept.css/js`.
+* **`/garage-concept` is a 301 redirect to `/vehicles`** and keeps the query string. Nothing in the site links to it.
+* **All seven vehicle pages are integrated** (`/vehicles/<slug>`: `vehicles/detail.html`, `vehicle_detail.css/js`, `site.vehicle_detail`; Stage B): a full-window opening with a per-vehicle camera, a sequence chosen for each machine's pictures, previous/next, and a way back to `/vehicles`.
+* `vehicles/index.html` and `static/js/garage.js` (the older opening) are no longer served; they are kept unchanged on purpose and must not be deleted without the owner's say-so.
+* Verified at integration: full pytest 599 passed; browser QA (landing, collection, titles, camera, layout shift, seven detail pages at five sizes, real-pointer suite) clean when run one script at a time. Routes are listed in `docs/ROUTES.md`; the integration test is `tests/test_garage_integration.py`; detail-page tests are `tests/test_vehicle_pages.py`; browser checks are in `scripts/qa/` (`vehicle_detail_qa.mjs` for the seven pages).
+* Home and Characters are frozen. The next section is Leonida / Regions.
+
+**Permanent workflow (owner decision):** build each section directly into the real application routes and templates, integrate continuously and test as we go. No separate polished prototype followed by a long integration step (the Garage's prototype-then-integrate route is why it took so long). Never push without the owner's explicit approval; never rewrite history; never run migrations without being told.
+
+---
+
+# HISTORICAL: everything below this line is the pre-integration record
+
+> **Obsolete instructions.** The checkpoint text below was written while the Garage was a prototype at `/garage-concept` and before it was published. Its "Scope and boundaries", "Unfinished / pending", "What I was doing when paused", resume phrase, "never push" and "do not start redesigning the seven vehicle pages" lines are **no longer in force**; do not act on them. It is kept only for the design reasoning, the QA tooling and the measurements. The `/garage-concept` path in these notes now redirects to `/vehicles`.
+
+Paused on 2026-10-18 at the owner's request (historical). Do not restart or redo anything below that is marked done.
+
+## Scope and boundaries (historical, superseded)
 * Work only on the Garage landing prototype at `/garage-concept` (`app/templates/vehicles/concept.html`, `app/static/css/garage_concept.css`, `app/static/js/garage_concept.js`, `site.vehicle_concept` in `app/services/site.py`, `app/media_slots.py`).
 * The live Garage (`/vehicles`), Home, Characters, the database and migrations stay untouched. Do not start redesigning the seven vehicle detail pages. Never push. Never apply migrations.
 * Quality target is 10/10. **Revised instruction from the owner: spend the effort on the website, not on documentation.** No review ZIP, no extensive screenshot/recording/filmstrip packages. Keep the tests (pytest, real-pointer, autoplay, responsive); take a screenshot only to diagnose a visual problem. The owner will open `/garage-concept` themselves and send screenshots to ChatGPT.
