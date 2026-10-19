@@ -57,7 +57,7 @@ def test_the_index_states_what_is_confirmed_and_counts_only_rockstars_pictures(c
 def test_every_region_page_has_the_shared_skeleton(client, slug):
     p = page(client, f"/regions/{slug}")
     assert p.count("<h1") == 1 and 'class="rg-title"' in p and f'data-region="{slug}"' in p
-    assert re.search(r'<header class="rgh rgh--(wide|split|mist|cut|centre|frame)', p) and 'id="about"' in p and 'href="#about"' in p
+    assert '<header class="rgh">' in p and 'id="about"' in p and 'href="#about"' in p
     assert 'class="rg-crumb"' in p and 'href="/regions"' in p and 'aria-label="All regions"' in p
     assert "Rockstar" in p and "not affiliated with Rockstar Games" in p                # attribution and the disclaimer
     assert "regions.css" in p
@@ -104,27 +104,28 @@ def test_the_postcard_is_shown_as_rockstars_own_artwork(client):
     assert "The postcard" in p and re.search(r"Rockstar(?:&rsquo;|&#39;|')s own artwork for Port Gellhorn", p) and "Port Gellhorn postcard (official artwork)" in p
 
 
-def test_each_region_is_composed_differently_not_one_template_with_six_backgrounds(client):
+def test_all_six_regions_share_one_structure_and_differ_in_their_photography(app, client):
     art = media_slots.REGION_ART
-    assert len({art[s]["hero_look"] for s in SLUGS}) == 6 and len({art[s]["seq"] for s in SLUGS}) == 6 and len({art[s]["look"] for s in SLUGS}) == 6
-    assert [art[s]["seq"] for s in SLUGS] == ["mosaic", "reel", "depth", "diagonal", "diptych", "curtain"]
+    counts = {"vice-city": 6, "leonida-keys": 3, "grassrivers": 3, "port-gellhorn": 2, "ambrosia": 2, "mount-kalaga": 4}      # the pictures after the opening, the one beside the text and the postcard
+    heroes = set()
     for slug in SLUGS:
         p = page(client, f"/regions/{slug}")
-        assert f'data-seq="{art[slug]["seq"]}"' in p and f'class="rgs rgs--{art[slug]["seq"]}"' in p and f"rgh--{art[slug]['hero_look']}" in p
+        assert p.count('<header class="rgh">') == 1 and p.count('class="rga') >= 1 and p.count('class="rgs"') == 1 and p.count('class="rgn"') == 1, slug
+        assert f'data-n="{counts[slug]}"' in p, slug
+        assert ("rga--plain" in p) == (art[slug]["intro"] is None), slug                # only the two regions Rockstar has shown least stand without a picture beside the text
+        heroes.add(art[slug]["hero"])
+    assert len(heroes) == 6 and {s for s in SLUGS if art[s]["intro"] is None} == {"port-gellhorn", "ambrosia"}
     landing = page(client, "/regions")
-    assert re.findall(r'<section class="rgf rgf--([a-z]+)"', landing) == ["neon", "horizon", "overgrown", "cut", "dusk", "scale"]
+    assert re.findall(r'<section class="rgf( rgf--flip)?" id="([a-z-]+)"', landing) == [("", "vice-city"), (" rgf--flip", "leonida-keys"), ("", "grassrivers"), (" rgf--flip", "port-gellhorn"), ("", "ambrosia"), (" rgf--flip", "mount-kalaga")]
 
 
-def test_the_reel_has_controls_only_for_script_and_a_keyboard_reachable_track(client):
-    p = page(client, "/regions/leonida-keys")
-    assert 'data-reel-track tabindex="0" role="region"' in p and "data-reel-ctl hidden" in p and p.count("data-reel-step=") == 2
-    assert p.count('class="rgs__slide"') == 3
-
-
-def test_the_curtain_is_an_ordinary_stack_of_pictures_for_reduced_motion(client):
+def test_the_stylesheet_uses_one_hero_one_title_scale_and_no_effects_that_compete_with_the_pictures():
     css = (ROOT / "app" / "static" / "css" / "regions.css").read_text(encoding="utf-8")
-    assert ".rgs__sheet { position: relative; height: 70svh" in css.split("@media (prefers-reduced-motion: reduce) {")[2]
-    assert page(client, "/regions/mount-kalaga").count('class="rgs__sheet') == 4
+    assert css.count("\n.rgh {") == 1 and ".rgh--" not in css and ".rgf--neon" not in css and ".rgs--" not in css
+    for effect in ("mask-image", "skew", "blur(", "repeating-linear-gradient", "mix-blend-mode"):
+        assert effect not in css.replace("backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);", ""), effect       # only the compact index blurs what is behind it
+    assert "clip-path: polygon(11% 0, 100% 0, 100% 100%, 0 100%)" in css                    # the one slant, shared by all six
+    assert "animation-timeline" not in css
 
 
 # ------------------------------------------------------------------ wording that Rockstar's own pages support (migration 007)
@@ -198,7 +199,7 @@ def test_hostile_database_values_are_escaped_and_an_unsafe_source_is_not_linked(
 def test_a_region_without_pictures_still_renders_without_empty_frames(client, monkeypatch):
     monkeypatch.setattr(media_repo, "for_entity", lambda *a, **k: [])
     p = page(client, "/regions/ambrosia")
-    assert p.count("<h1") == 1 and 'class="rgs ' not in p and "<img class=\"rshot" not in p.split('class="rgn"')[0] and 'id="about"' in p
+    assert p.count("<h1") == 1 and 'class="rgs"' not in p and "<img class=\"rshot" not in p.split('class="rgn"')[0] and 'id="about"' in p
 
 
 def test_an_unknown_region_is_a_clean_404(client):

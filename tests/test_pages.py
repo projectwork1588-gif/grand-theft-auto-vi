@@ -368,7 +368,7 @@ def test_regions_page_lists_all_six_official_regions(client):
     page = html(client, "/regions")
     features = re.findall(r'<h2 class="rg-title rg-title--feature" id="f-[a-z-]+">([^<]+)</h2>', page)
     assert features == ["Vice City", "Leonida Keys", "Grassrivers", "Port Gellhorn", "Ambrosia", "Mount Kalaga"]
-    assert page.count('class="rgf rgf--') == 6 and "place to explore" not in page and "places to explore" not in page    # the invented places are no part of Leonida here
+    assert page.count('<section class="rgf') == 6 and "place to explore" not in page and "places to explore" not in page    # the invented places are no part of Leonida here
     assert "in the database" not in page
 
 

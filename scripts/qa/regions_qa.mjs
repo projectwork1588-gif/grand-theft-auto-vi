@@ -42,6 +42,13 @@ export default async function (b) {
       const words = JSON.parse(await b.eval(`(() => { const copy = document.querySelector(".rgh__copy, .rg-intro__copy"); const hb = document.querySelector(".site-header").getBoundingClientRect(); const r = copy.getBoundingClientRect();
         const t = copy.querySelector("h1").getBoundingClientRect(); return JSON.stringify({ l: r.left, r: r.right, t: t.top, b: t.bottom, hb: hb.bottom, w: window.innerWidth }); })()`));
       report(words.l >= 0 && words.r <= words.w + 1 && words.t >= words.hb - 1, `${tag}: the words of the opening are on the screen and clear of the header`, JSON.stringify(words));
+      if (path !== "/regions" && W >= 1024) {      // the title and the line beneath it stay on the panel, clear of the picture's slanted edge
+        const clear = JSON.parse(await b.eval(`(() => { const art = document.querySelector(".rgh__art").getBoundingClientRect(); const h = document.querySelector(".rgh").getBoundingClientRect();
+          const edge = (y) => art.left + 0.11 * art.width * (1 - (y - h.top) / h.height);
+          const worst = [...document.querySelectorAll(".rgh__copy h1, .rgh__copy .rg-hero__line, .rgh__copy .rg-cue")].map((e) => { const r = e.getBoundingClientRect(); const range = document.createRange(); range.selectNodeContents(e); const t = range.getBoundingClientRect(); return edge(r.bottom) - Math.max(t.right, 0); });
+          return JSON.stringify({ min: Math.round(Math.min(...worst)) }); })()`));
+        report(clear.min >= 8, `${tag}: the title, line and cue sit on the panel, clear of the picture`, clear.min + "px");
+      }
       if (path === "/regions") {
         const jump = await b.eval(`[...document.querySelectorAll(".rg-index a")].map((a) => a.getAttribute("href")).join(",")`);
         report(jump === SLUGS.map((s) => "#" + s).join(","), `${tag}: the index in the opening lists the six regions in order`, jump);

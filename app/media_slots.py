@@ -346,31 +346,26 @@ GARAGE_CAPTIONS = {
 }
 
 
-# ---------------------------------------------------------------- Leonida / Regions: each region's own composition
-# Art direction for /regions and /regions/<slug>. Every picture is one of Rockstar's own screenshots or postcards already linked to the region in the database; this
-# only chooses which ones and how each region is composed, so the six do not share one template. Nothing here states a fact about a region. A slug that is not in the
-# database is skipped, a region with fewer pictures simply has a shorter page, and any picture not named here still follows, so nothing Rockstar published is lost.
-#   look      the region's composition on the landing page (neon, horizon, overgrown, cut, dusk, scale) and its picture slugs (feature)
-#   hero      the opening picture of the region page, and its treatment (split, wide, mist, cut, centre, frame; side: which edge the picture bleeds off)
-#   intro     the picture set beside the description
-#   seq       how the remaining pictures are told (mosaic, reel, depth, diagonal, diptych, curtain) and their order (story)
+# ---------------------------------------------------------------- Leonida / Regions: one grammar, six photographic identities
+# Art direction for /regions and /regions/<slug>. Every picture is one of Rockstar's own screenshots or postcards already linked to the region in the database; this only
+# chooses which ones and where the camera rests. The pages share one structure (an opening, the description beside a picture, the screenshots in pairs, the postcard, the
+# next region); a region's identity is its photography, its crop and its accent colour. Nothing here states a fact about a region. A slug that is not in the database is
+# skipped, a region with fewer pictures simply has a shorter page, and any picture not named here still follows, so nothing Rockstar published is lost.
+#   hero      the opening picture of the region page
+#   intro     the picture set beside the description (None: the description stands alone, as it does for the two regions Rockstar has shown least)
+#   story     the screenshots after them, in order
+#   feature   the two pictures of the region's showcase on the landing page: the main one and a second
 REGION_ART = {
-    "vice-city": {"look": "neon", "feature": ("shot-vice-city-10", "shot-vice-city-08", "shot-vice-city-09"),
-                  "hero": "shot-vice-city-11", "hero_look": "split", "side": "right", "intro": "shot-vice-city-03", "intro_side": "left",
-                  "seq": "mosaic", "story": ("shot-vice-city-01", "shot-vice-city-10", "shot-vice-city-08", "shot-vice-city-02", "shot-vice-city-09", "shot-vice-city-04")},
-    "leonida-keys": {"look": "horizon", "feature": ("shot-leonida-keys-01", "shot-leonida-keys-05"),
-                     "hero": "shot-leonida-keys-01", "hero_look": "wide", "intro": "shot-leonida-keys-06", "intro_side": "right",
-                     "seq": "reel", "story": ("shot-leonida-keys-05", "shot-leonida-keys-02", "shot-leonida-keys-03")},
-    "grassrivers": {"look": "overgrown", "feature": ("shot-grassrivers-05", "shot-grassrivers-03"),
-                    "hero": "shot-grassrivers-05", "hero_look": "mist", "intro": "shot-grassrivers-03", "intro_side": "right",
-                    "seq": "depth", "story": ("shot-grassrivers-04", "shot-grassrivers-02", "shot-grassrivers-01")},
-    "port-gellhorn": {"look": "cut", "feature": ("shot-port-gellhorn-06", "shot-port-gellhorn-01"),
-                      "hero": "shot-port-gellhorn-06", "hero_look": "cut", "side": "left", "intro": None, "intro_side": "right",
-                      "seq": "diagonal", "story": ("shot-port-gellhorn-01", "shot-port-gellhorn-02")},
-    "ambrosia": {"look": "dusk", "feature": ("shot-ambrosia-04", "shot-ambrosia-02"),
-                 "hero": "shot-ambrosia-04", "hero_look": "centre", "intro": None, "intro_side": "right",
-                 "seq": "diptych", "story": ("shot-ambrosia-01", "shot-ambrosia-02")},
-    "mount-kalaga": {"look": "scale", "feature": ("shot-mount-kalaga-04", "shot-mount-kalaga-02"),
-                     "hero": "shot-mount-kalaga-04", "hero_look": "frame", "intro": "shot-mount-kalaga-03", "intro_side": "left",
-                     "seq": "curtain", "story": ("shot-mount-kalaga-02", "shot-mount-kalaga-01", "shot-mount-kalaga-05", "shot-mount-kalaga-06")},
+    "vice-city": {"hero": "shot-vice-city-11", "intro": "shot-vice-city-03", "feature": ("shot-vice-city-01", "shot-vice-city-10"),
+                  "story": ("shot-vice-city-01", "shot-vice-city-10", "shot-vice-city-08", "shot-vice-city-02", "shot-vice-city-09", "shot-vice-city-04")},
+    "leonida-keys": {"hero": "shot-leonida-keys-01", "intro": "shot-leonida-keys-06", "feature": ("shot-leonida-keys-01", "shot-leonida-keys-05"),
+                     "story": ("shot-leonida-keys-05", "shot-leonida-keys-02", "shot-leonida-keys-03")},
+    "grassrivers": {"hero": "shot-grassrivers-05", "intro": "shot-grassrivers-03", "feature": ("shot-grassrivers-05", "shot-grassrivers-04"),
+                    "story": ("shot-grassrivers-04", "shot-grassrivers-02", "shot-grassrivers-01")},
+    "port-gellhorn": {"hero": "shot-port-gellhorn-06", "intro": None, "feature": ("shot-port-gellhorn-06", "shot-port-gellhorn-01"),
+                      "story": ("shot-port-gellhorn-01", "shot-port-gellhorn-02")},
+    "ambrosia": {"hero": "shot-ambrosia-04", "intro": None, "feature": ("shot-ambrosia-04", "shot-ambrosia-02"),
+                 "story": ("shot-ambrosia-01", "shot-ambrosia-02")},
+    "mount-kalaga": {"hero": "shot-mount-kalaga-04", "intro": "shot-mount-kalaga-03", "feature": ("shot-mount-kalaga-04", "shot-mount-kalaga-02"),
+                     "story": ("shot-mount-kalaga-02", "shot-mount-kalaga-01", "shot-mount-kalaga-05", "shot-mount-kalaga-06")},
 }

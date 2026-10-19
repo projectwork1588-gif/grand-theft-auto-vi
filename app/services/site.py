@@ -694,7 +694,6 @@ def region_index(args):
         r["pictures"] = pictures.get(ids.get(r["slug"]), 0)
         r["people"] = [c["full_name"] for c in regions_repo.characters_based_in(ids[r["slug"]])]
         r["location_count"] = 0   # invented places are not Rockstar's, so the index never counts them
-        r["look"] = art.get("look", "horizon")
         r["pics"] = [found[n] for n in art.get("feature", ()) if n in found] or ([r["cover"]] if r.get("cover") else [])
     result["total"] = len(result["data"])
     result["hero_cover"] = _page_cover("regions")
@@ -712,8 +711,6 @@ def region_detail(slug):
     postcard = next((m for m in frames if m["media_type"] == "artwork" and m is not stage), None)
     intro = by_slug.get(art.get("intro") or "")
     region["hero"], region["postcard"], region["intro"] = stage, postcard, (intro if intro is not stage else None)
-    region["hero_look"], region["side"], region["intro_side"] = art.get("hero_look", "wide"), art.get("side", "right"), art.get("intro_side", "right")
-    region["seq"] = art.get("seq", "mosaic")
     # the pictures after the opening, the one beside the description and the postcard, in the art direction's order; any picture it does not name follows, so nothing
     # Rockstar published for the region is lost
     used = {m["slug"] for m in (stage, postcard, region["intro"]) if m}

@@ -5,20 +5,6 @@
 {% block header_class %}{% endblock %}
 {% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='css/regions.css') }}"><script src="{{ url_for('static', filename='js/regions.js') }}" defer></script>{% endblock %}
 
-{# the words of a region: the same grammar in every composition, set differently by each #}
-{% macro words(r, total, cls='') -%}
-  <div class="rgf__words {{ cls }}">
-    <p class="rg-kicker"><span>{{ '%02d' % r.number }}</span><span>of {{ '%02d' % total }}</span></p>
-    <h2 class="rg-title rg-title--feature" id="f-{{ r.slug }}">{{ r.name }}</h2>
-    <p class="rgf__sum">{{ r.summary }}</p>
-    <p class="rgf__meta">
-      {% if r.pictures %}<span>{{ r.pictures }} of Rockstar&rsquo;s pictures</span>{% endif %}
-      {% if r.people %}<span>Based here: {{ r.people | join(', ') }}</span>{% endif %}
-    </p>
-    <a class="rg-go" href="{{ url_for('pages.region_detail', slug=r.slug) }}">Explore {{ r.name }}{{ arrow() }}</a>
-  </div>
-{%- endmacro %}
-
 {% block content %}
 <div class="rg rg--index">
 
@@ -51,62 +37,41 @@
     </ol>
   </nav>
 
-  {# ---------------------------------------------------------------- the six regions, in the order Rockstar lists them, each composed on its own terms #}
+  {# ---------------------------------------------------------------- the six regions, in the order Rockstar lists them: one showcase, the same each time, the picture and the accent the region's own #}
   <div class="rg-features">
     {% for r in data %}
     {% set p = r.pics %}
-    <section class="rgf rgf--{{ r.look }}" id="{{ r.slug }}" data-feature="{{ r.slug }}" data-region="{{ r.slug }}" aria-labelledby="f-{{ r.slug }}">
-      <span class="rgf__no" aria-hidden="true">{{ '%02d' % r.number }}</span>
-
-      {% if r.look == 'neon' %}
-      {# a wall of three tall pictures, the name set across their edge #}
-      <div class="rgf__wall reveal" aria-hidden="true">
-        {% for m in p[:3] %}<span class="rgf__p rgf__p--{{ loop.index }}">{{ rshot(m, '(min-width: 900px) 26vw, 60vw', decorative=true) }}</span>{% endfor %}
+    <section class="rgf{% if loop.index is even %} rgf--flip{% endif %}" id="{{ r.slug }}" data-feature="{{ r.slug }}" data-region="{{ r.slug }}" aria-labelledby="f-{{ r.slug }}">
+      <div class="rgf__in container--wide">
+        <div class="rgf__words reveal">
+          <span class="rgf__no" aria-hidden="true">{{ '%02d' % r.number }}</span>
+          <p class="rg-kicker"><span>Region</span><span>{{ '%02d' % r.number }} of {{ '%02d' % total }}</span></p>
+          <h2 class="rg-title rg-title--feature" id="f-{{ r.slug }}">{{ r.name }}</h2>
+          <p class="rgf__sum">{{ r.summary }}</p>
+          <p class="rgf__meta">
+            {% if r.pictures %}<span>{{ r.pictures }} of Rockstar&rsquo;s pictures</span>{% endif %}
+            {% if r.people %}<span>Based here: {{ r.people | join(', ') }}</span>{% endif %}
+          </p>
+          <a class="rg-go" href="{{ url_for('pages.region_detail', slug=r.slug) }}">Explore {{ r.name }}{{ arrow() }}</a>
+        </div>
+        <div class="rgf__pics reveal" aria-hidden="true">
+          <span class="rgf__main">{{ rshot(p[0], '(min-width: 900px) 46vw, 100vw', decorative=true) }}</span>
+          {% if p | length > 1 %}<span class="rgf__side">{{ rshot(p[1], '(min-width: 900px) 24vw, 100vw', decorative=true) }}</span>{% endif %}
+        </div>
       </div>
-      {{ words(r, total, 'rgf__words--neon') }}
-
-      {% elif r.look == 'horizon' %}
-      {# one wide band of open water and sky, the name drawn out along the horizon, a second picture set into its corner #}
-      <div class="rgf__band reveal" aria-hidden="true">{{ rshot(p[0], '100vw', decorative=true) }}</div>
-      {% if p | length > 1 %}<div class="rgf__inset reveal" aria-hidden="true">{{ rshot(p[1], '(min-width: 900px) 24vw, 56vw', decorative=true) }}</div>{% endif %}
-      {{ words(r, total, 'rgf__words--horizon') }}
-
-      {% elif r.look == 'overgrown' %}
-      {# two pictures with soft, feathered edges, one growing over the other, in a haze #}
-      <div class="rgf__a reveal" aria-hidden="true">{{ rshot(p[0], '(min-width: 900px) 70vw, 100vw', decorative=true) }}</div>
-      {% if p | length > 1 %}<div class="rgf__b reveal" aria-hidden="true">{{ rshot(p[1], '(min-width: 900px) 34vw, 70vw', decorative=true) }}</div>{% endif %}
-      <span class="rgf__haze" aria-hidden="true"></span>
-      {{ words(r, total, 'rgf__words--overgrown') }}
-
-      {% elif r.look == 'cut' %}
-      {# two pictures cut on a hard diagonal, the words on the dark wedge between #}
-      <div class="rgf__a reveal" aria-hidden="true">{{ rshot(p[0], '(min-width: 900px) 62vw, 100vw', decorative=true) }}</div>
-      {% if p | length > 1 %}<div class="rgf__b reveal" aria-hidden="true">{{ rshot(p[1], '(min-width: 900px) 46vw, 100vw', decorative=true) }}</div>{% endif %}
-      {{ words(r, total, 'rgf__words--cut') }}
-
-      {% elif r.look == 'dusk' %}
-      {# one picture at its darkest and warmest, the name so large that the horizon cuts it #}
-      <div class="rgf__a reveal" aria-hidden="true">{{ rshot(p[0], '100vw', decorative=true) }}</div>
-      {% if p | length > 1 %}<div class="rgf__b reveal" aria-hidden="true">{{ rshot(p[1], '(min-width: 900px) 24vw, 56vw', decorative=true) }}</div>{% endif %}
-      {{ words(r, total, 'rgf__words--dusk') }}
-
-      {% else %}
-      {# scale: a great deal of room, one tall frame, one long thin one #}
-      <div class="rgf__a reveal" aria-hidden="true">{{ rshot(p[0], '(min-width: 900px) 40vw, 90vw', decorative=true) }}</div>
-      {% if p | length > 1 %}<div class="rgf__b reveal" aria-hidden="true">{{ rshot(p[1], '(min-width: 900px) 58vw, 100vw', decorative=true) }}</div>{% endif %}
-      {{ words(r, total, 'rgf__words--scale') }}
-      {% endif %}
     </section>
     {% else %}
     <div class="container"><div class="empty"><h2>No regions yet</h2></div></div>
     {% endfor %}
   </div>
 
-  {# ---------------------------------------------------------------- what this page is built from #}
-  <aside class="rg-source container--wide" aria-labelledby="source-title">
-    <h2 class="rg-h" id="source-title">What is confirmed</h2>
-    <p>Rockstar&rsquo;s official site names these six regions and shows each in its own screenshots and postcards. It says little about them in words, so these pages say little too: what you read here is taken from Rockstar&rsquo;s own site, and every picture is Rockstar&rsquo;s, shown with its credit. Where Rockstar has not said, nothing is made up. Team Valkyrie is an unofficial fan project, not affiliated with Rockstar Games or Take-Two Interactive.</p>
-    <p><a class="rg-back" href="{{ url_for('pages.characters') }}">Meet the people of Leonida {{ arrow() }}</a></p>
+  {# ---------------------------------------------------------------- the end of the sequence: what is confirmed, and on to the people of Leonida #}
+  <aside class="rg-source" aria-labelledby="source-title">
+    <div class="rg-source__in container--wide">
+      <h2 class="rg-h" id="source-title">What is confirmed</h2>
+      <p>Rockstar&rsquo;s official site names these six regions and shows each in its own screenshots and postcards. It says little about them in words, so these pages say little too: what you read here is taken from Rockstar&rsquo;s own site, and every picture is Rockstar&rsquo;s, shown with its credit. Where Rockstar has not said, nothing is made up. Team Valkyrie is an unofficial fan project, not affiliated with Rockstar Games or Take-Two Interactive.</p>
+      <a class="rg-back" href="{{ url_for('pages.characters') }}">Meet the people of Leonida {{ arrow() }}</a>
+    </div>
   </aside>
 </div>
 {% endblock %}
