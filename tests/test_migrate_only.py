@@ -44,7 +44,7 @@ def test_the_plan_for_one_migration_lists_only_that_migration_and_changes_nothin
     assert migrate_db.main(ONLY + ["--plan"]) == 0
     out = capsys.readouterr().out
     assert "006_gate3b_garage.sql" in out and "All checks passed" in out and "--plan given: nothing was changed" in out
-    for other in ("001_phase2_media.sql", "002_phase2_garage.sql", "003_concept_copy.sql", "004_leonida_in_motion.sql", "005_gate3a_cast.sql", "007_region_wording.sql", "008_music.sql"):
+    for other in ("001_phase2_media.sql", "002_phase2_garage.sql", "003_concept_copy.sql", "004_leonida_in_motion.sql", "005_gate3a_cast.sql", "007_region_wording.sql", "008_music.sql", "009_media_screening.sql"):
         assert other not in out
     assert fingerprint(EVERYTHING) == before
 
@@ -165,7 +165,7 @@ def test_missing_tables_are_named_as_prerequisites():
 def test_what_the_checker_expects_is_what_the_migration_puts_in_the_database(app):
     assert dict((v, (s, n, c)) for v, s, n, c in rows("SELECT vehicle_id, slug, name, category_id FROM vehicles WHERE vehicle_id IN (14, 15)")) == migration_checks.M006_VEHICLES
     assert dict(rows("SELECT media_id, slug FROM media_assets WHERE media_id BETWEEN 108 AND 114")) == migration_checks.M006_MEDIA
-    assert set(rows("SELECT media_id, vehicle_id FROM media_vehicles WHERE media_id >= 108")) == migration_checks.M006_LINKS
+    assert set(rows("SELECT media_id, vehicle_id FROM media_vehicles WHERE media_id BETWEEN 108 AND 114")) == migration_checks.M006_LINKS
     assert dict(rows("SELECT category_id, slug FROM vehicle_categories WHERE category_id IN (5, 6)")) == migration_checks.M006_CATEGORIES
     assert dict(rows("SELECT vehicle_id, slug FROM vehicles WHERE vehicle_id BETWEEN 9 AND 13")) == migration_checks.M006_REWORDED
     assert dict(rows("SELECT slug, summary FROM vehicles WHERE vehicle_id BETWEEN 9 AND 13")) == migration_checks.M006_REWORDED_TEXT

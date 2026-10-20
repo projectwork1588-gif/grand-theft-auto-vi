@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+{% block title %}Media{% endblock %}
+{% block description %}The Screening: Rockstar's own videos, screenshots, artwork and clips for Grand Theft Auto VI, set out as a cinematic screening with their sources and linked to Rockstar's own pages.{% endblock %}
+{% block header_class %}{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='css/screening.css') }}"><script src="{{ url_for('static', filename='js/screening.js') }}" defer></script>{% endblock %}
+
+{# One of Rockstar's own pictures, from its own image address (a bad row draws nothing). `sizes` says the width it is really drawn at, so the browser asks for no more. #}
+{% macro img(url, sizes, alt='', py=40, eager=false, widths=(480, 960, 1440, 1920)) -%}
+  {% if url and image_src(url, 1280) %}<img class="sc-img" data-py="{{ py }}" src="{{ image_src(url, 960) }}" srcset="{{ image_srcset(url, widths) }}" sizes="{{ sizes }}" alt="{{ alt }}" {% if eager %}fetchpriority="high"{% else %}loading="lazy"{% endif %} decoding="async" referrerpolicy="no-referrer">{% endif %}
+{%- endmacro %}
+
+{# A picture that opens in the viewer. The link carries Rockstar's own title, and the id is what a deep link ("/media#shot-jason-duval-07") opens. #}
+{% macro tile(p, sizes, cls='', alt_kind='screenshot') -%}
+  <a class="sc-tile {{ cls }}" id="{{ p.anchor }}" href="{{ image_src(p.url, 2560) }}" data-lightbox data-caption="{{ p.title }}" aria-label="Open {{ p.title }} full size">
+    {{ img(p.url, sizes, 'Rockstar official ' ~ alt_kind ~ ': ' ~ p.title, p.py) }}
+  </a>
+{%- endmacro %}
+
+{# A link that leaves the site: it opens in a new tab, says so, and carries the destination's own name #}
+{% macro out(url, label, cls='sc-ext') -%}
+  {% if url %}<a class="{{ cls }}" href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ label }}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="visually-hidden"> (opens in a new tab)</span></a>{% endif %}
+{%- endmacro %}
+
+{% macro play_icon() -%}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.8v14.4a1 1 0 0 0 1.5.86l12-7.2a1 1 0 0 0 0-1.72l-12-7.2A1 1 0 0 0 7 4.8Z" fill="currentColor"/></svg>{%- endmacro %}
+
+{# The sizes a picture is drawn at, by the kind of row it sits in and its place in it #}
+{% macro row_sizes(kind, i) -%}
+  {%- if kind == 'stage' -%}(min-width: 1024px) 94vw, 100vw
+  {%- elif kind == 'full' -%}(min-width: 1024px) 78vw, 100vw
+  {%- elif kind == 'duo' -%}(min-width: 1024px) 46vw, 100vw
+  {%- elif kind == 'trio' -%}(min-width: 1024px) 31vw, 100vw
+  {%- elif (kind == 'stagger' and i == 0) or (kind == 'stagger_r' and i == 1) -%}(min-width: 1024px) 56vw, 100vw
+  {%- else -%}(min-width: 1024px) 38vw, 100vw
+  {%- endif -%}
+{%- endmacro %}
+
+{# One chapter: a subject Rockstar's own screenshots are filed under, its pictures in rows, and the page of this site that shows the same person or place #}
+{% macro chapter(c, no, noun) -%}
+  <article class="sc-ch" id="{{ c.id }}" aria-labelledby="{{ c.id }}-h">
+    <header class="sc-ch__head">
+      <p class="sc-ch__no" aria-hidden="true">{{ '%02d' | format(no) }}</p>
+      <h3 class="sc-h3" id="{{ c.id }}-h">{{ c.subject }}</h3>
+      <p class="sc-ch__meta"><span>{{ c.count }} {{ 'screenshot' if c.count == 1 else 'screenshots' }}</span>
+        {% if c.link %}<a class="sc-ch__link" href="{{ url_for(c.link.endpoint, slug=c.link.slug) }}">{{ c.link.label }} on this site<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>{% endif %}</p>
+    </header>
+    <div class="sc-rows" data-gallery role="group" aria-label="{{ c.subject }}: {{ c.count }} screenshots">
+      {% for kind, pics in c.rows %}
+      <div class="sc-row sc-row--{{ kind }} reveal">
+        {% for p in pics %}{{ tile(p, row_sizes(kind, loop.index0), 'sc-tile--' ~ kind) }}{% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+  </article>
+{%- endmacro %}
+
+{# The few pictures a chapter shows large, then "View all N": the rest of the chapter is in the same viewer group, as thumbnails behind a closed disclosure (so they cost nothing until asked for) #}
+{% macro featured_gallery(c, noun) -%}
+  <div class="sc-rows" data-gallery role="group" aria-label="{{ c.subject }}: {{ c.count }} {{ noun }}s">
+    {% for kind, pics in c.rows %}
+    <div class="sc-row sc-row--{{ kind }} reveal">{% for p in pics %}{{ tile(p, row_sizes(kind, loop.index0), 'sc-tile--' ~ kind) }}{% endfor %}</div>
+    {% endfor %}
+    {% if c.rest %}
+    <div class="sc-viewall reveal">
+      <details class="sc-more">
+        <summary>The other {{ c.rest | length }} as thumbnails</summary>
+        <div class="sc-sheet__grid">
+          {% for p in c.rest %}<a class="sc-sheet__tile" id="{{ p.anchor }}" href="{{ image_src(p.url, 2560) }}" data-lightbox data-caption="{{ p.title }}" aria-label="{{ p.title }}"><img class="sc-img" src="{{ image_src(p.url, 360) }}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></a>{% endfor %}
+        </div>
+      </details>
+    </div>
+    {% endif %}
+  </div>
+{%- endmacro %}
+
+{% macro arrow() -%}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>{%- endmacro %}
+
+{# "View all N": starts the viewer on the first picture of the group, which is one viewer group with every picture of it (the closed sheet under it) #}
+{% macro viewall(first, n, cls='') -%}
+  <a class="{{ ("sc-btn " ~ cls) | trim }}" href="{{ image_src(first.url, 2560) }}" data-open="{{ first.anchor }}">View all {{ n }}{{ arrow() }}</a>
+{%- endmacro %}
+
+{# A picture drawn large that opens the viewer at that picture of its group (the real link is the thumbnail in the group's closed sheet) #}
+{% macro opener(p, sizes, noun, cls='') -%}
+  <a class="sc-tile {{ cls }}" href="{{ image_src(p.url, 2560) }}" data-open="{{ p.anchor }}" aria-label="Open {{ p.title }} full size">{{ img(p.url, sizes, 'Rockstar official ' ~ noun ~ ': ' ~ p.title, 40) }}</a>
+{%- endmacro %}
+
+{# Every picture of a group as thumbnails, closed until asked for, in Rockstar's order: the one viewer group that "View all" and every large picture open #}
+{% macro sheet(pictures, label, noun) -%}
+  <details class="sc-more">
+    <summary>All {{ pictures | length }} as thumbnails</summary>
+    <div class="sc-sheet__grid" data-gallery role="group" aria-label="{{ label }}: all {{ pictures | length }} {{ noun }}s">
+      {% for p in pictures %}<a class="sc-sheet__tile" id="{{ p.anchor }}" href="{{ image_src(p.url, 2560) }}" data-lightbox data-caption="{{ p.title }}" aria-label="{{ p.title }}"><img class="sc-img" src="{{ image_src(p.url, 360) }}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></a>{% endfor %}
+    </div>
+  </details>
+{%- endmacro %}
+
+{% macro subject_meta(c) -%}
+  <p class="sc-ch__meta"><span>{{ c.count }} {{ 'screenshot' if c.count == 1 else 'screenshots' }}</span>{% if c.link %}<a class="sc-ch__link" href="{{ url_for(c.link.endpoint, slug=c.link.slug) }}">{{ c.link.label }} on this site{{ arrow() }}</a>{% endif %}</p>
+{%- endmacro %}
+
+{# one large picture and a row of three under it: a person's four pictures #}
+{% macro quad(c, big, small) -%}
+  <div class="sc-quad">
+    {{ opener(c.top[0], big, 'screenshot', 'sc-quad__lead') }}
+    {% if c.top | length > 1 %}<div class="sc-quad__row sc-quad__row--{{ c.top | length - 1 }}">{% for p in c.top[1:] %}{{ opener(p, small, 'screenshot') }}{% endfor %}</div>{% endif %}
+  </div>
+{%- endmacro %}
+
+{% block content %}
+<div class="sc" data-screening>
+{% if empty %}
+  <section class="sc-empty container" aria-labelledby="sc-empty-h">
+    <p class="sc-kicker"><span>Media</span><span>Grand Theft Auto VI</span></p>
+    <h1 class="sc-title sc-title--small" id="sc-empty-h">The Screening</h1>
+    <p>The Media page reads Rockstar&rsquo;s videos, screenshots and artwork from the database. They are added by migration 009 (<code>python -m scripts.migrate_db --only 009_media_screening.sql</code>); until then there is nothing here to show. Rockstar&rsquo;s own pages have all of it: <a href="https://www.rockstargames.com/VI/media" target="_blank" rel="noopener noreferrer">rockstargames.com/VI/media</a>.</p>
+  </section>
+{% else %}
+
+  {# ---------------------------------------------------------------- the opening: the Launch Trailer #}
+  <header class="sc-open" id="top">
+    {% if opening %}
+    <div class="sc-open__art">{{ img(opening.poster, '100vw', 'Rockstar\'s official poster for the ' ~ opening.title, 36, true, (960, 1280, 1920, 2560)) }}</div>
+    {% endif %}
+    <span class="sc-bar sc-bar--top" aria-hidden="true"></span><span class="sc-bar sc-bar--bottom" aria-hidden="true"></span>
+    <div class="sc-open__copy">
+      <p class="sc-kicker"><span>Media</span><span>Grand Theft Auto VI</span></p>
+      <h1 class="sc-title">The Screening</h1>
+      <p class="sc-lede">A cinematic screening of the world of Grand Theft Auto VI: {{ lede_counts }}, as Rockstar lists them, each one a way to Rockstar&rsquo;s own page.</p>
+      {% if opening %}
+      <div class="sc-now">
+        <button class="sc-play" type="button" data-video="{{ opening.player }}" data-title="{{ opening.title }}">
+          <span class="sc-play__disc">{{ play_icon() }}</span>
+          <span class="sc-play__text"><b>Play the {{ opening.title | replace('Grand Theft Auto VI ', '') }}</b><small>{% if opening.date_text %}<time datetime="{{ opening.date.isoformat() }}">{{ opening.date_text }}</time>{% endif %}{% if opening.runtime %} &middot; {{ opening.runtime }}{% endif %}</small></span>
+        </button>
+        {{ out(opening.source, 'Watch on Rockstar&rsquo;s site' | safe, 'sc-ext sc-ext--light') }}
+      </div>
+      {% endif %}
+    </div>
+  </header>
+
+  {# ---------------------------------------------------------------- the programme: where each reel starts, with the number of pictures in it #}
+  <nav class="sc-rail" aria-label="The programme" data-rail>
+    <ol>
+      {% for r in rail %}<li><a href="#{{ r.id }}" data-rail-link="{{ r.id }}"><b>{{ '%02d' | format(loop.index) }}</b><span>{{ r.label }}</span><i>{{ r.count }}</i></a></li>{% endfor %}
+    </ol>
+  </nav>
+
+  {# ---------------------------------------------------------------- reel: the films #}
+  {% if films %}
+  <section class="sc-films" id="films" aria-labelledby="films-h">
+    <div class="sc-wrap">
+      <header class="sc-head">
+        <p class="sc-eyebrow">Reel {{ rail_no.films }}</p>
+        <h2 class="sc-h2" id="films-h">The {{ films_word | lower }} films</h2>
+        <p class="sc-note">Rockstar&rsquo;s own dates and runtimes, from the oldest to the newest. Each one plays in Rockstar&rsquo;s own player.</p>
+      </header>
+      <ol class="sc-reel">
+        {% for f in films %}
+        <li class="sc-film{% if loop.last %} sc-film--feature{% endif %} reveal" data-delay="{{ loop.index0 }}">
+          <button class="sc-film__poster" type="button" data-video="{{ f.player }}" data-title="{{ f.title }}" aria-label="Play {{ f.title }}">
+            {{ img(f.poster, '(min-width: 1024px) ' ~ ('42vw' if loop.last else '24vw') ~ ', 92vw', '', 40) }}
+            <span class="sc-film__disc">{{ play_icon() }}</span>
+          </button>
+          <div class="sc-film__body">
+            <p class="sc-film__when">{% if f.date_text %}<time datetime="{{ f.date.isoformat() }}">{{ f.date_text }}</time>{% endif %}{% if f.runtime %}<span>{{ f.runtime }}</span>{% endif %}</p>
+            <h3 class="sc-h3 sc-film__title">{{ f.title }}</h3>
+            {% if f.description and not f.repeat %}<p class="sc-film__desc">{{ f.description }}</p>{% elif f.repeat %}<p class="sc-film__desc sc-film__desc--same">Rockstar gives this trailer the same description as the one before it.</p>{% endif %}
+            {% if f.age_gate %}<p class="sc-film__desc sc-film__desc--same">Rockstar&rsquo;s player may ask you to confirm your age before this one plays.</p>{% endif %}
+            {{ out(f.source, 'Watch on Rockstar&rsquo;s site' | safe) }}
+          </div>
+        </li>
+        {% endfor %}
+      </ol>
+    </div>
+  </section>
+  {% endif %}
+
+  {# ---------------------------------------------------------------- reel: the pair #}
+  {% if pair %}
+  <section class="sc-section" id="pair" aria-labelledby="pair-h">
+    <div class="sc-wrap">
+      <header class="sc-head sc-head--bar">
+        <div class="sc-head__text">
+          <p class="sc-eyebrow">Reel {{ rail_no.pair }}</p>
+          <h2 class="sc-h2" id="pair-h">{{ pair.subject }}</h2>
+          <p class="sc-note">{{ pair.count }} official screenshots. Rockstar files them under this one name.</p>
+        </div>
+        {{ viewall(pair.pictures[0], pair.count) }}
+      </header>
+      {{ featured_gallery(pair, 'screenshot') }}
+    </div>
+  </section>
+  {% endif %}
+
+  {# ---------------------------------------------------------------- reel: the people: the two leads side by side, then the six around them #}
+  {% if people %}
+  <section class="sc-section" id="people" aria-labelledby="people-h">
+    <div class="sc-wrap">
+      <header class="sc-head">
+        <p class="sc-eyebrow">Reel {{ rail_no.people }}</p>
+        <h2 class="sc-h2" id="people-h">The people</h2>
+        <p class="sc-note">{{ counts.people }} screenshots, filed by Rockstar under {{ people | length }} names: the two leads, then the six around them. Each name has its own View all.</p>
+      </header>
+      <div class="sc-leads">
+        {% for c in people[:2] %}
+        <article class="sc-lead" id="{{ c.id }}" aria-labelledby="{{ c.id }}-h">
+          <header class="sc-lead__head">
+            <div><h3 class="sc-h3" id="{{ c.id }}-h">{{ c.subject }}</h3>{{ subject_meta(c) }}</div>
+            {{ viewall(c.pictures[0], c.count, 'sc-btn--sm') }}
+          </header>
+          {{ quad(c, '(min-width: 1024px) 46vw, 100vw', '(min-width: 1024px) 15vw, 33vw') }}
+          {{ sheet(c.pictures, c.subject, 'screenshot') }}
+        </article>
+        {% endfor %}
+      </div>
+      {% if people | length > 2 %}
+      <div class="sc-cast">
+        {% for c in people[2:] %}
+        <article class="sc-cell" id="{{ c.id }}" aria-labelledby="{{ c.id }}-h">
+          <header class="sc-cell__head">
+            <div><h3 class="sc-h4" id="{{ c.id }}-h">{{ c.subject }}</h3>{{ subject_meta(c) }}</div>
+            {{ viewall(c.pictures[0], c.count, 'sc-btn--sm') }}
+          </header>
+          {{ quad(c, '(min-width: 1024px) 31vw, 100vw', '(min-width: 1024px) 10vw, 33vw') }}
+          {{ sheet(c.pictures, c.subject, 'screenshot') }}
+        </article>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+  {# ---------------------------------------------------------------- reel: the places: Vice City large, then the other regions as small collages #}
+  {% if places %}
+  <section class="sc-section" id="places" aria-labelledby="places-h">
+    <div class="sc-wrap">
+      <header class="sc-head">
+        <p class="sc-eyebrow">Reel {{ rail_no.places }}</p>
+        <h2 class="sc-h2" id="places-h">The places</h2>
+        <p class="sc-note">{{ counts.places }} screenshots, one chapter for each of the {{ places | length }} places Rockstar names. Each place has its own View all.</p>
+      </header>
+      {% set vc = places[0] %}
+      <article class="sc-vc" id="{{ vc.id }}" aria-labelledby="{{ vc.id }}-h">
+        <header class="sc-lead__head">
+          <div><h3 class="sc-h3" id="{{ vc.id }}-h">{{ vc.subject }}</h3>{{ subject_meta(vc) }}</div>
+          {{ viewall(vc.pictures[0], vc.count, 'sc-btn--sm') }}
+        </header>
+        <div class="sc-tri sc-tri--{{ [vc.top | length, 3] | min }}">
+          {% for p in vc.top[:3] %}{{ opener(p, ('(min-width: 1024px) 60vw, 100vw' if loop.first else '(min-width: 1024px) 30vw, 50vw'), 'screenshot') }}{% endfor %}
+        </div>
+        {{ sheet(vc.pictures, vc.subject, 'screenshot') }}
+      </article>
+      {% if places | length > 1 %}
+      <div class="sc-regions">
+        {% for c in places[1:] %}
+        <article class="sc-reg sc-reg--{{ loop.index }}" id="{{ c.id }}" aria-labelledby="{{ c.id }}-h">
+          <div class="sc-collage">{% for p in c.top %}{{ opener(p, ('(min-width: 1024px) 22vw, 50vw' if loop.index <= 3 else '(min-width: 1024px) 24vw, 50vw'), 'screenshot') }}{% endfor %}</div>
+          <footer class="sc-reg__foot">
+            <div><h3 class="sc-h3 sc-reg__name" id="{{ c.id }}-h">{{ c.subject }}</h3>{{ subject_meta(c) }}</div>
+            {{ viewall(c.pictures[0], c.count, 'sc-btn--sm') }}
+          </footer>
+          {{ sheet(c.pictures, c.subject, 'screenshot') }}
+        </article>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if more %}
+  <section class="sc-section" id="more" aria-labelledby="more-h">
+    <div class="sc-wrap">
+      <header class="sc-head"><p class="sc-eyebrow">Also listed</p><h2 class="sc-h2" id="more-h">More screenshots</h2></header>
+      {% for c in more %}{{ chapter(c, loop.index, 'subject') }}{% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {# ---------------------------------------------------------------- reel: key art, hung as four matted pieces at different scales #}
+  {% if art %}
+  <section class="sc-art" id="art" aria-labelledby="art-h">
+    <div class="sc-wrap">
+      <header class="sc-head sc-head--bar">
+        <div class="sc-head__text">
+          <p class="sc-eyebrow">Reel {{ rail_no.art }}</p>
+          <h2 class="sc-h2" id="art-h">Key art</h2>
+          <p class="sc-note">{{ counts.art }} pieces from Rockstar&rsquo;s Artwork &amp; Wallpapers, each shown whole under the title Rockstar gives it. Four are hung here; View all opens every one. Where Rockstar offers a version with logos, its title says so.</p>
+        </div>
+        {{ viewall(art[0], counts.art) }}
+      </header>
+      <div class="sc-hang">
+        {% for a in art_hang %}
+        <figure class="sc-mat sc-mat--{{ loop.index }} reveal">
+          {{ opener(a, ('(min-width: 1024px) 40vw, 100vw' if loop.first else '(min-width: 1024px) 24vw, 100vw'), 'artwork', 'sc-tile--art') }}
+          <figcaption class="sc-cap"><span aria-hidden="true">{{ '%02d' | format(loop.index) }}</span>{{ a.title }}</figcaption>
+        </figure>
+        {% endfor %}
+      </div>
+      {{ sheet(art, 'Artwork and wallpapers', 'piece') }}
+    </div>
+  </section>
+  {% endif %}
+
+  {# ---------------------------------------------------------------- reel: clips, as posters that open Rockstar's own page #}
+  {% if clips %}
+  <section class="sc-section sc-clips" id="clips" aria-labelledby="clips-h">
+    <div class="sc-wrap">
+      <header class="sc-head">
+        <p class="sc-eyebrow">Reel {{ rail_no.clips }}</p>
+        <h2 class="sc-h2" id="clips-h">Clips</h2>
+        <p class="sc-note">{{ counts.clips }} short clips. They play on Rockstar&rsquo;s own Videos page; each poster here is a link to it.</p>
+      </header>
+      <ul class="sc-clipgrid">
+        {% for c in clips %}
+        <li class="sc-clip sc-clip--{{ 'square' if c.square else 'wide' }} reveal">
+          <a href="{{ c.link }}" target="_blank" rel="noopener noreferrer">
+            <span class="sc-clip__art">{{ img(c.poster, ('(min-width: 1024px) 15vw, 46vw' if c.square else '(min-width: 1024px) 30vw, 92vw'), '', 40, false, (480, 640, 960, 1280)) }}<span class="sc-clip__disc">{{ play_icon() }}</span></span>
+            <span class="sc-clip__title">{{ c.title }}</span>
+            <span class="sc-clip__where">Plays on Rockstar&rsquo;s site<span class="visually-hidden"> (opens in a new tab)</span></span>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </section>
+  {% endif %}
+
+  {# ---------------------------------------------------------------- reel: the editions: four showroom frames for each, and an index of every group #}
+  {% if editions %}
+  <section class="sc-section sc-editions" id="editions" aria-labelledby="editions-h">
+    <div class="sc-wrap">
+      <header class="sc-head">
+        <p class="sc-eyebrow">Reel {{ rail_no.editions }}</p>
+        <h2 class="sc-h2" id="editions-h">The editions</h2>
+        <p class="sc-note">Two more collections on Rockstar&rsquo;s Screenshots page: {% for e in editions %}{{ e.title }} ({{ e.count }}){% if not loop.last %} and {% endif %}{% endfor %}. Four frames each, an index of every group under them, and View all.</p>
+      </header>
+      {% for e in editions %}
+      <div class="sc-edition" id="{{ e.slug }}" aria-labelledby="{{ e.slug }}-h">
+        <header class="sc-lead__head">
+          <div><h3 class="sc-h3" id="{{ e.slug }}-h">{{ e.title }}</h3><p class="sc-ch__meta"><span>{{ e.count }} screenshots in {{ e.groups | length }} groups</span>{{ out(e.source, 'On Rockstar&rsquo;s site' | safe) }}</p></div>
+          {{ viewall(e.pictures[0], e.count, 'sc-btn--sm') }}
+        </header>
+        <div class="sc-showroom">
+          {% for g in e.showroom %}
+          <figure class="sc-frame reveal">
+            {{ opener(g.pictures[0], '(min-width: 1024px) 24vw, 50vw', 'screenshot') }}
+            <figcaption><b>{{ g.subject }}</b><i>{{ g.count }}</i></figcaption>
+          </figure>
+          {% endfor %}
+        </div>
+        <nav class="sc-index" aria-label="{{ e.title }}: every group">
+          <ul>{% for g in e.groups %}<li><a href="{{ image_src(g.pictures[0].url, 2560) }}" data-open="{{ g.pictures[0].anchor }}"><span>{{ g.subject }}</span><i>{{ g.count }}</i></a></li>{% endfor %}</ul>
+        </nav>
+        {{ sheet(e.pictures, e.title, 'screenshot') }}
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {# ---------------------------------------------------------------- downloads: Rockstar's own zips, kept quiet #}
+  {% if downloads %}
+  <section class="sc-section sc-dl" id="downloads" aria-labelledby="downloads-h">
+    <div class="sc-wrap">
+      <header class="sc-head">
+        <p class="sc-eyebrow">Reel {{ rail_no.downloads }}</p>
+        <h2 class="sc-h2 sc-h2--small" id="downloads-h">Downloads</h2>
+        <p class="sc-note">Rockstar offers each collection as a single zip on its own servers. These links go straight to those files; nothing is copied to this site.</p>
+      </header>
+      <ul class="sc-dl__list">
+        {% for d in downloads %}
+        <li><a href="{{ d.url }}" rel="noopener noreferrer"><span class="sc-dl__name">{{ d.title }}</span><span class="sc-dl__meta">{{ d.count }} {{ 'clips' if d.kind == 'clip' else 'pictures' }}{% if d.size %} &middot; ZIP, {{ d.size }}{% endif %}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="visually-hidden">Download {{ d.title }} from Rockstar</span></a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </section>
+  {% endif %}
+
+  {# ---------------------------------------------------------------- what is confirmed #}
+  <section class="sc-about" id="about" aria-labelledby="about-h">
+    <div class="sc-wrap sc-about__in">
+      <h2 class="sc-h2" id="about-h">What is confirmed</h2>
+      <div class="sc-about__text">
+        <p>Everything on this page is Rockstar&rsquo;s own media, listed the way Rockstar&rsquo;s Media pages list it and checked on {{ checked }}: {{ inventory }}. Titles, dates, runtimes and descriptions are Rockstar&rsquo;s; where Rockstar gives only a title, only the title is shown.</p>
+        <p>The pictures are shown from Rockstar&rsquo;s own image address and are never copied here. The videos play in Rockstar&rsquo;s own player. Nothing on this page is audio or video hosted by Team Valkyrie. Team Valkyrie is an unofficial fan project, not affiliated with or endorsed by Rockstar Games or Take-Two Interactive.</p>
+        <p class="sc-actions">{{ out('https://www.rockstargames.com/VI/media', 'Rockstar&rsquo;s Media page' | safe, 'sc-ext sc-ext--strong') }}{{ out('https://www.rockstargames.com/VI/media/screenshots', 'Screenshots' | safe) }}{{ out('https://www.rockstargames.com/VI/media/videos', 'Videos' | safe) }}{{ out('https://www.rockstargames.com/VI/media/artwork-wallpapers', 'Artwork &amp; Wallpapers' | safe) }}</p>
+      </div>
+    </div>
+  </section>
+{% endif %}
+</div>
+{% endblock %}

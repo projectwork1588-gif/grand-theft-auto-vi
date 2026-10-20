@@ -192,9 +192,9 @@ def test_the_places_pages_the_stories_and_the_api_still_work(client):
     assert client.get("/api/v1/locations/neon-row-district").status_code == 200
 
 
-def test_a_place_page_marks_stories_in_the_menu_not_music(client):
+def test_a_place_page_marks_no_menu_entry_now_that_stories_has_left_the_menu(client):
     header = page(client, "/locations/neon-row-district").split('class="header-nav"')[1].split("</nav>")[0]
-    assert '<a href="/missions" aria-current="page">Stories</a>' in header and 'href="/music" aria-current' not in header
+    assert 'aria-current="page"' not in header and ">Media</a>" in header and ">Stories</a>" not in header
 
 
 # ------------------------------------------------------------------ the migration

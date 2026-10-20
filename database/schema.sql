@@ -15,6 +15,8 @@
 
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS media_collection_items;
+DROP TABLE IF EXISTS media_collections;
 DROP TABLE IF EXISTS music_tracks;
 DROP TABLE IF EXISTS music_releases;
 DROP TABLE IF EXISTS station_preview_tracks;
@@ -470,4 +472,45 @@ CREATE TABLE music_tracks (
     UNIQUE KEY uq_music_tracks_order (release_id, sort_order),
     CONSTRAINT fk_music_tracks_release FOREIGN KEY (release_id)
         REFERENCES music_releases (release_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE media_collections (
+    collection_id   SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    slug            VARCHAR(60)   NOT NULL,
+    title           VARCHAR(100)  NOT NULL,
+    kind            ENUM('video','clip','image') NOT NULL,
+    sort_order      TINYINT UNSIGNED NOT NULL,
+    source_url      VARCHAR(500)  NULL,
+    download_url    VARCHAR(500)  NULL,
+    download_bytes  BIGINT UNSIGNED NULL,
+    content_status  ENUM('official','fan','demo') NOT NULL,
+    source_note     VARCHAR(500)  NULL,
+    verified_on     DATE          NULL,
+    created_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (collection_id),
+    UNIQUE KEY uq_media_collections_slug (slug),
+    UNIQUE KEY uq_media_collections_title (title),
+    CONSTRAINT ck_media_collections_official_source
+        CHECK (content_status <> 'official' OR source_url IS NOT NULL)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE media_collection_items (
+    collection_id   SMALLINT UNSIGNED NOT NULL,
+    position        SMALLINT UNSIGNED NOT NULL,
+    media_id        INT UNSIGNED  NOT NULL,
+    title           VARCHAR(160)  NOT NULL,
+    published_on    DATE          NULL,
+    runtime_seconds SMALLINT UNSIGNED NULL,
+    description     VARCHAR(700)  NULL,
+    poster_media_id INT UNSIGNED  NULL,
+    PRIMARY KEY (collection_id, position),
+    UNIQUE KEY uq_media_collection_items_media (collection_id, media_id),
+    KEY ix_media_collection_items_media (media_id),
+    KEY ix_media_collection_items_poster (poster_media_id),
+    CONSTRAINT fk_mci_collection FOREIGN KEY (collection_id)
+        REFERENCES media_collections (collection_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_mci_media FOREIGN KEY (media_id)
+        REFERENCES media_assets (media_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_mci_poster FOREIGN KEY (poster_media_id)
+        REFERENCES media_assets (media_id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

@@ -80,7 +80,7 @@ def test_destructive_statement_detector():
 def test_shipped_migrations_contain_nothing_destructive():
     files = migrate_db.migration_files()
     assert [f.name for f in files] == ["001_phase2_media.sql", "002_phase2_garage.sql", "003_concept_copy.sql", "004_leonida_in_motion.sql",
-                                       "005_gate3a_cast.sql", "006_gate3b_garage.sql", "007_region_wording.sql", "008_music.sql"]
+                                       "005_gate3a_cast.sql", "006_gate3b_garage.sql", "007_region_wording.sql", "008_music.sql", "009_media_screening.sql"]
     for path in files:
         migrate_db.check_non_destructive(path)  # raises if it finds DROP, DELETE or TRUNCATE
 

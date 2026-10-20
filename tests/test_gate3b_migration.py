@@ -13,8 +13,8 @@ from scripts.init_db import init_database
 from tests.test_migration import CONTENT_TABLES, MEDIA_TABLES, as_migrator, fingerprint
 
 # the state of a database migrated through 005: the 006 vehicles, links and pictures are not there yet
-BEFORE_006 = ["DELETE FROM media_vehicles WHERE vehicle_id IN (14, 15) OR media_id >= 108",
-              "DELETE FROM media_assets WHERE media_id >= 108",
+BEFORE_006 = ["DELETE FROM media_vehicles WHERE vehicle_id IN (14, 15) OR media_id BETWEEN 108 AND 114",
+              "DELETE FROM media_assets WHERE media_id BETWEEN 108 AND 114",
               "DELETE FROM vehicles WHERE vehicle_id IN (14, 15)"]
 FIVE = ["grotti-cheetah", "vapid-dominator-buggy", "shitzu-squalo", "vapid-stanier", "vapid-ganado"]
 SEVEN = FIVE + ["dinka-enduro", "crest-kayak"]
@@ -116,13 +116,13 @@ def test_running_006_gives_seven_machines_and_every_route_works(app):
 def test_the_media_and_names_the_migration_adds_are_the_ones_the_pages_use(app):
     assert rows("SELECT slug, name, manufacturer, category_id FROM vehicles WHERE vehicle_id IN (14, 15) ORDER BY vehicle_id") == [
         ("dinka-enduro", "Dinka Enduro Motorcycle", "Dinka", 6), ("crest-kayak", "Crest Kayak", "Crest", 5)]
-    assert rows("SELECT media_id, vehicle_id FROM media_vehicles WHERE media_id >= 108 ORDER BY media_id, vehicle_id") == [(108, 14), (109, 15), (110, 14), (110, 15)]
-    titles = dict(rows("SELECT media_id, title FROM media_assets WHERE media_id >= 108"))
+    assert rows("SELECT media_id, vehicle_id FROM media_vehicles WHERE media_id BETWEEN 108 AND 114 ORDER BY media_id, vehicle_id") == [(108, 14), (109, 15), (110, 14), (110, 15)]
+    titles = dict(rows("SELECT media_id, title FROM media_assets WHERE media_id BETWEEN 108 AND 114"))
     assert sorted(titles) == list(range(108, 115))
     assert titles[108].startswith("Dinka Enduro Motorcycle") and titles[109].startswith("Crest Kayak") and titles[110].startswith("Jason")
     # every picture row is a remote reference to Rockstar's own server, with no local file
     assert all(u.startswith("https://www.rockstargames.com/VI/_next/static/media/") and p is None
-               for u, p in rows("SELECT embed_url, local_path FROM media_assets WHERE media_id >= 108"))
+               for u, p in rows("SELECT embed_url, local_path FROM media_assets WHERE media_id BETWEEN 108 AND 114"))
 
 
 def test_running_006_twice_changes_nothing_the_second_time(app):

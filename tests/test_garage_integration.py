@@ -117,6 +117,6 @@ def test_the_menu_marks_the_garage_on_the_landing_and_on_a_machines_page(client)
 
 
 def test_the_other_routes_are_unchanged(client):
-    for path in ("/", "/characters", "/characters/jason-duval", "/regions", "/music", "/locations/neon-row-district", "/missions", "/about", "/credits"):
+    for path in ("/", "/characters", "/characters/jason-duval", "/regions", "/music", "/media", "/locations/neon-row-district", "/missions", "/about", "/credits"):
         assert client.get(path).status_code == 200, path
     assert client.get("/vehicles/not-a-machine").status_code == 404

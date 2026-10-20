@@ -18,7 +18,7 @@ NAV = (
     (("pages.vehicles", "pages.vehicle_detail"), "Garage"),
     (("pages.regions", "pages.region_detail"), "Leonida"),
     (("pages.music",), "Music"),
-    (("pages.missions", "pages.mission_detail", "pages.location_detail"), "Stories"),
+    (("pages.media",), "Media"),
 )
 
 

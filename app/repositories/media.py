@@ -124,3 +124,29 @@ def character_clips():
             WHERE m.media_type = 'video' AND m.usage_status = 'link_only' AND {_VISIBLE}
             ORDER BY c.character_id"""
     )
+
+
+# ---------------------------------------------------------------- The Screening (/media): Rockstar's own media collections, in Rockstar's order
+@_tolerate_missing_tables(list)
+def collections():
+    """Rockstar's own media sections (Videos, Clips, Screenshots, ...) in page order, each with its source, its zip download and the number of items listed."""
+    return query_all(
+        """SELECT c.collection_id, c.slug, c.title, c.kind, c.sort_order, c.source_url, c.download_url, c.download_bytes, c.verified_on,
+                  (SELECT COUNT(*) FROM media_collection_items i WHERE i.collection_id = c.collection_id) AS item_count
+           FROM media_collections c WHERE c.content_status = 'official' ORDER BY c.sort_order""")
+
+
+@_tolerate_missing_tables(list)
+def collection_items(slug):
+    """The items of one collection in Rockstar's order. A picture's address is `embed_url`; a video's is its player address, and its poster comes from the poster row.
+    Only approved rows are returned; the service still checks every address before it is drawn."""
+    return query_all(
+        """SELECT i.position, i.title, i.published_on, i.runtime_seconds, i.description,
+                  m.media_id, m.slug AS media_slug, m.media_type, m.source_url, m.embed_url,
+                  p.embed_url AS poster_url, p.slug AS poster_slug
+           FROM media_collection_items i
+           JOIN media_collections c ON c.collection_id = i.collection_id
+           JOIN media_assets m ON m.media_id = i.media_id AND m.approval_status = 'approved'
+           LEFT JOIN media_assets p ON p.media_id = i.poster_media_id AND p.approval_status = 'approved'
+           WHERE c.slug = %s AND c.content_status = 'official'
+           ORDER BY i.position""", (slug,))

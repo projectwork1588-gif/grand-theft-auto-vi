@@ -15,7 +15,7 @@ def empty_state():
 
 def test_schema_table_list_comes_from_schema_sql():
     tables = schema_tables()
-    assert len(tables) == 25 and "characters" in tables and "users" in tables
+    assert len(tables) == 27 and "characters" in tables and "users" in tables
 
 
 def test_plan_for_a_fresh_server_creates_everything():
@@ -42,7 +42,7 @@ def test_plan_flags_a_half_built_schema():
     state = empty_state()
     state["databases"]["gta6_vi"] = {"tables": {"regions": 0, "users": 0}, "other_tables": []}
     text = "\n".join(setup_db.build_plan(state, DBS, "app", "mig", reset=False).lines)
-    assert "WARNING" in text and "2 of 25" in text and "--reset" in text
+    assert "WARNING" in text and "2 of 27" in text and "--reset" in text
 
 
 def test_plan_lists_exactly_what_reset_would_drop():

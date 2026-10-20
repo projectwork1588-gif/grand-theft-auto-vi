@@ -413,3 +413,40 @@ MUSIC_ART = {
     "album": _MUSIC + "album-background-desktop.0sxn7hogv.8xn.jpg",
     "justice": _MUSIC + "logo.05h5_srpthcjv.svg",
 }
+
+
+# ---------------------------------------------------------------- The Screening (/media)
+# Art direction only. Every picture, title, count, date and runtime comes from the database (media_collections, media_collection_items), which copies Rockstar's own pages.
+# A chapter is a Rockstar screenshot subject: its title is Rockstar's title with the trailing number removed. Subjects not listed here still appear, after these, in Rockstar's order.
+SCREENING_PAIR = "Jason and Lucia"
+SCREENING_PEOPLE = ("Jason Duval", "Lucia Caminos", "Cal Hampton", "Boobie Ike", "Dre'Quan Priest", "Real Dimez", "Raul Bautista", "Brian Heder")
+SCREENING_PLACES = ("Vice City", "Leonida Keys", "Grassrivers", "Port Gellhorn", "Ambrosia", "Mount Kalaga National Park")
+# Rockstar's subject -> the page of this site that shows the same person or region. A link is drawn only if that page exists and is official.
+SCREENING_LINKS = {
+    "Jason Duval": ("character", "jason-duval"), "Lucia Caminos": ("character", "lucia-caminos"), "Cal Hampton": ("character", "cal-hampton"),
+    "Boobie Ike": ("character", "boobie-ike"), "Dre'Quan Priest": ("character", "dre-quan-priest"), "Real Dimez": ("character", "real-dimez"),
+    "Raul Bautista": ("character", "raul-bautista"), "Brian Heder": ("character", "brian-heder"),
+    "Vice City": ("region", "vice-city"), "Leonida Keys": ("region", "leonida-keys"), "Grassrivers": ("region", "grassrivers"),
+    "Port Gellhorn": ("region", "port-gellhorn"), "Ambrosia": ("region", "ambrosia"), "Mount Kalaga National Park": ("region", "mount-kalaga"),
+}
+# Where the camera rests when a picture is cut for a box that is not 16:9: (x, y) as fractions, keyed by Rockstar's title. Unlisted pictures rest at SCREENING_REST.
+# The viewer always shows the whole picture.
+SCREENING_REST = (0.5, 0.42)
+SCREENING_FOCUS = {}
+# The opening picture is the Launch Trailer's own poster; the way into Rockstar's own player and page is the trailer row itself.
+SCREENING_OPENING_VIDEO = "official-launch-trailer"
+SCREENING_ZIP_HOSTS = ("media-rockstargames-com.akamaized.net",)
+# The six character clips Rockstar publishes square; Jason and Lucia's clips and the cover-art animation are 16:9. Rockstar's titles, so the poster is drawn in its own shape.
+SCREENING_SQUARE_CLIPS = ("Cal Hampton Video Clip", "Boobie Ike Video Clip", "Dre'Quan Priest Video Clip", "Real Dimez Video Clip", "Raul Bautista Video Clip", "Brian Heder Video Clip")
+# Videos whose Rockstar player asked for a date of birth when it was opened here (observed 20 October 2026, An Extended Look): the card says so, and links to Rockstar's own page as the way round it.
+SCREENING_AGE_GATED = ("official-an-extended-look",)
+
+# ---------------------------------------------------------------- Stage B: how many pictures a chapter draws, and the key art and edition compositions
+SCREENING_FEATURED_COUNT = 4                     # pictures a chapter shows large before "View all" (the rest are one viewer group with them)
+# Key art is hung as four matted pieces at different scales, by Rockstar's title, largest first (the first four artwork pieces if a title is missing).
+SCREENING_ART_HANG = ("Jason and Lucia Lock and Load", "Jason and Lucia Robbery", "Official Cover Art", "Vice City Postcard")
+# Each edition's four showroom frames: the group of its screenshots each one opens on, by Rockstar's group name (compared without apostrophes). The other groups are in the index.
+SCREENING_SHOWROOM = {
+    "ultimate-edition-benefits": ("Ultimate Edition", "'95 Grotti Cheetah", "Vice City Style", "Classic Car Collection"),
+    "vintage-vice-city-pack": ("Vintage Vice City Pack", "'55 Vapid Stanier", "Vintage Vice City Outfits and Hairstyles", "Vintage Vice City Weapon Pattern"),
+}

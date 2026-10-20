@@ -48,6 +48,11 @@ def music():
     return render_template("music/index.html", **site.music_page())
 
 
+@pages_bp.route("/media")
+def media():
+    return render_template("media/index.html", **site.media_page())
+
+
 @pages_bp.route("/locations")
 def locations():
     """The old Places index. Its places were Team Valkyrie's own, not Rockstar's, so the section is now the Music page; the places themselves, their pages (/locations/<slug>, which

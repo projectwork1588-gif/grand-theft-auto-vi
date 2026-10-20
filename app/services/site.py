@@ -10,7 +10,7 @@ from .. import local_media, media_slots, media_urls
 from ..repositories import characters as characters_repo
 from ..repositories import media, missions as missions_repo, regions as regions_repo
 from ..repositories import vehicles as vehicles_repo
-from . import characters, locations, missions, music, regions, validation as v, vehicles
+from . import characters, locations, missions, music, regions, screening, validation as v, vehicles
 
 
 # ---------------------------------------------------------------- small helpers
@@ -771,6 +771,13 @@ def music_page():
     data = music.page()
     data["art"] = {name: music.safe_image(url) for name, url in media_slots.MUSIC_ART.items()}
     return data
+
+
+def media_page():
+    """The Media page, "The Screening": Rockstar's own videos, clips, screenshots and artwork. The people and regions it links to are the official ones this site has."""
+    people = {c["slug"]: c["full_name"] for c in characters_repo.featured_official(30)}
+    places = {r["slug"]: r["name"] for r in regions_repo.list_all()}
+    return screening.page(people, places)
 
 
 def location_index(args):

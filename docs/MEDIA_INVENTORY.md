@@ -1,5 +1,7 @@
 # Media inventory
 
+> **Update, 20 October 2026.** The Media page (`/media`, "The Screening") now lists Rockstar's whole media inventory, and its data, counts, the local `media/` inventory and the reconciliation with the rows below are in `docs/MEDIA_SCREENING.md`. Rockstar's pages now list 4 videos, 9 clips, 162 screenshots and 25 artwork items; the figures below are those of the earlier checks.
+
 **Policy.** Nothing from Rockstar is committed. The only files that are downloaded are the eight character clips that `scripts/fetch_clips.py` reads, and the loops built from them, which stay in the Git-ignored `media/` folder on your own machine. Official images and videos are **remote references to Rockstar's own published media**, shown with attribution and a link back to the source page. Watermarks and copyright notices are never removed. Concept records (some characters, all locations and missions, and the concept vehicles) never receive official images. Everything the project owns is original: the CSS fallbacks and the brand mark.
 
 The database table `media_assets` holds exactly the rows below, linked to characters, regions and vehicles through `media_characters`, `media_regions` and `media_vehicles`. Rows 1-57 come from migration 001, rows 58-85 from migration 002 and rows 86-107 from migration 004 (rows 61-68 also gain a `local_path` there). All are generated from manifests, and a test (`test_seed_and_migration_agree`) proves that a fresh seed and an upgraded Phase 1 database end up identical.

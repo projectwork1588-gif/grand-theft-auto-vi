@@ -155,13 +155,21 @@ def test_local_clip_route_is_empty_without_built_loops(client):
 # ------------------------------------------------------------------ list pages render
 @pytest.mark.parametrize("path,heading", [
     ("/characters", "The people of Leonida"), ("/vehicles", "Machines of Leonida"), ("/regions", "Six regions, one state"),
-    ("/music", "The music of Grand Theft Auto VI"), ("/missions", "Tales from Leonida"),
+    ("/music", "The music of Grand Theft Auto VI"), ("/media", "The Screening"),
 ])
 def test_catalogue_pages_render(client, path, heading):
     page = html(client, path)
     assert re.search(rf"<h1[^>]*>{heading}</h1>", page)
     assert 'aria-current="page"' in page  # the nav marks where you are
     assert "An unofficial educational fan project" in page
+
+
+def test_the_stories_index_still_renders_but_is_no_longer_a_menu_entry(client):
+    """Stories left the main menu for Media; the page, its filters and its links stay. Nothing in the menu marks it, because the menu has no entry for it."""
+    page = html(client, "/missions")
+    assert re.search(r"<h1[^>]*>Tales from Leonida</h1>", page) and "An unofficial educational fan project" in page
+    header = page.split('class="header-nav"')[1].split("</nav>")[0]
+    assert 'aria-current="page"' not in header and ">Stories</a>" not in header and ">Media</a>" in header
 
 
 # ------------------------------------------------------------------ characters
@@ -484,7 +492,7 @@ def test_unknown_routes_and_slugs_give_a_styled_404_page(client, path):
 
 def test_malformed_search_text_is_safe(client):
     for payload in ("' OR '1'='1", "'; DROP TABLE characters; --", "%", "_", "<script>alert(1)</script>", "‮", "a%00b"):
-        for path in ("/characters", "/vehicles", "/missions", "/music", "/locations"):
+        for path in ("/characters", "/vehicles", "/missions", "/music", "/media", "/locations"):
             response = client.get(path, query_string={"q": payload})
             assert response.status_code in (200, 302, 400), (path, payload)
     assert len(people(html(client, "/characters"))) == 8   # nothing was damaged
@@ -510,7 +518,7 @@ def test_pager_window_helper():
 
 # ------------------------------------------------------------------ design refinement (Team Valkyrie feedback)
 PUBLIC_PAGES = ("/", "/characters", "/characters/jason-duval", "/characters/cal-hampton", "/vehicles", "/vehicles/shitzu-squalo",
-                "/regions", "/regions/vice-city", "/music", "/locations/pelican-quay-terminal", "/missions",
+                "/regions", "/regions/vice-city", "/music", "/media", "/locations/pelican-quay-terminal", "/missions",
                 "/missions/harbour-lights", "/about", "/credits")
 
 
@@ -534,7 +542,7 @@ def test_brand_lockup_is_in_the_header_and_footer(client):
 def test_menu_lists_every_section_and_the_project_pages(client):
     page = html(client, "/characters")
     menu = page.split('id="site-menu"')[1].split("</nav>")[0]
-    for label in ("Characters", "Garage", "Leonida", "Music", "Stories", "About the project", "Credits and legal", "Watch the trailers"):
+    for label in ("Characters", "Garage", "Leonida", "Music", "Media", "About the project", "Credits and legal", "Watch the trailers"):
         assert label in menu, label
     assert 'aria-current="page"' in menu and "Not affiliated with" in menu
     assert 'aria-controls="site-menu"' in page and 'aria-expanded="false"' in page
@@ -544,7 +552,7 @@ def test_menu_lists_every_section_and_the_project_pages(client):
 def test_header_has_inline_navigation_with_the_current_section_marked(client):
     page = html(client, "/vehicles")
     header = page.split('class="header-nav"')[1].split("</nav>")[0]
-    for label in ("Characters", "Garage", "Leonida", "Music", "Stories"):
+    for label in ("Characters", "Garage", "Leonida", "Music", "Media"):
         assert f">{label}</a>" in header, label
     assert header.count('aria-current="page"') == 1 and '<a href="/vehicles" aria-current="page">Garage</a>' in header
     # one primary navigation landmark for assistive technology: the overlay menu has its own label

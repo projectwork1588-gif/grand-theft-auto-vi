@@ -54,7 +54,7 @@ def test_region_covers_and_galleries(app_context):
 def test_by_slugs_and_videos(app_context):
     found = media.by_slugs(["official-trailer-2", "shot-vice-city-01", "no-such-row"])
     assert set(found) == {"official-trailer-2", "shot-vice-city-01"}
-    assert [v["slug"] for v in media.videos()] == ["official-trailer-1", "official-trailer-2", "official-an-extended-look"]
+    assert [v["slug"] for v in media.videos()] == ["official-trailer-1", "official-trailer-2", "official-an-extended-look", "official-launch-trailer"]   # the Launch Trailer was added by migration 009
     assert media.covers("character", []) == {} and media.by_slugs([]) == {}
 
 

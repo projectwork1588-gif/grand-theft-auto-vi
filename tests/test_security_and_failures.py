@@ -6,13 +6,14 @@ import pytest
 
 from app.repositories import characters as characters_repo
 from app.repositories import missions as missions_repo
+from app.repositories import media as media_repo
 from app.repositories import music as music_repo
 from app.repositories import regions as regions_repo
 from app.repositories import system as system_repo
 from app.repositories import vehicles as vehicles_repo
 
 PAGES = ["/", "/characters", "/characters/jason-duval", "/vehicles", "/vehicles/grotti-cheetah", "/regions",
-         "/regions/vice-city", "/music", "/locations/neon-row-district", "/missions", "/missions/harbour-lights"]
+         "/regions/vice-city", "/music", "/media", "/locations/neon-row-district", "/missions", "/missions/harbour-lights"]
 
 
 # ------------------------------------------------------------------ headers and markup hygiene
@@ -83,6 +84,7 @@ def _broken(*args, **kwargs):
     ("/regions", regions_repo, "list_all"),
     ("/regions/vice-city", regions_repo, "get_by_slug"),
     ("/music", music_repo, "stations"),
+    ("/media", media_repo, "collections"),
     ("/missions", missions_repo, "search"),
     ("/missions/harbour-lights", missions_repo, "get_by_slug"),
 ])

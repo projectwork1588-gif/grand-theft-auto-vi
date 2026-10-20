@@ -18,7 +18,7 @@ def count(cur, table):
 def test_exact_row_counts(cur):
     expected = {"regions": 6, "locations": 8, "characters": 11, "character_relationships": 8, "character_regions": 3,
                 "vehicle_categories": 6, "vehicles": 15, "missions": 5, "mission_characters": 10,
-                "mission_vehicles": 8, "mission_locations": 8, "media_assets": 114,
+                "mission_vehicles": 8, "mission_locations": 8, "media_assets": 206,
                 "media_characters": 59, "media_regions": 36, "media_vehicles": 21, "media_locations": 0, "users": 0}
     for table, n in expected.items():
         assert count(cur, table) == n, table
@@ -127,7 +127,7 @@ def test_video_embeds_are_official_players_and_documented(cur):
     cur.execute("SELECT slug, usage_status, approval_status, embed_url FROM media_assets "
                 "WHERE media_type IN ('trailer', 'video') AND usage_status = 'embed_permitted' ORDER BY media_id")
     rows = cur.fetchall()
-    assert [r["slug"] for r in rows] == ["official-trailer-1", "official-trailer-2", "official-an-extended-look"]
+    assert [r["slug"] for r in rows] == ["official-trailer-1", "official-trailer-2", "official-an-extended-look", "official-launch-trailer"]   # the Launch Trailer was added by migration 009
     for r in rows:
         assert "videoplayer?id=" in r["embed_url"]
     # One poster-and-link clip card per named character. The clip files themselves are never hosted or played here.
