@@ -1,0 +1,53 @@
+{# Shared pieces of the account forms. Every field shows its own error under it, and the whole-form error (key "") sits above the form. #}
+{% macro summary(errors) -%}
+  {% if errors %}
+  <div class="acct-alert" role="alert" tabindex="-1" id="form-errors">
+    {% if errors.get('') %}<p>{{ errors.get('') }}</p>{% endif %}
+    {% if errors | length > (1 if errors.get('') else 0) %}
+    <p>Please check:</p>
+    <ul>{% for name, message in errors.items() if name %}<li><a href="#{{ name }}">{{ message }}</a></li>{% endfor %}</ul>
+    {% endif %}
+  </div>
+  {% endif %}
+{%- endmacro %}
+
+{% macro field(name, label, errors, type='text', value='', autocomplete='off', hint='', minlength=none, maxlength=none, autofocus=false) -%}
+  <div class="acct-field{% if errors.get(name) %} acct-field--bad{% endif %}">
+    <label for="{{ name }}">{{ label }}</label>
+    <input id="{{ name }}" name="{{ name }}" type="{{ type }}" value="{{ value }}" autocomplete="{{ autocomplete }}" required
+           {% if minlength %}minlength="{{ minlength }}"{% endif %} {% if maxlength %}maxlength="{{ maxlength }}"{% endif %}
+           {% if type == 'text' %}autocapitalize="none" autocorrect="off" spellcheck="false"{% endif %}
+           {% if autofocus %}autofocus{% endif %}
+           {% if errors.get(name) %}aria-invalid="true"{% endif %}
+           {% if errors.get(name) or hint %}aria-describedby="{{ name }}-note"{% endif %}>
+    {% if errors.get(name) %}<p class="acct-note acct-note--bad" id="{{ name }}-note">{{ errors.get(name) }}</p>
+    {% elif hint %}<p class="acct-note" id="{{ name }}-note">{{ hint }}</p>{% endif %}
+  </div>
+{%- endmacro %}
+
+{# A small POST button (sign out, remove): a form, so it works without JavaScript and carries the CSRF token. #}
+{% macro post_button(action, label, css='btn btn--ghost', extra={}) -%}
+  <form method="post" action="{{ action }}" class="acct-inline">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% for k, v in extra.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+    <button class="{{ css }}" type="submit">{{ label }}</button>
+  </form>
+{%- endmacro %}
+
+{# The Save / Saved control on a record's page. Signed-out visitors get a link to sign in; nothing is stored for them and no cookie is set. #}
+{% macro save_control(kind, slug, name) -%}
+  {% if current_user %}
+    {% set saved = is_saved(kind, slug) %}
+    <div class="fav" data-saved="{{ 'true' if saved else 'false' }}">
+      <form method="post" action="{{ url_for('account.remove_favourite' if saved else 'account.save_favourite', kind=kind, slug=slug) }}" class="acct-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="fav__btn" type="submit" aria-pressed="{{ 'true' if saved else 'false' }}">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5 4.6 13.4a4.6 4.6 0 0 1 6.5-6.5l.9.9.9-.9a4.6 4.6 0 0 1 6.5 6.5z"/></svg>
+          <span>{{ 'Saved' if saved else 'Save' }}<span class="visually-hidden">: {{ name }}{{ ' (press to remove)' if saved else '' }}</span></span>
+        </button>
+      </form>
+    </div>
+  {% else %}
+    <div class="fav"><a class="fav__btn" href="{{ url_for('account.login') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5 4.6 13.4a4.6 4.6 0 0 1 6.5-6.5l.9.9.9-.9a4.6 4.6 0 0 1 6.5 6.5z"/></svg><span>Sign in to save<span class="visually-hidden">: {{ name }}</span></span></a></div>
+  {% endif %}
+{%- endmacro %}

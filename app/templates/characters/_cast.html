@@ -4,7 +4,8 @@
    site's CSP forbids inline styles, so characters.css has a rule for every value on the grid the service uses), so a crop
    keeps the face. `posn` is the framing on tablets and phones. `sizes` must describe the width the picture is really drawn
    at (a tall crop of a 16:9 picture is drawn much wider than its box), otherwise the browser picks a small file. #}
-{% macro shot(m, sizes, pos='50% 50%', cls='', eager=false, posn=none) -%}
+{# `wide` offers Rockstar's 3840 px original as well (the opening picture only: on a large or high-density screen the browser would otherwise stretch the 2560 px version) #}
+{% macro shot(m, sizes, pos='50% 50%', cls='', eager=false, posn=none, wide=false) -%}
   {% if m and m.local %}
   {# a frame cut from Rockstar's own clip (scripts.make_loops --stills), served from media/clips/ #}
   {% set pp = pos.replace('%', '').split(' ') %}
@@ -12,7 +13,7 @@
        data-px="{{ pp[0] }}" data-py="{{ pp[1] }}"{% if posn %}{% set pn = posn.replace('%', '').split(' ') %} data-pxn="{{ pn[0] }}" data-pyn="{{ pn[1] }}"{% endif %} {% if eager %}fetchpriority="high"{% else %}loading="lazy"{% endif %} decoding="async">
   {% elif m and image_src(m.embed_url, 1920) %}
   {% set pp = pos.replace('%', '').split(' ') %}
-  <img class="shot {{ cls }}" src="{{ image_src(m.embed_url, 1920) }}" srcset="{{ image_srcset(m.embed_url) }}" sizes="{{ sizes }}" alt=""
+  <img class="shot {{ cls }}" src="{{ image_src(m.embed_url, 1920) }}" srcset="{{ image_srcset(m.embed_url, (960, 1920, 2560, 3840)) if wide else image_srcset(m.embed_url) }}" sizes="{{ sizes }}" alt=""
        data-px="{{ pp[0] }}" data-py="{{ pp[1] }}"{% if posn %}{% set pn = posn.replace('%', '').split(' ') %} data-pxn="{{ pn[0] }}" data-pyn="{{ pn[1] }}"{% endif %} {% if eager %}fetchpriority="high"{% else %}loading="lazy"{% endif %} decoding="async" referrerpolicy="no-referrer">
   {% endif %}
 {%- endmacro %}
@@ -51,8 +52,9 @@
   <figure class="motion-portrait motion-portrait--{{ pr.shape }}{% if tile %} motion-portrait--tile{% endif %}" data-portrait>
     <div class="motion-portrait__frame">
       {% if pr.poster %}<img class="motion-portrait__poster" src="{{ media_file_url(pr.poster) }}" alt="" loading="lazy" decoding="async">{% endif %}
+      {# no poster attribute: the video is transparent until it is live and the lazy still above is the poster, so the attribute only made every visit fetch every portrait's picture at once #}
       <video class="motion-portrait__video" data-portrait-video data-poster-at="{{ pr.poster_at }}" data-src="{{ media_file_url(pr.video) }}" muted playsinline preload="none"
-             {% if pr.poster %}poster="{{ media_file_url(pr.poster) }}"{% endif %} aria-label="Short muted clip of {{ c.full_name }} from Rockstar's own footage"></video>
+             aria-label="Short muted clip of {{ c.full_name }} from Rockstar's own footage"></video>
       <button class="motion-portrait__optin" type="button" data-motion-optin aria-label="Play the clip of {{ c.full_name }}" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button>
     </div>
     <figcaption class="motion-portrait__cap">{{ label }}</figcaption>

@@ -6,7 +6,7 @@
 
 | Path | Page |
 |------|------|
-| `/` | Cinematic homepage: hero, the two leads, cast stage, region explorer, garage showroom, stories and official connections, trailers and screenshots |
+| `/` | Cinematic homepage: hero, the two leads, cast stage, region explorer, garage showroom, the picture challenge ("How well do you know Leonida?": five of Rockstar's own pictures, name the person, place or machine; the Stories index is one link below it), trailers and screenshots, the official release block (Rockstar's key art, release date, platforms, a link to Rockstar's pre-order page and editions, the Launch Trailer) and the closing. Template `home.html`, `home.css`, `home.js`, services `site.home` and `services/discover.py`. See `docs/HOME_UPDATE.md` |
 | `/characters` | **Official cast only** (Gate 3A). An editorial page: opening, jump bar, the two leads, the six around them, the relationship network. The Explore panel (query: `q`, `region`, `sort` (**cast** (the default on the pages), name_asc, name_desc, newest), `page`, `per_page`) switches the page to a results list. A `status` in the query is ignored, so original characters can never appear here |
 | `/characters/<slug>` | Official profile: hero, story with the motion portrait, connections with faces, gallery, previous and next. An original character's slug is a styled 404 |
 | `/vehicles` | The Garage: a cinematic landing (an opening that cycles through the seven machines, then the collection told in chapters, the mod-shop strip and the Kayak finale). **Official vehicles only.** Query: `q`, `category`, `sort` (featured, name_asc, name_desc, category), `page`, `per_page`; with any filter, search, other sort or page the collection is an ordered list, exactly as the database returned it. Template `vehicles/concept.html`, service `site.vehicle_concept`. Development-only query: `autoplay=0` stops the opening's clock, `dwell=2..30` sets its hold in seconds |
@@ -23,6 +23,10 @@
 | `/about` | What the project is, what the labels mean, how it was made |
 | `/credits` | Attribution, non-affiliation, fonts and licence |
 | `/media/clips/<name>.mp4` or `.jpg` | Locally built loops only. A safe-name pattern and an existing file are required; anything else is a 404 |
+| `/register`, `/login`, `POST /logout` | Accounts (username + password, no email): register, sign in, sign out. 400 invalid, 409 username taken, 401 wrong credentials (one generic message), 429 after repeated failures. See `docs/ACCOUNTS.md` |
+| `/account/favourites` | The signed-in visitor's saved characters, vehicles, places and stories, with a Remove button each. Signed-out visitors are sent to `/login` |
+| `/account/password` | Change password (the current password is verified first). Signed-in only |
+| `POST /favourites/<kind>/<slug>`, `POST /favourites/<kind>/<slug>/remove` | Save or remove a favourite (`kind`: `characters`, `vehicles`, `locations`, `missions`). Signed-in only; always acts on the signed-in user; answers 303; 404 for an unknown or unpublished record. Every POST needs the CSRF token (400 without) |
 | `/health` | JSON health check (200, or 503 when MySQL is down). Not linked from the site |
 
 ### JSON API (`/api/v1`)
@@ -41,7 +45,9 @@ Pages and API endpoints share the same services, so they cannot disagree.
 
 | Code | Pages | API |
 |------|-------|-----|
-| 400 | Styled page listing the invalid parameters | JSON `error.details` |
+| 400 | Styled page listing the invalid parameters; also a POST whose CSRF token is missing or wrong | JSON `error.details` |
+| 413 | Styled page: a form body over 16 KiB is refused before it is read | JSON error |
+| 429 | Sign-in, change-password or sign-up form with a message and a `Retry-After` header (too many failed attempts, or too many accounts from one address) | n/a (no API route writes) |
 | 404 | Styled page (unknown route, unknown slug, or a slug that is not lowercase `a-z0-9-`) | JSON error |
 | 503 | "Database unavailable", with no SQL or credentials shown | JSON error |
 | 500 | Generic message | JSON error |
@@ -50,7 +56,7 @@ Pages and API endpoints share the same services, so they cannot disagree.
 
 | Phase | Routes |
 |-------|--------|
-| 3 Auth + admin | `/register`, `/login`, `/logout`, `/me/collection`, `POST /favourites/<type>/<slug>`, `/admin/...` CRUD, relationship editors, statistics |
+| 3 Admin | `/admin/...` CRUD, relationship editors, statistics (accounts, sign-in and favourites are built: see above) |
 | 4 Signature | `/atlas` (reuses `/regions/<slug>` and `/locations/<slug>`), `/network`, `POST /api/v1/terminal`, `/search`, `/trails` |
 | 5 Media + polish | `/theatre`, wallpaper and screenshot galleries, official vehicle imagery (needs a `media_vehicles` junction), animation pass |
 | 6 Final | Integration and security testing, performance, documentation, viva preparation |

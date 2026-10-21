@@ -150,3 +150,16 @@ def collection_items(slug):
            LEFT JOIN media_assets p ON p.media_id = i.poster_media_id AND p.approval_status = 'approved'
            WHERE c.slug = %s AND c.content_status = 'official'
            ORDER BY i.position""", (slug,))
+
+
+@_tolerate_missing_tables(list)
+def solo_vehicle_pictures():
+    """Official pictures linked to exactly one official vehicle (so a picture that shows two machines is never asked about as one), in the Garage's order, then the picture's own."""
+    return query_all(
+        f"""SELECT {_COLUMNS}, v.slug AS vehicle_slug
+            FROM media_vehicles link
+            JOIN vehicles v ON v.vehicle_id = link.vehicle_id AND v.content_status = 'official'
+            JOIN media_assets m ON m.media_id = link.media_id
+            WHERE {_VISIBLE} AND m.media_type IN ('artwork', 'screenshot')
+              AND (SELECT COUNT(*) FROM media_vehicles shared WHERE shared.media_id = m.media_id) = 1
+            ORDER BY v.vehicle_id, m.media_id""")

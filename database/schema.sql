@@ -46,12 +46,12 @@ DROP TABLE IF EXISTS users;
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- ---------------------------------------------------------------------
--- users: accounts (registration/login arrive in Phase 3)
+-- users: accounts (username + password; email is optional and unused by the sign-up form, see migration 010)
 -- ---------------------------------------------------------------------
 CREATE TABLE users (
     user_id        INT UNSIGNED  NOT NULL AUTO_INCREMENT,
     username       VARCHAR(30)   NOT NULL,
-    email          VARCHAR(254)  NOT NULL,
+    email          VARCHAR(254)  NULL,
     password_hash  VARCHAR(255)  NOT NULL,
     role           ENUM('user','admin') NOT NULL DEFAULT 'user',
     created_at     TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,

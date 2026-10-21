@@ -463,7 +463,7 @@
 @media (max-width: 760px) {
   .cast-open { min-height: 92svh; }
   .cast-open__bg { inset: 0 0 auto 0; height: 62%; }
-  .cast-open__bg .shot { object-position: 53% 10% !important; }
+  .cast-open__bg .shot:not([data-pxn]) { object-position: 53% 10% !important; }   /* an opening picture that gives its own phone framing (data-pxn) keeps it */
   .cast-open__bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, var(--ground) 0%, rgba(18, 16, 42, 0) 40%); }
   .cast-open::after { background: linear-gradient(180deg, rgba(18, 16, 42, .6) 0%, rgba(18, 16, 42, 0) 18%); }
   .cast-open h1 { font-size: var(--t-h1); }

@@ -1,7 +1,8 @@
 """Application factory: builds and configures the Flask app."""
-from flask import Flask
+from flask import Flask, g
+from werkzeug.middleware.proxy_fix import ProxyFix
 
-from . import db, media_slots, media_urls
+from . import db, media_slots, media_urls, security
 from .config import get_config
 from .errors import register_error_handlers
 
@@ -31,10 +32,18 @@ def create_app(config_name=None):
     config = get_config(config_name)
     app.config.from_object(config)
     app.config["DB_CONFIG"] = config  # used by app.db to build the connection pool
+    app.config["CONFIG_NAME"] = config.__name__
+    app.logger.info("Starting with %s", config.__name__)
+    if app.config["TRUSTED_PROXY_COUNT"]:
+        # Only when the operator says how many reverse proxies are in front (TV_TRUSTED_PROXIES): client address and scheme are then read from the proxies' headers.
+        # Never enabled by default, and the Host header is never taken from a forwarded header.
+        count = app.config["TRUSTED_PROXY_COUNT"]
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=count, x_proto=count, x_host=0, x_port=0, x_prefix=0)
     app.json.sort_keys = False  # keep JSON fields in the order the code wrote them
 
     db.init_app(app)
     register_error_handlers(app)
+    security.init_app(app)   # sessions, CSRF protection, the signed-in user (g.user) and the login throttle
 
     app.jinja_env.globals.update(
         image_src=media_urls.image_src,
@@ -52,6 +61,7 @@ def create_app(config_name=None):
         response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
         return response
 
+    from .blueprints.account import account_bp
     from .blueprints.api import api_bp
     from .blueprints.main import main_bp, media_file_url, page_url, page_window
     from .blueprints.pages import pages_bp
@@ -59,7 +69,15 @@ def create_app(config_name=None):
     # Globals (not context values) so imported macros such as the pager can use them.
     app.jinja_env.globals.update(page_url=page_url, page_window=page_window, media_file_url=media_file_url)
 
+    def is_saved(kind, slug):
+        """True when the signed-in visitor has saved this record (one query, only for signed-in visitors)."""
+        from .services import favourites
+        return bool(g.get("user")) and favourites.is_saved(g.user["user_id"], kind, slug)
+
+    app.jinja_env.globals["is_saved"] = is_saved
+
     app.register_blueprint(main_bp)
     app.register_blueprint(pages_bp)
+    app.register_blueprint(account_bp)
     app.register_blueprint(api_bp, url_prefix="/api/v1")
     return app

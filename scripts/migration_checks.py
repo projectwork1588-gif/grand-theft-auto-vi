@@ -144,4 +144,54 @@ def after_006(cursor):
     return f"After 006: {official} official vehicles (expected 7), vehicles 14 and 15 present: {added}/2, media 108 to 114: {media}/7, links: {links}/4 - {'OK' if ok else 'CHECK THIS'}"
 
 
-CHECKS = {"006_gate3b_garage.sql": (check_006, after_006)}
+# ---- migration 010: users.email may be NULL (accounts sign up with a username and a password only)
+M010_COLUMN_TYPE = "varchar(254)"
+M010_UNIQUE_INDEX = "uq_users_email"
+
+
+def _email_column(cursor, database):
+    cursor.execute("SELECT COLUMN_TYPE, IS_NULLABLE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = 'users' AND COLUMN_NAME = 'email'", (database,))
+    return cursor.fetchone()
+
+
+def _email_unique(cursor, database):
+    cursor.execute("SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = 'users' AND INDEX_NAME = %s AND NON_UNIQUE = 0",
+                   (database, M010_UNIQUE_INDEX))
+    return cursor.fetchone()[0] > 0
+
+
+def check_010(cursor, database):
+    """010 relaxes ONE column. It needs the users table and that column, exactly as schema.sql defines it: with any other type the ALTER would also
+    change the type (and could shorten stored emails), so that blocks it. Reads only; counts rows without reading any of them."""
+    notes, problems = [], []
+    cursor.execute("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = 'users'", (database,))
+    if not cursor.fetchone()[0]:
+        return notes, ["table 'users' does not exist (build the schema first: scripts.init_db)"]
+    column = _email_column(cursor, database)
+    if column is None:
+        return notes, ["table 'users' has no column 'email', so there is nothing for 010 to relax"]
+    column_type, nullable = str(column[0]).lower(), column[1]
+    if column_type != M010_COLUMN_TYPE:
+        problems.append(f"users.email is {column_type}, not {M010_COLUMN_TYPE}: the migration would change its type as well as its nullability")
+    if nullable == "YES":
+        notes.append("users.email is already nullable: running 010 changes nothing")
+    else:
+        notes.append("users.email is NOT NULL now; 010 makes it nullable")
+    notes.append(f"unique index {M010_UNIQUE_INDEX}: {'present, it stays' if _email_unique(cursor, database) else 'ABSENT (not created by 010; check schema.sql)'}")
+    cursor.execute("SELECT COUNT(*) FROM users")
+    notes.append(f"users holds {cursor.fetchone()[0]} account(s); none is changed (the ALTER only drops the NOT NULL rule)")
+    notes.append("rollback note: once any account has no email, `MODIFY email ... NOT NULL` fails; undoing 010 then needs a decision about those accounts")
+    return notes, problems
+
+
+def after_010(cursor):
+    """What is stored after the migration (read on a new connection)."""
+    cursor.execute("SELECT DATABASE()")
+    database = cursor.fetchone()[0]
+    column = _email_column(cursor, database)
+    unique = _email_unique(cursor, database)
+    ok = column is not None and str(column[0]).lower() == M010_COLUMN_TYPE and column[1] == "YES" and unique
+    return f"After 010: users.email is {column[0] if column else 'MISSING'}, nullable: {column[1] if column else '?'}, unique index kept: {unique} - {'OK' if ok else 'CHECK THIS'}"
+
+
+CHECKS = {"006_gate3b_garage.sql": (check_006, after_006), "010_account_email_optional.sql": (check_010, after_010)}

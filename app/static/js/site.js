@@ -130,6 +130,13 @@
   (function heroStage() {
     var stage = document.querySelector("[data-hero-stage]");
     if (!stage) { return; }
+    // The layers arrive together: the stage is revealed once the pictures that carry the artwork are decoded (or after 2.2 s whatever happens), so it fades in whole instead of
+    // appearing layer by layer. The warm copy of the pair is decoration and is not waited for. Without this script the stylesheet reveals the stage by itself.
+    var revealed = false;
+    var reveal = function () { if (!revealed) { revealed = true; stage.classList.add("is-ready"); } };
+    var layerImages = [].slice.call(stage.querySelectorAll(".hero__layer:not(.hero__layer--lit) img"));
+    Promise.all(layerImages.map(function (img) { return img.decode ? img.decode().catch(function () {}) : Promise.resolve(); })).then(reveal);
+    window.setTimeout(reveal, 2200);
     if ("IntersectionObserver" in window) {
       new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) { stage.classList.toggle("is-paused", !entry.isIntersecting); });
@@ -1209,27 +1216,63 @@
   if (videoDialog && typeof videoDialog.showModal === "function") {
     closeOnBackdrop(videoDialog);
     var playerBox = videoDialog.querySelector("[data-player]");
+    var playerStatus = videoDialog.querySelector("[data-player-status]");
     var videoCaption = videoDialog.querySelector("[data-caption]");
     var videoTitle = videoDialog.querySelector("[data-title]");
+    var slowTimer = 0;
+    var setStatus = function (text, withLink) {
+      if (!playerStatus) { return; }
+      playerStatus.textContent = text || "";
+      if (text && withLink) {
+        var a = document.createElement("a");
+        a.href = "https://www.rockstargames.com/VI/media/videos"; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = "Open Rockstar\u2019s videos page";
+        playerStatus.appendChild(document.createTextNode(" ")); playerStatus.appendChild(a);
+      }
+      playerStatus.hidden = !text;
+    };
+    // The player is Rockstar's own page in a frame, so its first request starts cold. A visitor who reaches for a trailer (pointer over it, focus on it, a touch) warms the connection
+    // to Rockstar's host a moment before the frame is asked for. Once, and only on intent: nothing is contacted by a page that nobody interacts with.
+    var warmed = false;
+    var warmPlayer = function () {
+      if (warmed) { return; }
+      warmed = true;
+      var link = document.createElement("link");
+      link.rel = "preconnect"; link.href = "https://www.rockstargames.com";
+      document.head.appendChild(link);
+    };
     videoDialog.addEventListener("close", function () {
+      document.documentElement.classList.remove("has-modal");
+      window.clearTimeout(slowTimer);
+      playerBox.classList.remove("is-loading");
+      setStatus("");
       playerBox.textContent = ""; // stops playback
       window.tvMedia = window.tvMedia || {};
       window.tvMedia.modal = false;
       document.dispatchEvent(new Event("tv:state"));
     });
     document.querySelectorAll("[data-video]").forEach(function (trigger) {
+      ["pointerenter", "focus", "touchstart"].forEach(function (name) { trigger.addEventListener(name, warmPlayer, { once: true, passive: true }); });
       trigger.addEventListener("click", function () {
+        warmPlayer();
         var frame = document.createElement("iframe");
         frame.src = trigger.getAttribute("data-video");
         frame.title = trigger.getAttribute("data-title") || "Official video";
         frame.allow = "autoplay; fullscreen; picture-in-picture";
         playerBox.textContent = "";
+        playerBox.classList.add("is-loading");
+        setStatus("Loading the official player\u2026");
+        window.clearTimeout(slowTimer);
+        frame.addEventListener("load", function () { window.clearTimeout(slowTimer); playerBox.classList.remove("is-loading"); setStatus(""); });
+        slowTimer = window.setTimeout(function () {          // the player (Rockstar's, and the network's) is slow: say so, and offer Rockstar's own page
+          if (playerBox.classList.contains("is-loading")) { setStatus("The player is taking a while.", true); }
+        }, 9000);
         playerBox.appendChild(frame);
         if (videoTitle) { videoTitle.textContent = (trigger.getAttribute("data-title") || "").replace(/^Grand Theft Auto VI[:,]?\s*/, ""); }
         videoCaption.textContent = "Official trailer \u00b7 \u00a9 Rockstar Games";
         window.tvMedia = window.tvMedia || {};
         window.tvMedia.modal = true;
         document.dispatchEvent(new Event("tv:state"));
+        document.documentElement.classList.add("has-modal");
         videoDialog.showModal();
       });
     });
@@ -1262,6 +1305,7 @@
         var holder = link.closest("[data-gallery]");
         group = holder ? [].slice.call(holder.querySelectorAll("a[data-lightbox]")) : [link];
         showImage(group.indexOf(link));
+        document.documentElement.classList.add("has-modal");
         imageDialog.showModal();
       });
     });
@@ -1272,6 +1316,6 @@
       if (e.key === "ArrowLeft") { e.preventDefault(); showImage(at - 1); }
       if (e.key === "ArrowRight") { e.preventDefault(); showImage(at + 1); }
     });
-    imageDialog.addEventListener("close", function () { bigImage.removeAttribute("src"); });
+    imageDialog.addEventListener("close", function () { document.documentElement.classList.remove("has-modal"); bigImage.removeAttribute("src"); });
   }
 })();

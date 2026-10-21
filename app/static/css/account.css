@@ -1,0 +1,67 @@
+/* Accounts and favourites: the sign-in, sign-up, password and favourites pages, the Save control on a record's page, and the status message.
+   Built only from tokens.css (type scale, tracking, radii, colours) and the existing .btn, .panel-title and .page-hero. */
+
+.acct { max-width: 560px; display: grid; gap: var(--s4); }
+.acct--wide { max-width: 860px; }
+
+/* ---------- Forms ---------- */
+.acct-form { display: grid; gap: 22px; }
+.acct-field { display: grid; gap: 8px; }
+.acct-field label { font: 700 var(--t-micro)/1 var(--font-body); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--soft); }
+.acct-field input { width: 100%; min-height: 52px; padding: 12px 18px; border-radius: var(--r-tile); border: 1px solid var(--line-strong); background: var(--ink); color: var(--text); font: 500 var(--t-body)/1.3 var(--font-body); letter-spacing: 0; transition: border-color .25s, background .25s; }
+.acct-field input:hover { border-color: var(--text); }
+.acct-field input:focus-visible { outline: 2px solid var(--pink); outline-offset: 2px; border-color: var(--pink); background: var(--surface); }
+.acct-field--bad input { border-color: var(--pink); }
+.acct-note { font: 500 var(--t-small)/1.45 var(--font-body); letter-spacing: 0; color: var(--muted); }
+.acct-note--bad { color: var(--text); }
+.acct-note--bad::before { content: "\2715\00a0"; color: var(--pink); }
+.acct-form .btn { justify-self: start; }
+.acct-alt { font: 500 var(--t-small)/1.5 var(--font-body); letter-spacing: 0; color: var(--muted); }
+.acct-alt a { color: var(--text); }
+.acct-alert { padding: 16px 20px; border-radius: var(--r-tile); border: 1px solid var(--pink); background: var(--surface); color: var(--text); font: 500 var(--t-small)/1.5 var(--font-body); letter-spacing: 0; }
+.acct-alert:focus-visible { outline: 2px solid var(--pink); outline-offset: 2px; }
+.acct-alert p + p, .acct-alert p + ul { margin-top: 8px; }
+.acct-alert ul { padding-left: 20px; }
+.acct-alert a { color: var(--text); }
+
+/* ---------- Favourites page ---------- */
+.acct-group { padding-block: 22px; border-top: 1px solid var(--line); }
+.acct-group:first-child { border-top: 0; padding-top: 0; }
+.acct-count { color: var(--soft); font-weight: 500; margin-left: 6px; }
+.acct-list { list-style: none; padding: 0; margin: 0; display: grid; }
+.acct-list li { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.acct-list a { text-decoration: none; font: 600 var(--t-body)/1.3 var(--font-body); letter-spacing: 0; }
+.acct-list a:hover { color: var(--pink); }
+.acct-empty { font: 500 var(--t-small)/1.5 var(--font-body); letter-spacing: 0; color: var(--soft); }
+.acct-actions { display: flex; flex-wrap: wrap; gap: 12px; padding-top: 22px; border-top: 1px solid var(--line); }
+.acct-inline { display: inline-flex; margin: 0; }
+.btn--small { min-height: 40px; padding: 10px 20px; box-shadow: none; }
+
+/* ---------- The Save control on a record's page ---------- */
+.fav { margin-top: 18px; }
+.fav__btn {
+  display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 10px 20px; cursor: pointer; text-decoration: none;
+  border: 1px solid var(--line-strong); border-radius: var(--r-pill); background: rgba(18, 16, 42, .55); color: var(--text);
+  backdrop-filter: blur(6px); font: 700 var(--t-small)/1 var(--font-body); letter-spacing: var(--track-ui); transition: background .25s, border-color .25s, color .25s;
+}
+.fav__btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+.fav__btn:hover { border-color: var(--text); background: rgba(255, 255, 255, .12); color: var(--text); }
+.fav__btn:focus-visible { outline: 2px solid var(--pink); outline-offset: 3px; }
+.fav[data-saved="true"] .fav__btn { border-color: var(--pink); color: var(--pink); }
+.fav[data-saved="true"] .fav__btn svg { fill: currentColor; }
+
+/* ---------- Status message (after saving, signing in, signing out) ---------- */
+.flash-stack { position: fixed; z-index: 60; left: 50%; bottom: 24px; transform: translateX(-50%); width: min(480px, 100% - 32px); display: grid; gap: 8px; pointer-events: none; }
+.flash { padding: 14px 20px; border-radius: var(--r-tile); border: 1px solid var(--line-strong); background: var(--ink); color: var(--text); font: 600 var(--t-small)/1.4 var(--font-body); letter-spacing: 0; box-shadow: 0 18px 40px -18px rgba(0, 0, 0, .8); animation: flash-out .01s linear 7s forwards; }
+.flash--success { border-color: var(--pink); }
+@keyframes flash-out { to { opacity: 0; visibility: hidden; } }
+
+@media (max-width: 520px) {
+  .acct-list li { align-items: flex-start; flex-direction: column; gap: 10px; }
+}
+
+/* ---------- In the site menu ---------- */
+.site-menu__who { font-weight: 500; color: var(--soft); }
+.site-menu__linkbtn { display: block; padding: 10px 0; border: 0; background: none; cursor: pointer; text-align: left; color: var(--text-2); font: 600 var(--t-body)/1.3 var(--font-text); letter-spacing: 0; }
+.site-menu__linkbtn:hover { color: var(--text); }
+.site-menu__linkbtn:focus-visible { outline: 2px solid var(--pink); outline-offset: 3px; }

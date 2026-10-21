@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "account/_form.html" import summary, field %}
+{% block title %}Sign in{% endblock %}
+{% block description %}Sign in to Team Valkyrie to keep your favourite characters, vehicles, places and stories.{% endblock %}
+{% block content %}
+<section class="page-hero">
+  <div class="media page-hero__bg"><span class="media__fallback" aria-hidden="true"></span></div>
+  <div class="page-hero__shade" aria-hidden="true"></div>
+  <div class="container page-hero__inner">
+    <p class="eyebrow">Account</p>
+    <h1>Sign in</h1>
+    <p class="page-hero__lede">Keep the characters, vehicles, places and stories you like. Browsing the site never needs an account.</p>
+  </div>
+</section>
+<section class="section section--tight">
+  <div class="container acct">
+    {{ summary(errors) }}
+    <form class="acct-form" method="post" action="{{ url_for('account.login') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {{ field('username', 'Username', {}, value=values.get('username', ''), autocomplete='username', maxlength=30, autofocus=true) }}
+      {{ field('password', 'Password', {}, type='password', autocomplete='current-password', maxlength=128) }}
+      <button class="btn" type="submit">Sign in</button>
+    </form>
+    <p class="acct-alt">New here? <a href="{{ url_for('account.register') }}">Create an account</a></p>
+  </div>
+</section>
+{% endblock %}

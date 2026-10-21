@@ -38,19 +38,19 @@
 }
 
 .hero__content { position: relative; display: grid; justify-items: start; max-width: 720px; will-change: transform, opacity; }
-.hero__welcome, .hero__presents, .hero__gta, .hero__vi, .hero__lede, .hero__actions { opacity: 0; animation: rise 1.2s var(--ease) forwards; }
-.hero__welcome { margin: 0; display: inline-flex; align-items: center; gap: 16px; font: 700 var(--t-micro)/1 var(--font-body); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--label); animation-delay: .1s; }
+.hero__welcome, .hero__presents, .hero__gta, .hero__vi, .hero__lede, .hero__actions { opacity: 0; animation: rise .85s cubic-bezier(.22, .8, .24, 1) forwards; }
+.hero__welcome { margin: 0; display: inline-flex; align-items: center; gap: 16px; font: 700 var(--t-micro)/1 var(--font-body); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--label); animation-delay: .05s; }
 .hero__welcome::before { content: ""; width: 36px; height: 1px; background: currentColor; }
-.hero__presents { margin: 14px 0 var(--s3); font: 600 var(--t-micro)/1 var(--font-body); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--text-2); animation-delay: .3s; }
+.hero__presents { margin: 14px 0 var(--s3); font: 600 var(--t-micro)/1 var(--font-body); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--text-2); animation-delay: .15s; }
 .hero__title { display: grid; justify-items: start; gap: 0; }
-.hero__gta { font: 700 var(--t-h4)/1 var(--font-display); letter-spacing: var(--track-label); text-transform: uppercase; animation-delay: .5s; text-shadow: 0 2px 24px rgba(0, 0, 0, .5); }
+.hero__gta { font: 700 var(--t-h4)/1 var(--font-display); letter-spacing: var(--track-label); text-transform: uppercase; animation-delay: .25s; text-shadow: 0 2px 24px rgba(0, 0, 0, .5); }
 .hero__vi {
-  font: 700 var(--t-numeral)/.82 var(--font-display); letter-spacing: var(--track-caps); margin: .04em 0 0 -.03em; animation-delay: .75s;
+  font: 700 var(--t-numeral)/.82 var(--font-display); letter-spacing: var(--track-caps); margin: .04em 0 0 -.03em; animation-delay: .38s;
   background: var(--sunset-text); -webkit-background-clip: text; background-clip: text; color: transparent;
   filter: drop-shadow(0 14px 40px rgba(255, 95, 150, .28));
 }
-.hero__lede { max-width: 30ch; text-wrap: balance; margin: var(--s3) 0 var(--s4); font: 500 var(--t-lead)/1.5 var(--font-body); color: var(--text); text-shadow: 0 2px 16px rgba(0, 0, 0, .55); animation-delay: 1.05s; }
-.hero__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s4); animation-delay: 1.25s; }
+.hero__lede { max-width: 30ch; text-wrap: balance; margin: var(--s3) 0 var(--s4); font: 500 var(--t-lead)/1.5 var(--font-body); color: var(--text); text-shadow: 0 2px 16px rgba(0, 0, 0, .55); animation-delay: .55s; }
+.hero__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s4); animation-delay: .7s; }
 .hero__release { position: absolute; right: clamp(24px, 4vw, 64px); bottom: clamp(24px, 4vw, 64px); margin: 0; text-align: right; font: 700 var(--t-micro)/1 var(--font-body); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--text-2); text-shadow: 0 1px 12px rgba(0, 0, 0, .7); }
 .hero__release strong { display: block; margin-top: 8px; font: 700 var(--t-h4)/1 var(--font-display); letter-spacing: var(--track-caps); color: var(--text); text-shadow: 0 2px 18px rgba(0, 0, 0, .75); }
 @media (max-width: 760px) {
@@ -208,34 +208,11 @@
 .story:hover .story__title { color: var(--pink); }
 @media (max-width: 640px) { .story { grid-template-columns: auto 1fr; gap: 18px; } .story__tags { grid-column: 1 / -1; justify-content: flex-start; } }
 
-/* ---- homepage stories: one lead story, two more, and a quieter connections panel ---- */
-.stories .band__shade { background: linear-gradient(180deg, var(--night) 0%, rgba(13, 11, 32, .93) 16%, rgba(13, 11, 32, .94) 84%, var(--night) 100%); }
-.stories .band__bg .media__img { opacity: .55; filter: saturate(.85); }
-.stories__grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr); gap: clamp(40px, 7vw, 100px); align-items: start; }
-@media (max-width: 960px) { .stories__grid { grid-template-columns: 1fr; } }
-.story-lead { padding-bottom: 34px; border-bottom: 1px solid var(--line); }
-.story-lead__kicker { margin: 0 0 14px; font: 700 var(--t-micro)/1.3 var(--font-body); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--orange); }
-.story-lead__title { font: 700 var(--t-h2)/1 var(--font-mark); text-transform: uppercase; letter-spacing: var(--track-caps); margin-bottom: 14px; }
-.story-lead__title a { text-decoration: none; color: var(--text); }
-.story-lead__title a:hover { color: var(--pink); }
-.story-lead__sum { max-width: 46ch; margin: 0 0 20px; font-size: var(--t-body); line-height: 1.65; color: #e6dcea; }
-.story-more > li { border-bottom: 1px solid var(--line); }
-.story-row { display: grid; gap: 5px; padding: 22px 0; color: var(--text); text-decoration: none; transition: padding .4s var(--ease-out); }
-.story-row:hover { color: var(--text); padding-left: 12px; }
-.story-row__title { font: 700 var(--t-lead)/1.25 var(--font-body); letter-spacing: var(--track-tight); }
-.story-row:hover .story-row__title { color: var(--pink); }
-.story-row__sum { color: #d6ccdf; font-size: var(--t-body); }
-.story-row__meta { font-size: var(--t-micro); font-weight: 600; letter-spacing: var(--track-ui); color: var(--soft); }
+/* ---- the connections panel (the Characters pages use it; Home's story section was replaced by the picture challenge, home.css) ---- */
 .connections { padding: clamp(24px, 3vw, 36px); border: 1px solid var(--line-strong); border-radius: var(--r-card); background: rgba(26, 23, 64, .72); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 .connections__tag { margin: 0 0 16px; }
 .connections__title { font: 800 var(--t-h4)/1.2 var(--font-body); letter-spacing: var(--track-tight); margin-bottom: 8px; }
 .connections__note { margin: 0 0 20px; color: var(--muted); font-size: var(--t-small); }
-.ties { display: grid; }
-.ties li { display: grid; gap: 4px; padding: 16px 0; border-top: 1px solid var(--line); }
-.ties__who { font-weight: 700; }
-.ties__who a { text-decoration: none; }
-.ties__who a:hover { color: var(--pink); }
-.ties__what { color: var(--muted); font-size: var(--t-small); }
 
 .closing { text-align: center; padding-block: clamp(110px, 16vw, 220px); }
 .closing .container { display: grid; justify-items: center; gap: 36px; }
@@ -459,29 +436,39 @@
   background: radial-gradient(44% 24% at 38% 78%, rgba(255, 138, 172, .55), rgba(255, 138, 172, 0) 72%),
               radial-gradient(30% 16% at 70% 74%, rgba(255, 190, 140, .32), rgba(255, 190, 140, 0) 70%);
 }
-.hero__layer--sky { --z: 1.025; --tx: -1.5px; --ty: 0px; }
-.hero__layer--mid { --z: 1.045; --tx: -4px; --ty: 1px; }
-.hero__layer--fg { --z: 1.07; --tx: -9px; --ty: 2px; }
-.hero__layer--lit { --z: 1.07; --tx: -9px; --ty: 2px; opacity: 0; pointer-events: none; }
-/* One animation per layer moves scale and travel together from rest, so the picture never needs more bleed than the
-   push itself gives and nothing snaps at the turn-around: it eases out, and back, forever. */
+/* The camera has two parts that never fight: an ARRIVAL (a short, decelerating pull from a slightly tighter frame to rest, on `transform`) and a BREATH (a slow push-in
+   and back, on the separate `scale` and `translate` properties, so the two add up). Each layer has its own arrival (--as), push (--z) and travel (--tx, --ty): the pair moves
+   most, the sky least, so depth comes from real separation. The timings are variables because site.css gives them back to a visitor who opts in to motion on a reduced-motion system. */
+.hero__stage { --arrive: 2.6s; --dolly: 12s; --glow: 13s; --haze: 32s; }
+.hero__layer--sky { --z: 1.035; --tx: -2px; --ty: 0px; --as: 1.012; }
+.hero__layer--mid { --z: 1.06; --tx: -6px; --ty: 1px; --as: 1.028; }
+.hero__layer--fg { --z: 1.095; --tx: -12px; --ty: 2px; --as: 1.05; }
+.hero__layer--lit { --z: 1.095; --tx: -12px; --ty: 2px; --as: 1.05; opacity: 0; pointer-events: none; }
 @keyframes heroDolly { to { scale: var(--z); translate: var(--tx) var(--ty); } }
+@keyframes heroArrive { from { transform: scale(var(--as, 1.03)); } to { transform: scale(1); } }
 @keyframes heroHaze { from { translate: -3% 0; } to { translate: 3.5% 1.2%; } }
 @keyframes heroGlow { from { opacity: .28; scale: 1; } to { opacity: .78; scale: 1.06; } }
-.motion-on .hero__stage .hero__layer { animation: heroDolly 26s cubic-bezier(.45, .05, .55, .95) infinite alternate both; will-change: scale, translate; }
-.motion-on .hero__stage .hero__haze { animation: heroHaze 41s ease-in-out infinite alternate both; }
-.motion-on .hero__stage .hero__glow { animation: heroGlow 13s ease-in-out infinite alternate both; transform-origin: 40% 78%; }
+.motion-on .hero__stage .hero__layer { animation: heroDolly var(--dolly) cubic-bezier(.45, .05, .55, .95) infinite alternate both, heroArrive var(--arrive) cubic-bezier(.16, 1, .3, 1) both; }
+.motion-on .hero__stage .hero__haze { animation: heroHaze var(--haze) ease-in-out infinite alternate both; }
+.motion-on .hero__stage .hero__glow { animation: heroGlow var(--glow) ease-in-out infinite alternate both; transform-origin: 40% 78%; }
+/* The layers are only promoted to the GPU while they are moving: off screen, behind a dialog or in a hidden tab they are plain pictures (no standing textures). */
+.motion-on .hero__stage:not(.is-paused):not(.is-hidden) .hero__layer { will-change: scale, translate; }
+/* The three layers arrive together: until the pictures are decoded (the script adds .is-ready, at the latest after 2.2 s) the sunset gradient behind them is all there is,
+   so the artwork fades in whole instead of appearing layer by layer. Without script, or if it never runs, the CSS reveals it by itself after 1.6 s. */
+html.js .hero__stage { opacity: 0; animation: heroStageIn .7s var(--ease) 1.6s forwards; }
+html.js .hero__stage.is-ready { opacity: 1; animation: none; transition: opacity .6s var(--ease); }
+@keyframes heroStageIn { to { opacity: 1; } }
 /* The pair catch the same sunset light as the glow, a touch warmer when it is strongest: a pre-warmed copy of the cut-out
    figures (never of the whole picture) cross-fades over them. Same travel as the pair, so it sits exactly on them, and it
    costs only an opacity change: no blend mode, no filter. */
 @keyframes heroLit { from { opacity: 0; } to { opacity: .34; } }
-.motion-on .hero__stage .hero__layer--lit { animation: heroDolly 26s cubic-bezier(.45, .05, .55, .95) infinite alternate both, heroLit 13s ease-in-out infinite alternate both; }
-.hero__stage.is-paused *, .hero__stage.is-hidden * { animation-play-state: paused !important; }
+.motion-on .hero__stage .hero__layer--lit { animation: heroDolly var(--dolly) cubic-bezier(.45, .05, .55, .95) infinite alternate both, heroLit var(--glow) ease-in-out infinite alternate both, heroArrive var(--arrive) cubic-bezier(.16, 1, .3, 1) both; }
+.hero__stage.is-paused *, .hero__stage.is-hidden *, html.has-modal .hero__stage * { animation-play-state: paused !important; }
 @media (max-width: 760px) {
-  .hero__layer--sky { --z: 1.015; --tx: 0px; --ty: 0px; }
-  .hero__layer--mid { --z: 1.03; --tx: -2px; --ty: 0px; }
-  .hero__layer--fg { --z: 1.05; --tx: -4px; --ty: 0px; }
-  .motion-on .hero__stage .hero__haze { animation: none; }           /* phones: the push-in and its depth, nothing more */
-  .motion-on .hero__stage .hero__glow { animation-duration: 16s; }
+  .hero__stage { --dolly: 10s; --glow: 16s; }
+  .hero__layer--sky { --z: 1.02; --tx: 0px; --ty: 0px; --as: 1.008; }
+  .hero__layer--mid { --z: 1.04; --tx: -2px; --ty: 0px; --as: 1.018; }
+  .hero__layer--fg { --z: 1.065; --tx: -5px; --ty: 0px; --as: 1.03; }
+  .motion-on .hero__stage .hero__haze { animation: none; }           /* phones: the arrival, the push-in and its depth, nothing more */
   .hero__layer--lit { display: none; }
 }

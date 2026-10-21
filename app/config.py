@@ -3,7 +3,10 @@
 Nothing secret lives in the source code: copy .env.example to .env and edit it.
 """
 import os
+import secrets
+from datetime import timedelta
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from dotenv import load_dotenv
 
@@ -17,6 +20,18 @@ def _int(name, default):
         return int(default)
 
 
+def normalise_origin(value):
+    """'HTTPS://Example.org/' -> 'https://example.org'; None unless it is a bare origin (http or https scheme, a host, no path, query, fragment or credentials)."""
+    parts = urlsplit((value or "").strip().lower().rstrip("/"))
+    if parts.scheme not in ("http", "https") or not parts.netloc or "@" in parts.netloc or parts.path or parts.query or parts.fragment:
+        return None
+    return f"{parts.scheme}://{parts.netloc}"
+
+
+def _origins(name):
+    return tuple(item.strip() for item in os.getenv(name, "").split(",") if item.strip())
+
+
 def _flag(name, default="0"):
     return os.getenv(name, default).strip().lower() in ("1", "true", "yes", "on")
 
@@ -27,7 +42,32 @@ class Config:
     # too, muted. A development setting only (a production run ignores it, see ProductionConfig). A visitor's own
     # choice in the menu (the Motion switch) always wins, in either direction.
     AUTOPLAY_ALWAYS = _flag("TV_AUTOPLAY_ALWAYS")
-    SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-insecure-key")
+    # Signs the session cookie. A development run without SECRET_KEY gets a random key for this process only (so no well-known key ever exists
+    # and sessions simply end when the server restarts). ProductionConfig does not fall back: see check_secret_key().
+    SECRET_KEY = os.getenv("SECRET_KEY") or secrets.token_hex(32)
+    # Sessions: a signed cookie holding only the user id, the time of sign-in and the CSRF token. Never readable by scripts, never sent on cross-site requests.
+    SESSION_COOKIE_NAME = "tv_session"
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_SECURE = False       # True in ProductionConfig (a cookie marked Secure is not sent over plain http)
+    SESSION_REFRESH_EACH_REQUEST = False
+    PERMANENT_SESSION_LIFETIME = timedelta(hours=8)    # the longest a sign-in lasts, however busy the visitor is
+    # Login throttle (in-process; see app/security.py): failures allowed per username+address and per address within the window.
+    LOGIN_MAX_FAILURES = 5
+    LOGIN_MAX_FAILURES_PER_ADDRESS = 20
+    LOGIN_WINDOW_SECONDS = 600
+    # Registration: successful or name-taken sign-ups allowed per client address within the window (the same in-process counter).
+    REGISTER_MAX_PER_WINDOW = 10
+    REGISTER_WINDOW_SECONDS = 3600
+    # Every form on the site is tiny (a password is at most 128 characters): anything larger is refused with 413 before it is read into memory.
+    MAX_CONTENT_LENGTH = 16 * 1024
+    MAX_FORM_MEMORY_SIZE = 16 * 1024
+    # Where the site is reached from. TV_PUBLIC_ORIGINS: comma-separated origins (scheme://host[:port]) that may submit its forms; the CSRF check compares the
+    # Origin header with these and never with the (client-supplied) Host header. Unset in development/testing: the origin of the request itself is used.
+    # REQUIRED, and https only, in production. TV_TRUSTED_PROXIES: how many reverse proxies sit in front (0 = none). Only then are X-Forwarded-For/-Proto read
+    # (ProxyFix), from the right-hand end of the list; the proxy must overwrite, not append to, whatever the client sent.
+    PUBLIC_ORIGINS = _origins("TV_PUBLIC_ORIGINS")
+    TRUSTED_PROXY_COUNT = _int("TV_TRUSTED_PROXIES", 0)
     DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
     DB_PORT = _int("DB_PORT", 3306)
     DB_NAME = os.getenv("DB_NAME", "gta6_vi")
@@ -72,6 +112,8 @@ class ProductionConfig(DevelopmentConfig):
     """A deployed site always respects a visitor's system setting for reduced motion: TV_AUTOPLAY_ALWAYS (a development convenience) is ignored here."""
 
     AUTOPLAY_ALWAYS = False
+    SECRET_KEY = os.getenv("SECRET_KEY")       # no fallback: get_config("production") refuses to start without a real one
+    SESSION_COOKIE_SECURE = True
 
 
 class TestingConfig(Config):
@@ -79,13 +121,60 @@ class TestingConfig(Config):
 
     TESTING = True
     DB_NAME = os.getenv("TEST_DB_NAME", "gta6_vi_test")
+    PUBLIC_ORIGINS = ()            # tests do not depend on the machine's environment
+    TRUSTED_PROXY_COUNT = 0
+
+
+# Values that have appeared in this project's files or are obvious placeholders: never acceptable as a production secret.
+KNOWN_INSECURE_SECRETS = frozenset({"dev-only-insecure-key", "replace-with-a-long-random-string", "change-me", "changeme", "secret", "dev", "development"})
+MIN_SECRET_LENGTH = 32
+MIN_SECRET_DISTINCT = 10          # a sanity check against 'aaaa...' and 'abababab...', not a proof of randomness (token_hex(32) has about 16 distinct characters)
+ENVIRONMENTS = ("development", "production", "testing")
+MAX_TRUSTED_PROXIES = 5
+
+
+def check_secret_key(secret):
+    """Raise RuntimeError unless `secret` can safely sign production sessions. Never includes the value in the message."""
+    if not secret:
+        raise RuntimeError("Refusing to start in production: SECRET_KEY is not set. Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\"")
+    if secret.strip().lower() in KNOWN_INSECURE_SECRETS:
+        raise RuntimeError("Refusing to start in production: SECRET_KEY is a known development or placeholder value.")
+    if len(secret) < MIN_SECRET_LENGTH:
+        raise RuntimeError(f"Refusing to start in production: SECRET_KEY must be at least {MIN_SECRET_LENGTH} characters long.")
+    if len(set(secret)) < MIN_SECRET_DISTINCT:
+        raise RuntimeError("Refusing to start in production: SECRET_KEY is too repetitive to be random. Generate one with secrets.token_hex(32).")
+
+
+def check_origins(origins, require_https=False, required=False):
+    """Raise RuntimeError for a malformed TV_PUBLIC_ORIGINS (and, for production, a missing or non-https one)."""
+    if required and not origins:
+        raise RuntimeError("Refusing to start in production: TV_PUBLIC_ORIGINS is not set. List the public origin(s) of the site, e.g. https://valkyrie.example.org")
+    for origin in origins:
+        clean = normalise_origin(origin)
+        if clean is None:
+            raise RuntimeError("TV_PUBLIC_ORIGINS must list bare origins like https://example.org (a scheme and a host, no path); one entry is not valid.")
+        if require_https and not clean.startswith("https://"):
+            raise RuntimeError("Refusing to start in production: TV_PUBLIC_ORIGINS must use https (the session cookie is marked Secure).")
 
 
 def get_config(name=None):
-    name = (name or os.getenv("FLASK_ENV", "development")).lower()
-    config = TestingConfig if name == "testing" else (ProductionConfig if name == "production" else DevelopmentConfig)
+    """The configuration class for `name`, or for FLASK_ENV (development when it is not set at all). An unrecognised name is an error, never a quiet
+    fall-back to development: a typo such as FLASK_ENV=prod must not start the site with development settings."""
+    requested = name if name is not None else os.getenv("FLASK_ENV", "development")
+    environment = (requested or "").strip().lower()
+    if environment not in ENVIRONMENTS:
+        raise RuntimeError(f"Unknown configuration {requested!r}: FLASK_ENV must be one of {', '.join(ENVIRONMENTS)}.")
+    config = {"testing": TestingConfig, "production": ProductionConfig, "development": DevelopmentConfig}[environment]
     if config is TestingConfig and not config.DB_NAME.endswith("_test"):
         raise RuntimeError("Refusing to run tests: TEST_DB_NAME must end with '_test'.")
     if config is DevelopmentConfig and config.DB_NAME.endswith("_test"):
         raise RuntimeError("DB_NAME must not be the test database.")
+    if not 0 <= config.TRUSTED_PROXY_COUNT <= MAX_TRUSTED_PROXIES:
+        raise RuntimeError(f"TV_TRUSTED_PROXIES must be between 0 and {MAX_TRUSTED_PROXIES}.")
+    check_origins(config.PUBLIC_ORIGINS)
+    if config is ProductionConfig:
+        if config.DB_NAME.endswith("_test") or config.DB_NAME == TestingConfig.DB_NAME:
+            raise RuntimeError("Refusing to start in production: DB_NAME is a test database.")
+        check_secret_key(config.SECRET_KEY)
+        check_origins(config.PUBLIC_ORIGINS, require_https=True, required=True)
     return config

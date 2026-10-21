@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 {% from "_components.html" import badge, type_badge, page_hero, provenance, person_item %}
+{% from "account/_form.html" import save_control with context %}
 {% block title %}{{ mission.title }}{% endblock %}
 {% block description %}{{ mission.summary }}{% endblock %}
 {% block content %}
 {% call page_hero('Story' if mission.mission_type == 'story' else 'Story · ' ~ (mission.mission_type | capitalize), mission.title, mission.summary, cover=mission.backdrop, tall=true) %}
+  {{ save_control('missions', mission.slug, mission.title) }}
   {% if mission.backdrop %}<p class="hero-caption">Backdrop: Rockstar artwork of {{ mission.backdrop_region }}, not of this story.</p>{% endif %}
 {% endcall %}
 

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "_components.html" import badge, type_badge, picture, initials, vehicle_slide %}
 {% block header_class %}{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}"><script src="{{ url_for('static', filename='js/home.js') }}" defer></script>{% endblock %}
 {% block description %}Meet Jason and Lucia, explore the six regions and see the vehicles of Grand Theft Auto VI in a fan-made guide by Team Valkyrie.{% endblock %}
 {% block content %}
 {% set featured_video = videos[0] if videos else none %}
@@ -19,8 +20,7 @@
     {{ picture(c.poster, fallback='', sizes='max(100vw, 178vh)', alt='', cls='cinema__poster') }}
     {% endif %}
     {% if native %}
-    <video class="cinema__video" data-cinema-video muted loop playsinline preload="none" aria-hidden="true" tabindex="-1"
-           {% if native.poster %}poster="{{ media_file_url(native.poster) }}"{% endif %}>
+    <video class="cinema__video" data-cinema-video muted loop playsinline preload="none" aria-hidden="true" tabindex="-1">
       {% if native.mobile %}<source src="{{ media_file_url(native.mobile) }}" media="(max-width: 700px)" type="video/mp4">{% endif %}
       <source src="{{ media_file_url(native.video) }}" type="video/mp4">
     </video>
@@ -153,9 +153,7 @@
         <img class="cast__still" data-still src="{{ image_src(first.cover.embed_url, 1280) if first.cover else '' }}" alt="" referrerpolicy="no-referrer"
              {% if not first.cover or not image_src(first.cover.embed_url, 1280) %}hidden{% endif %}>
         {% endif %}
-        {% if reel %}<video class="cast__video" data-video-stage muted loop playsinline preload="none"
-                            {% if reel.poster %}poster="{{ media_file_url(reel.poster) }}"{% endif %}
-                            aria-label="Reel of official character clips"></video>{% endif %}
+        {% if reel %}<video class="cast__video" data-video-stage muted loop playsinline preload="none" aria-label="Reel of official character clips"></video>{% endif %}
         <div class="cast__shade" aria-hidden="true"></div>
         {% if reel %}<button class="optin" type="button" data-motion-optin hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> Play the reel</button>{% endif %}
         <div class="cast__caption" aria-live="polite">
@@ -255,60 +253,74 @@
 </section>
 {% endif %}
 
-{# ============================== STORIES ============================== #}
+{# ============================== THE CHALLENGE ============================== #}
+{# "How well do you know Leonida?" replaces the Stories section. Five of Rockstar's own pictures, one at a time: name the person, the place or the machine, and the answer opens the site's own page for it.
+   Everything comes from database rows the Characters, Leonida and Garage pages already show; nothing is invented. Without script the section is three plain links. #}
 {% set stories_bg = backdrops.get('shot-vice-city-11') %}
-<section class="section band stories chapter" id="stories" aria-labelledby="stories-title" data-chapter="Stories">
+{% if challenge %}
+<section class="section band challenge chapter" id="challenge" aria-labelledby="challenge-title" data-chapter="The challenge">
   <div class="band__bg" aria-hidden="true">{{ picture(stories_bg, alt='', sizes='100vw') }}</div>
   <div class="band__shade" aria-hidden="true"></div>
   <div class="container">
-    <div class="stories__grid">
-      <div class="stories__main">
-        <div class="section-head reveal">
-          <p class="eyebrow">Stories</p>
-          <h2 id="stories-title">Tales from the waterfront</h2>
-          <p class="subtitle">Original stories by Team Valkyrie, set in the real regions of Leonida and written by us.</p>
-        </div>
-        {% if missions %}
-        {% set lead = missions[0] %}
-        <article class="story-lead reveal">
-          <p class="story-lead__kicker">{{ lead.mission_type | capitalize }} <span aria-hidden="true">&middot;</span> Team Valkyrie original</p>
-          <h3 class="story-lead__title"><a href="{{ url_for('pages.mission_detail', slug=lead.slug) }}">{{ lead.title }}</a></h3>
-          <p class="story-lead__sum">{{ lead.summary }}</p>
-          <a class="link-arrow" href="{{ url_for('pages.mission_detail', slug=lead.slug) }}">Read the story</a>
-        </article>
-        <ul class="story-more">
-          {% for m in missions[1:] %}
-          <li class="reveal" data-delay="{{ loop.index }}">
-            <a class="story-row" href="{{ url_for('pages.mission_detail', slug=m.slug) }}">
-              <span class="story-row__title">{{ m.title }}</span>
-              <span class="story-row__sum">{{ m.summary }}</span>
-              <span class="story-row__meta">{{ m.mission_type | capitalize }} <span aria-hidden="true">&middot;</span> Team Valkyrie original</span>
-            </a>
-          </li>
-          {% endfor %}
+    <div class="section-head reveal">
+      <p class="eyebrow">Test yourself</p>
+      <h2 id="challenge-title">How well do you know Leonida?</h2>
+      <p class="subtitle">Five of Rockstar&rsquo;s own pictures. Name the person, the place or the machine, then step inside to see more.</p>
+    </div>
+
+    <div class="quiz reveal" data-quiz data-prefix="{{ challenge.prefix }}" data-rounds="{{ challenge.rounds }}" data-quiz-data='{{ challenge | tojson }}'>
+
+      <div class="quiz__plain">
+        <ul class="quiz__plain-list">
+          <li><a class="pill" href="{{ url_for('pages.characters') }}">Meet the people</a></li>
+          <li><a class="pill" href="{{ url_for('pages.regions') }}">Explore the places</a></li>
+          <li><a class="pill" href="{{ url_for('pages.vehicles') }}">See the machines</a></li>
         </ul>
-        {% endif %}
-        <p class="section-more"><a class="link-arrow" href="{{ url_for('pages.missions') }}">Read all stories</a></p>
       </div>
 
-      {% if official_links %}
-      <aside class="connections reveal" aria-labelledby="links-title">
-        <p class="connections__tag">{{ badge('official') }}</p>
-        <h3 class="connections__title" id="links-title">Who knows whom</h3>
-        <p class="connections__note">Connections between Rockstar's own characters.</p>
-        <ul class="ties">
-          {% for l in official_links %}
-          <li>
-            <span class="ties__who"><a href="{{ url_for('pages.character_detail', slug=l.from_slug) }}">{{ l.from_name }}</a> <span aria-hidden="true">&middot;</span> <a href="{{ url_for('pages.character_detail', slug=l.to_slug) }}">{{ l.to_name }}</a></span>
-            <span class="ties__what">{{ l.description }}</span>
-          </li>
-          {% endfor %}
-        </ul>
-      </aside>
-      {% endif %}
+      <div class="quiz__ui" data-quiz-ui hidden>
+        <div class="quiz__stage">
+          <figure class="quiz__frame">
+            <img class="quiz__img" data-quiz-img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="" width="960" height="540" decoding="async" referrerpolicy="no-referrer">
+            <span class="quiz__veil" data-quiz-veil aria-hidden="true"><span>Loading the picture</span></span>
+          </figure>
+          <div class="quiz__panel">
+            <div class="quiz__top">
+              <p class="quiz__round" data-quiz-round>Picture 1 of {{ challenge.rounds }}</p>
+              <p class="quiz__score" data-quiz-score>0 right</p>
+            </div>
+            <h3 class="quiz__ask" id="quiz-ask" data-quiz-ask tabindex="-1">Who is this?</h3>
+            <div class="quiz__options" role="group" aria-labelledby="quiz-ask" data-quiz-options></div>
+
+            <div class="quiz__reveal" data-quiz-reveal aria-live="polite" hidden>
+              <p class="quiz__verdict" data-quiz-verdict></p>
+              <p class="quiz__line" data-quiz-line></p>
+              <p class="quiz__who" data-quiz-who hidden></p>
+              <div class="quiz__actions">
+                <a class="pill" data-quiz-link href="#">Read more</a>
+                <button class="btn" type="button" data-quiz-next>Next picture</button>
+              </div>
+            </div>
+
+            <div class="quiz__end" data-quiz-end aria-live="polite" hidden>
+              <p class="quiz__verdict" data-quiz-total></p>
+              <p class="quiz__line" data-quiz-note></p>
+              <div class="quiz__actions">
+                <button class="btn" type="button" data-quiz-again>Play again</button>
+                <a class="pill" href="{{ url_for('pages.characters') }}">Meet the people</a>
+                <a class="pill" href="{{ url_for('pages.regions') }}">Explore the places</a>
+                <a class="pill" href="{{ url_for('pages.vehicles') }}">See the machines</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <p class="quiz__foot reveal">Pictures and facts are Rockstar&rsquo;s own. Looking for something to read instead? <a href="{{ url_for('pages.missions') }}">Team Valkyrie&rsquo;s original stories</a> are fan fiction, set in the real regions of Leonida.</p>
   </div>
 </section>
+{% endif %}
 
 {# ============================== TRAILERS AND SCREENSHOTS ============================== #}
 <section class="section chapter" id="media" aria-labelledby="media-title" data-chapter="Trailers">
@@ -363,6 +375,46 @@
 
 {# ============================== MOMENT 3: LAST LIGHT ============================== #}
 {{ cinema_section(cinemas.get('moment-3'), 'finale', 'finale') }}
+
+{# ============================== THE RELEASE ============================== #}
+{# A compact, honest block: Rockstar's own artwork, release date, platforms, a link to where Rockstar takes pre-orders and its newest film. Every fact is media_slots.OFFICIAL_RELEASE (checked
+   on rockstargames.com/VI); nothing is sold here and no payment is ever asked for. #}
+{% if release and release.art %}
+<section class="section release chapter" id="release" aria-labelledby="release-title" data-chapter="The release">
+  <div class="container--wide">
+    <div class="release__grid">
+      <figure class="release__art reveal">
+        {{ picture(release.art, fallback='VI', sizes='(min-width: 1000px) 56vw, 100vw', alt='Official key art for Grand Theft Auto VI from Rockstar Games: Jason and Lucia, with the people and machines of Leonida around the logo') }}
+        <figcaption class="release__credit">Official key art &copy; Rockstar Games</figcaption>
+      </figure>
+
+      <div class="release__copy">
+        <p class="eyebrow reveal">{{ badge('official') }} <span>From Rockstar&rsquo;s own page</span></p>
+        <h2 id="release-title" class="reveal">Coming <span class="release__date">{{ release.date }}</span></h2>
+        <ul class="release__platforms reveal" aria-label="Platforms Rockstar lists">
+          {% for p in release.platforms %}<li>{% set parts = p.split('|') %}{{ parts[0] }}{% if parts | length > 1 %}<span class="release__bar">|</span>{{ parts[1] }}{% endif %}</li>{% endfor %}
+        </ul>
+        <div class="release__actions reveal">
+          <a class="btn" href="{{ release.preorder_url }}" target="_blank" rel="noopener noreferrer">Pre-order on Rockstar&rsquo;s site<svg class="i-ext" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+          <a class="btn btn--ghost" href="{{ release.editions_url }}" target="_blank" rel="noopener noreferrer">See the editions<svg class="i-ext" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        </div>
+        <p class="release__note reveal">The &ldquo;Pre-Order Now&rdquo; button on rockstargames.com/VI opens Rockstar&rsquo;s own list of where to buy; it has no address of its own, so this link takes you to that page.</p>
+        <dl class="release__facts reveal">
+          <div><dt>Editions</dt><dd>{{ release.editions | join(' and ') }}</dd></div>
+          <div><dt>Pre-order bonuses</dt><dd>{{ release.bonuses | join(' and ') }}</dd></div>
+        </dl>
+        {% if release.video %}
+        <button class="release__film reveal" type="button" data-video="{{ player_src(release.video.embed_url, true) }}" data-title="{{ release.video.title }}">
+          <span class="release__film-art">{{ picture(release.poster, fallback='VI', sizes='(min-width: 1000px) 18vw, 40vw', alt='') }}<span class="release__film-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span></span>
+          <span class="release__film-text"><b>Watch the Launch Trailer</b><small>Official video{% if release.video_note %} &middot; {{ release.video_note }}{% endif %}</small></span>
+        </button>
+        {% endif %}
+        <p class="release__fine reveal">Team Valkyrie is an unofficial fan project, not Rockstar&rsquo;s website, and it sells nothing. The key art, the film and the facts above are Rockstar&rsquo;s; they were checked on rockstargames.com on {{ release.checked }}.</p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
 
 {# ============================== CLOSING ============================== #}
 {% set closing_bg = backdrops.get('art-jason-lucia-02') %}

@@ -91,3 +91,13 @@ def cur(conn):
     cursor = conn.cursor(dictionary=True)
     yield cursor
     cursor.close()
+
+
+@pytest.fixture()
+def clean_accounts(app):
+    """For the account and favourites tests, which really commit rows. Before and after each test: prove (on the connection actually used) that the active
+    database is a *_test one, then remove only the accounts the tests made (usernames starting tt_; their favourites go with them) and forget login failures."""
+    from tests.account_helpers import wipe_test_accounts
+    wipe_test_accounts(app)
+    yield
+    wipe_test_accounts(app)

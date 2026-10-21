@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 {% from "_components.html" import badge, type_badge, page_hero, provenance, person_item %}
+{% from "account/_form.html" import save_control with context %}
 {% block title %}{{ location.name }}{% endblock %}
 {% block description %}{{ location.summary }}{% endblock %}
 {% block content %}
 {% call page_hero(location.region_name ~ ' · ' ~ (location.location_type | capitalize), location.name, location.summary, cover=location.region_cover, tall=true) %}
+  {{ save_control('locations', location.slug, location.name) }}
   {% if location.region_cover %}<p class="hero-caption">Backdrop: Rockstar artwork of {{ location.region_name }}, not of this exact place.</p>{% endif %}
 {% endcall %}
 

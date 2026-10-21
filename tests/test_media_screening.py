@@ -287,9 +287,10 @@ def test_the_stories_routes_records_and_api_are_untouched(client, app):
     assert client.get("/locations").status_code == 302 and client.get("/locations/neon-row-district").status_code == 200       # the temporary redirect and the place pages stay
 
 
-def test_the_home_page_still_has_its_stories_chapter(client):
+def test_the_home_page_still_links_to_the_stories(client):
+    """Stories left the menu, and the Home section that presented them became the picture challenge, but Home still leads to them (labelled as fan fiction)."""
     home = page(client, "/")
-    assert 'id="stories"' in home and "Read all stories" in home and 'href="/missions"' in home
+    assert 'href="/missions"' in home and "original stories" in home and "fan fiction" in home
 
 
 def test_the_old_local_clip_route_and_the_new_page_do_not_collide(client):
