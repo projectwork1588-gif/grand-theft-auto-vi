@@ -72,6 +72,15 @@ a:hover > .vd-view, a:focus-visible > .vd-view, .vd-view:hover { border-color: v
 @media (min-width: 900px) and (max-height: 860px) { .vd-hero--tr .plate__make, .vd-hero--tr .vd-kicker span:nth-child(3) { display: none; } .vd-hero--tr .vd-hero__copy { top: calc(var(--header-h) + 8px); } }
 @media (min-width: 900px) and (max-height: 760px) { .vd-hero--tr .plate__model { font-size: var(--t-h3); } .vd-hero--tr .vd-hero__line { font-size: var(--t-small); } }
 @media (min-width: 900px) and (max-width: 1199px) { .vd-hero__copy .plate__model { font-size: var(--t-h2); } .vd-hero__line { font-size: var(--t-body); } .vd-hero--tr .plate__model { font-size: var(--t-h3); } }
+/* The top-right openings (the Stanier, the Ganado) hang from the header and have exactly the open water above the machine for their words, so a control added below the words
+   pushes "The machine" down into the picture (it did, 54 px, at 1440 x 900). The Save control therefore shares the cue's row, to its left; everything stays right-aligned, so the
+   words above keep their places. Below 900 px the opening is laid out differently and had room already. */
+@media (min-width: 900px) {
+  .vd-hero--tr .vd-hero__copy { grid-template-columns: auto auto; justify-content: end; column-gap: 14px; }
+  .vd-hero--tr .vd-hero__copy > * { grid-column: 1 / -1; }
+  .vd-hero--tr .vd-hero__copy > .fav { grid-column: 1; }
+  .vd-hero--tr .vd-hero__copy > .vd-cue { grid-column: 2; }
+}
 /* a laptop's width: the lower-right words are a little smaller, so they stay on the open water and road beside the machine */
 @media (min-width: 900px) and (max-width: 1340px) { .vd-hero--br .vd-kicker span:nth-child(3) { display: none; } .vd-hero--br .plate__model { font-size: var(--t-h2); } .vd-hero--br .plate__model--long { font-size: var(--t-h3); } }
 
