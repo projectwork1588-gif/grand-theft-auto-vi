@@ -93,14 +93,23 @@ Open <http://127.0.0.1:5000/>.
 
 ### Upgrading a database you already set up in Phase 1
 
-Phase 2 adds the official media records, two small link tables (`media_regions`, `media_vehicles`), five official vehicles, natural-sounding copy and the local-loop references, in four migrations. **Your existing data is never dropped.** The migrations only create those tables if missing, insert or refresh the new rows, and update the text of concept rows. They never touch what Rockstar states.
+Phase 2 adds the official media records, two small link tables (`media_regions`, `media_vehicles`), five official vehicles, natural-sounding copy and the local-loop references, in the first four migrations (001 to 004); the project now has ten in all (005 to 010 add the later work, including the optional account email in 010). **Your existing data is never dropped.** Those four migrations only create those tables if missing, insert or refresh the new rows, and update the text of concept rows. They never touch what Rockstar states.
 
 ```powershell
-python -m scripts.migrate_db --plan     # READ-ONLY: shows what exists now and what would run
-python -m scripts.migrate_db            # applies it after you type YES
+python -m scripts.migrate_db --plan     # READ-ONLY: shows what exists now and what would run (all ten files)
+python -m scripts.migrate_db            # your own development database: runs ALL ten files, in order, after you type YES ALL
 ```
 
-Until you apply them, every page still works, but without the official images and trailers (original fallbacks are shown instead), and the Garage is empty because it lists only official vehicles.
+There is no migration history: nothing records which files were applied, so a bare run applies the full set again, every time. **Do not run the full set against a live database.** For a live database, choose the exact file name in `database/migrations/`, inspect it first, then run only that file:
+
+```powershell
+python -m scripts.migrate_db --only <filename> --plan    # READ-ONLY: previews only that file (a file with built-in checks, such as 010, also gets its prerequisite checks)
+python -m scripts.migrate_db --only <filename>           # applies only that file, after you type YES
+```
+
+The production procedure (backup, plan, apply, verify) is in [docs/ACCOUNTS.md](docs/ACCOUNTS.md), section "Migration 010".
+
+Until you apply the first four migrations (001 to 004), every page still works, but without the official images and trailers (original fallbacks are shown instead), and the Garage is empty because it lists only official vehicles.
 
 ### What `setup_db` does (and never does)
 
