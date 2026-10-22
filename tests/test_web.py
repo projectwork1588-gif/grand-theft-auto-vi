@@ -25,8 +25,7 @@ def test_homepage_names_come_from_the_database(client, cur):
 
 def test_health_reports_database_connection(client):
     body = client.get("/health").get_json()
-    assert body["status"] == "ok" and body["database"] == "connected"
-    assert body["mysql_version"].startswith("8.")
+    assert body == {"status": "ok", "database": "connected"}                       # only that: the server version is not published (see tests/test_phase3a_hardening.py)
 
 
 def test_unknown_page_gets_html_404(client):

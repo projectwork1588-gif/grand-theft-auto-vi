@@ -1,4 +1,6 @@
 """Application factory: builds and configures the Flask app."""
+import logging
+
 from flask import Flask, g
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -33,7 +35,12 @@ def create_app(config_name=None):
     app.config.from_object(config)
     app.config["DB_CONFIG"] = config  # used by app.db to build the connection pool
     app.config["CONFIG_NAME"] = config.__name__
-    app.logger.info("Starting with %s", config.__name__)
+    if app.logger.level == logging.NOTSET:
+        app.logger.setLevel(logging.INFO)       # the default (WARNING) would hide the line below; an operator who set a level of their own keeps it
+    # One line an operator can look for. Only facts that are safe to print: which configuration, and yes/no or counts. Never the secret key, the database name,
+    # user or password, or the origin addresses themselves.
+    app.logger.info("Starting with %s (secure session cookie: %s, public origins configured: %d, trusted proxies: %d)", config.__name__,
+                    "yes" if app.config["SESSION_COOKIE_SECURE"] else "no", len(app.config["PUBLIC_ORIGINS"]), app.config["TRUSTED_PROXY_COUNT"])
     if app.config["TRUSTED_PROXY_COUNT"]:
         # Only when the operator says how many reverse proxies are in front (TV_TRUSTED_PROXIES): client address and scheme are then read from the proxies' headers.
         # Never enabled by default, and the Host header is never taken from a forwarded header.

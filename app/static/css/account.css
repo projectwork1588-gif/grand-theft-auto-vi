@@ -65,3 +65,10 @@
 .site-menu__linkbtn { display: block; padding: 10px 0; border: 0; background: none; cursor: pointer; text-align: left; color: var(--text-2); font: 600 var(--t-body)/1.3 var(--font-text); letter-spacing: 0; }
 .site-menu__linkbtn:hover { color: var(--text); }
 .site-menu__linkbtn:focus-visible { outline: 2px solid var(--pink); outline-offset: 3px; }
+
+/* The site-wide reduced-motion rule (site.css) gives every animation a delay of 0 and a duration of about 0, which would hide a status message the instant it
+   appears. The message itself does not move: only its removal after 7 seconds is timed, so that delay is kept (a rule with a class selector and !important wins
+   over the site-wide * rule). */
+@media (prefers-reduced-motion: reduce) {
+  .flash-stack .flash { animation-delay: 7s !important; }
+}

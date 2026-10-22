@@ -6,7 +6,7 @@ COUNTED_TABLES = ("regions", "locations", "characters", "vehicles", "missions", 
 
 
 def ping():
-    return query_one("SELECT 1 AS ok, VERSION() AS version")
+    return query_one("SELECT 1 AS ok")
 
 
 def table_counts():

@@ -27,7 +27,7 @@
 | `/account/favourites` | The signed-in visitor's saved characters, vehicles, places and stories, with a Remove button each. Signed-out visitors are sent to `/login` |
 | `/account/password` | Change password (the current password is verified first). Signed-in only |
 | `POST /favourites/<kind>/<slug>`, `POST /favourites/<kind>/<slug>/remove` | Save or remove a favourite (`kind`: `characters`, `vehicles`, `locations`, `missions`). Signed-in only; always acts on the signed-in user; answers 303; 404 for an unknown or unpublished record. Every POST needs the CSRF token (400 without) |
-| `/health` | JSON health check (200, or 503 when MySQL is down). Not linked from the site |
+| `/health` | JSON health check, public and deliberately bare: `{"status":"ok","database":"connected"}` (200), or `{"status":"error","database":"unreachable"}` (503) when MySQL is down. No server version, host, account or error text (the reason goes to the server log only). Not linked from the site |
 
 ### JSON API (`/api/v1`)
 

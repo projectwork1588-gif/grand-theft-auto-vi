@@ -1,5 +1,5 @@
 """The homepage, about and credits pages, locally built media, and the health check."""
-from flask import Blueprint, abort, jsonify, render_template, request, send_from_directory, url_for
+from flask import Blueprint, abort, current_app, jsonify, render_template, request, send_from_directory, url_for
 
 from .. import local_media
 from ..db import DatabaseError
@@ -75,7 +75,9 @@ def media_file(filename):
 
 @main_bp.route("/health")
 def health():
+    """Is the site up and the database reachable? Public, so it says only that: no server version, address, account or error text."""
     try:
         return jsonify(system.health())
-    except DatabaseError:
+    except DatabaseError as error:
+        current_app.logger.warning("Health check: the database could not be reached: %s", error)      # the reason goes to the server log only, never to the visitor
         return jsonify({"status": "error", "database": "unreachable"}), 503

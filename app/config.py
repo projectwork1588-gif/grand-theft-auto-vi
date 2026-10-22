@@ -3,6 +3,7 @@
 Nothing secret lives in the source code: copy .env.example to .env and edit it.
 """
 import os
+import re
 import secrets
 from datetime import timedelta
 from pathlib import Path
@@ -26,6 +27,15 @@ def normalise_origin(value):
     if parts.scheme not in ("http", "https") or not parts.netloc or "@" in parts.netloc or parts.path or parts.query or parts.fragment:
         return None
     return f"{parts.scheme}://{parts.netloc}"
+
+
+def parse_proxy_count(raw):
+    """TV_TRUSTED_PROXIES: not set -> 0; a whole number written in plain digits -> that number; ANYTHING else (blank, 'abc', '1.5', '-1', '+2', '1 2') comes back
+    unchanged as a string, which get_config() refuses. A typo must stop the site from starting, not quietly mean 'no proxies'."""
+    if raw is None:
+        return 0
+    text = raw.strip()
+    return int(text) if re.fullmatch(r"[0-9]{1,3}", text) else raw
 
 
 def _origins(name):
@@ -55,6 +65,7 @@ class Config:
     # Login throttle (in-process; see app/security.py): failures allowed per username+address and per address within the window.
     LOGIN_MAX_FAILURES = 5
     LOGIN_MAX_FAILURES_PER_ADDRESS = 20
+    LOGIN_MAX_FAILURES_PER_ACCOUNT = 50      # per username, from ALL addresses together (a guessing run spread over many addresses); same window
     LOGIN_WINDOW_SECONDS = 600
     # Registration: successful or name-taken sign-ups allowed per client address within the window (the same in-process counter).
     REGISTER_MAX_PER_WINDOW = 10
@@ -67,7 +78,7 @@ class Config:
     # REQUIRED, and https only, in production. TV_TRUSTED_PROXIES: how many reverse proxies sit in front (0 = none). Only then are X-Forwarded-For/-Proto read
     # (ProxyFix), from the right-hand end of the list; the proxy must overwrite, not append to, whatever the client sent.
     PUBLIC_ORIGINS = _origins("TV_PUBLIC_ORIGINS")
-    TRUSTED_PROXY_COUNT = _int("TV_TRUSTED_PROXIES", 0)
+    TRUSTED_PROXY_COUNT = parse_proxy_count(os.getenv("TV_TRUSTED_PROXIES"))
     DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
     DB_PORT = _int("DB_PORT", 3306)
     DB_NAME = os.getenv("DB_NAME", "gta6_vi")
@@ -123,6 +134,7 @@ class TestingConfig(Config):
     DB_NAME = os.getenv("TEST_DB_NAME", "gta6_vi_test")
     PUBLIC_ORIGINS = ()            # tests do not depend on the machine's environment
     TRUSTED_PROXY_COUNT = 0
+    AUTOPLAY_ALWAYS = False        # a developer's TV_AUTOPLAY_ALWAYS=1 (a development convenience) must not leak into tests or QA runs
 
 
 # Values that have appeared in this project's files or are obvious placeholders: never acceptable as a production secret.
@@ -169,7 +181,10 @@ def get_config(name=None):
         raise RuntimeError("Refusing to run tests: TEST_DB_NAME must end with '_test'.")
     if config is DevelopmentConfig and config.DB_NAME.endswith("_test"):
         raise RuntimeError("DB_NAME must not be the test database.")
-    if not 0 <= config.TRUSTED_PROXY_COUNT <= MAX_TRUSTED_PROXIES:
+    proxies = config.TRUSTED_PROXY_COUNT
+    if not isinstance(proxies, int) or isinstance(proxies, bool):
+        raise RuntimeError(f"TV_TRUSTED_PROXIES must be a whole number between 0 and {MAX_TRUSTED_PROXIES} (digits only); it is not.")
+    if not 0 <= proxies <= MAX_TRUSTED_PROXIES:
         raise RuntimeError(f"TV_TRUSTED_PROXIES must be between 0 and {MAX_TRUSTED_PROXIES}.")
     check_origins(config.PUBLIC_ORIGINS)
     if config is ProductionConfig:

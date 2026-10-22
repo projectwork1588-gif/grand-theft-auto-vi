@@ -35,16 +35,21 @@ def register():
         return _to("account.favourites_page")
     if request.method == "GET":
         return _page("account/register.html", errors={}, values={})
-    wait = security.register_blocked_for()
+    wait, ticket = security.begin_registration()                 # check and reserve in one step: simultaneous sign-ups cannot all pass the check
     if wait:
         return _too_many("account/register.html", wait, "accounts created from this address", values={})
     try:
         user = accounts.register(request.form)
     except accounts.FormError as error:
-        if error.status == 409:                      # it got as far as the hash and the INSERT, which is what the limit is for; an invalid form costs nothing
-            security.record_registration()
+        if error.status == 409:                                  # it got as far as the hash and the INSERT, which is what the limit is for
+            security.settle_attempt(ticket)
+        else:                                                    # an invalid form costs nothing
+            security.release_attempt(ticket)
         return _page("account/register.html", error.status, errors=error.errors, values={"username": accounts.normalise_username(request.form.get("username"))[:30]})
-    security.record_registration()
+    except BaseException:                                        # a database or other server error: this sign-up never happened
+        security.release_attempt(ticket)
+        raise
+    security.settle_attempt(ticket)
     security.sign_in(user)
     flash("Your account is ready. You are signed in.", "success")
     return _to("account.favourites_page")
@@ -57,14 +62,18 @@ def login():
     if request.method == "GET":
         return _page("account/login.html", errors={}, values={})
     username = accounts.normalise_username(request.form.get("username"))
-    wait = security.login_blocked_for(username)
+    wait, ticket = security.begin_login_attempt(username)        # check and reserve in one step, BEFORE the (slow) password check
     if wait:
         return _too_many("account/login.html", wait, values={"username": username[:30]})
-    user = accounts.authenticate(request.form)
+    try:
+        user = accounts.authenticate(request.form)
+    except BaseException:                                        # a database or other server error: this attempt never happened
+        security.release_attempt(ticket)
+        raise
     if user is None:
-        security.record_login_failure(username)
+        security.settle_attempt(ticket)                          # a wrong password or an unknown name: it counts
         return _page("account/login.html", 401, errors={"": accounts.GENERIC_LOGIN_ERROR}, values={"username": username[:30]})
-    security.clear_login_failures(username)
+    security.login_succeeded(ticket, username)                   # a success consumes nothing from the failed-attempt budget
     security.sign_in(user)
     flash("You are signed in.", "success")
     return _to("account.favourites_page")
@@ -84,16 +93,21 @@ def password():
     if request.method == "GET":
         return _page("account/password.html", errors={})
     username = g.user["username"]
-    wait = security.login_blocked_for(username)
+    wait, ticket = security.begin_login_attempt(username)        # the "current password" field is a password check, held to the same limits as sign-in
     if wait:
         return _too_many("account/password.html", wait)
     try:
         user = accounts.change_password(g.user, request.form)
     except accounts.FormError as error:
         if "current_password" in error.errors:
-            security.record_login_failure(username)
+            security.settle_attempt(ticket)                      # a wrong current password is a guess: it counts
+        else:
+            security.release_attempt(ticket)                     # the current password was right; a weak or mismatched NEW password is not a guess
         return _page("account/password.html", error.status, errors=error.errors)
-    security.clear_login_failures(username)
+    except BaseException:                                        # a database or other server error: this attempt never happened
+        security.release_attempt(ticket)
+        raise
+    security.login_succeeded(ticket, username)
     security.sign_in(user)             # a new session for this browser; every other browser's session no longer matches the new password
     flash("Your password has been changed.", "success")
     return _to("account.favourites_page")
