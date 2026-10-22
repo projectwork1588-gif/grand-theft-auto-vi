@@ -151,3 +151,42 @@ LEFT JOIN mission_characters mc ON mc.character_id = c.character_id
 WHERE c.content_status = 'demo'
 GROUP BY c.character_id, c.full_name, c.content_status
 ORDER BY c.full_name;
+
+-- 19. CASE: conditional aggregation. Vehicles per category with the official and concept counts as separate columns (SUM over CASE inside one GROUP BY)
+SELECT vc.name AS category,
+       SUM(CASE WHEN v.content_status = 'official' THEN 1 ELSE 0 END) AS official,
+       SUM(CASE WHEN v.content_status = 'demo' THEN 1 ELSE 0 END) AS concept,
+       COUNT(*) AS total
+FROM vehicle_categories vc
+JOIN vehicles v ON v.category_id = vc.category_id
+GROUP BY vc.category_id, vc.name
+ORDER BY total DESC, vc.name;
+
+-- 20. Window functions: rank each story by the size of its cast within its own type (RANK ... PARTITION BY), and a running total of cast links down the list (SUM over an ordered window)
+SELECT m.mission_type, m.title, COUNT(mc.character_id) AS cast_size,
+       RANK() OVER (PARTITION BY m.mission_type ORDER BY COUNT(mc.character_id) DESC) AS rank_in_type,
+       SUM(COUNT(mc.character_id)) OVER (ORDER BY m.title) AS running_cast_links
+FROM missions m
+LEFT JOIN mission_characters mc ON mc.mission_id = m.mission_id
+GROUP BY m.mission_id, m.mission_type, m.title
+ORDER BY m.mission_type, rank_in_type, m.title;
+
+-- 21. CTE (WITH): three chained common table expressions. How many stories touch each region through the places they happen at, and each region's share of all story-place links
+WITH story_places AS (
+    SELECT l.region_id, ml.mission_id
+    FROM mission_locations ml
+    JOIN locations l ON l.location_id = ml.location_id
+),
+per_region AS (
+    SELECT region_id, COUNT(DISTINCT mission_id) AS stories, COUNT(*) AS place_links
+    FROM story_places
+    GROUP BY region_id
+),
+totals AS (
+    SELECT SUM(place_links) AS all_links FROM per_region
+)
+SELECT r.name AS region, pr.stories, pr.place_links, ROUND(100 * pr.place_links / t.all_links, 1) AS share_percent
+FROM per_region pr
+JOIN regions r ON r.region_id = pr.region_id
+CROSS JOIN totals t
+ORDER BY pr.place_links DESC, r.name;

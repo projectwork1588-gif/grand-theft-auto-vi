@@ -36,6 +36,11 @@ erDiagram
     VEHICLES ||--o{ MEDIA_VEHICLES : "shown in"
     MEDIA_ASSETS ||--o{ MEDIA_REGIONS : "shows"
     REGIONS ||--o{ MEDIA_REGIONS : "shown in"
+    RADIO_STATIONS ||--o{ STATION_PREVIEW_TRACKS : "previews"
+    MUSIC_RELEASES ||--o{ MUSIC_TRACKS : "lists"
+    MEDIA_COLLECTIONS ||--o{ MEDIA_COLLECTION_ITEMS : "orders"
+    MEDIA_ASSETS ||--o{ MEDIA_COLLECTION_ITEMS : "appears as"
+    MEDIA_ASSETS |o--o{ MEDIA_COLLECTION_ITEMS : "poster of"
 
     USERS { int user_id PK
             varchar username UK
@@ -109,9 +114,41 @@ erDiagram
                     smallint region_id PK_FK }
     MEDIA_VEHICLES { int media_id PK_FK
                      int vehicle_id PK_FK }
+    RADIO_STATIONS { smallint station_id PK
+                     varchar slug UK
+                     varchar name UK
+                     tinyint sort_order
+                     enum content_status
+                     varchar source_url }
+    STATION_PREVIEW_TRACKS { smallint station_id PK_FK
+                             tinyint sort_order PK
+                             varchar title
+                             varchar artists }
+    MUSIC_RELEASES { smallint release_id PK
+                     varchar slug UK
+                     enum kind
+                     varchar title
+                     enum content_status
+                     varchar source_url }
+    MUSIC_TRACKS { int track_id PK
+                   smallint release_id FK
+                   tinyint sort_order UK
+                   varchar title
+                   varchar artists }
+    MEDIA_COLLECTIONS { smallint collection_id PK
+                        varchar slug UK
+                        varchar title UK
+                        enum kind
+                        enum content_status
+                        varchar source_url }
+    MEDIA_COLLECTION_ITEMS { smallint collection_id PK_FK
+                             smallint position PK
+                             int media_id FK
+                             int poster_media_id FK
+                             varchar title }
 ```
 
-## Tables and why each exists (21)
+## Tables and why each exists (27)
 
 | # | Table | Why it exists | Key points |
 |---|-------|---------------|-----------|
@@ -133,6 +170,12 @@ erDiagram
 | 19 | `media_regions` | **Added in Phase 2.** Many-to-many media <-> region. Official region imagery belongs to regions. Linking it to the fictional demo locations would be misleading. | Composite PK, both FKs ON DELETE CASCADE. Created by `database/migrations/001_phase2_media.sql` and also part of `schema.sql`. |
 | 20 | `media_vehicles` | **Added in the Phase 2 refinement.** Many-to-many media <-> vehicle. Official vehicle screenshots belong to the five vehicles Rockstar names. A concept vehicle never gets one (a test enforces it). | Composite PK, both FKs ON DELETE CASCADE. Created by `database/migrations/002_phase2_garage.sql` and also part of `schema.sql`. |
 | 21 | `character_regions` | **Added in Gate 3A.** Many-to-many character <-> region, only where Rockstar's own text places a person in a region (three rows: Jason Duval and Brian Heder in the Leonida Keys, Boobie Ike in Vice City). Carries the `note` (what the source says) and its `source_url`. Official characters have no invented home place, so this is how a region filter works for them. | Composite PK, both FKs ON DELETE CASCADE, `source_url` NOT NULL. Created by `database/migrations/005_gate3a_cast.sql` and also part of `schema.sql`. |
+| 22 | `radio_stations` | **Added with Music (migration 008).** The radio stations Rockstar lists on its own Music page, in its order. Rows are Rockstar's own information, never audio. | UNIQUE `slug`, `name`. `sort_order` is indexed (`ix_radio_stations_order`). `content_status` and `source_url` with the official-needs-a-source `CHECK`; `verified_on` records when it was checked. |
+| 23 | `station_preview_tracks` | The songs Rockstar lists for a station's preview. A **weak entity**: a preview track means nothing without its station. | Composite PK `(station_id, sort_order)` (the order is part of the key). FK `station_id` ON DELETE CASCADE. |
+| 24 | `music_releases` | The score and the album (`kind` is `score` or `album`) from the same page, with the links Rockstar and the label give. | UNIQUE `slug`. `content_status` and `source_url` with the same `CHECK`. |
+| 25 | `music_tracks` | The tracks (singles) of a release, in order. | Surrogate PK `track_id`, plus UNIQUE `(release_id, sort_order)` so a position holds one track. FK `release_id` ON DELETE CASCADE. `is_score` flags the score track. |
+| 26 | `media_collections` | **Added with the Screening (migration 009).** Rockstar's own section names on its Media pages, with the source page and, where Rockstar offers one, its download address and size. | UNIQUE `slug`, `title`. `kind` is `video`, `clip` or `image`. Same official-needs-a-source `CHECK`. |
+| 27 | `media_collection_items` | The order inside each collection and Rockstar's own title for each item (a video also keeps its date, runtime, description and poster). An **ordered many-to-many** between `media_collections` and `media_assets`; `media_assets` stays the one record of each file. | Composite PK `(collection_id, position)`, plus UNIQUE `(collection_id, media_id)` (a file appears once per collection). FKs `collection_id` and `media_id` ON DELETE CASCADE; `poster_media_id` ON DELETE **SET NULL** (deleting a poster picture clears the reference and keeps the item). |
 
 ### Decision: four favourite tables instead of one "polymorphic" table
 A single `favourites(user_id, entity_type, entity_id)` table cannot have a real foreign key, so MySQL could not stop a
@@ -146,11 +189,14 @@ enforces, not just a convention.
 
 ## Relationship types demonstrated
 
-* **One-to-many:** regions -> locations, vehicle_categories -> vehicles, locations -> characters (home).
-* **Many-to-many:** characters <-> characters, missions <-> characters / vehicles / locations, users <-> each entity (favourites), media <-> characters / locations.
-* **Composite primary keys:** 13 tables (`character_relationships`, `character_regions`, 3 mission junctions, 4 favourites, 4 media junctions).
-* **Cascade rules:** deleting a character removes its junction rows (CASCADE) but only blanks `home_location_id` on
-  characters when a location is deleted (SET NULL). Deleting a region or category that is still in use is **blocked** (RESTRICT).
+* **One-to-many:** regions -> locations, vehicle_categories -> vehicles, locations -> characters (home), radio_stations -> station_preview_tracks, music_releases -> music_tracks.
+* **Many-to-many** (resolved by a link table): characters <-> characters (self-referencing, `CHECK from <> to`), characters <-> regions, missions <-> characters / vehicles / locations, users <-> each entity (favourites), media <-> characters / locations / vehicles / regions, media_collections <-> media_assets (ordered).
+* **Composite primary keys: 15 tables.** 13 are plain many-to-many link tables (`character_relationships`, `character_regions`, 3 mission link tables, 4 favourite tables, 4 media link tables) and 2 carry an order in the key: `station_preview_tracks` `(station_id, sort_order)` and `media_collection_items` `(collection_id, position)`.
+* **Foreign keys: 34**, with these delete rules: **30 CASCADE**, **2 SET NULL**, **2 RESTRICT**.
+  * CASCADE: deleting a parent removes the rows that belong to it (a character's link rows, a station's preview tracks, a collection's items, a user's favourites, a story's links).
+  * SET NULL: deleting a location only blanks `characters.home_location_id`; deleting a poster picture only blanks `media_collection_items.poster_media_id`.
+  * RESTRICT: deleting a region (`locations.region_id`) or a vehicle category (`vehicles.category_id`) that is still in use is **blocked**.
+  * `tests/test_integrity.py` proves these rules against a real database. In the web application the admin area (`docs/ADMIN.md`) lets an administrator delete a story, which shows CASCADE through the pages (the confirmation page counts the link rows and favourites that go with it).
 
 ## Normalization (3NF)
 
@@ -162,14 +208,18 @@ enforces, not just a convention.
 ## Indexes
 
 Primary and unique keys create indexes automatically. Additional ones: `ix_characters_full_name`
-(sorting), `ix_characters_status`, `ix_missions_type`, `ix_media_assets_type`, and a reverse-lookup index on the second column of every junction
+(sorting), `ix_characters_status`, `ix_missions_type`, `ix_media_assets_type`, `ix_radio_stations_order` (station order), and a reverse-lookup index on the second column of every junction
 table (so "which missions feature this character?" does not scan the table). Foreign-key columns are always indexed.
 Search currently uses `LIKE '%text%'`, which cannot use a normal index. That is acceptable at this data size and FULLTEXT is a Phase 4 option.
 
 ## Transactions
 
 * `scripts/init_db.py` loads the seed inside one transaction (all-or-nothing).
-* `app/db.py` provides `transaction()` for multi-table writes (admin relationship editing in Phase 3). `tests/test_db_connection.py` proves it commits on success and rolls back on error.
+* `app/db.py` provides `transaction()`, the **only** way the application writes: one unit of work that commits on success and rolls back on any error. `tests/test_db_connection.py` proves the commit and the rollback.
+  * It cannot nest, and it refuses to end a transaction it did not open (rules and tests: `docs/ACCOUNTS.md`, "Transaction ownership", `tests/test_db_transactions.py`).
+  * Three groups of code write: accounts (sign-up, password change), favourites (save, remove) and the admin Stories area (`docs/ADMIN.md`). A static test fails if any other file contains write SQL, and holds each writer to the rule that every `cursor.execute` sits inside a `with transaction() as cursor:` block.
+* **A multi-table write in practice.** Creating, updating or deleting a story is one transaction: it writes the `missions` row and its rows in `mission_characters`, `mission_vehicles` and `mission_locations` together. Updating locks the story row first (`SELECT ... FOR UPDATE`), so two administrators cannot interleave, and replaces the links atomically. A duplicate title, or a record removed while the form was open (foreign-key error 1452 or 1216), rolls everything back, including links already deleted in the same transaction. `tests/test_admin_transactions.py` lets a real step run, fails the next one, and compares before and after snapshots.
+* No isolation level is set anywhere in the code, so InnoDB's default (REPEATABLE READ) applies. The read helpers open an implicit read snapshot, which `transaction()` ends before it begins a write.
 
 ## Seed data honesty
 
@@ -178,7 +228,7 @@ Search currently uses `LIKE '%text%'`, which cannot use a normal index. That is 
 | Characters | Jason Duval, Lucia Caminos, Cal Hampton, Boobie Ike, Dre'Quan Priest, Raul Bautista, Brian Heder, Real Dimez (8) | `official`: all eight are listed on https://www.rockstargames.com/VI/only-in-leonida (checked 2026-10-09). Descriptions are our own short paraphrases |
 | Characters | 3 fictional characters | `demo` |
 | Regions | Vice City, Leonida Keys, Grassrivers, Port Gellhorn, Ambrosia, Mount Kalaga (6) | `official`: all six are listed on the same Rockstar page. We store only what it states |
-| Locations, vehicles, missions | all | `demo` |
+| Locations, missions | all | `demo` |
 | Relationships | Jason-Lucia, Brian-Jason, Cal-Jason, Boobie Ike-Dre'Quan | `official` (stated on that page). The other three are `demo` |
 | Vehicles | '95 Grotti Cheetah, '67 Vapid Dominator Buggy, Shitzu Squalo, Vapid Stanier, Vapid Ganado Retro Build (5), each with Rockstar's own screenshots | `official` (names from rockstargames.com/VI/editions and the screenshots page). No specifications are stored because Rockstar has published none |
 | Vehicles | 8 concept vehicles used by the story archive | `demo` (shown as Concept, no public page) |
@@ -188,7 +238,24 @@ Search currently uses `LIKE '%text%'`, which cannot use a normal index. That is 
 
 Demo missions deliberately contain **only demo characters**, so the project never invents story for real GTA VI characters.
 
-## Phase 2 migrations (non-destructive)
+## Migrations 001 to 010 (non-destructive)
+
+There are ten migration files in `database/migrations/`. **There is no migration history table**: nothing records which files a database has, so apply one with `python -m scripts.migrate_db --only <file> --plan` and then `--only <file>`, and never run the full set against a live database (see the README and `docs/ACCOUNTS.md`, "Migration safety"). `database/schema.sql` always describes the end state, so a freshly built database has all of them. Which migration creates which table:
+
+| Migration | What it adds or changes |
+|-----------|-------------------------|
+| 001 | creates `media_regions`; official media rows and links |
+| 002 | creates `media_vehicles`; five official vehicles and their media |
+| 003 | text of concept (demo) rows only |
+| 004 | official region and character screenshots, local clip paths |
+| 005 | creates `character_regions`; one more official relationship |
+| 006 | two more official vehicles and the Garage's pictures; editorial text for official vehicles |
+| 007 | wording of two official region descriptions only |
+| 008 | creates `radio_stations`, `station_preview_tracks`, `music_releases`, `music_tracks`; their rows |
+| 009 | creates `media_collections`, `media_collection_items`; 92 more official media rows and the collections' order |
+| 010 | one `ALTER`: `users.email` may be NULL (accounts ask for no email) |
+
+The sections below describe the earlier ones in more detail.
 
 Phase 1 databases (including the owner's) lack `media_regions` and the official media rows. `database/migrations/001_phase2_media.sql`:
 
