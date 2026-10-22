@@ -7,6 +7,7 @@ import re
 import mysql.connector
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from .. import db
 from ..repositories import users as users_repo
 
 USERNAME_PATTERN = re.compile(r"^[a-z0-9_]{3,30}$")
@@ -99,8 +100,9 @@ def authenticate(form):
     if not username or not password or len(password) > PASSWORD_MAX or len(username) > 30:
         return None
     user = users_repo.get_by_username(username)
+    db.release_connection()            # the row is read; the hash check below takes about 170 ms and needs no database, so the connection goes back to the pool first
     if user is None:
-        _burn_a_hash(password)
+        _burn_a_hash(password)         # still costs the same as a real check, so the answer's timing does not say which names exist
         return None
     return user if verify_password(user["password_hash"], password) else None
 
@@ -111,6 +113,7 @@ def change_password(user, form):
     new = form.get("new_password") or ""
     confirm = form.get("new_password_confirm") or ""
     stored = users_repo.get_by_id(user["user_id"])
+    db.release_connection()            # (the request's connection came from load_user.) Both hashes below take about 170 ms each and need no database; the update takes a fresh connection
     errors = {}
     if stored is None or not current or len(current) > PASSWORD_MAX or not verify_password(stored["password_hash"], current):
         errors["current_password"] = "That is not your current password."

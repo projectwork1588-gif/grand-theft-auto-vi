@@ -3,7 +3,7 @@
 > An unofficial educational fan project by Team Valkyrie. Not affiliated with, endorsed by, or sponsored by Rockstar Games or Take-Two Interactive.
 
 A cinematic, database-driven GTA VI fan guide built for a Web Technologies and DBMS college project.
-**Status: Phase 2 of 6 (cinematic public website), refinement round 3.** Accounts, favourites, the admin area, the interactive atlas, the Intelligence Network and the full media theatre come in later phases.
+**Status: Phase 2 of 6 (cinematic public website), refinement round 3.** Accounts (username and password, no email) and favourites are built; see [docs/ACCOUNTS.md](docs/ACCOUNTS.md). The admin area, the interactive atlas, the Intelligence Network and the full media theatre come in later phases.
 
 ## What you can do today
 
@@ -16,6 +16,7 @@ A cinematic, database-driven GTA VI fan guide built for a Web Technologies and D
 | Places | `/locations`, `/locations/<slug>` | Searchable list filtered by region and type. |
 | Stories | `/missions`, `/missions/<slug>` | Original stories with type filters. People, vehicles, places and related stories. |
 | About, Credits | `/about`, `/credits` | What the project is, what the labels mean, who owns what. |
+| Accounts | `/register`, `/login`, `/account/favourites`, `/account/password` | Sign up with a username and password, save characters, vehicles, places and stories, change the password. Database migration `010` must be applied first (see [docs/ACCOUNTS.md](docs/ACCOUNTS.md)). |
 | JSON API | `/api/v1/...` | Characters and regions (Phase 1, unchanged) plus vehicles, vehicle categories, missions and locations. |
 
 Every page reads MySQL. Nothing about a character, vehicle, region, place or story is written into HTML or JavaScript.
@@ -88,6 +89,8 @@ python -m flask --app wsgi run
 
 Open <http://127.0.0.1:5000/>.
 
+`python -m flask --app wsgi run` is for your own computer. A deployment runs `wsgi:app` under a production WSGI server over HTTPS and **must set `FLASK_ENV=production`** (with `SECRET_KEY`, `TV_PUBLIC_ORIGINS` and, behind proxies, `TV_TRUSTED_PROXIES`): the site refuses to start without `FLASK_ENV`, and in production without the rest. See "Production settings" in [docs/ACCOUNTS.md](docs/ACCOUNTS.md).
+
 ### Upgrading a database you already set up in Phase 1
 
 Phase 2 adds the official media records, two small link tables (`media_regions`, `media_vehicles`), five official vehicles, natural-sounding copy and the local-loop references, in four migrations. **Your existing data is never dropped.** The migrations only create those tables if missing, insert or refresh the new rows, and update the text of concept rows. They never touch what Rockstar states.
@@ -153,7 +156,7 @@ GTA 6/
 │   ├── repositories/          ALL SQL lives here
 │   ├── templates/             Jinja2: base, _components, home, characters/, vehicles/, regions/, locations/, missions/
 │   └── static/                css/ (site, components, pages), js/ (boot, site), fonts/ (bundled, OFL)
-├── database/                  schema.sql, seed.sql, migrations/001 to 004
+├── database/                  schema.sql, seed.sql, migrations/001 to 010
 ├── scripts/                   setup_db.py, init_db.py, migrate_db.py, make_env.py, schema_info.py, sqlfile.py, fetch_clips.py, make_loops.py
 ├── docs/                      ARCHITECTURE, DATABASE (+ER diagram), ROUTES, MEDIA_INVENTORY, VERIFICATION, queries.sql
 ├── media/                     Git-ignored: locally built loops only (see media/README.md)
@@ -167,6 +170,7 @@ GTA 6/
 * [Database design and ER diagram](docs/DATABASE.md)
 * [Example SQL queries](docs/queries.sql)
 * [Routes and roadmap](docs/ROUTES.md)
+* [Accounts, favourites, security and deployment settings](docs/ACCOUNTS.md)
 * [Media inventory and rights](docs/MEDIA_INVENTORY.md)
 * [Design benchmark against Rockstar's site, defects and plan](docs/DESIGN_BENCHMARK.md)
 * [Verification reports](docs/VERIFICATION.md)
@@ -175,7 +179,7 @@ GTA 6/
 
 1. Foundation (done)
 2. **Cinematic public website** (this phase)
-3. Authentication, favourites and admin CRUD
+3. Authentication and favourites (built); admin CRUD
 4. Leonida Atlas, Intelligence Network, terminal commands, global search
 5. Media Theatre and cinematic polish
 6. Final testing and presentation

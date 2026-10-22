@@ -169,6 +169,24 @@ def check_origins(origins, require_https=False, required=False):
             raise RuntimeError("Refusing to start in production: TV_PUBLIC_ORIGINS must use https (the session cookie is marked Secure).")
 
 
+def deployment_config_name(environ=None):
+    """The configuration name for the WSGI entry point (wsgi.py), which both `flask --app wsgi run` and a production server import.
+
+    FLASK_ENV set  -> that value, unchanged (get_config() then accepts production/development/testing and refuses anything else, blank included).
+    FLASK_ENV unset, started by the Flask command line (it sets FLASK_RUN_FROM_CLI) -> "development": the documented local run needs no setup.
+    FLASK_ENV unset, started any other way (gunicorn, waitress, mod_wsgi, a bare import) -> an error. That is how a deployment that forgot FLASK_ENV
+    used to start quietly with development settings (a random per-process key, a cookie without Secure, the request's own host as the allowed origin).
+    The message names the setting, never a value."""
+    environ = os.environ if environ is None else environ
+    requested = environ.get("FLASK_ENV")
+    if requested is not None:
+        return requested
+    if environ.get("FLASK_RUN_FROM_CLI") == "true":
+        return "development"
+    raise RuntimeError("Refusing to start: FLASK_ENV is not set. A deployment must set FLASK_ENV=production (see docs/ACCOUNTS.md, 'Production settings'); "
+                       "to run on your own computer use FLASK_ENV=development, or start the site with `python -m flask --app wsgi run`.")
+
+
 def get_config(name=None):
     """The configuration class for `name`, or for FLASK_ENV (development when it is not set at all). An unrecognised name is an error, never a quiet
     fall-back to development: a typo such as FLASK_ENV=prod must not start the site with development settings."""

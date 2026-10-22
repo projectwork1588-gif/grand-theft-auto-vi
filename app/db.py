@@ -133,6 +133,27 @@ def close_db(_error=None):
         connection.close()
 
 
+def release_connection():
+    """Give this request's connection back to the pool NOW, instead of at the end of the request.
+
+    For slow work that needs no database (a password hash takes about 170 ms and the pool has only a few connections that never wait): read what is needed,
+    call this, then do the slow work. The next query or transaction() simply takes a fresh connection, so nothing else has to change.
+
+    Ownership rules, the same as for transaction(): it refuses (TransactionError) inside a transaction() block, and when get_db() was used and its transaction
+    may hold work nobody committed. Otherwise the connection can only be holding the read snapshot of query_all()/query_one(), which is discarded when it returns
+    to the pool. Safe to call when there is no connection, and safe to call twice."""
+    if g.get("db_transaction"):
+        raise TransactionError("the connection cannot be released inside transaction(); finish the unit of work first")
+    connection = g.get("db")
+    if connection is None:
+        return
+    if g.get("db_raw") and connection.in_transaction:
+        raise TransactionError("a transaction is open after get_db() was used in this request; commit or roll it back before release_connection()")
+    g.pop("db", None)
+    g.db_raw = False                       # the connection is gone, so is anything the raw flag was guarding
+    connection.close()
+
+
 def query_all(sql, params=None):
     """Run a read statement and return every row. Refuses what does not look like a single read (is_read_only); writes belong in transaction()."""
     if not is_read_only(sql):

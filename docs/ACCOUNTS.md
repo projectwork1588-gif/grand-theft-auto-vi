@@ -125,7 +125,16 @@ Every POST must carry the CSRF token **and**, if the browser sends an `Origin` h
 * `DB_NAME` does not end in `_test` and is not the test database.
 * `TV_TRUSTED_PROXIES` is a whole number from 0 to 5, written in plain digits. A malformed value (`abc`, `1.5`, `-1`, `+2`, blank, `1,2`) stops the site from starting in **every** environment; it is never read as "no proxies". Not set at all means 0.
 
-There is no quiet fall-back to development: `FLASK_ENV` must be `development`, `production` or `testing`. A typo (`prod`) or an empty value stops the site from starting. **Not set at all means development** (so a local run needs no setup); a deployment must therefore set `FLASK_ENV=production`. Production also marks the cookie `Secure`, so it needs HTTPS: over plain http the browser drops the cookie and sign-in appears broken.
+There is no quiet fall-back to development: `FLASK_ENV` must be `development`, `production` or `testing`. A typo (`prod`) or an empty value stops the site from starting. **Not set at all** depends on how the site is started:
+
+| Started with | `FLASK_ENV` unset |
+|---|---|
+| `wsgi.py` by a WSGI server (gunicorn, waitress, mod_wsgi, a bare `import wsgi`) | **refuses to start** (`FLASK_ENV is not set`), so a deployment that forgot the setting cannot run with development settings (a random per-process secret key, a cookie without `Secure`, the request's own host as the allowed origin) |
+| `python -m flask --app wsgi run` (the documented local run; the Flask command line sets `FLASK_RUN_FROM_CLI`) | development, so a local run needs no setup |
+| `create_app()` called directly (for example `flask --app "app:create_app()"`) | development, and a `WARNING` is logged: `FLASK_ENV is not set, so this is running with DEVELOPMENT settings` |
+| `create_app("testing")` / `create_app("development")` | the name you pass is used; no warning |
+
+A deployment must therefore set `FLASK_ENV=production` and point its server at `wsgi:app`; a local `.env` made from `.env.example` already says `FLASK_ENV=development`. Remaining limitation: the guard lives in `wsgi.py`, so a server pointed at `app:create_app()` instead (not the documented way) still starts as development after the warning; and `FLASK_RUN_FROM_CLI` is a Flask-internal marker, so if a future Flask version stops setting it the local command line would refuse to start (fail closed: set `FLASK_ENV=development` in `.env`). Production also marks the cookie `Secure`, so it needs HTTPS: over plain http the browser drops the cookie and sign-in appears broken.
 
 **Startup log line.** When the app is built it writes one line to the application log, for example `Starting with ProductionConfig (secure session cookie: yes, public origins configured: 1, trusted proxies: 0)`. Look for it after a deployment to confirm which configuration is running. It contains only the configuration's name, yes/no and counts: never the secret key, the database name, user, password or host, or the origin addresses. The line is written at INFO level; the app sets its logger to INFO **only if nobody has set a level** (a process manager or an operator who configured logging keeps their own level, and then the line appears only if that level allows INFO). The earlier version of this page said the line confirmed production, but at the default WARNING level it was never written.
 
@@ -137,6 +146,16 @@ There is no quiet fall-back to development: `FLASK_ENV` must be `development`, `
 * Before starting, it ends the read snapshot left by earlier reads (the connector would otherwise refuse with "Transaction already in progress"). That is safe because the read helpers cannot hold a write.
 * `get_db()` (the raw connection) is for tests and diagnostics. If it was used in the request and a transaction is open afterwards, `transaction()` cannot know what the transaction holds, so it raises `TransactionError` instead of rolling it back. Commit or roll back first.
 * `tests/test_db_transactions.py` checks all of this, and scans `app/` to show that only `db.py` touches the raw connection and every `cursor.execute` outside it sits directly under `with transaction() as cursor:`.
+
+### Connections and password hashing (`db.release_connection()`)
+
+The site draws each request's database connection from a pool of 5 (`DB_POOL_SIZE`) that **never waits**: when all 5 are in use the next request is answered `503` at once. A password hash (scrypt, about 170 ms and 32 MiB) needs no database, so a request must not hold a connection while it runs. Before the fix, sign-in and change-password kept theirs until the end of the request, which under a threaded server let a few slow sign-ins starve every other page.
+
+* **Sign-in** reads the user row, calls `db.release_connection()`, then hashes (the dummy hash for an unknown name included, so the timing is unchanged). **Change password** reads the user, releases, verifies the current password and hashes the new one; the update then takes a fresh connection inside `transaction()`. **Sign-up** already hashed before touching the database.
+* `release_connection()` follows the same ownership rules as `transaction()`: it refuses inside a `transaction()` block and when `get_db()` left a transaction open. Otherwise the connection only holds the read snapshot of `query_all()`/`query_one()`, which is discarded when it returns to the pool. The next query simply takes a new connection. Throttle reservations, settlement and the transaction guarantees do not use the connection, so nothing about them changed.
+* Measured on the test application and `gta6_vi_test` (4 looping sign-in threads and 4 looping page threads against a pool of 5, 6 s x 2 runs, with a short pause between a thread's requests): before, about 46-51 % of sign-ins and 49-50 % of page loads were answered (the rest `503`); after, 94-95 % of sign-ins and 97 % of page loads. Change-password attempts: 41-46 % before, 88-90 % after. A synchronous burst of more than 5 simultaneous requests still gets `503` for the excess: that is the no-wait pool, not hashing, and the fix does not claim to change it.
+* **Pool size.** Raising `DB_POOL_SIZE` alone would only move the limit. The pool needs at least as many connections as requests a worker runs at once: with synchronous workers (one request per worker, the usual gunicorn default) 5 is plenty, with threads set it to at least the thread count. Across all workers the total (workers x pool) must stay under MySQL's `max_connections`. Making a request wait briefly for a free connection instead of failing would be a separate design decision and is not done.
+* `tests/test_connection_release.py` runs the whole account flow against a pool of **one** connection, so a request that still held its connection while hashing could not even complete.
 
 ## Vehicle pages and view transitions
 
@@ -165,7 +184,7 @@ The features need only: `SELECT` everywhere; `INSERT` and `UPDATE (password_hash
 2. `python -m scripts.migrate_db --only 010_account_email_optional.sql --plan` and read the output (it must list one `ALTER TABLE users MODIFY email`).
 3. `python -m scripts.migrate_db --only 010_account_email_optional.sql`, type `YES`. **Never run `python -m scripts.migrate_db` without `--only` on `gta6_vi`**: there is no migration history, so it would run all ten files again (see Migration safety).
 4. Check: `SELECT is_nullable FROM information_schema.columns WHERE table_schema = 'gta6_vi' AND table_name = 'users' AND column_name = 'email';` returns `YES`.
-5. Set in the production environment: `FLASK_ENV=production`, a real `SECRET_KEY` (generate with `python -c "import secrets; print(secrets.token_hex(32))"`), `TV_PUBLIC_ORIGINS=https://<your public host>` and `TV_TRUSTED_PROXIES=<number of proxies in front, or 0>`; serve over HTTPS (the session cookie is `Secure` there). The site will not start if any of the first three is missing or wrong.
+5. Set in the production environment (the server must load `wsgi:app`; with `FLASK_ENV` unset it will not start): `FLASK_ENV=production`, a real `SECRET_KEY` (generate with `python -c "import secrets; print(secrets.token_hex(32))"`), `TV_PUBLIC_ORIGINS=https://<your public host>` and `TV_TRUSTED_PROXIES=<number of proxies in front, or 0>`; serve over HTTPS (the session cookie is `Secure` there). The site will not start if any of the first three is missing or wrong.
 6. Deploy the code, then one sign-up / save / sign-out check with a throwaway account that is deleted afterwards.
 
 ## Migration safety
