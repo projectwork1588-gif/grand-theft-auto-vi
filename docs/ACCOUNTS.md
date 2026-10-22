@@ -164,13 +164,14 @@ The Garage uses Chrome's cross-document view transitions (the picture of the cho
 ## Known limitations
 
 * **Sign out clears the browser's cookie but cannot revoke a stolen copy of it.** Sessions are stateless signed cookies (no sessions table, by decision). A copy stays valid until the 8 hours pass or the password is changed (which invalidates it, see above).
+* **Roles:** `users.role` is `user` or `admin`. Sign-up always creates `user`; the admin area (`docs/ADMIN.md`) reads the role from the database on every request. Until that area is enabled on the live site, nothing there needs a role, and the first administrator is made only on the test database by `scripts/make_admin.py`.
 * No email, so **no password reset**: a forgotten password cannot be recovered. No account deletion feature and no admin screens. The `role` column exists; registration always creates `user`, and nothing reads it.
 * Sign-up is limited per client address (above), not per person: an attacker with many addresses can still create many accounts. No CAPTCHA, no email check.
 * The database account the site uses keeps `SELECT, INSERT, UPDATE, DELETE` on the whole database (unchanged). A narrower, per-table grant is possible; see "Least privilege" below.
 
 ## Least privilege (recommendation, not applied)
 
-The features need only: `SELECT` everywhere; `INSERT` and `UPDATE (password_hash)` on `users`; `INSERT` and `DELETE` on the four `favourite_*` tables. A DBA could grant exactly that instead of database-wide DML. `tests/test_privileges.py` pins the present grants, so it would be updated together with such a change. Not applied here.
+(The admin area for Stories also needs `INSERT`, `UPDATE` and `DELETE` on `missions` and the three `mission_*` link tables, which the present database-wide grant already covers.) The account features need only: `SELECT` everywhere; `INSERT` and `UPDATE (password_hash)` on `users`; `INSERT` and `DELETE` on the four `favourite_*` tables. A DBA could grant exactly that instead of database-wide DML. `tests/test_privileges.py` pins the present grants, so it would be updated together with such a change. Not applied here.
 
 ## Migration 010
 

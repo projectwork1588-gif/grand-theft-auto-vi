@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "account/_form.html" import summary %}
+{% from "admin/_macros.html" import hero, nav, text_field, textarea_field, select_field, link_group %}
+{% block title %}{{ 'New story' if creating else 'Edit story' }}{% endblock %}
+{% block description %}Administrators: {{ 'create' if creating else 'edit' }} a story and the characters, vehicles and places it links to.{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">{% endblock %}
+{% block content %}
+{{ hero('Admin', 'New story' if creating else 'Edit story', 'Fan and demo stories only. Official stories come from Rockstar\'s own material and are never edited here.' if creating else 'Change the story and replace the people, vehicles and places it links to. The address (slug) never changes.') }}
+<section class="section section--tight">
+  <div class="container adm">
+    {{ nav('new' if creating else 'stories') }}
+    {{ summary(errors) }}
+    <form class="acct-form adm-form" method="post" action="{{ url_for('admin.story_new') if creating else url_for('admin.story_edit', slug=slug) }}" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {{ text_field('title', 'Title', errors, values, 120, hint='3 to 120 characters. Each title is unique.', autofocus=true) }}
+      {% if creating %}
+      {{ text_field('slug', 'Address (slug)', errors, values, 80, hint='Lowercase letters, numbers and single hyphens. Left empty, it is made from the title. It cannot be changed later.', required=false) }}
+      {% else %}
+      <div class="acct-field">
+        <p class="adm-readonly-label" id="slug-label">Address (slug)</p>
+        <p class="adm-readonly" aria-labelledby="slug-label"><code>/missions/{{ slug }}</code></p>
+        <p class="acct-note">The address cannot be changed after the story is created.</p>
+      </div>
+      {% endif %}
+      <div class="adm-pair">
+        {{ select_field('mission_type', 'Type', errors, type_choices, values.get('mission_type')) }}
+        {{ select_field('content_status', 'Label', errors, [('demo', 'Concept (demo)'), ('fan', 'Fan view (fan)')], values.get('content_status'), hint='Official is not available: Rockstar-sourced content is read-only.') }}
+      </div>
+      {{ text_field('summary', 'Summary', errors, values, 255, hint='One or two sentences, at most 255 characters.') }}
+      {{ textarea_field('synopsis', 'Synopsis', errors, values, 3000, hint='At most 3000 characters.') }}
+      {{ text_field('source_url', 'Source address', errors, values, 500, hint='An https address, if the story is based on something published.', required=false) }}
+      {{ text_field('source_note', 'Source note', errors, values, 500, required=false) }}
+
+      <h2 class="panel-title adm-h2">Links</h2>
+      <p class="acct-note">Tick each record the story uses. Characters and vehicles need a short note about their part.</p>
+      {{ link_group('characters', 'Characters', options.characters, selection.characters, errors, 'Role in the story', 80) }}
+      {{ link_group('vehicles', 'Vehicles', options.vehicles, selection.vehicles, errors, 'How it is used', 160) }}
+      {{ link_group('locations', 'Places', options.locations, selection.locations, errors, '', 0, selected_primary=primary_location) }}
+
+      <div class="adm-actions">
+        <button class="btn" type="submit">{{ 'Create story' if creating else 'Save changes' }}</button>
+        <a class="btn btn--ghost" href="{{ url_for('admin.story_list') }}">Cancel</a>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

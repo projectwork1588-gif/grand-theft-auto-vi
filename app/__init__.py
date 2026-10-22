@@ -73,6 +73,7 @@ def create_app(config_name=None):
         return response
 
     from .blueprints.account import account_bp
+    from .blueprints.admin import admin_bp
     from .blueprints.api import api_bp
     from .blueprints.main import main_bp, media_file_url, page_url, page_window
     from .blueprints.pages import pages_bp
@@ -90,5 +91,6 @@ def create_app(config_name=None):
     app.register_blueprint(main_bp)
     app.register_blueprint(pages_bp)
     app.register_blueprint(account_bp)
+    app.register_blueprint(admin_bp)
     app.register_blueprint(api_bp, url_prefix="/api/v1")
     return app

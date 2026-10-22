@@ -1,5 +1,6 @@
 """Phase 2C: who owns a transaction. transaction() may not nest, may not end a transaction it did not open (unless it is only the read snapshot left by
 the read helpers), and the read helpers cannot write. Real rows are committed to the *_test database only (tests/account_helpers.py proves the name first)."""
+import ast
 import re
 from pathlib import Path
 
@@ -159,18 +160,76 @@ def test_application_code_never_uses_the_raw_connection_or_a_cursor_of_its_own()
     assert offenders == [], offenders
 
 
+# The application's writers. The account repositories keep the original, strict line rule exactly as it was. The admin repository (Stories) is a deliberate, reviewed
+# addition and is held to a precise, stricter rule: every execute is inside a transaction block, directly or through a helper that is only called from inside one.
+ACCOUNT_WRITERS = {"repositories/users.py", "repositories/favourites.py"}
+ADMIN_WRITERS = {"repositories/admin_stories.py"}
+
+
+def transaction_rule_violations(source):
+    """Every `cursor.execute(...)` in `source` must be inside a `with transaction() as cursor:` block, or inside a function that takes `cursor` as a parameter AND is
+    only ever called from inside such a block. Returns the list of violations (empty when the rule holds)."""
+    tree = ast.parse(source)
+    parents = {child: node for node in ast.walk(tree) for child in ast.iter_child_nodes(node)}
+
+    def ancestors(node):
+        while node in parents:
+            node = parents[node]
+            yield node
+
+    def in_block(node):
+        for owner in ancestors(node):
+            if isinstance(owner, ast.With):
+                for item in owner.items:
+                    call, var = item.context_expr, item.optional_vars
+                    if isinstance(call, ast.Call) and getattr(call.func, "id", "") == "transaction" and isinstance(var, ast.Name) and var.id == "cursor":
+                        return True
+        return False
+
+    violations, helpers = [], set()
+    for node in ast.walk(tree):
+        is_execute = (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr in ("execute", "executemany")
+                      and isinstance(node.func.value, ast.Name) and node.func.value.id == "cursor")
+        if is_execute and not in_block(node):
+            function = next((o for o in ancestors(node) if isinstance(o, ast.FunctionDef)), None)
+            if function is not None and any(arg.arg == "cursor" for arg in function.args.args):
+                helpers.add(function.name)
+            else:
+                violations.append(f"line {node.lineno}: cursor.{node.func.attr} outside a transaction block")
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id in helpers and not in_block(node):
+            violations.append(f"line {node.lineno}: {node.func.id}() is called outside a transaction block")
+    return violations
+
+
 def test_every_statement_that_writes_is_inside_a_transaction_block():
-    writers = {}
-    for name, text in app_sources().items():
+    writers, sources = {}, app_sources()
+    for name, text in sources.items():
         lines = text.splitlines()
         for number, line in enumerate(lines):
             if "cursor.execute(" in line and name != "db.py":
                 writers.setdefault(name, []).append(any("with transaction() as cursor" in lines[j] for j in range(max(0, number - 2), number)))
-    assert set(writers) == {"repositories/users.py", "repositories/favourites.py"}
-    assert all(all(flags) for flags in writers.values()), writers
+    assert set(writers) == ACCOUNT_WRITERS | ADMIN_WRITERS
+    assert all(all(flags) for name, flags in writers.items() if name in ACCOUNT_WRITERS), writers          # the original rule, unchanged, for the account repositories
+    for name in ADMIN_WRITERS:
+        assert transaction_rule_violations(sources[name]) == [], name
 
 
-def test_no_write_sql_exists_outside_the_two_account_repositories():
+def test_the_transaction_rule_checker_catches_what_it_is_meant_to_catch():
+    """The checker is itself tested: a write outside a block, or a helper called from outside one, must be reported; correct code must pass."""
+    good = ("def helper(cursor, x):\n    cursor.execute('INSERT', x)\n\n\n"
+            "def write():\n    with transaction() as cursor:\n        helper(cursor, 1)\n        cursor.execute('UPDATE')\n")
+    loose = "def write(cursor):\n    cursor.execute('INSERT')\n\n\ndef caller():\n    write(None)\n"
+    loose_helper_call = ("def helper(cursor):\n    cursor.execute('INSERT')\n\n\ndef caller(cursor):\n    helper(cursor)\n")
+    bare = "def write(connection):\n    cursor = connection.cursor()\n    cursor.execute('INSERT')\n"
+    assert transaction_rule_violations(good) == []
+    assert any("outside a transaction block" in v for v in transaction_rule_violations(bare))
+    assert any("helper() is called outside a transaction block" in v for v in transaction_rule_violations(loose_helper_call))
+    assert any("write() is called outside a transaction block" in v for v in transaction_rule_violations(loose))
+    assert transaction_rule_violations("def helper(cursor):\n    cursor.execute('INSERT')\n") == []      # a helper nobody calls from outside a block may exist on its own
+
+
+def test_no_write_sql_exists_outside_the_writer_repositories():
     pattern = re.compile(r"[\"'](\s*)(INSERT\s+INTO|UPDATE\s+\w+\s+SET|DELETE\s+FROM|REPLACE\s+INTO)\b", re.IGNORECASE)
-    offenders = [name for name, text in app_sources().items() if pattern.search(text) and name not in ("repositories/users.py", "repositories/favourites.py")]
+    offenders = [name for name, text in app_sources().items() if pattern.search(text) and name not in ACCOUNT_WRITERS | ADMIN_WRITERS]
     assert offenders == [], offenders

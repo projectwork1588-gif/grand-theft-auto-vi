@@ -33,6 +33,7 @@
     {% endfor %}
     <div class="acct-actions">
       <a class="btn btn--ghost btn--small" href="{{ url_for('account.password') }}">Change password</a>
+      {% if current_user and current_user.role == 'admin' %}<a class="btn btn--ghost btn--small" href="{{ url_for('admin.dashboard') }}">Admin</a>{% endif %}
       {{ post_button(url_for('account.logout'), 'Sign out', 'btn btn--ghost btn--small') }}
     </div>
   </div>

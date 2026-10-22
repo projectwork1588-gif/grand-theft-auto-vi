@@ -115,7 +115,7 @@ erDiagram
 
 | # | Table | Why it exists | Key points |
 |---|-------|---------------|-----------|
-| 1 | `users` | Accounts (username + password) for saving favourites; see `docs/ACCOUNTS.md`. | PK `user_id`. `username` UNIQUE. `email` UNIQUE and **nullable** (migration 010: sign-up asks for no email). `role` is `user` or `admin` (sign-up always creates `user`). Stores only a password **hash** (Werkzeug scrypt). |
+| 1 | `users` | Accounts (username + password) for saving favourites; see `docs/ACCOUNTS.md`. | PK `user_id`. `username` UNIQUE. `email` UNIQUE and **nullable** (migration 010: sign-up asks for no email). `role` is `user` or `admin` (sign-up always creates `user`; the admin area reads it on every request, see `docs/ADMIN.md`). Stores only a password **hash** (Werkzeug scrypt). |
 | 2 | `regions` | Large areas of Leonida. | UNIQUE `slug`, `name`. |
 | 3 | `locations` | Places inside a region. | FK `region_id` (RESTRICT). UNIQUE `(region_id, name)`. |
 | 4 | `characters` | People in the world. | Optional FK `home_location_id` (ON DELETE SET NULL). |
