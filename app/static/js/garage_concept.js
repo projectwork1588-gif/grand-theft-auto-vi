@@ -4,7 +4,8 @@
   "use strict";
 
   function each(list, fn) { Array.prototype.forEach.call(list, fn); }
-  var LEAVE = 700;   // how long the scene being replaced stays under the one arriving: the length of the opening frame, in step with garage_concept.css
+  var FADE = 350;            // how long a scene takes to arrive: its picture fades in over the one it replaces (set on the stage as --gx-fade, which garage_concept.css reads)
+  var PUSH = 7000;           // how long the camera's slow push-in lasts, on its own clock: it carries on through the whole stay and under the next scene's arrival, so it never stops short
   var params = new URLSearchParams(window.location.search);
 
   // run `fn` once the picture has arrived and been decoded (or after a moment, so a slow connection still gets the page)
@@ -25,8 +26,9 @@
   });
 
   // ---- The opening ----------------------------------------------------------------------------------------------
-  // The machines take turns on their own, 01 to 07 and round to 01, each held for a few seconds, and the visitor can choose any at any time.
-  // The new scene opens as a frame that grows out of its own number in the index until it fills the window; the one it replaces stays beneath it.
+  // The machines take turns on their own, 01 to 07 and round to 01, each held for several seconds, and the visitor can choose any at any time.
+  // The new scene's picture fades in over the one it replaces, which stays beneath it (still moving) until it is covered. The scene's own opacity is what animates, as a CSS transition, so a
+  // choice made while another scene is still arriving simply carries on from where the picture is: nothing jumps, nothing flashes, and the newest scene is always the one on top.
   var stage = document.querySelector("[data-stage]");
   if (stage) {
     var panels = {};
@@ -38,6 +40,7 @@
     var heading = current;
     var requested = 0;
     var timers = {};
+    var layer = 2;   // stacking: each scene that arrives is placed above every scene it is covering (--zi), however quickly the choices come
     stage.setAttribute("data-vehicle", current);
     each(stage.querySelectorAll("[data-ctl]"), function (c) { c.hidden = false; });   // the arrows only exist when script can make them work
 
@@ -45,17 +48,6 @@
       var img = panels[slug] && panels[slug].querySelector(".gx-art img");
       if (img && img.loading === "lazy") { img.loading = "eager"; }
       if (img && img.decode) { img.decode().then(function () {}, function () {}); }   // decoded ahead too, so the scene can open the moment it is chosen
-    };
-
-    // where, as a share of the scene's picture, the frame starts: at the new machine's number in the index
-    var origin = function (slug, panel) {
-      var tick = stage.querySelector('[data-pick="' + slug + '"]');
-      var art = panel.querySelector(".gx-art");
-      if (!tick || !art) { return [96, 50]; }
-      var t = tick.getBoundingClientRect(), a = art.getBoundingClientRect();
-      if (!a.width || !a.height) { return [96, 50]; }
-      var clamp = function (v) { return Math.max(4, Math.min(96, v)); };
-      return [clamp(((t.left + t.width / 2 - a.left) / a.width) * 100), clamp(((t.top + t.height / 2 - a.top) / a.height) * 100)];
     };
 
     var elapsed = 0;   // how long the scene on show has been held, in milliseconds (the automatic clock; a choice sets it back to nothing)
@@ -66,33 +58,39 @@
       if (slug === current && slug === heading) { elapsed = 0; return; }   // choosing the machine already on show starts its hold again
       heading = slug;
       elapsed = 0;
-      picks.forEach(function (a) {                       // the index answers the choice at once; the scene follows as soon as its picture is ready
-        if (a.getAttribute("data-pick") === slug) { a.setAttribute("aria-current", "true"); } else { a.removeAttribute("aria-current"); }
-      });
+      picks.forEach(function (a) { a.classList.toggle("is-pending", a.getAttribute("data-pick") === slug && slug !== current); });   // the number lights at the press; its ring and the scene follow together, as soon as the picture is ready
       warm(slug);
       var token = ++requested;
       whenReady(next.querySelector(".gx-art img"), function () {
-        if (token !== requested || slug === current) { return; }
+        if (token !== requested) { return; }             // a newer choice replaced this one while its picture was arriving
+        picks.forEach(function (a) { a.classList.remove("is-pending"); });
+        if (slug === current) { return; }
         Object.keys(panels).forEach(function (key) {
           var panel = panels[key];
           if (key === slug) { return; }
-          window.clearTimeout(timers[key]);
-          if (panel.classList.contains("is-active")) { panel.classList.add("is-leaving"); }
+          if (panel.classList.contains("is-active")) { panel.classList.add("is-leaving"); }   // it stays beneath the arriving scene, fully opaque, until that scene has finished arriving
           panel.classList.remove("is-active");
-          if (!panel.hidden) {
-            timers[key] = window.setTimeout(function () { panel.hidden = true; panel.classList.remove("is-leaving"); }, LEAVE + 100);
-          }
         });
-        window.clearTimeout(timers[slug]);
+        window.clearTimeout(timers.cover);
         next.classList.remove("is-leaving");
         next.hidden = false;
-        var o = origin(slug, next);
-        next.style.setProperty("--ox", o[0].toFixed(1));
-        next.style.setProperty("--oy", o[1].toFixed(1));
-        void next.offsetWidth;                           // laid out as the small frame before it grows, so the opening can play
-        next.classList.add("is-active", "is-entering");   // the opening plays while this class is on, and leaves nothing behind when it is off
-        window.setTimeout(function () { next.classList.remove("is-entering"); }, 800);
+        next.style.setProperty("--zi", String(++layer));  // the newest scene is always on top of the ones it covers
+        void next.offsetWidth;                           // laid out transparent first, so the fade has somewhere to start from
+        next.classList.add("is-active");                 // the picture fades in over the old scene (css)
+        // The scenes it covers are removed when its fade has actually finished, not on a timer: a slow device can start the fade late (the first frame of a new picture is the costly one), and a
+        // timer would take the old scene away before the new one is fully in. A scene that arrives while this one is still arriving takes over the clean-up (it covers this one too); the timer
+        // is only the fallback for when no transition runs at all (a hidden tab, no motion).
+        var cleanUp = function () {
+          next.removeEventListener("transitionend", onFaded);
+          window.clearTimeout(timers.cover);
+          if (current !== slug) { return; }
+          Object.keys(panels).forEach(function (key) { var p = panels[key]; if (p !== next && !p.hidden) { p.hidden = true; p.classList.remove("is-leaving"); } });
+        };
+        var onFaded = function (e) { if (e.target === next && e.propertyName === "opacity") { cleanUp(); } };
+        next.addEventListener("transitionend", onFaded);
+        timers.cover = window.setTimeout(cleanUp, FADE + 800);
         current = slug;
+        if (parseFloat(window.getComputedStyle(next).opacity) >= 0.999) { cleanUp(); }   // already fully in (it was still on screen from an earlier choice): no fade will run, so the scenes it covers go now
         elapsed = 0;                                     // the dwell starts when the scene is actually on show
         stage.setAttribute("data-vehicle", slug);
         stage.setAttribute("data-plate", next.getAttribute("data-plate") || "");   // where the title of the page sits depends on the composition
@@ -113,7 +111,9 @@
     // visitor has paused it, a pointer or keyboard is on the scene's words, the index or the controls, the opening is off screen, the tab is
     // hidden, or the next picture has not arrived yet. It never scrolls the page.
     var dwellSeconds = parseFloat(params.get("dwell"));
-    var DWELL = (dwellSeconds >= 2 && dwellSeconds <= 30 ? dwellSeconds : 2.8) * 1000;   // the hold; with the opening of a scene (under a second) a change comes about every three seconds
+    var DWELL = (dwellSeconds >= 2 && dwellSeconds <= 30 ? dwellSeconds : 5) * 1000;     // the hold: a change comes every five seconds (the scene's arrival, a third of a second, is inside it)
+    stage.style.setProperty("--gx-fade", FADE + "ms");                                    // one source for the arrival's length: the picture's fade, the accent colour and the index follow it
+    stage.style.setProperty("--gx-push", Math.max(PUSH, DWELL + FADE) + "ms");            // the push lasts at least as long as the scene is on show (plus the time it stays beneath its successor), so it never stops short
     var saveData = !!(navigator.connection && navigator.connection.saveData);
     var motionOn = function () { return document.documentElement.classList.contains("motion-on"); };
     var userPaused = true;      // settled when the page is ready (the site's own script decides whether motion is on): with motion off (reduced motion, the site's switch, data saver) or ?autoplay=0 the showcase waits for a choice and does not cycle by itself

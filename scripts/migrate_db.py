@@ -2,13 +2,17 @@
 
 Usage (from the project root, virtual environment active):
     python -m scripts.migrate_db --plan          # READ-ONLY: what exists now and what would run
-    python -m scripts.migrate_db                 # apply to the development database after you type YES
+    python -m scripts.migrate_db                 # apply EVERY migration to the development database after you type YES ALL (read the note below)
     python -m scripts.migrate_db --test --yes    # apply to the *_test database without a prompt
     python -m scripts.migrate_db --only 006_gate3b_garage.sql --plan   # ONE migration: read-only plan and prerequisite/conflict checks
     python -m scripts.migrate_db --only 006_gate3b_garage.sql          # apply just that file, after you type YES
 
 Migrations here never DROP, DELETE or TRUNCATE, and are safe to run more than once.
 This script refuses to run a migration file that contains those words.
+
+There is NO migration history: nothing records which files were applied, so nothing is "pending". Without --only, EVERY file is run again, in order, on
+the database you point it at. Each file is written to be repeatable, but a repeat still takes its locks and re-writes the rows it owns. To change a live
+database, always name the one file you mean with --only (and --plan it first); the all-files run asks for the longer phrase YES ALL for that reason.
 """
 import argparse
 import re
@@ -73,7 +77,7 @@ def main(argv=None):
 
     config = TestingConfig if args.test else DevelopmentConfig
     try:
-        files = [select_migration(args.only)] if args.only else migration_files()
+        files = [select_migration(args.only)] if args.only is not None else migration_files()
     except ValueError as exc:
         print(f"FAILED: {exc}", file=sys.stderr)
         return 2
@@ -95,7 +99,7 @@ def main(argv=None):
             print(f"  {path.name}")
             for statement in split_statements(path.read_text(encoding="utf-8")):
                 print("    - " + " ".join(statement.split())[:100])
-        checks = migration_checks.CHECKS.get(files[0].name) if args.only else None
+        checks = migration_checks.CHECKS.get(files[0].name) if args.only is not None else None
         if checks:
             notes, problems = checks[0](cursor, config.DB_NAME)
             print(f"\nCHECKS before applying {files[0].name} (read-only):")
@@ -107,11 +111,17 @@ def main(argv=None):
                 print(f"\nBLOCKED: {len(problems)} problem(s) above. Nothing was changed" + ("." if args.plan else " and nothing will be applied."))
                 return 1
             print("  All checks passed: no prerequisite is missing and nothing the migration writes belongs to something else.")
+        if args.only is not None:
+            print(f"\nSelected: exactly one migration, {files[0].name}; no other file is read or applied.")
+        else:
+            print(f"\nSelected: ALL {len(files)} migrations, in order. NOTE: there is no migration history, so every file above will be run again, not only the ones "
+                  "this database lacks. To apply one change, use --only <file> (and --plan it first).")
         if args.plan:
             print("\n--plan given: nothing was changed.")
             return 0
+        phrase = "YES" if args.only is not None else "YES ALL"
         if not (args.yes and config.DB_NAME.endswith("_test")):
-            if input("\nType YES to apply (anything else cancels): ").strip() != "YES":
+            if input(f"\nType {phrase} to apply to '{config.DB_NAME}' (anything else cancels): ").strip() != phrase:
                 print("Cancelled. Nothing was changed.")
                 return 0
         for path in files:

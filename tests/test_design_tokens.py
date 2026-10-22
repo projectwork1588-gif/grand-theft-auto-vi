@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 
 CSS_DIR = Path(__file__).resolve().parent.parent / "app" / "static" / "css"
-COMPONENT_FILES = ("site.css", "components.css", "pages.css", "characters.css", "garage.css", "garage_concept.css", "vehicle_detail.css", "regions.css", "music.css", "screening.css")
+COMPONENT_FILES = ("site.css", "components.css", "pages.css", "characters.css", "garage.css", "garage_concept.css", "vehicle_detail.css", "regions.css", "music.css", "screening.css", "home.css", "account.css")
 RADII = {"var(--r-card)", "var(--r-tile)", "var(--r-pill)", "50%", "0", "inherit"}
 SIZE_TOKENS = {"micro", "small", "body", "lead", "h4", "h3", "h2", "h1", "display", "numeral"}
 
@@ -82,4 +82,6 @@ def test_every_token_used_by_components_is_defined():
     undefined = {u for u in used if u not in defined and u not in local}
     # properties set inline by templates or JS (focus points, progress) are allowed
     undefined -= {"--p", "--progress", "--x", "--y", "--auto-ms", "--z", "--tx", "--ty", "--ov-x", "--ov-y", "--px", "--py", "--pxn", "--pyn"}   # set per element: layer travel; the overlap of the second picture
+    undefined -= {"--arrive", "--dolly", "--glow", "--haze", "--as"}              # the hero camera's timings (defined on .hero__stage and each layer in pages.css, read by site.css)
+    undefined -= {"--gx-fade", "--gx-push", "--zi"}                               # the Garage opening's arrival and stacking, set on the stage and each scene by garage_concept.js (every use has a fallback)
     assert not undefined, f"undefined custom properties: {sorted(undefined)}"

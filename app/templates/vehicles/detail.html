@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "_components.html" import badge %}
 {% from "vehicles/_garage.html" import gshot, nameplate %}
+{% from "account/_form.html" import save_control with context %}
 {% block title %}{{ vehicle.name }}{% endblock %}
 {% block description %}{{ vehicle.line or vehicle.summary }}{% endblock %}
 {% block header_class %}{% endblock %}
@@ -26,6 +27,7 @@
       <p class="vd-kicker"><span>{{ '%02d' % v.number }}</span>{% if v.theme %}<span>{{ v.theme }}</span>{% endif %}<span>{{ v.category_name }}</span></p>
       {{ nameplate(v, 'h1', 'vd-plate') }}
       <p class="vd-hero__line">{{ v.line }}</p>
+      {{ save_control('vehicles', v.slug, v.name) }}
       <a class="vd-cue" href="#machine">The machine <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
     </div>
   </header>

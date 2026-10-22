@@ -9,10 +9,12 @@
   <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}">
   <script src="{{ url_for('static', filename='js/boot.js') }}"></script>
   <link rel="preload" href="{{ url_for('static', filename='fonts/manrope-normal-300-800.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='fonts/barlow-condensed-normal-700.woff2') }}" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/account.css') }}">
   {% block head_extra %}{% endblock %}
 </head>
 <body{% if config.AUTOPLAY_ALWAYS %} data-autoplay="always"{% endif %}>
@@ -64,6 +66,19 @@
             <li><a href="{{ url_for('main.credits') }}"{% if request.endpoint == 'main.credits' %} aria-current="page"{% endif %}>Credits and legal</a></li>
           </ul>
         </div>
+        <div>
+          <p class="site-menu__label">Account</p>
+          <ul class="site-menu__links">
+            {% if current_user %}
+            <li><a href="{{ url_for('account.favourites_page') }}"{% if request.endpoint == 'account.favourites_page' %} aria-current="page"{% endif %}>Your favourites <small class="site-menu__who">({{ current_user.username }})</small></a></li>
+            <li><a href="{{ url_for('account.password') }}"{% if request.endpoint == 'account.password' %} aria-current="page"{% endif %}>Change password</a></li>
+            <li><form method="post" action="{{ url_for('account.logout') }}" class="acct-inline"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="site-menu__linkbtn" type="submit">Sign out</button></form></li>
+            {% else %}
+            <li><a href="{{ url_for('account.login') }}"{% if request.endpoint == 'account.login' %} aria-current="page"{% endif %}>Sign in</a></li>
+            <li><a href="{{ url_for('account.register') }}"{% if request.endpoint == 'account.register' %} aria-current="page"{% endif %}>Create an account</a></li>
+            {% endif %}
+          </ul>
+        </div>
         <div class="site-menu__motion" data-motion-row hidden>
           <p class="site-menu__label">Motion</p>
           <button class="motion-switch" type="button" data-motion-toggle aria-pressed="true">
@@ -93,6 +108,7 @@
         <ul class="footer-nav__small">
           <li><a href="{{ url_for('main.about') }}">About the project</a></li>
           <li><a href="{{ url_for('main.credits') }}">Credits and legal</a></li>
+          <li>{% if current_user %}<a href="{{ url_for('account.favourites_page') }}">Your favourites</a>{% else %}<a href="{{ url_for('account.login') }}">Sign in</a>{% endif %}</li>
           <li data-motion-row hidden><button class="footer-motion" type="button" data-motion-toggle aria-pressed="true">Autoplay footage <b>On</b></button></li>
         </ul>
       </nav>
@@ -107,6 +123,7 @@
       <button class="dialog-close" type="button" data-close>Close</button>
       <p class="dialog-title" data-title></p>
       <div class="player" data-player></div>
+      <p class="player-status" data-player-status role="status" hidden></p>
       <p class="dialog-caption" data-caption></p>
     </div>
   </dialog>
@@ -122,6 +139,9 @@
     </div>
   </dialog>
 
+  {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}
+  <div class="flash-stack" role="status" aria-live="polite">{% for category, message in messages %}<p class="flash flash--{{ category }}">{{ message }}</p>{% endfor %}</div>
+  {% endif %}{% endwith %}
   <script src="{{ url_for('static', filename='js/site.js') }}" defer></script>
 </body>
 </html>

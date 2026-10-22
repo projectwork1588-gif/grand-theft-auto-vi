@@ -165,7 +165,7 @@ def test_the_opening_holds_all_seven_scenes_the_index_and_the_showcase_controls(
 
 def test_the_showcase_clock_is_built_to_wait_and_never_to_scroll():
     js = (ROOT / "app" / "static" / "js" / "garage_concept.js").read_text(encoding="utf-8")
-    assert "dwellSeconds >= 2 && dwellSeconds <= 30 ? dwellSeconds : 2.8" in js                  # a hold of 2.8 s, so a change comes about every three seconds; 2 to 30 only as a review switch
+    assert "dwellSeconds >= 2 && dwellSeconds <= 30 ? dwellSeconds : 5" in js                    # a hold of 5 s, so a change comes every five seconds (the arrival, a third of a second, is inside it); 2 to 30 only as a review switch (2.8 s felt too fast, 6.5 s with a 1.1 s fade too slow)
     for condition in ("userPaused", "document.hidden", "holding.pointer", "holding.focus", "visible", "heading === current", "IntersectionObserver", "visibilitychange", "tv:motion"):
         assert condition in js, condition
     assert "scrollTo(" not in js.replace("list.scrollTo", "").replace("railEl.scrollTo", "") and "scrollIntoView" not in js and "window.scroll" not in js   # it never scrolls the page
@@ -251,7 +251,8 @@ def test_every_scene_has_its_own_small_camera_move_that_cannot_bare_an_edge():
         margin_x = (values["zf"] - 1) * 100 * min(values["fx"], 100 - values["fx"]) / 100
         margin_y = (values["zf"] - 1) * 100 * min(values["fy"], 100 - values["fy"]) / 100
         assert abs(values["dx"]) <= margin_x and abs(values["dy"]) <= margin_y, slug
-    assert css.count("animation: gx-push 4.2s") == 1 and "gx-open .7s" in css                      # one camera, over a little longer than a scene is on show
+    assert css.count("animation: gx-push var(--gx-push, 7s)") == 1                               # one camera, lasting the hold plus the arrival of the next scene (the script sets --gx-push to exactly that)
+    assert "@keyframes gx-open" not in css and "clip-path" not in css                           # no expanding box: the picture arrives by cross-fade
 
 
 def test_a_system_that_asks_for_reduced_motion_but_has_opted_in_still_sees_the_camera():
@@ -261,13 +262,18 @@ def test_a_system_that_asks_for_reduced_motion_but_has_opted_in_still_sees_the_c
     assert re.search(r"prefers-reduced-motion: reduce\) \{.{0,200}animation-duration: \.001ms !important", site, re.S)
     css = (ROOT / "app" / "static" / "css" / "garage_concept.css").read_text(encoding="utf-8")
     block = css.split("@media (prefers-reduced-motion: reduce) {")[1].split(chr(10) + "}" + chr(10))[0]
-    assert "html.motion-on .gx-scene.is-active .gx-art .gshot" in block and "animation-duration: 4.2s !important" in block
+    assert "html.motion-on .gx-scene.is-active .gx-art .gshot" in block and "animation-duration: var(--gx-push, 7s) !important" in block
+    assert "html.motion-on .gx-scene { transition-duration: var(--gx-fade, .35s) !important; }" in block      # the cross-fade is given back too, or the scenes would swap with nothing to see
     assert all(line.strip().startswith("html.motion-on") for line in block.strip().splitlines())      # nothing is given back without the motion class
 
 
-def test_the_server_setting_that_overrides_a_systems_reduced_motion_is_a_development_setting():
+def test_the_server_setting_that_overrides_a_systems_reduced_motion_is_a_development_setting(monkeypatch):
     from app import config
     assert config.ProductionConfig.AUTOPLAY_ALWAYS is False                                           # a deployed site always respects a visitor's system setting
+    # production now refuses to start without a real secret and its public https origin, so the test supplies them instead of relying on this machine's environment
+    monkeypatch.setattr(config.ProductionConfig, "SECRET_KEY", "5f3a9c1e7b2d4a60" * 4)
+    monkeypatch.setattr(config.ProductionConfig, "PUBLIC_ORIGINS", ("https://valkyrie.example.org",))
+    monkeypatch.setattr(config.ProductionConfig, "DB_NAME", "gta6_vi")
     assert config.get_config("production") is config.ProductionConfig and config.get_config("development") is config.DevelopmentConfig
     js = (ROOT / "app" / "static" / "js" / "garage_concept.js").read_text(encoding="utf-8")
     assert "console.info" in js and "TV_AUTOPLAY_ALWAYS" in js                                        # when it is the only reason motion is on, the page says so

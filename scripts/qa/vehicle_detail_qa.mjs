@@ -48,7 +48,7 @@ export default async function (b) {
         const mapX = (x) => tox + mx.a * (x - tox) + mx.e, mapY = (y) => toy + mx.d * (y - toy) + mx.f;
         const subjects = (h.dataset.subject || "").split(";").filter(Boolean).map((s) => { const [x0, y0, x1, y1] = s.split(",").map(Number); return { l: mapX(left + x0 * dw), t: mapY(top + y0 * dh), r: mapX(left + x1 * dw), b: mapY(top + y1 * dh) }; });
         const rect = (e) => { const q = e.getBoundingClientRect(); return { l: q.left, t: q.top, r: q.right, b: q.bottom, w: q.width, h: q.height, name: (e.className && e.className.toString().split(" ")[0]) || e.tagName.toLowerCase() }; };
-        const words = [...h.querySelectorAll(".vd-kicker, .vd-plate, .vd-hero__line, .vd-cue")].map(rect).filter((q) => q.w > 0 && q.h > 0);
+        const words = [...h.querySelectorAll(".vd-kicker, .vd-plate, .vd-hero__line, .vd-cue, .fav__btn")].map(rect).filter((q) => q.w > 0 && q.h > 0);
         const hb = document.querySelector(".site-header").getBoundingClientRect(); const hr = h.getBoundingClientRect();
         return JSON.stringify({ subjects, words, art: { l: hr.left, t: Math.max(hr.top, W_NARROW ? hb.bottom : 0), r: hr.right, b: Math.min(hr.bottom, window.innerHeight) } }); })()`));
       let area = 0, shown = 0, crossing = [];

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% from "account/_form.html" import post_button %}
+{% block title %}Your favourites{% endblock %}
+{% block description %}The characters, vehicles, places and stories you have saved.{% endblock %}
+{% block content %}
+<section class="page-hero">
+  <div class="media page-hero__bg"><span class="media__fallback" aria-hidden="true"></span></div>
+  <div class="page-hero__shade" aria-hidden="true"></div>
+  <div class="container page-hero__inner">
+    <p class="eyebrow">{{ current_user.username }}</p>
+    <h1>Your favourites</h1>
+    <p class="page-hero__lede">{% if total %}{{ total }} saved. Open a character, vehicle, place or story and press Save to add more.{% else %}Nothing saved yet. Open a character, vehicle, place or story and press Save.{% endif %}</p>
+  </div>
+</section>
+<section class="section section--tight">
+  <div class="container acct acct--wide">
+    {% for group in groups %}
+    <section class="acct-group" aria-labelledby="g-{{ group.kind }}">
+      <h2 class="panel-title" id="g-{{ group.kind }}">{{ group.title }} <span class="acct-count">{{ group['items'] | length }}</span></h2>
+      {% if group['items'] %}
+      <ul class="acct-list">
+        {% for item in group['items'] %}
+        <li>
+          <a href="{{ url_for(group.endpoint, slug=item.slug) }}"><span class="name">{{ item.name }}</span></a>
+          {{ post_button(url_for('account.remove_favourite', kind=group.kind, slug=item.slug), 'Remove', 'btn btn--ghost btn--small', {'return': 'list'}) }}
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="acct-empty">No {{ group.title | lower }} saved.</p>
+      {% endif %}
+    </section>
+    {% endfor %}
+    <div class="acct-actions">
+      <a class="btn btn--ghost btn--small" href="{{ url_for('account.password') }}">Change password</a>
+      {{ post_button(url_for('account.logout'), 'Sign out', 'btn btn--ghost btn--small') }}
+    </div>
+  </div>
+</section>
+{% endblock %}

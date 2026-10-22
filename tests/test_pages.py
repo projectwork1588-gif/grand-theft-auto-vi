@@ -46,7 +46,7 @@ def test_homepage_identity_chapters_and_footer(client):
     assert "<title>Grand Theft Auto VI | Team Valkyrie</title>" in page
     assert 'class="hero__gta">Grand Theft Auto</span>' in page and 'class="hero__vi"' in page
     for heading in ("Two leads, one story", "Eight faces of Leonida", "Six regions, one state", "Machines of the coast",
-                    "Tales from the waterfront", "The official trailers", "Leonida is waiting"):
+                    "How well do you know Leonida?", "The official trailers", "Coming", "Leonida is waiting"):
         assert heading in page, heading
     assert "An unofficial educational fan project by Team Valkyrie." in page
     assert "Not affiliated with or endorsed by Rockstar Games or Take-Two Interactive." in page
@@ -59,8 +59,7 @@ def test_homepage_content_comes_from_mysql(client):
     for expected in ("Jason Duval", "Lucia Caminos", "Brian Heder", "Real Dimez",           # characters
                      "Vice City", "Leonida Keys", "Mount Kalaga",                           # regions
                      "Grotti Cheetah", "Shitzu Squalo", "Vapid Stanier", "Vapid Ganado Retro Build",   # official garage
-                     "Ledger of Favours", "Ridge Run", "Last Call at Smokestack Row",         # the three newest stories
-                     "Brian Heder</a>"):                                                    # official relationship
+                     "How well do you know Leonida?", "Rockstar Games"):                    # the picture challenge (its data is the same rows) and the release block's credit
         assert expected in page, expected
     assert 'data-video="https://www.rockstargames.com/videoplayer?id=' in page
     assert "Fictional demo" not in page
@@ -311,7 +310,7 @@ def test_character_profile_plays_the_local_portrait_once_when_it_exists(client, 
     page = html(client, "/characters/brian-heder")
     assert re.search(r'data-portrait-video data-poster-at="[0-9.]+" data-src="/media/clips/brian-heder.mp4"', page) and "muted" in page
     assert "motion-portrait--legacy" in page                                         # only the older composite exists here
-    assert 'poster="/media/clips/brian-heder.jpg"' in page and "data-motion-optin" in page
+    assert "data-motion-optin" in page and not re.search(r"<video[^>]*\sposter=", page)                  # no poster attribute: the lazy still below is the poster, so nothing is fetched early
     # the still is its own picture under the clip, so a loaded video can never show its black first frame
     assert 'class="motion-portrait__poster" src="/media/clips/brian-heder.jpg"' in page
     assert " loop" not in page.split("data-portrait-video")[1].split("</video>")[0]        # Rockstar's clips are never looped
@@ -633,7 +632,7 @@ def test_closing_band_replaces_the_plain_statistics_block(client):
 
 
 def test_catalogue_pages_have_cinematic_official_backdrops(client):
-    for path, fragment in (("/characters", "Jason_and_Lucia_Beach_landscape"), ("/vehicles", "GROTTI_CHEETAH_02"), ("/regions", "Vice_City_10"),
+    for path, fragment in (("/characters", "Jason_and_Lucia_11"), ("/vehicles", "GROTTI_CHEETAH_02"), ("/regions", "Vice_City_10"),
                            ("/music", "hero-background-desktop"), ("/missions", "Vice_City_11")):
         assert fragment in html(client, path), path
 
@@ -761,20 +760,19 @@ def test_lightbox_has_previous_next_and_a_counter(client):
     assert "data-lb-prev" in dialog and "data-lb-next" in dialog and "data-count" in dialog
 
 
-def test_stories_section_separates_team_stories_from_official_connections(client):
+def test_the_picture_challenge_replaced_the_stories_section_and_the_stories_stay_one_link_away(client):
     page = html(client, "/")
-    stories = page.split('id="stories"')[1].split("</section>")[0]
-    assert "story-lead" in stories and stories.count("Team Valkyrie original") >= 3
-    assert "story__num" not in stories and "story-list" not in stories              # no numbered database-style list
-    aside = stories.split("<aside")[1]
-    assert "badge--official" in aside and "Who knows whom" in aside and "Concept" not in aside
+    assert 'id="stories"' not in page and "Tales from the waterfront" not in page and "story-lead" not in page      # the old presentation is gone from Home
+    challenge = page.split('id="challenge"')[1].split("</section>")[0]
+    assert "data-quiz" in challenge and "How well do you know Leonida?" in challenge
+    assert 'href="/missions"' in challenge and "original stories" in challenge                                       # the Stories index is still reachable from Home, labelled as fan fiction
 
 
 def test_chapter_navigation_is_a_quiet_rail_and_a_hairline(client):
     page = html(client, "/")
     assert 'class="chapter-rail"' in page and "data-rail-list" in page and 'class="progress-hairline"' in page
     assert "Jump to" not in page and 'class="waypoint"' not in page              # the floating pill is gone
-    for name in ("Welcome", "The leads", "Dawn over Leonida", "The cast", "Leonida", "The garage", "Stories", "Trailers"):
+    for name in ("Welcome", "The leads", "Dawn over Leonida", "The cast", "Leonida", "The garage", "The challenge", "Trailers", "The release"):
         assert f'data-chapter="{name}"' in page, name
     css = _css()["site.css"]
     assert ".chapter-rail__label" in css and "opacity: 0" in css                  # names only on hover or focus
@@ -840,7 +838,8 @@ def test_native_moments_are_silent_loops_with_two_small_icon_buttons(client, loc
         section = page.split(f'id="{anchor}"')[1].split("</section>")[0]
         video = section.split("<video")[1].split(">")[0]
         assert "data-cinema-video" in video and "muted" in video and "playsinline" in video and " loop" in video, slot
-        assert 'preload="none"' in video and f'poster="/media/cinematic/{slot}.jpg"' in video, slot
+        assert 'preload="none"' in video and "poster=" not in video, slot                                   # the still beside the video is its poster, fetched when it is near
+        assert f'class="cinema__poster-img" src="/media/cinematic/{slot}.jpg"' in section, slot
         assert f'<source src="/media/cinematic/{slot}-mobile.mp4" media="(max-width: 700px)"' in section, slot
         assert f'<source src="/media/cinematic/{slot}.mp4" type="video/mp4">' in section, slot
         assert "cinema__bar" not in section and "Rockstar Games" not in section and "Enable sound" not in section, slot
@@ -1065,7 +1064,7 @@ def test_region_explorer_is_one_stage_six_tabs_and_real_links(client):
 
 def test_section_order_and_untouched_sections_survive_gate_2(client):
     page = html(client, "/")
-    order = [page.index(f'id="{name}"') for name in ("top", "leads", "moment", "cast", "leonida", "garage", "stories", "media")]
+    order = [page.index(f'id="{name}"') for name in ("top", "leads", "moment", "cast", "leonida", "garage", "challenge", "media", "release")]
     assert order == sorted(order)
     assert page.count("data-cast-item") == 8 and 'data-showroom' in page and 'class="theatre"' in page
 

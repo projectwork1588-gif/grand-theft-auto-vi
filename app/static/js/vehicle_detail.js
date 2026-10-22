@@ -121,6 +121,9 @@
   // ---- Leaving for the next machine: its picture is the one that grows into that page's opening (Chrome's cross-document view transitions) ---------
   window.addEventListener("pageswap", function (e) {
     if (!e.viewTransition || !e.activation || !e.activation.entry) { return; }
+    // Landing on the SAME address (Save or Remove posts a form and is sent straight back here, or the page is reloaded) is not a journey to another page: there is
+    // no picture to grow into, and Chrome aborts such a transition with a console error. Skip it. Going to another machine, or anywhere else, still gets its transition.
+    if (new URL(e.activation.entry.url).pathname === location.pathname) { e.viewTransition.skipTransition(); return; }
     var next = document.querySelector(".vd-next__stage");
     if (!next) { return; }
     var target = new URL(e.activation.entry.url).pathname;

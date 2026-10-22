@@ -330,7 +330,8 @@ def test_pictures_declare_the_width_they_are_really_drawn_at(client):
     page = client.get("/characters").get_data(as_text=True)
     spread = page.split('id="jason-duval"')[1].split("</article>")[0]
     assert 'sizes="(min-width: 1100px) 94vw, (min-width: 761px) 170vw, 205vw"' in spread
-    assert 'sizes="max(100vw, 185vh)"' in page.split('class="cast-open"')[1].split("</header>")[0]
+    opening = page.split('class="cast-open"')[1].split("</header>")[0]
+    assert 'sizes="(max-width: 760px) max(100vw, 101vh), max(100vw, 185vh)"' in opening      # a wide window draws it 185vh wide; a phone's shorter box draws it about 101vh wide (it used to claim 185vh, which sent phones the largest file)
     hero = client.get("/characters/jason-duval").get_data(as_text=True).split('class="p-hero__art"')[1].split("</div>")[0]
     assert "265vw" in hero and "data-px=" in hero and "data-pxn=" in hero
 

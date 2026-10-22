@@ -67,6 +67,27 @@ OFFICIAL_LINKS = {
 }
 RELEASE_NOTE = "November 19, 2026"  # the date shown on rockstargames.com/VI
 
+# The official release block near the end of Home. Every value is what Rockstar's own pages say, checked on 21 October 2026 on https://www.rockstargames.com/VI and
+# https://www.rockstargames.com/VI/editions (nothing here is Team Valkyrie's own information):
+#   * "Coming November 19, 2026", with the platform marks PlayStation 5 and Xbox Series X|S.
+#   * "Pre-Order Now" on that page is a button that opens Rockstar's own chooser, not a link: there is no address of its own to point at. The call to action therefore links to the
+#     page that carries it, and says so.
+#   * The editions page lists the Ultimate Edition (digital) and the Standard Edition (digital or code in box), and two items marked "Pre-order bonus": the Vintage Vice City Pack
+#     and a free month of GTA+.
+# The pictures are rows of media_assets: the official cover art, and the Launch Trailer (15 October 2026) with its poster. Change a fact here, never in the template.
+OFFICIAL_RELEASE = {
+    "date": RELEASE_NOTE,
+    "platforms": ("PlayStation 5", "Xbox Series X|S"),
+    "preorder_url": OFFICIAL_LINKS["site"],
+    "editions_url": OFFICIAL_LINKS["editions"],
+    "editions": ("Ultimate Edition (digital)", "Standard Edition (digital or code in box)"),
+    "bonuses": ("the Vintage Vice City Pack", "a free month of GTA+"),
+    "checked": "21 October 2026",
+    "art": "rs-official-cover-art",
+    "video": "official-launch-trailer",
+    "poster": "poster-launch-trailer",
+}
+
 # Display order for regions: the order Rockstar lists them in on rockstargames.com/VI/only-in-leonida.
 # (The API keeps its alphabetical order. Only the pages use this.)
 REGION_ORDER = ("vice-city", "leonida-keys", "grassrivers", "port-gellhorn", "ambrosia", "mount-kalaga")
@@ -165,7 +186,9 @@ PORTRAIT_SHAPE = {"jason-duval": "wide", "lucia-caminos": "wide"}      # everyon
 # The partner banner: both protagonists' faces large and lit, taken from Rockstar's own Jason and Lucia screenshots.
 CAST_TOGETHER = "shot-jason-and-lucia-01"
 # Opening picture of the Characters page: both leads, faces whole, space on the left for the title.
-CHARACTERS_OPENING = "art-jason-lucia-beach"
+CHARACTERS_OPENING = "rs-jason-and-lucia-11"
+# Where the opening picture is framed (x% y%): on a wide window, and on a tablet or phone where the picture is cut much narrower. Both leads must stay whole in both.
+CHARACTERS_OPENING_POS = ("100% 20%", "66% 10%")
 # Names for the groups the supporting cast falls into, keyed by the people in the group. Anything not listed gets a plain title.
 CAST_GROUP_TITLES = {
     frozenset({"boobie-ike", "dre-quan-priest", "real-dimez"}): "Only Raw Records",

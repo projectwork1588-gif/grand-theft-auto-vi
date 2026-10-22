@@ -4,13 +4,14 @@ Pages reuse the same services as the JSON API, so a page and its API endpoint ca
 The public Garage is the official vehicles only: those Rockstar names and shows in its own screenshots.
 Concept vehicles stay in the database for the story archive but get no public page.
 """
+from flask import url_for
 from werkzeug.exceptions import NotFound
 
 from .. import local_media, media_slots, media_urls
 from ..repositories import characters as characters_repo
 from ..repositories import media, missions as missions_repo, regions as regions_repo
 from ..repositories import vehicles as vehicles_repo
-from . import characters, locations, missions, music, regions, screening, validation as v, vehicles
+from . import characters, discover, locations, missions, music, regions, screening, validation as v, vehicles
 
 
 # ---------------------------------------------------------------- small helpers
@@ -292,6 +293,7 @@ def character_index(args):
     result["groups"] = _cast_groups(cast)
     result["network"] = _network(cast)
     result["opening"] = media.by_slugs([media_slots.CHARACTERS_OPENING]).get(media_slots.CHARACTERS_OPENING)
+    result["opening_pos"] = media_slots.CHARACTERS_OPENING_POS
     result["together"] = media.by_slugs([media_slots.CAST_TOGETHER]).get(media_slots.CAST_TOGETHER)
     if result["mode"] == "results":
         by_slug = {c["slug"]: c for c in cast}
@@ -822,6 +824,11 @@ def mission_detail(slug):
 
 
 # ---------------------------------------------------------------- homepage
+def _page_link(kind, slug):
+    """The address of the site's own page for a character, region or vehicle (the picture challenge links its answers there)."""
+    return url_for({"character": "pages.character_detail", "region": "pages.region_detail", "vehicle": "pages.vehicle_detail"}[kind], slug=slug)
+
+
 def home():
     official = characters_repo.featured_official(8)
     covers = media.covers("character", [c["character_id"] for c in official])
@@ -885,8 +892,8 @@ def home():
         "reel": reel,
         "regions": region_cards,
         "vehicles": garage["data"],
-        "missions": missions.list_missions({"per_page": "3", "sort": "newest"})["data"],
-        "official_links": characters_repo.official_relationships(4, exclude=(("dre-quan-priest", "real-dimez"),)),  # the approved four
+        "challenge": discover.challenge(official, regions_repo.list_all("official"), _all_official(), _page_link),
+        "release": discover.release(),
         "hero": pick(media_slots.HERO_SLUGS),
         "hero_layers": local_media.hero_layers(),
         "videos": [m for m in pick(media_slots.VIDEO_SLUGS) if media_urls.player_src(m["embed_url"])],

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% from "account/_form.html" import summary, field %}
+{% block title %}Create an account{% endblock %}
+{% block description %}Create a Team Valkyrie account with a username and a password to keep your favourites.{% endblock %}
+{% block content %}
+<section class="page-hero">
+  <div class="media page-hero__bg"><span class="media__fallback" aria-hidden="true"></span></div>
+  <div class="page-hero__shade" aria-hidden="true"></div>
+  <div class="container page-hero__inner">
+    <p class="eyebrow">Account</p>
+    <h1>Create an account</h1>
+    <p class="page-hero__lede">A username and a password. No email, no verification.</p>
+  </div>
+</section>
+<section class="section section--tight">
+  <div class="container acct">
+    {{ summary(errors) }}
+    <form class="acct-form" method="post" action="{{ url_for('account.register') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {{ field('username', 'Username', errors, value=values.get('username', ''), autocomplete='username', hint='3 to 30 characters: lowercase letters, numbers and underscores.', maxlength=30, autofocus=true) }}
+      {{ field('password', 'Password', errors, type='password', autocomplete='new-password', hint='At least 10 characters.', minlength=10, maxlength=128) }}
+      {{ field('password_confirm', 'Repeat the password', errors, type='password', autocomplete='new-password', minlength=10, maxlength=128) }}
+      <button class="btn" type="submit">Create account</button>
+    </form>
+    <p class="acct-alt">Already have an account? <a href="{{ url_for('account.login') }}">Sign in</a></p>
+  </div>
+</section>
+{% endblock %}

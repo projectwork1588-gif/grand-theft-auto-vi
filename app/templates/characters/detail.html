@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "_components.html" import bento %}
 {% from "characters/_cast.html" import shot, portrait, avatar %}
+{% from "account/_form.html" import save_control with context %}
 {% block title %}{{ character.full_name }}{% endblock %}
 {% block description %}{{ character.summary }}{% endblock %}
 {% block header_class %}{% endblock %}
@@ -17,6 +18,7 @@
       <h1>{{ character.full_name }}</h1>
       <p class="p-hero__lede">{{ character.summary }}</p>
       {% if character.alias %}<p class="p-hero__alias">Known as &ldquo;{{ character.alias }}&rdquo;</p>{% endif %}
+      {{ save_control('characters', character.slug, character.full_name) }}
     </div>
   </header>
 

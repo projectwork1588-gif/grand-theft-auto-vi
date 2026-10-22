@@ -53,7 +53,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   transition: background var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease);
 }
 .site-header.is-solid, .site-header--solid, html.menu-open .site-header {
-  background: rgba(26, 23, 64, .985); box-shadow: 0 1px 0 var(--line-strong), 0 12px 28px -18px rgba(0, 0, 0, .6); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  background: rgba(26, 23, 64, .985); box-shadow: 0 1px 0 var(--line-strong), 0 12px 28px -18px rgba(0, 0, 0, .6);   /* no backdrop blur: at 98.5 percent opacity it showed nothing, and it was recomputed on every scroll frame */
 }
 .header-inner { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
 
@@ -193,8 +193,8 @@ html:not(.js) .hero, html:not(.js) .page-hero { padding-top: 48px; }
   html.motion-on .cinema__video, html.motion-on .regions__view, html.motion-on .regions__view.is-active, html.motion-on .showroom__track { transition-duration: var(--dur-3) !important; }
   html.motion-on .regions.is-auto.is-timing:not(.is-held) .regions__tab.is-active::after { animation-duration: var(--auto-ms, 7000ms) !important; }
   /* the hero motion poster: its own timings, looping, once motion is allowed */
-  html.motion-on .hero__stage .hero__layer { animation-duration: 26s !important; animation-iteration-count: infinite !important; }
-  html.motion-on .hero__stage .hero__layer--lit { animation-duration: 26s, 13s !important; }
-  html.motion-on .hero__stage .hero__haze { animation-duration: 41s !important; animation-iteration-count: infinite !important; }
-  html.motion-on .hero__stage .hero__glow { animation-duration: 13s !important; animation-iteration-count: infinite !important; }
+  html.motion-on .hero__stage .hero__layer { animation-duration: var(--dolly), var(--arrive) !important; animation-iteration-count: infinite, 1 !important; }   /* the push-in loops, the arrival plays once */
+  html.motion-on .hero__stage .hero__layer--lit { animation-duration: var(--dolly), var(--glow), var(--arrive) !important; animation-iteration-count: infinite, infinite, 1 !important; }
+  html.motion-on .hero__stage .hero__haze { animation-duration: var(--haze) !important; animation-iteration-count: infinite !important; }
+  html.motion-on .hero__stage .hero__glow { animation-duration: var(--glow) !important; animation-iteration-count: infinite !important; }
 }
