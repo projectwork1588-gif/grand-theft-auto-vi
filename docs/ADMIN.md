@@ -1,7 +1,7 @@
-# Admin area: Stories (Stage 3, Milestone 1)
+# Admin area: Stories and Places (Stage 3, Milestones 1 and 2)
 
-An administrator can create, read, update and delete **Stories** (the `missions` table) and choose the characters, vehicles and places each one links to. This is the
-first part of the roadmap's Phase 3 (admin and content management). It is built and tested on the **test database only**; enabling it on the live site is a separate,
+An administrator can create, read, update and delete **Stories** (the `missions` table) and choose the characters, vehicles and places each one links to, and **Places** (the
+`locations` table) with the region each one belongs to. This is the first part of the roadmap's Phase 3 (admin and content management). It is built and tested on the **test database only**; enabling it on the live site is a separate,
 later decision (see "Not done" below).
 
 ## Who may use it
@@ -38,6 +38,11 @@ procedure that this tool deliberately does not perform.
 | `GET`/`POST /admin/stories/<slug>/edit` | Update, including the links |
 | `GET /admin/stories/<slug>/delete` | Confirmation page with the impact counts (link rows per kind and users' favourites of the story) |
 | `POST /admin/stories/<slug>/delete` | Delete (a GET never deletes) |
+| `GET /admin/places` | Places list with `q`, `region`, `type`, `status`, `sort`, `page`, `per_page` (the same service as the public places API, every label shown) |
+| `GET`/`POST /admin/places/new` | Create a place (the region is chosen from a list) |
+| `GET`/`POST /admin/places/<slug>/edit` | Update a place, including moving it to another region |
+| `GET /admin/places/<slug>/delete` | Confirmation page with the exact consequences, or a notice that the delete is blocked |
+| `POST /admin/places/<slug>/delete` | Delete (a GET never deletes) |
 
 All changes answer `303` back to the list (filtered to the story's title), so a refresh never repeats them. An administrator sees an **Admin** link on their favourites page; nobody else does.
 
@@ -80,15 +85,34 @@ a 3000-character synopsis with typographic punctuation) measures **about 13.5 KB
 characters. `tests/test_admin_validation.py` posts that form and expects it to be accepted, and posts an oversized body and expects `413`. Text in a non-Latin script is several
 times larger once encoded (a CJK synopsis of 3000 characters would be about 67 KB), so such a form gets the normal `413` page; that is accepted for this English fan site.
 
+## Places (milestone 2)
+
+* **Fields:** name (3 to 100, unique **within its region**: the key is `(region, name)`), slug (set at creation, **read-only afterwards**), **region** (required, chosen from the six regions;
+  the form posts the region's slug and the server looks up the id, so a posted `region_id` is ignored), type (`city`, `district`, `landmark`, `venue`, `wilderness`, `waterfront`), label
+  (`fan` or `demo` only), summary (up to 255), description (up to 3000), optional https source address and source note. Regions themselves are official and are never written here.
+* **Same protections as Stories:** `@admin_required` on every route (and the URL-map test covers the place routes too), CSRF and Origin, validation on the server, immutable slug,
+  one `transaction()` per write with the row locked first (`SELECT ... FOR UPDATE`), duplicate keys turned into field errors (409), and official places read-only at the pages, the
+  service, the repository (even on a direct call) and in every individual `UPDATE`/`DELETE`.
+* **What the database does, and the confirmation page says so first.** Deleting a place touches four tables, by four different rules:
+  * `characters.home_location_id`: **SET NULL**. A fan or demo character who lives there stays and loses its home. The page names them and counts them.
+  * `mission_locations` (story links), `favourite_locations` (users' saved places) and `media_locations`: **CASCADE**. The page counts each; the stories, users and pictures stay.
+  * `locations.region_id` is the **RESTRICT** side: the web app never deletes a region, and the database would refuse (tested).
+  * **A place an official character lives at cannot be deleted** (the page says so and offers no button; a POST answers 409). SET NULL would rewrite that official character. The Python check
+    locks the residents and refuses, and the `DELETE` statement carries the same condition as a `NOT EXISTS`, so it holds even if the Python check is bypassed (tested).
+* **Moving a place** to another region keeps its residents, story links and favourites (tested); a move into a region that already has a place of that name is a 409 and changes nothing.
+* **Request size:** the largest realistic place form (every field at its maximum, typographic punctuation) measures **about 6.4 KB**, 39 % of the 16 KiB limit, so the global limit is unchanged.
+* Tests: `tests/test_admin_places_crud.py` (including the delete-impact accuracy checks), `..._transactions.py` (rollback at the last step, duplicate and foreign-key races, the
+  connection back in a pool of one), `..._official_protection.py`, `..._validation.py`.
+
 ## Audit
 
-Every change writes one log line at INFO, for example `Admin 7 updated story the-quiet-water`: the user id, the action and the slug. No names, text or secrets. There is no audit
+Every change writes one log line at INFO, for example `Admin 7 updated story the-quiet-water` or `Admin 7 deleted place neon-row-district`: the user id, the action and the slug. No names, text or secrets. There is no audit
 table (that would need a new migration, which this milestone does not need).
 
 ## Tests and how to run them (test database only)
 
 ```
-.venv\Scripts\python.exe -m pytest tests/test_admin_authz.py tests/test_admin_stories_crud.py tests/test_admin_transactions.py tests/test_admin_validation.py tests/test_admin_official_protection.py tests/test_admin_stats.py tests/test_make_admin.py tests/test_db_transactions.py -q
+.venv\Scripts\python.exe -m pytest tests/test_admin_authz.py tests/test_admin_stories_crud.py tests/test_admin_transactions.py tests/test_admin_validation.py tests/test_admin_official_protection.py tests/test_admin_stats.py tests/test_make_admin.py tests/test_db_transactions.py tests/test_admin_places_crud.py tests/test_admin_places_transactions.py tests/test_admin_places_official_protection.py tests/test_admin_places_validation.py -q
 .venv\Scripts\python.exe scripts\qa\run_admin_qa.py 5084            # browser QA: starts a TEST-configured server, proves the database is a *_test one first
 ```
 
@@ -100,4 +124,4 @@ and remove them, and the seeded stories are never changed. To look at the pages 
 
 * Enabling the admin area on the live site, and creating a first administrator there. Neither needs a schema change, but the live deployment still depends on migration 010 (accounts)
   and on knowing which earlier migrations the live database has.
-* Editing characters, vehicles, places or media; relationship editors for characters; an audit table; optimistic locking.
+* Editing characters, vehicles, regions, vehicle categories, media or music; relationship editors for characters; an audit table; optimistic locking.

@@ -3,16 +3,13 @@
 No Flask request handling and no SQL here (SQL is in repositories/admin_stories.py). Official-source stories are read-only at every level: the form can
 only choose 'fan' or 'demo', this service refuses to load an official story for editing, and the repository refuses to write one even when called directly.
 """
-import re
-import unicodedata
-from urllib.parse import urlsplit
-
 import mysql.connector
 from flask import current_app
 from werkzeug.exceptions import Forbidden, NotFound
 
 from ..repositories import admin_stats, admin_stories as repo, missions as missions_repo
 from . import missions as missions_service, validation as v
+from .admin_forms import DUPLICATE_ENTRY, FOREIGN_KEY_FAILED, SOURCE_MAX, clean_source_url, clean_text, slugify
 
 TITLE_MIN, TITLE_MAX = 3, 120
 SUMMARY_MAX = 255
@@ -20,12 +17,9 @@ SUMMARY_MAX = 255
 # 16 KiB request limit (measured; docs/ADMIN.md). The global limit is deliberately not raised. Text in a non-Latin script is several times larger once the
 # browser encodes it, and a form that big gets the normal 413 page.
 SYNOPSIS_MAX = 3000
-SOURCE_MAX = 500
 NOTE_MAX = {"characters": 80, "vehicles": 160}
 LABELS = {"characters": "character", "vehicles": "vehicle", "locations": "place"}
 MAX_LINKS = 50
-DUPLICATE_ENTRY = 1062
-FOREIGN_KEY_FAILED = (1216, 1452)
 
 
 class StoryFormError(Exception):
@@ -35,42 +29,6 @@ class StoryFormError(Exception):
         super().__init__("story form not accepted")
         self.errors = errors
         self.status = status
-
-
-# ------------------------------------------------------------------ cleaning
-def slugify(title):
-    """'The Quiet Water' -> 'the-quiet-water' (accents dropped, anything else that is not a letter or digit becomes one hyphen)."""
-    plain = unicodedata.normalize("NFKD", title or "").encode("ascii", "ignore").decode("ascii").lower()
-    return re.sub(r"[^a-z0-9]+", "-", plain).strip("-")[:80].strip("-")
-
-
-def _text(form, name, errors, label, maximum, *, minimum=1, multiline=False):
-    """The trimmed value of a text field, or '' after recording a problem. Control characters are refused (a line break and tab are fine in the synopsis)."""
-    value = (form.get(name) or "").strip()
-    if multiline:
-        value = value.replace("\r\n", "\n").replace("\r", "\n")
-    allowed = "\n\t" if multiline else ""
-    if any(unicodedata.category(c) == "Cc" and c not in allowed for c in value):
-        errors[name] = f"{label} contains a character that is not allowed."
-        return ""
-    if len(value) < minimum:
-        errors[name] = f"{label} is required." if minimum <= 1 else f"{label} needs at least {minimum} characters."
-        return ""
-    if len(value) > maximum:
-        errors[name] = f"{label} can have at most {maximum} characters."
-        return ""
-    return value
-
-
-def _source_url(form, errors):
-    value = (form.get("source_url") or "").strip()
-    if not value:
-        return None
-    parts = urlsplit(value)
-    if len(value) > SOURCE_MAX or parts.scheme != "https" or not parts.netloc or "@" in parts.netloc or any(c.isspace() or unicodedata.category(c) == "Cc" for c in value):
-        errors["source_url"] = f"The source address must be a plain https address of at most {SOURCE_MAX} characters."
-        return None
-    return value
 
 
 def selection_from_form(form):
@@ -109,7 +67,7 @@ def _links(form, errors):
                 continue
             field = f"{kind}_note__{slug}"
             label_for_note = "The role" if kind == "characters" else "The use"
-            note = _text(form, field, errors, label_for_note, NOTE_MAX[kind])
+            note = clean_text(form, field, errors, label_for_note, NOTE_MAX[kind])
             items.append((ids[slug], note))
         links[kind] = items
     if primary and primary not in form.getlist("locations"):
@@ -120,7 +78,7 @@ def _links(form, errors):
 def parse(form, creating):
     """Validate a submitted story form. Returns (fields, links, errors); `errors` is empty when the form is acceptable."""
     errors = {}
-    title = _text(form, "title", errors, "The title", TITLE_MAX, minimum=TITLE_MIN)
+    title = clean_text(form, "title", errors, "The title", TITLE_MAX, minimum=TITLE_MIN)
     if creating:
         slug = (form.get("slug") or "").strip() or slugify(title)
         if not slug or len(slug) > 80 or not v.SLUG_PATTERN.match(slug):
@@ -133,10 +91,10 @@ def parse(form, creating):
     status = (form.get("content_status") or "").strip().lower()
     if status not in repo.WRITABLE_STATUSES:
         errors["content_status"] = "Choose 'fan' or 'demo'. Official stories come from Rockstar's own material and cannot be created or changed here."
-    summary = _text(form, "summary", errors, "The summary", SUMMARY_MAX)
-    synopsis = _text(form, "synopsis", errors, "The synopsis", SYNOPSIS_MAX, multiline=True)
-    source_url = _source_url(form, errors)
-    source_note = _text(form, "source_note", errors, "The source note", SOURCE_MAX, minimum=0)
+    summary = clean_text(form, "summary", errors, "The summary", SUMMARY_MAX)
+    synopsis = clean_text(form, "synopsis", errors, "The synopsis", SYNOPSIS_MAX, multiline=True)
+    source_url = clean_source_url(form, errors)
+    source_note = clean_text(form, "source_note", errors, "The source note", SOURCE_MAX, minimum=0)
     links = _links(form, errors)
     fields = {"slug": slug, "title": title, "mission_type": mission_type, "summary": summary, "synopsis": synopsis, "content_status": status,
               "source_url": source_url, "source_note": source_note or None}

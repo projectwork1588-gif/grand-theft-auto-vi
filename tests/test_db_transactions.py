@@ -163,7 +163,7 @@ def test_application_code_never_uses_the_raw_connection_or_a_cursor_of_its_own()
 # The application's writers. The account repositories keep the original, strict line rule exactly as it was. The admin repository (Stories) is a deliberate, reviewed
 # addition and is held to a precise, stricter rule: every execute is inside a transaction block, directly or through a helper that is only called from inside one.
 ACCOUNT_WRITERS = {"repositories/users.py", "repositories/favourites.py"}
-ADMIN_WRITERS = {"repositories/admin_stories.py"}
+ADMIN_WRITERS = {"repositories/admin_stories.py", "repositories/admin_locations.py"}
 
 
 def transaction_rule_violations(source):

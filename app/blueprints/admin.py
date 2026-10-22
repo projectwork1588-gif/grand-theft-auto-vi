@@ -1,4 +1,4 @@
-"""The admin area: Stories (missions) and the people, vehicles and places they link to. Administrators only.
+"""The admin area: Stories (missions) with the people, vehicles and places they link to, and Places (locations) with the region they belong to. Administrators only.
 
 Every route carries @security.admin_required (tests/test_admin_authz.py fails if one does not). Every state-changing route is a POST that passes the CSRF check in
 app/security.py. The administrator is the signed-in user from the session; no route takes a user id, a role or a redirect address from the request.
@@ -6,12 +6,14 @@ app/security.py. The administrator is the signed-in user from the session; no ro
 from flask import Blueprint, flash, g, make_response, redirect, render_template, request, url_for
 
 from .. import security
-from ..services import admin_stories as stories, validation as v
+from ..services import admin_places as places, admin_stories as stories, validation as v
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 TYPE_CHOICES = [(t, t.capitalize()) for t in v.MISSION_TYPES]
 DEFAULTS = {"mission_type": "side", "content_status": "demo"}
+PLACE_TYPE_CHOICES = [(t, t.capitalize()) for t in v.LOCATION_TYPES]
+PLACE_DEFAULTS = {"location_type": "district", "content_status": "demo"}
 
 
 def _to(endpoint, **values):
@@ -75,3 +77,58 @@ def story_delete(slug):
     title = stories.delete(slug, g.user)
     flash(f"{title} was deleted.", "info")
     return _to("admin.story_list")
+
+
+# ------------------------------------------------------------------ Places
+def _place_form_page(status=200, **context):
+    region_choices = [("", "Choose a region")] + [(r["slug"], r["name"]) for r in places.options()["regions"]]
+    return make_response(render_template("admin/place_form.html", region_choices=region_choices, type_choices=PLACE_TYPE_CHOICES, **context), status)
+
+
+def _place_values(place):
+    """The form values of a stored place: the form names the region by its slug."""
+    return {**place, "region": place["region_slug"]}
+
+
+@admin_bp.get("/places")
+@security.admin_required
+def place_list():
+    return render_template("admin/places_list.html", location_types=v.LOCATION_TYPES, regions=places.options()["regions"], **places.list_places(request.args))
+
+
+@admin_bp.route("/places/new", methods=["GET", "POST"])
+@security.admin_required
+def place_new():
+    if request.method == "GET":
+        return _place_form_page(creating=True, slug=None, values=PLACE_DEFAULTS, errors={})
+    try:
+        places.create(request.form, g.user)
+    except places.PlaceFormError as error:
+        return _place_form_page(error.status, creating=True, slug=None, values=request.form, errors=error.errors)
+    flash("The place was created.", "success")
+    return _to("admin.place_list", q=(request.form.get("name") or "").strip())
+
+
+@admin_bp.route("/places/<slug>/edit", methods=["GET", "POST"])
+@security.admin_required
+def place_edit(slug):
+    if request.method == "GET":
+        place = places.load_for_edit(slug)
+        return _place_form_page(creating=False, slug=slug, values=_place_values(place), errors={})
+    try:
+        places.update(slug, request.form, g.user)
+    except places.PlaceFormError as error:
+        return _place_form_page(error.status, creating=False, slug=slug, values=request.form, errors=error.errors)
+    flash("The place was saved.", "success")
+    return _to("admin.place_list", q=(request.form.get("name") or "").strip())
+
+
+@admin_bp.route("/places/<slug>/delete", methods=["GET", "POST"])
+@security.admin_required
+def place_delete(slug):
+    if request.method == "GET":
+        place, impact, residents = places.load_for_delete(slug)
+        return render_template("admin/place_delete.html", place=place, impact=impact, residents=residents)
+    name = places.delete(slug, g.user)
+    flash(f"{name} was deleted.", "info")
+    return _to("admin.place_list")

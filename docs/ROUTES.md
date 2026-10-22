@@ -27,7 +27,7 @@
 | `/account/favourites` | The signed-in visitor's saved characters, vehicles, places and stories, with a Remove button each. Signed-out visitors are sent to `/login` |
 | `/account/password` | Change password (the current password is verified first). Signed-in only |
 | `POST /favourites/<kind>/<slug>`, `POST /favourites/<kind>/<slug>/remove` | Save or remove a favourite (`kind`: `characters`, `vehicles`, `locations`, `missions`). Signed-in only; always acts on the signed-in user; answers 303; 404 for an unknown or unpublished record. Every POST needs the CSRF token (400 without) |
-| `/admin`, `/admin/stories`, `/admin/stories/new`, `/admin/stories/<slug>/edit`, `/admin/stories/<slug>/delete` | **Administrators only** (signed out: redirect to `/login`; signed in but not an administrator: 403). Dashboard and create, read, update and delete for Stories and their links. Every POST needs the CSRF token; official stories are read-only. See `docs/ADMIN.md` |
+| `/admin`, `/admin/stories`, `/admin/stories/new`, `/admin/stories/<slug>/edit`, `/admin/stories/<slug>/delete`, `/admin/places`, `/admin/places/new`, `/admin/places/<slug>/edit`, `/admin/places/<slug>/delete` | **Administrators only** (signed out: redirect to `/login`; signed in but not an administrator: 403). Dashboard and create, read, update and delete for Stories (with their links) and Places (with their region). Every POST needs the CSRF token; official stories are read-only. See `docs/ADMIN.md` |
 | `/health` | JSON health check, public and deliberately bare: `{"status":"ok","database":"connected"}` (200), or `{"status":"error","database":"unreachable"}` (503) when MySQL is down. No server version, host, account or error text (the reason goes to the server log only). Not linked from the site |
 
 ### JSON API (`/api/v1`)
@@ -57,7 +57,7 @@ Pages and API endpoints share the same services, so they cannot disagree.
 
 | Phase | Routes |
 |-------|--------|
-| 3 Admin | Stories CRUD and the dashboard are built (see above and `docs/ADMIN.md`); CRUD for the other records, character relationship editors and an audit table are not |
+| 3 Admin | Stories and Places CRUD and the dashboard are built (see above and `docs/ADMIN.md`); CRUD for the other records, character relationship editors and an audit table are not |
 | 4 Signature | `/atlas` (reuses `/regions/<slug>` and `/locations/<slug>`), `/network`, `POST /api/v1/terminal`, `/search`, `/trails` |
 | 5 Media + polish | `/theatre`, wallpaper and screenshot galleries, official vehicle imagery (needs a `media_vehicles` junction), animation pass |
 | 6 Final | Integration and security testing, performance, documentation, viva preparation |

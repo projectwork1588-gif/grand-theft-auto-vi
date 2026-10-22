@@ -196,7 +196,7 @@ enforces, not just a convention.
   * CASCADE: deleting a parent removes the rows that belong to it (a character's link rows, a station's preview tracks, a collection's items, a user's favourites, a story's links).
   * SET NULL: deleting a location only blanks `characters.home_location_id`; deleting a poster picture only blanks `media_collection_items.poster_media_id`.
   * RESTRICT: deleting a region (`locations.region_id`) or a vehicle category (`vehicles.category_id`) that is still in use is **blocked**.
-  * `tests/test_integrity.py` proves these rules against a real database. In the web application the admin area (`docs/ADMIN.md`) lets an administrator delete a story, which shows CASCADE through the pages (the confirmation page counts the link rows and favourites that go with it).
+  * `tests/test_integrity.py` proves these rules against a real database. In the web application the admin area (`docs/ADMIN.md`) shows them through the pages: deleting a story shows CASCADE, and deleting a place shows SET NULL (a demo character's home is cleared), CASCADE (its story links, favourites and media links) and, as a refusal, the rule that a place an official character lives at is never deleted. Each confirmation page counts what will happen before the button is pressed.
 
 ## Normalization (3NF)
 
@@ -217,7 +217,7 @@ Search currently uses `LIKE '%text%'`, which cannot use a normal index. That is 
 * `scripts/init_db.py` loads the seed inside one transaction (all-or-nothing).
 * `app/db.py` provides `transaction()`, the **only** way the application writes: one unit of work that commits on success and rolls back on any error. `tests/test_db_connection.py` proves the commit and the rollback.
   * It cannot nest, and it refuses to end a transaction it did not open (rules and tests: `docs/ACCOUNTS.md`, "Transaction ownership", `tests/test_db_transactions.py`).
-  * Three groups of code write: accounts (sign-up, password change), favourites (save, remove) and the admin Stories area (`docs/ADMIN.md`). A static test fails if any other file contains write SQL, and holds each writer to the rule that every `cursor.execute` sits inside a `with transaction() as cursor:` block.
+  * Three groups of code write: accounts (sign-up, password change), favourites (save, remove) and the admin area for Stories and Places (`docs/ADMIN.md`). A static test fails if any other file contains write SQL, and holds each writer to the rule that every `cursor.execute` sits inside a `with transaction() as cursor:` block.
 * **A multi-table write in practice.** Creating, updating or deleting a story is one transaction: it writes the `missions` row and its rows in `mission_characters`, `mission_vehicles` and `mission_locations` together. Updating locks the story row first (`SELECT ... FOR UPDATE`), so two administrators cannot interleave, and replaces the links atomically. A duplicate title, or a record removed while the form was open (foreign-key error 1452 or 1216), rolls everything back, including links already deleted in the same transaction. `tests/test_admin_transactions.py` lets a real step run, fails the next one, and compares before and after snapshots.
 * No isolation level is set anywhere in the code, so InnoDB's default (REPEATABLE READ) applies. The read helpers open an implicit read snapshot, which `transaction()` ends before it begins a write.
 

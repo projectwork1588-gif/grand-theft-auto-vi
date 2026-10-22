@@ -1,10 +1,13 @@
-// The admin area (Stories) in a real browser: who is let in, the dashboard, the list, create with the keyboard only, validation, edit, the official-content lock, delete with its
+// The admin area (Stories and Places) in a real browser: who is let in, the dashboard, the list, create with the keyboard only, validation, edit, the official-content lock, delete with its
 // confirmation page, CSRF, and layout and touch size at four widths.
 //   python scripts/qa/run_admin_qa.py        (starts a TEST-configured server on its own port, proves the database is a *_test one, makes its test data, then runs this)
 //   QA_REDUCED_MOTION=1 python scripts/qa/run_admin_qa.py     (the visitor's system asks for reduced motion)
-// This script signs in and creates and deletes stories, so it refuses to run unless the runner has verified the server.
+// This script signs in and creates, edits and deletes stories and places, so it refuses to run unless the runner has verified the server.
 const BASE = process.env.TL_BASE || "http://127.0.0.1:5084";
 const ADMIN = process.env.QA_ADMIN, USER = process.env.QA_USER, PASSWORD = process.env.QA_PASSWORD, OFFICIAL = process.env.QA_OFFICIAL_SLUG;
+const OFFICIAL_PLACE = process.env.QA_OFFICIAL_PLACE, BLOCKED_PLACE = process.env.QA_BLOCKED_PLACE, IMPACT_PLACE = process.env.QA_IMPACT_PLACE, IMPACT_STORY = process.env.QA_IMPACT_STORY;
+const PLACE_NAME = "TT QA Place " + Math.random().toString(36).slice(2, 8);
+const PLACE_SLUG = "tt-qa-place-" + Math.random().toString(36).slice(2, 8);
 const TITLE = "TT QA Story " + Math.random().toString(36).slice(2, 8);
 const SLUG = "tt-qa-" + Math.random().toString(36).slice(2, 8);
 let failed = 0;
@@ -166,6 +169,89 @@ export default async function (b) {
   await go(`/missions/${SLUG}`);
   report(/404|Not Found/i.test(await b.eval("document.querySelector('.eyebrow, h1').textContent")), "delete: its public page is gone (404)");
 
+  // ======================================================================== Places
+  // ---- the list
+  await go("/admin/places?per_page=50");
+  report((await b.eval("document.querySelectorAll('.adm-table tbody tr').length")) >= 8, "places list: the seeded places and the QA places are listed");
+  report(/Read-only \(official\)/.test(await b.eval(`document.querySelector('.adm-table tbody tr:has(a[href="/locations/${OFFICIAL_PLACE}"])').textContent`)) && !(await q(`a[href="/admin/places/${OFFICIAL_PLACE}/edit"]`)), "places list: the official place is marked read-only and has no Edit or Delete");
+  await go("/admin/places?q=neon");
+  report((await b.eval("document.querySelectorAll('.adm-table tbody tr').length")) >= 1 && (await text()).toLowerCase().includes("neon row"), "places list: the search narrows the list");
+  await go("/admin/places?region=vice-city&per_page=50");
+  report(await b.eval("[...document.querySelectorAll('.adm-table tbody tr td:nth-child(2)')].every((c) => c.textContent.trim() === 'Vice City') && document.querySelectorAll('.adm-table tbody tr').length > 0"), "places list: the region filter shows only that region");
+
+  // ---- create a place, with the keyboard only
+  await go("/admin/places/new", 1000);
+  report(await b.eval("document.activeElement && document.activeElement.id === 'name'"), "place create: the name field has focus when the page opens");
+  const unlabeledPlace = await b.eval("[...document.querySelectorAll('form.adm-form input:not([type=hidden]), form.adm-form select, form.adm-form textarea')].filter((e) => !(e.labels && e.labels.length) && !e.getAttribute('aria-label')).map((e) => e.name)");
+  report(unlabeledPlace.length === 0, "place create: every form control has a label", JSON.stringify(unlabeledPlace));
+  report((await b.eval("document.querySelectorAll('#region option').length")) === 7 && !(await q("option[value=official]")), "place create: the region list offers the six regions, and the label list never offers 'official'");
+  await typeText(PLACE_NAME);
+  const pSlug = await tabTo("#slug"); await typeText(PLACE_SLUG);
+  const pRegion = await tabTo("#region"); await key("ArrowDown", "ArrowDown", 40);
+  const regionChosen = await b.eval("document.querySelector('#region').value");
+  const pSummary = await tabTo("#summary"); await typeText("Typed with the keyboard only.");
+  const pDescription = await tabTo("#description"); await typeText("A description that was typed without touching the mouse.");
+  const pSubmit = await tabTo("form.adm-form button[type=submit]");
+  report([pSlug, pRegion, pSummary, pDescription, pSubmit].every((n) => n >= 0) && regionChosen !== "", "place create: every control is reachable with Tab, and the arrow key chose a region", JSON.stringify([pSlug, pRegion, pSummary, pDescription, pSubmit, regionChosen]));
+  await b.eval("window.__qaMarker = 1"); await key("Enter", "Enter", 13, String.fromCharCode(13));
+  for (let i = 0; i < 100; i++) { await b.sleep(100); if (await b.eval("typeof window.__qaMarker === 'undefined' && document.readyState === 'complete'")) break; }
+  await b.sleep(400);
+  report((await path()) === "/admin/places" && /The place was created/.test(await text()) && (await text()).includes(PLACE_NAME), "place create: Enter on the button creates it and the list shows it with a message", await path());
+  await go(`/locations/${PLACE_SLUG}`);
+  report((await text()).includes(PLACE_NAME), "place create: the public place page shows it");
+
+  // ---- validation
+  await go("/admin/places/new");
+  await fill("name", "ab"); await fill("summary", ""); await fill("description", "x");
+  await press("form.adm-form button[type=submit]");
+  report((await b.eval("document.querySelector('#form-errors') && document.querySelector('#form-errors').getAttribute('role')")) === "alert" && (await b.eval("document.querySelector('#region').getAttribute('aria-invalid')")) === "true" && (await b.eval("document.querySelector('#name').getAttribute('aria-invalid')")) === "true", "place validation: an error summary (role=alert) and the region and name fields are marked invalid");
+  report((await b.eval("document.querySelector('#region-note').textContent")).length > 5 && (await b.eval("document.querySelector('#name').value")) === "ab", "place validation: the message is next to the field and what was typed is kept");
+
+  // ---- edit (including moving to another region)
+  await go(`/admin/places/${PLACE_SLUG}/edit`);
+  const regionBefore = await b.eval("document.querySelector('#region').value");
+  report((await b.eval("document.querySelector('#name').value")) === PLACE_NAME && regionBefore !== "" && !(await q("input[name=slug]")), "place edit: the form shows the current values and the slug is not editable");
+  await fill("name", PLACE_NAME + " (edited)");
+  await b.eval("(() => { const s = document.querySelector('#region'); const other = [...s.options].find((o) => o.value && o.value !== s.value); s.value = other.value; return true; })()");
+  const regionAfter = await b.eval("document.querySelector('#region').value");
+  await press("form.adm-form button[type=submit]");
+  report((await path()) === "/admin/places" && /The place was saved/.test(await text()) && (await text()).includes(PLACE_NAME + " (edited)"), "place edit: saving returns to the list with the new name", await path());
+  await go(`/admin/places/${PLACE_SLUG}/edit`);
+  report((await b.eval("document.querySelector('#region').value")) === regionAfter && regionAfter !== regionBefore, "place edit: the place is now in the other region", regionBefore + " -> " + regionAfter);
+
+  // ---- the official place is locked
+  await go(`/admin/places/${OFFICIAL_PLACE}/edit`);
+  report(/Forbidden/.test(await heading()), "official place: its edit page is 403 for an administrator");
+  await go(`/admin/places/${OFFICIAL_PLACE}/delete`);
+  report(/Forbidden/.test(await heading()), "official place: its delete page is 403 for an administrator");
+
+  // ---- a place an official character lives at cannot be deleted
+  await go(`/admin/places/${BLOCKED_PLACE}/delete`);
+  report(/cannot be deleted/i.test(await heading()) && /official character/.test(await text()) && !(await q("button.adm-danger")), "blocked delete: the page says an official character lives there and offers no Delete button");
+
+  // ---- CSRF
+  await go(`/admin/places/${PLACE_SLUG}/edit`);
+  await b.eval("document.querySelector('form.adm-form input[name=csrf_token]').remove()");
+  await press("form.adm-form button[type=submit]");
+  report(/could not be checked/.test(await text()), "place csrf: a form posted without its token is refused with a clear message");
+  await go(`/locations/${PLACE_SLUG}`);
+  report((await text()).includes(PLACE_NAME + " (edited)"), "place csrf: and nothing was changed");
+
+  // ---- delete: the confirmation page tells the truth first
+  await go(`/admin/places/${IMPACT_PLACE}/delete`);
+  const impactText = await text();
+  report((await heading()) === "Delete this place?" && /1 character will have no home place/.test(impactText) && /1 story link /.test(impactText) && /1 saved favourite /.test(impactText) && /1 media link /.test(impactText), "place delete: the page counts the resident, the story link, the favourite and the media link");
+  await press("a.btn--ghost[href='/admin/places']");
+  await go(`/locations/${IMPACT_PLACE}`);
+  report(!/404|Not Found/i.test(await b.eval("document.querySelector('.eyebrow, h1').textContent")), "place delete: 'Keep it' deletes nothing");
+  await go(`/admin/places/${IMPACT_PLACE}/delete`);
+  await press("form.adm-actions button.adm-danger");
+  report((await path()) === "/admin/places" && /was deleted/.test(await text()), "place delete: the button deletes it and returns to the list with a message", await path());
+  await go(`/locations/${IMPACT_PLACE}`);
+  report(/404|Not Found/i.test(await b.eval("document.querySelector('.eyebrow, h1').textContent")), "place delete: its public page is gone (404)");
+  await go(`/missions/${IMPACT_STORY}`);
+  report(!/404|Not Found/i.test(await b.eval("document.querySelector('.eyebrow, h1').textContent")), "place delete: the story that linked it still opens");
+
   // ---- layout and touch size
   await go(`/admin/stories/new`);
   await fill("title", "TT QA Layout " + Math.random().toString(36).slice(2, 6)); await fill("slug", "tt-qa-layout-" + Math.random().toString(36).slice(2, 6)); await fill("summary", "s"); await fill("synopsis", "s");
@@ -173,20 +259,23 @@ export default async function (b) {
   const layoutSlug = await b.eval("(document.querySelector('.adm-table tbody th a') || {}).getAttribute ? document.querySelector('.adm-table tbody .adm-slug').textContent : ''");
   for (const [W, H, mobile] of [[1440, 900, false], [820, 1180, false], [390, 844, true], [360, 740, true]]) {
     await b.size(W, H, mobile);
-    for (const url of ["/admin", "/admin/stories?per_page=50", "/admin/stories/new", `/admin/stories/${layoutSlug}/edit`, `/admin/stories/${layoutSlug}/delete`]) {
+    for (const url of ["/admin", "/admin/stories?per_page=50", "/admin/stories/new", `/admin/stories/${layoutSlug}/edit`, `/admin/stories/${layoutSlug}/delete`, "/admin/places?per_page=50", "/admin/places/new", `/admin/places/${PLACE_SLUG}/edit`, `/admin/places/${PLACE_SLUG}/delete`, `/admin/places/${BLOCKED_PLACE}/delete`]) {
       await go(url, 900);
       const r = JSON.parse(await b.eval(`JSON.stringify((() => {
         const over = Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) - innerWidth;
         const small = [...document.querySelectorAll('main a.btn, main button.btn, form.adm-form input[type=text], form.adm-form select, form.adm-form textarea, .adm-link-row label')].filter((e) => { const s = getComputedStyle(e); const p = e.getBoundingClientRect(); return s.display !== 'none' && p.width > 0 && p.height > 0 && p.height < 40 && !e.classList.contains('visually-hidden'); }).map((e) => (e.id || e.className || e.tagName) + ':' + Math.round(e.getBoundingClientRect().height));
         const off = [...document.querySelectorAll('main a, main button, main input, main select, main textarea')].filter((e) => { const p = e.getBoundingClientRect(); return p.width > 0 && (p.left < -1 || p.right > innerWidth + 1) && !e.closest('.adm-table-wrap'); }).length;
         return { over, small: small.slice(0, 4), off }; })())`));
-      report(r.over <= 0 && r.small.length === 0 && r.off === 0, `${W}x${H} ${url.replace(layoutSlug, '<story>')}: no horizontal overflow; controls on screen and at least 40px tall`, JSON.stringify(r));
+      report(r.over <= 0 && r.small.length === 0 && r.off === 0, `${W}x${H} ${url.replace(layoutSlug, '<story>').replace(PLACE_SLUG, '<place>').replace(BLOCKED_PLACE, '<blocked place>')}: no horizontal overflow; controls on screen and at least 40px tall`, JSON.stringify(r));
     }
   }
   await b.size(1440, 900, false);
   await go(`/admin/stories/${layoutSlug}/delete`);
   await press("form.adm-actions button.adm-danger");
   report((await path()) === "/admin/stories" && !(await text()).includes(layoutSlug), "cleanup: the layout test story was deleted through the page");
+  await go(`/admin/places/${PLACE_SLUG}/delete`);
+  await press("form.adm-actions button.adm-danger");
+  report((await path()) === "/admin/places" && !(await text()).includes(PLACE_SLUG), "cleanup: the QA place was deleted through the page");
   report(problems.length === 0, "no console, page or request errors during the whole run", problems.slice(0, 3).join(" | "));
   console.log(failed ? `\n${failed} FAILED` : "\nall passed");
   process.exitCode = failed ? 1 : 0;

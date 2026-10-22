@@ -17,7 +17,9 @@
 <nav class="adm-nav" aria-label="Admin">
   <a class="chip" href="{{ url_for('admin.dashboard') }}"{% if active == 'dashboard' %} aria-current="page"{% endif %}>Dashboard</a>
   <a class="chip" href="{{ url_for('admin.story_list') }}"{% if active == 'stories' %} aria-current="page"{% endif %}>Stories</a>
+  <a class="chip" href="{{ url_for('admin.place_list') }}"{% if active == 'places' %} aria-current="page"{% endif %}>Places</a>
   <a class="chip" href="{{ url_for('admin.story_new') }}"{% if active == 'new' %} aria-current="page"{% endif %}>New story</a>
+  <a class="chip" href="{{ url_for('admin.place_new') }}"{% if active == 'new_place' %} aria-current="page"{% endif %}>New place</a>
   <a class="chip" href="{{ url_for('account.favourites_page') }}">Back to your account</a>
 </nav>
 {%- endmacro %}

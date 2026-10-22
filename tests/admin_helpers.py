@@ -115,3 +115,96 @@ def make_story(slug=None, status="demo", title=None, characters=(), vehicles=(),
     for entity in places:
         h.execute("INSERT INTO mission_locations (mission_id, location_id, is_primary) SELECT %s, location_id, %s FROM locations WHERE slug = %s", (mission_id, entity == primary, entity))
     return slug
+
+
+# ------------------------------------------------------------------ Places (the locations table)
+REGIONS = ("vice-city", "leonida-keys")           # two seeded official regions: a place is created in one and moved to the other
+PLACE_TYPES = ("city", "district", "landmark", "venue", "wilderness", "waterfront")
+
+
+def new_place_name():
+    return "TT Place " + uuid.uuid4().hex[:10]
+
+
+def wipe_test_places(app):
+    """Remove the places, and the characters made to live at them, that the tests created ('tt-' slugs). Test database only (the helper proves it)."""
+    assert app.config["DB_CONFIG"].DB_NAME.endswith("_test")
+    h.rows("SELECT 1")
+    h.execute("DELETE FROM characters WHERE slug LIKE %s", ("tt-%",))           # their link rows and favourites cascade
+    h.execute("DELETE FROM locations WHERE slug LIKE %s", ("tt-%",))            # the link rows, favourites and media links of those places cascade
+
+
+@pytest.fixture()
+def clean_places(app):
+    wipe_test_places(app)
+    yield
+    wipe_test_places(app)
+
+
+def place_form(**overrides):
+    data = {"name": new_place_name(), "slug": new_slug(), "region": REGIONS[0], "location_type": "district", "content_status": "demo",
+            "summary": "A short test summary.", "description": "A test description that is long enough to be a real one.", "source_url": "", "source_note": ""}
+    data.update(overrides)
+    return data
+
+
+def place_row(slug):
+    found = h.rows(
+        """SELECT l.location_id, l.slug, l.name, l.location_type, l.summary, l.description, l.content_status, l.source_url, l.source_note, r.slug AS region
+           FROM locations l JOIN regions r ON r.region_id = l.region_id WHERE l.slug = %s""", (slug,))
+    return found[0] if found else None
+
+
+def place_snapshot(slug):
+    """The place row and everything that points at it (residents, story links, favourites, media links): if two snapshots are equal, nothing about the place changed."""
+    row = place_row(slug)
+    if row is None:
+        return None
+    place_id = row["location_id"]
+    return {
+        "row": row,
+        "residents": sorted((r["slug"], r["content_status"]) for r in h.rows("SELECT slug, content_status FROM characters WHERE home_location_id = %s", (place_id,))),
+        "story_links": sorted((r["slug"], bool(r["is_primary"])) for r in h.rows("SELECT m.slug, ml.is_primary FROM mission_locations ml JOIN missions m ON m.mission_id = ml.mission_id WHERE ml.location_id = %s", (place_id,))),
+        "favourites": h.rows("SELECT COUNT(*) AS n FROM favourite_locations WHERE location_id = %s", (place_id,))[0]["n"],
+        "media_links": h.rows("SELECT COUNT(*) AS n FROM media_locations WHERE location_id = %s", (place_id,))[0]["n"],
+    }
+
+
+def count_places():
+    return h.rows("SELECT COUNT(*) AS n FROM locations")[0]["n"]
+
+
+def make_place(slug=None, status="demo", name=None, region=REGIONS[0], kind="district"):
+    """Insert a place straight into the test database, bypassing the admin code. An 'official' one gets the source address its CHECK requires."""
+    slug = slug or new_slug()
+    source = "https://www.rockstargames.com/VI" if status == "official" else None
+    h.execute(
+        """INSERT INTO locations (region_id, slug, name, location_type, summary, description, content_status, source_url)
+           SELECT region_id, %s, %s, %s, 'summary', 'description', %s, %s FROM regions WHERE slug = %s""",
+        (slug, name or new_place_name(), kind, status, source, region))
+    return slug
+
+
+def make_resident(place_slug, status="demo", slug=None):
+    """Insert a character whose home is the place (official ones get their required source address). Returns the character's slug."""
+    slug = slug or new_slug()
+    source = "https://www.rockstargames.com/VI/only-in-leonida" if status == "official" else None
+    h.execute(
+        """INSERT INTO characters (slug, full_name, role_title, summary, biography, home_location_id, content_status, source_url)
+           SELECT %s, %s, 'Test role', 'summary', 'biography', location_id, %s, %s FROM locations WHERE slug = %s""",
+        (slug, "TT Person " + slug[3:], status, source, place_slug))
+    return slug
+
+
+def link_story_to_place(story_slug, place_slug, primary=False):
+    h.execute("INSERT INTO mission_locations (mission_id, location_id, is_primary) SELECT m.mission_id, l.location_id, %s FROM missions m, locations l WHERE m.slug = %s AND l.slug = %s",
+              (primary, story_slug, place_slug))
+
+
+def save_place_as(username, place_slug):
+    h.execute("INSERT INTO favourite_locations (user_id, location_id) SELECT u.user_id, l.location_id FROM users u, locations l WHERE u.username = %s AND l.slug = %s", (username, place_slug))
+
+
+def link_media_to_place(place_slug):
+    """Attach an existing official media asset to the place (the link row disappears with the place)."""
+    h.execute("INSERT INTO media_locations (media_id, location_id) SELECT (SELECT MIN(media_id) FROM media_assets), location_id FROM locations WHERE slug = %s", (place_slug,))

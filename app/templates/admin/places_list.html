@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% from "_components.html" import badge, type_badge, pager, results_line, option %}
+{% from "admin/_macros.html" import hero, nav %}
+{% block title %}Places (admin){% endblock %}
+{% block description %}Administrators: every place, with the ones that can be edited.{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">{% endblock %}
+{% block content %}
+{{ hero('Admin', 'Places', 'Every place in the database. Fan and demo places can be edited or deleted; official places are read-only.') }}
+<section class="section section--tight">
+  <div class="container adm adm--wide">
+    {{ nav('places') }}
+    <form class="filters" method="get" action="{{ url_for('admin.place_list') }}" role="search" aria-label="Search and filter places">
+      <label>Search
+        <input type="search" name="q" value="{{ filters.q or '' }}" maxlength="80" placeholder="Name or summary">
+      </label>
+      <label>Region
+        <select name="region">
+          {{ option('', 'Any region', filters.region or '') }}
+          {% for r in regions %}{{ option(r.slug, r.name, filters.region) }}{% endfor %}
+        </select>
+      </label>
+      <label>Type
+        <select name="type">
+          {{ option('', 'Any type', filters.type or '') }}
+          {% for t in location_types %}{{ option(t, t | capitalize, filters.type) }}{% endfor %}
+        </select>
+      </label>
+      <label>Label
+        <select name="status">
+          {{ option('', 'Any label', filters.status or '') }}
+          {% for s in ['official', 'fan', 'demo'] %}{{ option(s, s | capitalize, filters.status) }}{% endfor %}
+        </select>
+      </label>
+      <label>Sort by
+        <select name="sort">
+          {{ option('region', 'Region, then name', filters.sort) }}
+          {{ option('name_asc', 'Name A to Z', filters.sort) }}
+          {{ option('name_desc', 'Name Z to A', filters.sort) }}
+          {{ option('newest', 'Newest first', filters.sort) }}
+        </select>
+      </label>
+      <div class="filters__actions">
+        <button class="btn" type="submit">Apply</button>
+        <a class="link-arrow" href="{{ url_for('admin.place_list') }}">Reset</a>
+      </div>
+    </form>
+    <p class="results-meta" role="status">{{ results_line(pagination) }}</p>
+    <p><a class="btn btn--small" href="{{ url_for('admin.place_new') }}">New place</a></p>
+
+    {% if data %}
+    <div class="adm-table-wrap">
+      <table class="adm-table">
+        <caption class="visually-hidden">Places</caption>
+        <thead><tr><th scope="col">Name</th><th scope="col">Region</th><th scope="col">Type</th><th scope="col">Label</th><th scope="col">Stories</th><th scope="col">Actions</th></tr></thead>
+        <tbody>
+          {% for p in data %}
+          <tr>
+            <th scope="row"><a href="{{ url_for('pages.location_detail', slug=p.slug) }}">{{ p.name }}</a><span class="adm-slug">{{ p.slug }}</span></th>
+            <td>{{ p.region_name }}</td>
+            <td>{{ type_badge(p.location_type) }}</td>
+            <td>{{ badge(p.content_status) }}</td>
+            <td>{{ p.mission_count }}</td>
+            <td class="adm-row-actions">
+              {% if p.content_status == 'official' %}
+              <span class="adm-readonly-tag">Read-only (official)</span>
+              {% else %}
+              <a class="btn btn--ghost btn--small" href="{{ url_for('admin.place_edit', slug=p.slug) }}">Edit<span class="visually-hidden"> {{ p.name }}</span></a>
+              <a class="btn btn--ghost btn--small" href="{{ url_for('admin.place_delete', slug=p.slug) }}">Delete<span class="visually-hidden"> {{ p.name }}</span></a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {{ pager(pagination) }}
+    {% else %}
+    <div class="empty"><h2>No places found</h2><p>Nothing matches those filters. <a href="{{ url_for('admin.place_list') }}">Reset the filters</a>.</p></div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
