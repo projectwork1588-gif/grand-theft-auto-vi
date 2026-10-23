@@ -20,6 +20,7 @@
 | `/locations/<slug>` | Detail: missions, residents, passers-by, neighbours |
 | `/missions` | Stories (no longer in the main menu; Home, place pages and vehicle pages still link to it). Query: `q`, `type`, `status`, `sort` (title_asc, title_desc, type, newest), `page`, `per_page` |
 | `/missions/<slug>` | Story: synopsis, people, vehicles, places, more stories |
+| `/search` | Stage 4B. Site search: a form, result-type chips with a count for each kind, and ranked result rows (kind, title, detail, a short line, an Official or Concept label). Query: `q` (1 to 80 characters, at most five words), `type` (`all`, `page`, `character`, `vehicle`, `region`, `place`, `story`, `music`), `page`, `per_page` (1 to 50, default 12); at most 200 results are reachable. Server-rendered, works without JavaScript, `noindex`. The form, chips and pager all land on the `#results` region. Without `q` it is the help state and does no database work. Invalid input is the branded 400 page. Same records and rules as the JSON search API (see the API table below). See `docs/SEARCH.md` |
 | `/about` | What the project is, what the labels mean, how it was made |
 | `/credits` | Attribution, non-affiliation, fonts and licence |
 | `/media/clips/<name>.mp4` or `.jpg` | Locally built loops only. A safe-name pattern and an existing file are required; anything else is a 404 |
@@ -39,6 +40,7 @@
 | `/vehicles`, `/vehicles/<slug>`, `/vehicle-categories` | New. The API serves the whole table (15 vehicles). Use `?status=official` for the public garage. `sort=featured` gives editorial order. `/vehicle-categories?status=official` counts official vehicles only |
 | `/missions`, `/missions/<slug>` | New. Lists include cast, vehicle and location counts |
 | `/locations`, `/locations/<slug>` | New |
+| `/search` | Stage 4B. The few best matches for the command palette: `q` (required, 1 to 80 characters, at most five words), `type` (`all`, `page`, `character`, `vehicle`, `region`, `place`, `story`, `music`), `limit` (1 to 20, default 8). Returns `{query, type, results: [{kind, kind_label, title, detail, summary, url, status, status_label}]}`, best first. Public records only, by the pages' own rules (official characters and vehicles; every region, place, story and music row), concept rows labelled `Concept`. One database query. See `docs/SEARCH.md` |
 
 Pages and API endpoints share the same services, so they cannot disagree.
 
