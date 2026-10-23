@@ -57,7 +57,7 @@ export default async function (b) {
       report(s.open && s.focusOnInput, `${tag}: clicking the icon opens the palette with the field focused`, JSON.stringify({ open: s.open, focus: s.focusOnInput }));
       const fit = JSON.parse(await b.eval(`JSON.stringify((() => { const d = document.getElementById("palette"), r = d.getBoundingClientRect(); return { left: Math.round(r.left), right: Math.round(r.right), top: Math.round(r.top), bottom: Math.round(r.bottom), scrollOver: d.scrollWidth - d.clientWidth, vw: innerWidth, vh: innerHeight }; })())`));
       report(fit.left >= 0 && fit.right <= fit.vw && fit.bottom <= fit.vh + 1 && fit.scrollOver <= 0, `${tag}: the palette fits the screen with nothing sideways`, JSON.stringify(fit));
-      if (W < 700) { await b.shot(`${process.env.QA_OUT || "."}/palette_${tag}.jpg`).catch(() => {}); }
+      if (W < 700 && process.env.QA_OUT) { await b.shot(`${process.env.QA_OUT}/palette_${tag}.jpg`).catch(() => {}); }
       await key("Escape", "Escape", 27); await b.sleep(150);
     }
     report(problems.length === 0, `${tag}: no console, page, request or CSP errors`, problems.slice(0, 3).join(" | "));
@@ -136,8 +136,8 @@ export default async function (b) {
   await type(">"); await b.sleep(150);
   s = await state();
   const names = JSON.parse(await b.eval(`JSON.stringify([...document.querySelectorAll("#palette [role=option]")].map((o) => o.textContent.trim().replace(/\\s+/g, " ")))`));
-  report(names.length >= 10 && names.some((n) => /autoplay and motion/i.test(n)), "> lists the commands, including the motion switch", `${names.length} commands`);
-  report(names.every((n) => /^Command (Go to|Open the full search|Turn autoplay)/.test(n)) && !names.some((n) => /sign out|log out|delete|admin/i.test(n)), "only navigation and the motion switch are offered, nothing that changes an account or data", names.join(" | "));
+  report(names.length >= 10 && names.some((n) => /motion and footage/i.test(n)), "> lists the commands, including the motion switch", `${names.length} commands`);
+  report(names.every((n) => /^Command (Go to|Open the full search|Turn motion)/.test(n)) && !names.some((n) => /sign out|log out|delete|admin/i.test(n)), "only navigation and the motion switch are offered, nothing that changes an account or data", names.join(" | "));
   await type("garage"); await b.sleep(120);
   s = await state(); report(s.options === 1 && /Go to Garage/.test(s.titles[0]), "typing after > filters the commands", s.titles.join(" | "));
   await key("Backspace", "Backspace", 8); await b.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Backspace", code: "Backspace", windowsVirtualKeyCode: 8 });
@@ -147,7 +147,7 @@ export default async function (b) {
   const after = await b.eval(`JSON.stringify({ store: localStorage.getItem("tv-motion"), on: document.documentElement.classList.contains("motion-on"), live: [...document.querySelectorAll('[role=status]')].map((e) => e.textContent).join("|") })`);
   const B = JSON.parse(before), A = JSON.parse(after);
   report(!(await state()).open && A.store !== B.store && A.on !== B.on, "the motion command flips the site's own switch and closes", `${before} -> ${after}`);
-  report(/Autoplay and motion are now (on|off)/.test(A.live), "...and says the new state in a live region that outlives the dialog", A.live);
+  report(/Motion and footage are now (on|off)/.test(A.live), "...and says the new state in a live region that outlives the dialog", A.live);
   await b.eval(`localStorage.setItem("tv-motion", "1"); true`);
 
   // hostile text, no results, backdrop

@@ -65,7 +65,7 @@ def test_the_signed_out_commands_are_exactly_navigation_the_search_page_sign_in_
     found = commands(client)
     names = [name for name, _href, _action in found]
     assert names == ["Go to Home", "Go to Characters", "Go to Garage", "Go to Leonida", "Go to Music", "Go to Media", "Go to Stories", "Go to About", "Go to Credits",
-                     "Open the full search page", "Go to Sign in", "Turn autoplay and motion on or off"]
+                     "Open the full search page", "Go to Sign in", "Turn motion and footage on or off"]
     assert [a for _n, _h, a in found if a] == ["motion"]
 
 

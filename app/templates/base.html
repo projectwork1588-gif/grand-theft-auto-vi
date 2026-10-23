@@ -161,7 +161,7 @@
         <li data-name="Open the full search page" data-href="{{ url_for('pages.search') }}"></li>
         {% if current_user %}<li data-name="Go to your favourites" data-href="{{ url_for('account.favourites_page') }}"></li>
         {% else %}<li data-name="Go to Sign in" data-href="{{ url_for('account.login') }}"></li>
-        {% endif %}<li data-name="Turn autoplay and motion on or off" data-action="motion"></li>
+        {% endif %}<li data-name="Turn motion and footage on or off" data-action="motion"></li>
       </template>
     </div>
   </dialog>

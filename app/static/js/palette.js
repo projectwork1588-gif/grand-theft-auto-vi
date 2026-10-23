@@ -181,7 +181,7 @@
       close();
       if (toggle) {
         toggle.click();
-        announcePage("Autoplay and motion are now " + (toggle.getAttribute("aria-pressed") === "true" ? "on" : "off") + ".");
+        announcePage("Motion and footage are now " + (toggle.getAttribute("aria-pressed") === "true" ? "on" : "off") + ".");
       }
       return;
     }

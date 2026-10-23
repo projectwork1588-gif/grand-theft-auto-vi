@@ -25,6 +25,11 @@ Phase 2 added `services/site.py`, which builds the **page view-models**: it call
 
 **Writes.** The public pages only read. Writes happen in three places (accounts, favourites and the admin area), and every one goes through `app/db.py`'s `transaction()`, one unit of work that commits on success and rolls back on any error (`docs/DATABASE.md`, "Transactions").
 
+**Search (Stage 4B).** The same three layers: `api.py` and `pages.py` -> `services/search.py` (query rules, ranking, links) -> `repositories/search.py` (one `UNION ALL`
+over every searchable kind, bound parameters only, so a search is one round trip). `GET /search` is the full server-rendered page and `GET /api/v1/search` feeds the
+command palette (`static/js/palette.js`, a native `<dialog>` opened by Ctrl/Cmd+K, `/` or the header icon). No migration and no schema change; the Content-Security-Policy
+is unchanged. Details, limits and measurements: `docs/SEARCH.md`.
+
 **Sessions and CSRF (built).** `app/security.py` keeps a signed session cookie and a synchronizer CSRF token: every form carries the token, and every POST, PUT, PATCH and DELETE must send it back, compared in constant time, with a same-origin check as a second layer. The admin check is a decorator on every `/admin` route; the role is read from the database on every request. Details and limits: `docs/ACCOUNTS.md` and `docs/ADMIN.md`.
 
 ## Key decisions

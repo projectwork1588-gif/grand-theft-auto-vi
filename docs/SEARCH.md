@@ -77,7 +77,7 @@ Search row as well, for the narrowest phones where the icon steps aside (under 3
   `AbortController`; the last 20 answers are kept in memory.
 * `>` switches to **commands**, filtered as you type. The set is an allow-list rendered by the server (`<template data-palette-commands>` in `base.html`, so every
   address comes from `url_for`): Go to Home, Characters, Garage, Leonida, Music, Media, Stories, About, Credits; open the full search page; Go to Sign in (or Go to
-  your favourites when signed in); and Turn autoplay and motion on or off, which drives the site's own motion switch. Nothing that changes an account or data is
+  your favourites when signed in); and Turn motion and footage on or off, which drives the site's own motion switch. Nothing that changes an account or data is
   offered (no sign out, no forms, no POST), and a test checks that.
 * Enter with nothing matching, or "All results", goes to `/search?q=...#results`.
 
@@ -86,7 +86,7 @@ Search row as well, for the narrowest phones where the icon steps aside (under 3
   one `aria-selected`. Arrow Up/Down move (and wrap), Enter opens (Ctrl/Cmd+Enter in a new tab), Esc closes.
 * Focus returns to the control that opened the palette (the header icon, or whatever had focus), or to the header icon if that element is gone. Because the dialog is
   modal the page behind it is inert; Tab stays in the palette or goes up to the browser, as for any modal dialog.
-* A polite `role="status"` region announces "8 results. Vice City, Region." or "No results." after each search. The motion command announces "Autoplay and motion are
+* A polite `role="status"` region announces "8 results. Vice City, Region." or "No results." after each search. The motion command announces "Motion and footage are
   now on/off." in a separate page-level live region, because the one inside the dialog is gone once it closes.
 * The visible "Close" button's name is its own text (WCAG 2.5.3). Result rows are at least 44 px tall; the active row has a 2 px outline as well as a tint, so it
   survives forced-colours mode.
@@ -109,10 +109,45 @@ previous stage differ only inside the icon's strip (y 24 to 47) with identical d
 script gzipped. The script is loaded with `defer` on every page, not on first use: at 4.2 KB gzipped a lazy loader would cost more in complexity and in first-open
 delay than it saves.
 
-**Measured in a real browser** (`scripts/qa/palette_qa.mjs`, headless Chrome, the Flask development server, 1440 x 900): open to the first painted frame 22 ms
+**Measured in a real browser** (`scripts/qa/palette_qa.mjs`, headless Chrome, the Flask development server, 1440 x 900; see "Final checks" for the later runs): open to the first painted frame 22 ms
 median (30 ms worst, budget 100 ms); a keystroke to painted results 145 ms median (157 ms worst), of which 120 ms is the deliberate pause that waits for you to stop
 typing; from the server's answer to painted results 8 ms median (20 ms worst, budget 150 ms).
 
 **Tests.** `tests/test_palette.py` (the markup on 14 kinds of page, the commands, the script's safety, the unchanged policy, the size budget) and
 `scripts/qa/palette_qa.mjs` (67 browser checks at six sizes from 1440 down to 320 wide: shortcuts, focus and its return, the ARIA, arrows, Enter, commands, hostile
 text, no results, the backdrop, reduced motion, no JavaScript, no console or CSP errors).
+
+## Final checks (milestone 4)
+
+**Full test suite** (all 1,749 tests, the real `gta6_vi_test` database, one process, 31 minutes): 1,748 passed on the first run and one failed. The failure was a
+collision, not a bug in the search: `test_pages.py::test_landing_portraits_are_wired_for_the_motion_policy` asserts that the text ` autoplay` appears nowhere on the
+Characters page (it guards against an `autoplay` attribute on the videos), and the palette's command label said "Turn autoplay and motion on or off". The label is now
+"Turn motion and footage on or off"; the test was not touched. After the change the 265 tests of the affected areas (pages, palette, search, route and schema sync) pass.
+
+**Browser suites** (headless Chrome against the test-configured server), all with zero failures: palette 67 (six sizes, 1440 down to 320 wide), `/search` page 50 (six sizes
+and the behaviours), home 53, characters hero 36, music 48, regions 246, vehicle detail 227, media screening 112, cast navigation 52.
+
+**Against the Stage 4A baseline** (the 20-page probe at desktop and phone width, 40 measurements): still no broken image, missing alt text, heading skip, failed request,
+console error or sideways overflow; no document height changed anywhere; the only change on any page is the one new interactive element, the header icon. Keyboard: every
+stop on eight pages shows a focus indicator; reduced motion: no running animation on six pages and no autoplay.
+
+**Performance** (budgets set in the plan, measured here):
+
+| Measure | Budget | Measured |
+|---------|--------|----------|
+| `/api/v1/search`, server, warm, 1,950 requests | p95 <= 50 ms | p50 5.3 ms, p95 5.9 ms, p99 6.9 ms (a later run on a busier machine: 11.5 / 14.8 / 18.2 ms) |
+| `/api/v1/search` response size | <= 6 KB | 2.0 KB at the most |
+| `/search` page, server, warm, 640 requests | (none set) | p50 9.5 ms, p95 13.5 ms, 18.4 KB at the most |
+| Database round trips per search | 1 | 1 (a test counts them) |
+| `palette.js` gzipped | <= 8 KB | 4.2 KB (palette.css 1.7 KB) |
+| Palette open to first painted frame | <= 100 ms | 22 to 33 ms median, 55 ms worst |
+| Server answer to painted results | <= 150 ms | 8 to 15 ms median, 22 ms worst |
+| Layout shift from the header icon | none | 0 elements moved at 11 widths on 4 pages |
+| Keystroke to painted results, total | (reported, not budgeted) | 145 ms median on a quiet machine, 212 to 305 ms on a busy one; 120 ms of it is the deliberate pause |
+
+The total from keystroke to results is not a budget because most of it is the 120 ms pause that waits for the visitor to stop typing, plus an HTTP round trip to a
+single-process development server; it moved with machine load between runs, while the parts the code controls did not.
+
+**Not done, by design.** No migration and no schema change; no FULLTEXT index (an escaped `LIKE` over about 300 rows answers in 5 ms, and an index would need a
+migration and its own approval); no in-process rate limit on `/api/v1/search` (it is a public read of public data costing a few milliseconds; a limiter would be a
+separate decision); no production database access.
