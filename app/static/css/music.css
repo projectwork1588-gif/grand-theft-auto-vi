@@ -41,7 +41,7 @@
 .mu-hero { position: relative; isolation: isolate; overflow: hidden; display: grid; align-content: end; min-height: clamp(560px, 86svh, 820px); padding: calc(var(--header-h) + 40px) var(--edge) clamp(36px, 6vh, 64px); background: var(--ground); }
 .mu-hero__art { position: absolute; inset: 0; z-index: -2; background: var(--card); }
 .mu-hero__art .mu-img { object-position: 50% 58%; }
-.mu-hero::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(90deg, rgba(10, 8, 28, .66) 0%, rgba(10, 8, 28, 0) 56%), linear-gradient(0deg, var(--ground) 0%, rgba(10, 8, 28, .7) 22%, rgba(10, 8, 28, .12) 60%, rgba(10, 8, 28, .45) 100%); }
+.mu-hero::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(0deg, var(--ground) 0%, rgba(10, 8, 28, .7) 22%, rgba(10, 8, 28, .12) 60%, rgba(10, 8, 28, .45) 100%), linear-gradient(90deg, rgba(10, 8, 28, .66) 0%, rgba(10, 8, 28, 0) 56%); }
 .mu-hero__copy { display: grid; gap: 16px; justify-items: start; max-width: 46rem; }
 .mu-title { font: 700 var(--t-display)/.9 var(--font-display); letter-spacing: var(--track-tight); text-transform: uppercase; text-wrap: balance; color: var(--text); text-shadow: 0 2px 28px rgba(7, 6, 20, .6); }
 .mu-lede { max-width: 34rem; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, .28); font: 500 var(--t-lead)/1.45 var(--font-text); color: var(--text-2); text-shadow: 0 1px 18px rgba(7, 6, 20, .8); }

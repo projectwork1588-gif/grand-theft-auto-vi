@@ -3,8 +3,8 @@
 {% block content %}
 <section class="error-page">
   <div class="container">
-    <p class="eyebrow">{{ status }}</p>
-    <h1>{{ title }}</h1>
+    <p class="eyebrow">Error {{ status }} &middot; {{ title }}</p>
+    <h1>{{ headline }}</h1>
     <p class="lede">{{ message }}</p>
     {% if details %}
     <ul class="link-list error-details">
@@ -12,9 +12,16 @@
     </ul>
     {% endif %}
     <p class="error-actions">
-      <a class="btn" href="{{ url_for('main.index') }}">Back to the homepage</a>
-      <a class="btn btn--ghost" href="{{ url_for('pages.characters') }}">Meet the cast</a>
+      {% if retry_url %}<a class="btn" href="{{ retry_url }}">Try again</a>
+      <a class="btn btn--ghost" href="{{ url_for('main.index') }}">Back to the homepage</a>
+      {% else %}<a class="btn" href="{{ url_for('main.index') }}">Back to the homepage</a>
+      <a class="btn btn--ghost" href="{{ url_for('pages.characters') }}">Meet the cast</a>{% endif %}
     </p>
+    <nav class="error-jump" aria-label="Places to go">
+      <ul class="chips">
+        {% for endpoints, label in nav_items %}<li><a class="chip" href="{{ url_for(endpoints[0]) }}">{{ label }}</a></li>{% endfor %}
+      </ul>
+    </nav>
   </div>
 </section>
 {% endblock %}

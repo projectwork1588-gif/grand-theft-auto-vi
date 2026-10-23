@@ -1,22 +1,46 @@
-"""Consistent error handling: JSON for /api/*, a styled HTML page for everything else."""
+"""Consistent error handling: JSON for /api/*, a branded HTML page for everything else."""
 from flask import jsonify, render_template, request
 from werkzeug.exceptions import HTTPException
 
 from .db import DatabaseError
 from .services.validation import ValidationError
 
+# What the branded page says for the statuses a visitor can really meet: (headline, sentence under it). The <title>, the JSON body and any message
+# a route chose itself (abort(403, "...")) are left as they were; only Werkzeug's stock sentences are replaced on the page.
+BRANDED = {
+    404: ("Off the map", "We could not find that page. It may have moved, or the address may have a typo."),
+    403: ("Restricted area", "You do not have permission to open this page."),
+    405: ("Wrong turn", "This address does not accept that kind of request."),
+    500: ("Something broke on our side", "We hit a problem and it has been logged. Try again in a moment."),
+    503: ("Back in a moment", "The site could not reach its data just now. Please try again shortly."),
+}
+RETRY = {500, 503}
+
 
 def _wants_json():
     return request.path.startswith("/api/")
 
 
-def _respond(status, title, message, details=None):
+def _retry_url():
+    """Where "Try again" goes: this same path, for a GET only, and never an address that could point off the site."""
+    path = request.path
+    if request.method == "GET" and path.startswith("/") and not path.startswith("//"):
+        return path
+    return None
+
+
+def _respond(status, title, message, details=None, own_message=False):
+    """`own_message` is True when the route chose the sentence itself, so the page keeps it instead of the branded one."""
     if _wants_json():
         body = {"error": {"status": status, "title": title, "message": message}}
         if details:
             body["error"]["details"] = details
         return jsonify(body), status
-    return render_template("error.html", status=status, title=title, message=message, details=details), status
+    headline, lede = BRANDED.get(status, (title, message))
+    if own_message:
+        lede = message
+    retry = _retry_url() if status in RETRY else None
+    return render_template("error.html", status=status, title=title, headline=headline, message=lede, details=details, retry_url=retry), status
 
 
 def register_error_handlers(app):
@@ -26,7 +50,7 @@ def register_error_handlers(app):
 
     @app.errorhandler(HTTPException)
     def handle_http(error):
-        return _respond(error.code, error.name, error.description)
+        return _respond(error.code, error.name, error.description, own_message=error.description != type(error).description)
 
     @app.errorhandler(DatabaseError)
     def handle_database(error):

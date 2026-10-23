@@ -22,9 +22,11 @@ NAV = (
 )
 
 
-def page_url(number):
-    """Current address with only the page number changed, so filters and sorting are kept."""
+def page_url(number, anchor=None):
+    """Current address with only the page number changed, so filters and sorting are kept. `anchor` names an element id to land on."""
     params = {**(request.view_args or {}), **request.args.to_dict(), "page": number}
+    if anchor:
+        params["_anchor"] = anchor
     return url_for(request.endpoint, **params)
 
 

@@ -195,6 +195,7 @@
 @media (max-width: 960px) { .split { grid-template-columns: 1fr; } }
 
 /* stories index page keeps the numbered rows */
+.story-results { scroll-margin-top: 16px; }   /* the page's scroll-padding (site.css) already clears the fixed header */
 .story-list > li { border-top: 1px solid var(--line); }
 .story-list > li:last-child { border-bottom: 1px solid var(--line); }
 .story { display: grid; grid-template-columns: auto 1fr auto; gap: 26px; align-items: center; padding: 26px 4px; color: var(--text); text-decoration: none; transition: padding .4s var(--ease-out); }
@@ -389,9 +390,12 @@
 @media (max-width: 820px) { .place { grid-template-columns: 40px 1fr; } .place__where, .place__tags { grid-column: 2; justify-content: flex-start; } }
 
 .error-page { padding: calc(var(--header-h) + 90px) 0 110px; min-height: 62vh; }
-.error-page h1 { font-size: var(--t-h1); margin: 14px 0; }
+.error-page h1 { font: 700 var(--t-h1)/.94 var(--font-mark); text-transform: uppercase; letter-spacing: var(--track-caps); max-width: 16ch; margin: 14px 0; }
+.error-page .lede { max-width: 52ch; }
 .error-details { max-width: 640px; margin: 22px 0; }
 .error-actions { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 30px; }
+.error-jump { margin-top: 44px; padding-top: 24px; border-top: 1px solid var(--line); }
+.error-jump ul { list-style: none; margin: 0; padding: 0; }
 
 /* ---- about and credits ---- */
 .prose { max-width: 70ch; }
