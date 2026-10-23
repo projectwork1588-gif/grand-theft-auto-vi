@@ -49,9 +49,13 @@ Pages and API endpoints share the same services, so they cannot disagree.
 | 400 | Styled page listing the invalid parameters; also a POST whose CSRF token is missing or wrong | JSON `error.details` |
 | 413 | Styled page: a form body over 16 KiB is refused before it is read | JSON error |
 | 429 | Sign-in, change-password or sign-up form with a message and a `Retry-After` header (too many failed attempts, or too many accounts from one address) | n/a (no API route writes) |
-| 404 | Styled page (unknown route, unknown slug, or a slug that is not lowercase `a-z0-9-`) | JSON error |
-| 503 | "Database unavailable", with no SQL or credentials shown | JSON error |
-| 500 | Generic message | JSON error |
+| 403 | Branded page ("Restricted area"); a sentence the route chose, such as the admin one ("This area is for administrators."), is kept | JSON error |
+| 404 | Branded page, "Off the map" (unknown route, unknown slug, or a slug that is not lowercase `a-z0-9-`) | JSON error |
+| 405 | Branded page, "Wrong turn" | JSON error |
+| 503 | Branded page, "Back in a moment", titled "Database unavailable", with a "Try again" link for a GET and no SQL or credentials shown | JSON error |
+| 500 | Branded page, "Something broke on our side", with a "Try again" link for a GET and nothing about the cause | JSON error |
+
+Every branded page is a full page of the site (header, footer), has one `h1`, shows "Error <code> · <standard name>" and the standard name in the browser title, and offers links to the five sections. "Try again" points at the same path without its query string.
 
 ## Planned (not built)
 

@@ -3,21 +3,25 @@
 > An unofficial educational fan project by Team Valkyrie. Not affiliated with, endorsed by, or sponsored by Rockstar Games or Take-Two Interactive.
 
 A cinematic, database-driven GTA VI fan guide built for a Web Technologies and DBMS college project.
-**Status: Phase 2 of 6 (cinematic public website), refinement round 3.** Accounts (username and password, no email) and favourites are built; see [docs/ACCOUNTS.md](docs/ACCOUNTS.md). The admin area, the interactive atlas, the Intelligence Network and the full media theatre come in later phases.
+**Status: the cinematic public website, accounts with favourites, and an administrator area for Stories and Places are built.** Accounts (username and password, no email) are described in [docs/ACCOUNTS.md](docs/ACCOUNTS.md). The admin area is built and tested on the test database only; enabling it on the live site is a separate, later decision (see [docs/ADMIN.md](docs/ADMIN.md)). The interactive atlas, the Intelligence Network, global search and the full media theatre come in later phases.
 
 ## What you can do today
 
 | Page | Address | What it shows |
 |------|---------|---------------|
 | Homepage | `/` | Cinematic hero, the two leads side by side, a full-screen moment of official Trailer 1 footage, a cast stage that plays a short muted reel and holds on a person when you pick a name, a six-region explorer, a garage showroom, stories, official trailers and a screenshot gallery with a viewer. |
-| Characters | `/characters`, `/characters/<slug>` | Leads, crew and original characters laid out as portraits and a list, with search and filters. Profiles with biography, a short muted loop of Rockstar's own clip, connections, stories, places and a gallery. |
-| Garage | `/vehicles`, `/vehicles/<slug>` | The five vehicles Rockstar has shown, as large alternating image and text rows. Each page has a gallery. |
+| Characters | `/characters`, `/characters/<slug>` | The eight characters Rockstar has named (the three original characters have no public page), laid out as portraits and a list, with search and filters. Profiles with biography, a short muted loop of Rockstar's own clip, connections, stories, places and a gallery. |
+| Garage | `/vehicles`, `/vehicles/<slug>` | The seven vehicles Rockstar has shown, a cinematic landing and a page for each machine with its pictures. (`/garage-concept` is the former prototype address and redirects here.) |
 | Leonida | `/regions`, `/regions/<slug>` | Six full-width region features, then a page per region with its places, people, stories and gallery. |
-| Places | `/locations`, `/locations/<slug>` | Searchable list filtered by region and type. |
-| Stories | `/missions`, `/missions/<slug>` | Original stories with type filters. People, vehicles, places and related stories. |
+| Music | `/music` | The radio stations, the score and the album Rockstar shows on its own Music page, each with its source. No audio plays here: every link opens Rockstar's own pages. See [docs/MUSIC.md](docs/MUSIC.md). |
+| Media | `/media` | "The Screening": Rockstar's own videos, clips, screenshots and artwork in Rockstar's order and under Rockstar's titles. See [docs/MEDIA_SCREENING.md](docs/MEDIA_SCREENING.md). |
+| Places | `/locations/<slug>` | One page for each of Team Valkyrie's own places, linked from the stories and characters that use them. The old index `/locations` redirects (302) to `/music`. |
+| Stories | `/missions`, `/missions/<slug>` | Original stories with type filters. People, vehicles, places and related stories. Not in the main menu; the homepage, place pages and vehicle pages link to it. |
 | About, Credits | `/about`, `/credits` | What the project is, what the labels mean, who owns what. |
 | Accounts | `/register`, `/login`, `/account/favourites`, `/account/password` | Sign up with a username and password, save characters, vehicles, places and stories, change the password. Database migration `010` must be applied first (see [docs/ACCOUNTS.md](docs/ACCOUNTS.md)). |
+| Admin | `/admin` and the Stories and Places pages under it | Administrators only: create, edit and delete Stories and Places, and choose the characters, vehicles and places each story links to. A signed-out visitor is sent to `/login`; a signed-in user who is not an administrator gets a 403. See [docs/ADMIN.md](docs/ADMIN.md). |
 | JSON API | `/api/v1/...` | Characters and regions (Phase 1, unchanged) plus vehicles, vehicle categories, missions and locations. |
+| Health | `/health` | A bare JSON check that the site can reach MySQL. Not linked from the site. |
 
 Every page reads MySQL. Nothing about a character, vehicle, region, place or story is written into HTML or JavaScript.
 
@@ -27,7 +31,7 @@ Every record carries a `content_status`, shown as a quiet label on every card an
 
 | Status | Meaning |
 |--------|---------|
-| **Official** | Stated on Rockstar's own website, with a source link. The eight named characters, six regions and five vehicles are official (checked against rockstargames.com on 2026-10-09 and 2026-10-10). |
+| **Official** | Stated on Rockstar's own website, with a source link. The eight named characters, six regions and seven vehicles are official (checked against rockstargames.com on 2026-10-09 and 2026-10-10). |
 | **Fan view** | Community or team interpretation, not confirmed. None is seeded at present. |
 | **Concept** | Created by Team Valkyrie for this project: three characters, all locations and all stories (plus eight concept vehicles that stay in the database for the story archive and have no public page). Concept stories deliberately use only concept characters, so we never invent story for the real cast. |
 
@@ -156,18 +160,19 @@ GTA 6/
 │   ├── __init__.py            application factory, template helpers, security headers
 │   ├── config.py              settings from environment variables
 │   ├── db.py                  connection pool, query helpers, transaction()
-│   ├── errors.py              JSON / HTML error handling
+│   ├── errors.py              JSON for /api/*, branded HTML pages (404, 403, 405, 500, 503 and the rest) otherwise
+│   ├── security.py            sessions, CSRF tokens, sign-in throttle, the admin check
 │   ├── media_urls.py          only Rockstar's official image and player URLs, and a validated YouTube id, are ever rendered
 │   ├── media_slots.py         which stored media rows the pages feature
 │   ├── local_media.py         serves only the locally built loops in media/clips/
-│   ├── blueprints/            routes: main.py (home), pages.py (HTML), api.py (JSON)
-│   ├── services/              validation, business rules, page view-models (site.py)
+│   ├── blueprints/            routes: main.py (home, about, credits, health, local media), pages.py (HTML), api.py (JSON), account.py (sign-up, sign-in, favourites), admin.py (Stories and Places)
+│   ├── services/              validation, business rules, page view-models (site.py), accounts, favourites, admin_stories.py, admin_places.py
 │   ├── repositories/          ALL SQL lives here
-│   ├── templates/             Jinja2: base, _components, home, characters/, vehicles/, regions/, locations/, missions/
-│   └── static/                css/ (site, components, pages), js/ (boot, site), fonts/ (bundled, OFL)
+│   ├── templates/             Jinja2: base, _components, home, error, characters/, vehicles/, regions/, locations/, missions/, music/, media/, account/, admin/
+│   └── static/                css/ (tokens, site, components, pages and one file per page group), js/ (boot, site and one file per page group), fonts/ (bundled, OFL)
 ├── database/                  schema.sql, seed.sql, migrations/001 to 010
-├── scripts/                   setup_db.py, init_db.py, migrate_db.py, make_env.py, schema_info.py, sqlfile.py, fetch_clips.py, make_loops.py
-├── docs/                      ARCHITECTURE, DATABASE (+ER diagram), ROUTES, MEDIA_INVENTORY, VERIFICATION, queries.sql
+├── scripts/                   setup_db.py, init_db.py, migrate_db.py, make_env.py, make_admin.py, schema_info.py, sqlfile.py, fetch_clips.py, make_loops.py, and the media and QA helpers (qa/)
+├── docs/                      ARCHITECTURE, DATABASE (+ER diagram), ROUTES, ACCOUNTS, ADMIN, MUSIC, MEDIA_INVENTORY, MEDIA_SCREENING, VERIFICATION, queries.sql, and the design and update notes
 ├── media/                     Git-ignored: locally built loops only (see media/README.md)
 ├── tests/                     pytest suite
 ├── .env.example  .gitignore  LICENSE  pytest.ini  requirements*.txt (dev, media)  wsgi.py
@@ -180,6 +185,10 @@ GTA 6/
 * [Example SQL queries](docs/queries.sql)
 * [Routes and roadmap](docs/ROUTES.md)
 * [Accounts, favourites, security and deployment settings](docs/ACCOUNTS.md)
+* [The admin area: Stories and Places](docs/ADMIN.md)
+* [Music page](docs/MUSIC.md)
+* [Media page: "The Screening"](docs/MEDIA_SCREENING.md)
+* [Home, Characters and Garage update, and a performance pass](docs/HOME_UPDATE.md)
 * [Media inventory and rights](docs/MEDIA_INVENTORY.md)
 * [Design benchmark against Rockstar's site, defects and plan](docs/DESIGN_BENCHMARK.md)
 * [Verification reports](docs/VERIFICATION.md)
@@ -188,7 +197,7 @@ GTA 6/
 
 1. Foundation (done)
 2. **Cinematic public website** (this phase)
-3. Authentication and favourites (built); admin CRUD
+3. Authentication and favourites (built); admin CRUD for Stories and Places (built, test database only); CRUD for the other records (not built)
 4. Leonida Atlas, Intelligence Network, terminal commands, global search
 5. Media Theatre and cinematic polish
 6. Final testing and presentation

@@ -21,6 +21,12 @@ Why three layers? You can explain each in a viva in one sentence, tests can targ
 
 Phase 2 added `services/site.py`, which builds the **page view-models**: it calls the same services as the API, then adds related content and media. A page and its API endpoint therefore read the same data.
 
+**Entry point and blueprints.** `wsgi.py` builds the app with `create_app(deployment_config_name())`: only the Flask command line falls back to development settings, any other server refuses to start without `FLASK_ENV`. Five blueprints are registered: `main` (home, about, credits, `/health`, locally built media), `pages` (the public HTML pages), `api` (`/api/v1`), `account` (register, sign in, favourites, password) and `admin` (Stories and Places, administrators only). The full list of routes is `docs/ROUTES.md`; a test compares it with the real URL map.
+
+**Writes.** The public pages only read. Writes happen in three places (accounts, favourites and the admin area), and every one goes through `app/db.py`'s `transaction()`, one unit of work that commits on success and rolls back on any error (`docs/DATABASE.md`, "Transactions").
+
+**Sessions and CSRF (built).** `app/security.py` keeps a signed session cookie and a synchronizer CSRF token: every form carries the token, and every POST, PUT, PATCH and DELETE must send it back, compared in constant time, with a same-origin check as a second layer. The admin check is a decorator on every `/admin` route; the role is read from the database on every request. Details and limits: `docs/ACCOUNTS.md` and `docs/ADMIN.md`.
+
 ## Key decisions
 
 | Topic | Decision | Reason |
@@ -30,18 +36,18 @@ Phase 2 added `services/site.py`, which builds the **page view-models**: it call
 | DB driver | `mysql-connector-python`, pure-Python mode, lazily created connection pool | Required stack. The app can start and show a clear 503 when MySQL is down. |
 | SQL safety | Values are always bound parameters. User input never becomes SQL text. Sorting uses whitelist dictionaries. LIKE wildcards are escaped. IN lists are built from a count of `%s` marks. | Prevents SQL injection (tested). |
 | Slugs | Pages and API require lowercase `a-z0-9-` slugs and return 404 otherwise, before touching the database | MySQL's collation ignores case, so `Jason-Duval` would otherwise be a second URL for the same record. |
-| Errors | JSON for `/api/*`, a styled page otherwise. Database errors become a generic 503. | No SQL or credentials leak (tested). |
+| Errors | JSON for `/api/*`, a branded page otherwise (`error.html`, one `h1`, the error code, quick links to the five sections; 404, 403, 405, 500 and 503 have their own wording and 500/503 offer "Try again" for a GET). Database errors become a generic 503. A sentence a route chose itself, such as the admin 403, is kept. | No SQL or credentials leak (tested). |
 | Test safety | Config refuses to run tests on a database not ending in `_test`. | A test can never wipe real data. |
 | Accounts | Website account is DML-only. A separate migration account does schema work. | Least privilege. |
 | IDs in URLs/JSON | Public slugs. Internal numeric IDs are not exposed. | Cleaner URLs, less enumeration. |
 
 ## Frontend (Phase 2, refinement round 2)
 
-**Stack:** HTML5, CSS3, vanilla JavaScript, Jinja2. No framework and no library. Two scripts: `boot.js` (one line, marks that JavaScript works) and `site.js` (progressive enhancement only). Every page works without JavaScript.
+**Stack:** HTML5, CSS3, vanilla JavaScript, Jinja2. No framework and no library. `boot.js` (one line, marks that JavaScript works), `site.js` (shared progressive enhancement) and one script for each of the richer pages (`home.js`, `garage.js`, `regions.js`, `screening.js`, `vehicle_detail.js` and `garage_concept.js`); all are progressive enhancement only. Every page works without JavaScript.
 
 **What `site.js` adds:** the mobile menu, scroll reveals, a hero that drifts slower than the page, the chapter waypoint (a small dial that lists the sections of the homepage), the cast stage, the region explorer, the garage showroom controls, scroll-aware muted loops on profiles, the trailer and image dialogs, and image-failure fallbacks.
 
-**Design system.** A late-afternoon Florida palette (near-black aubergine, hot pink, sunset orange, gold, a touch of Gulf teal). Type is Manrope for text and headings, Barlow Condensed for the VI mark and numerals, and Newsreader italic for one-line ledes. Fonts are bundled in `static/fonts/` (SIL OFL), so no request leaves the site for type. Headings are sentence case and tight, not all-caps. Tokens live in `static/css/site.css` (with header, footer and waypoint), reusable pieces in `components.css`, page layouts in `pages.css`. The Jinja files `_components.html` (labels, image frame, showroom slide, pager, provenance line, page hero), `base.html` and the page templates form the component layer.
+**Design system.** A late-afternoon Florida palette (near-black aubergine, hot pink, sunset orange, gold, a touch of Gulf teal). Type is Manrope for text and headings, Barlow Condensed for the VI mark and numerals, and Newsreader italic for one-line ledes. Fonts are bundled in `static/fonts/` (SIL OFL), so no request leaves the site for type. Headings are sentence case and tight, not all-caps. Tokens live in `static/css/tokens.css` (a test enforces that type sizes, radii and letter-spacing come from them), the header, footer and waypoint in `site.css`, reusable pieces in `components.css`, shared page layouts in `pages.css` and a stylesheet for each richer page group. The Jinja files `_components.html` (labels, image frame, showroom slide, pager, provenance line, page hero), `base.html` and the page templates form the component layer.
 
 **Distinct layouts, not one card grid repeated:**
 
@@ -57,7 +63,7 @@ Phase 2 added `services/site.py`, which builds the **page view-models**: it call
 
 **Content labels.** Every record shows a quiet *Official*, *Fan view* or *Concept* label whose meaning is in its text, never colour alone. Detail pages end with a single provenance line (the source link for official records, "A Team Valkyrie original." for concept ones, with a link to the label guide on the About page). Lists no longer repeat a label on every row when the whole page is concept content: the page lede says it once.
 
-**Accessibility.** Skip link, semantic landmarks, one `h1` per page, labelled search forms, visible focus rings, `aria-current` in the navigation, `role="status"` result counts, keyboard-operable dialogs, a keyboard-operable showroom and region explorer, 44px minimum targets, and `prefers-reduced-motion` support (a still hero, no slideshow, no reveal animation, **no autoplaying video**: the stage shows a still and a Play button).
+**Accessibility.** Skip link, semantic landmarks, one `h1` per page, labelled search forms, visible focus rings, `aria-current` in the navigation, `role="status"` result counts (the Stories results sit in a labelled `#results` region that the filters, chips and pager link to), keyboard-operable dialogs, a keyboard-operable showroom and region explorer, interactive targets of at least 24 by 24 CSS pixels (WCAG 2.2 level AA, 2.5.8; links inside a sentence are exempt, and small links get a larger hit area through padding that is cancelled by an equal negative margin, so nothing moves), and `prefers-reduced-motion` support (a still hero, no slideshow, no reveal animation, **no autoplaying video**: the stage shows a still and a Play button).
 
 **Performance.** Responsive `srcset` images at 640, 1280 and 1920 pixels, lazy loading except the hero, no render-blocking JavaScript, no video until a visitor presses play or scrolls the stage into view (and not at all with reduced motion or data saver), one preloaded font file, and a total of about 6 MB of local loops loaded on demand.
 
@@ -91,9 +97,9 @@ See `docs/MEDIA_INVENTORY.md`. In short: official images and Rockstar's own vide
 
 ## Remaining decisions for the owner
 
-* CSRF approach for Phase 3 (a small hand-written session token is planned).
 * Whether the use of Rockstar's published media is acceptable without stated licence terms.
-* Whether to add `media_vehicles` so official vehicle imagery can be shown without misleading demo records.
+
+Resolved since these were first written: the CSRF approach (a hand-written synchronizer token, built; see "Sessions and CSRF" above) and `media_vehicles` (built in migration 002, so official vehicle imagery no longer needs demo records).
 
 ## Design refinement pass (Team Valkyrie feedback)
 
