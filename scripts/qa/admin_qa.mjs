@@ -31,6 +31,8 @@ export default async function (b) {
   // textContent, not innerText: the site's headings and tags are text-transform: uppercase, which innerText would report as capitals.
   const text = async () => b.eval("document.body.textContent");
   const heading = async () => b.eval("document.querySelector('h1').textContent.trim()");
+  // The branded 403 page (Stage 4A): the h1 says "Restricted area"; the code and the standard name stay in the eyebrow and the browser title. All three must be there.
+  const isForbidden = async () => b.eval("(() => { const h = document.querySelector(\"h1\"), e = document.querySelector(\".error-page .eyebrow\"); return !!h && !!e && h.textContent.trim() === \"Restricted area\" && /Error 403/.test(e.textContent) && /Forbidden/.test(e.textContent) && /Forbidden/.test(document.title); })()");
   const path = async () => b.eval("location.pathname");
   const q = async (sel) => b.eval(`!!document.querySelector(${JSON.stringify(sel)})`);
   const fill = async (name, value) => b.eval(`(() => { const i = document.querySelector('[name="${name}"]'); if (!i) return false; i.value = ${JSON.stringify(value)}; return true; })()`);
@@ -74,11 +76,11 @@ export default async function (b) {
   await go("/account/favourites");
   report(!(await q("a[href='/admin']")), "ordinary account: no Admin link on the favourites page");
   await go("/admin");
-  report((await path()) === "/admin" && /Forbidden/.test(await heading()) && (await text()).includes("administrators"), "ordinary account: /admin answers 403 (Forbidden)", await heading());
+  report((await path()) === "/admin" && (await isForbidden()) && (await text()).includes("administrators"), "ordinary account: /admin answers 403 (Forbidden)", await heading());
   await go("/admin/stories/new");
-  report(/Forbidden/.test(await heading()), "ordinary account: the new-story page is 403 too");
+  report((await isForbidden()), "ordinary account: the new-story page is 403 too");
   await go(`/admin/stories/${OFFICIAL}/delete`);
-  report(/Forbidden/.test(await heading()), "ordinary account: the delete page is 403 too");
+  report((await isForbidden()), "ordinary account: the delete page is 403 too");
   await signOut();
 
   // ---- the administrator
@@ -145,9 +147,9 @@ export default async function (b) {
 
   // ---- the official story is locked
   await go(`/admin/stories/${OFFICIAL}/edit`);
-  report(/Forbidden/.test(await heading()), "official: its edit page is 403 for an administrator");
+  report((await isForbidden()), "official: its edit page is 403 for an administrator");
   await go(`/admin/stories/${OFFICIAL}/delete`);
-  report(/Forbidden/.test(await heading()), "official: its delete page is 403 for an administrator");
+  report((await isForbidden()), "official: its delete page is 403 for an administrator");
 
   // ---- CSRF: a form without its token is refused
   await go(`/admin/stories/${SLUG}/edit`);
@@ -221,9 +223,9 @@ export default async function (b) {
 
   // ---- the official place is locked
   await go(`/admin/places/${OFFICIAL_PLACE}/edit`);
-  report(/Forbidden/.test(await heading()), "official place: its edit page is 403 for an administrator");
+  report((await isForbidden()), "official place: its edit page is 403 for an administrator");
   await go(`/admin/places/${OFFICIAL_PLACE}/delete`);
-  report(/Forbidden/.test(await heading()), "official place: its delete page is 403 for an administrator");
+  report((await isForbidden()), "official place: its delete page is 403 for an administrator");
 
   // ---- a place an official character lives at cannot be deleted
   await go(`/admin/places/${BLOCKED_PLACE}/delete`);
