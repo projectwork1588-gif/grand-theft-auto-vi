@@ -414,20 +414,25 @@ A complete run of the suite takes 28 to 37 minutes (27 min 51 s to 36 min 24 s i
 | **Stage 5, first verification run: responsive and accessibility sweep** (on `a3ccbab`) | 20 pages at 7 widths (320 to 1920 px), run twice (normal and reduced motion): 280 measurements with 0 horizontal overflow, 0 images without alt text, 0 broken images, 0 heading skips, 0 console, page, request or CSP errors, exactly one `h1` and one `main` everywhere, no unlabelled field, no unnamed control, no clipped text. The only targets under 24 px are 4 links inside sentences (exempt from WCAG 2.5.8). Reduced motion: 0 running animations and 0 autoplaying videos |
 | **Stage 5, first verification run: live security checks** (on `a3ccbab`; real servers, raw HTTP, test database) | 38 of 38. HEAD changes nothing and spends no throttle (25 x `HEAD /login`, then a real wrong password is 401, not 429); 10 state-changing addresses (admin delete, edit and new, favourites, password, sign out, sign in, sign up) refuse a missing token, a forged token and a foreign Origin; PUT, PATCH and DELETE on an admin delete address are 405; with no trusted proxy a forwarded `X-Forwarded-Proto: https` never produces HSTS, on any kind of answer; behind one trusted proxy that says https the header is exactly `max-age=31536000`; 96 live 405 answers all carry an `Allow` equal to the route's methods. The application refuses to start in production against a test database, so the HSTS checks run the test configuration with the production HSTS value and proxy settings (the same code paths); the production class's own settings are asserted separately. Authenticated destructive actions are covered by `test_head_and_methods.py` and the admin journey (104 checks, including CSRF). **A bug in this script was found and fixed during the run:** its first run reported success while having run no checks (a server failed to start and the error was swallowed); it now fails on any crash or if fewer than its 38 checks ran, and the figures here are from the fixed script |
 
+Known flake, reported separately from failures: `scripts/qa/garage_transitions_qa.mjs` has one timing check (the picture must start changing within 250 ms) that fails when the machine is busy (2 failures in 4 runs, 22/22 on the others) with no garage code involved.
+
 ### Final verification of the pull-request head `0eab145` (24 October 2026)
 
 Pull request: [#2](https://github.com/projectwork1588-gif/grand-theft-auto-vi/pull/2), base `main` at `a2cc94b724a2d11d844f66c27d88a23d56c88846`, head `0eab145366440473f6f68004c07156189cbbb14a`.
 Two commits came after the run recorded above for `a3ccbab` (and after the record commit `33903da`): `b73e147` (search leaves music out instead of answering 503 when migration 008's music
 tables are absent) and `0eab145` (the "music is not available" note is shown only on a search that could include music).
 
+**This is the one final entry.** It supersedes the `a3ccbab` totals for the final candidate (those rows above stay as history) and it replaces the separate section that commit `0f101ec` added to this file
+on the pull request branch: its figures, its not-rerun note, its description of the change and its production-readiness list are folded in below. The two records agreed on every figure.
+
 **Where each figure comes from.** *Confirmed* means the figure was read from a run log kept outside the repository (the log names the commit and the state of the tree), or re-run while this entry
-was written. *Reported* means it comes from the description of PR #2 and was not independently read from GitHub. *Not rerun* means exactly that.
+was written. *Reported* means it comes from the description of PR #2 or from commit `0f101ec` (the project owner's report of the same run) and was not independently read from GitHub. *Not rerun* means exactly that.
 
 | Point | Result | Evidence |
 |-------|--------|----------|
 | **Final: full suite on `0eab145`** | **1,873 passed, 0 failed, 0 errors, 0 skipped, 32 warnings, 36 min 24 s.** 1,873 is the 1,820 of the earlier run plus the 53 tests of `tests/test_search_degradation.py`. Run with `-W default`, which shows warnings Python normally hides: all 32 are `ResourceWarning: unclosed file` raised by test code that reads a static file without closing it (15 in `test_site_integrity.py`, 9 in `test_pages.py`, 6 in `test_garage_pointer.py`, 1 in `test_setup_safety.py`, 1 in `test_http_headers.py`). None is in application code. The count in `test_garage_pointer.py` varies by one from run to run (5 on the previous commit) with when its development server drops a connection | Confirmed (run log, tagged with the commit, tree clean before) and reported |
-| Focused search, palette and documentation tests | 208 passed (`test_docs_drift.py`, `test_docs_routes_sync.py`, `test_docs_schema_sync.py`, `test_search_degradation.py`, `test_search_page.py`, `test_search_api.py`, `test_palette.py`) | Reported, and re-run on the `0eab145` tree while this entry was written: 208 passed in 36.56 s. The same seven files now collect 210, because the commit that adds this entry adds two guard tests to `test_docs_drift.py` (210 passed) |
-| Search degradation regression tests | 53 passed (19 test functions, expanded by parametrisation): simulated database errors of every kind, real renamed tables in the test database, the note shown only where relevant. Removing the tolerance fails 11 of them; accepting any missing table fails 6; reverting the relevance rule fails 8 | Reported, and re-run: 53 passed in 36.65 s |
+| Focused search, palette and documentation tests | **208 passed on the `0eab145` tree.** The selection is exactly seven files: `test_docs_drift.py`, `test_docs_routes_sync.py`, `test_docs_schema_sync.py`, `test_search_degradation.py`, `test_search_page.py`, `test_search_api.py`, `test_palette.py`, run together with `python -m pytest <those files> -q -p no:cacheprovider -W default`. The same seven files collect more tests on later commits only because documentation guard tests were added to `test_docs_drift.py`, not because the selection changed: 210 on the local commit `5bc6274` (two guard tests added) and 217 on the reconciliation commit that adds this entry (seven more) | Reported (208), and re-run on the `0eab145` tree: 208 passed in 36.56 s; re-run on the content of `5bc6274`: 210 passed in 38.82 s |
+| Search degradation regression tests | **53 passed on the `0eab145` tree** (`python -m pytest tests/test_search_degradation.py`; 19 test functions expanded by parametrisation). They are inside the 1,873 of the full run and inside the 208 above. They cover simulated database errors of every kind, real renamed tables in the test database, and the note shown only where relevant. Removing the tolerance fails 11 of them; accepting any missing table fails 6; reverting the relevance rule fails 8 | Reported, and re-run on the `0eab145` tree: 53 passed in 36.65 s |
 | Browser QA, command palette | 67 checks in normal motion and 67 in reduced motion, 0 failures | Confirmed (run summary tagged with the commit) and reported |
 | Browser QA, `/search` page | 50 in normal motion and 50 in reduced motion, 0 failures | Confirmed and reported |
 | Browser QA, the music tables really missing | 23 checks in normal and 23 in reduced motion, 0 failures: the palette and the results page work, no music row is invented, no error note, every search request answers 200, the Music page still renders. The runner renames the three music tables of the test database, restores them and checks the row count (9 before, 9 after) | Confirmed and reported |
@@ -435,37 +440,16 @@ was written. *Reported* means it comes from the description of PR #2 and was not
 | Test database | Restored; all 27 tables present, none left renamed aside | Confirmed after the final run and again after the re-runs above |
 | **Not rerun on `0eab145`**: home, characters, cast navigation, music, regions, media screening, vehicle detail, garage, accounts journey, admin journey, responsive and accessibility sweep | All passed with 0 failures on `b73e147` (the same commit minus the relevance change), in normal and reduced motion where applicable: home 53, characters hero 36, cast 52, music 48/48, regions 246/240, screening 112, vehicle detail 227, garage transitions 22, garage concept 22, accounts 74, admin 104/104, responsive and accessibility sweep 140 + 140 measurements with 0 problems (0 running animations under reduced motion). The change made afterwards is limited to the search results page's context (one list comprehension in `page_search`) plus tests and a documentation sentence, so they were not repeated | Confirmed for `b73e147` (run summary), **not** for `0eab145` |
 | What the `b73e147` browser run found | The degraded-state check failed 4 checks per motion mode. Two were a real flaw, now fixed in `0eab145`: a characters-only search showed "Music results are not available". Two were a wrong expectation in the check itself ("radio" legitimately matches the Music page) | Confirmed |
-| GitHub Actions | **No claim is made.** The repository has no workflow configuration and no workflow run has been confirmed for this commit | n/a |
+| GitHub Actions | **No claim is made.** The repository has no workflow configuration (no `.github` directory) and no workflow run has been confirmed for this commit. Commit `0f101ec` adds that no workflow run was returned for the final commit when it was checked; that is reported, not independently confirmed here. This record is a local run report, not a GitHub Actions result | Reported; the absence of workflow configuration is confirmed |
 | The earlier run on `a3ccbab` (1,820 passed) | Remains a historical result, kept in the table above; it is not the result for the pull-request head | n/a |
 
-Known flake, reported separately from failures: `scripts/qa/garage_transitions_qa.mjs` has one timing check (the picture must start changing within 250 ms) that fails when the machine is busy (2 failures in 4 runs, 22/22 on the others) with no garage code involved.
+#### What `0eab145` changed
 
+The search feature now degrades gracefully if one or more optional music tables from migration 008 are missing: search continues for other kinds, the page and the API identify music as unavailable when
+relevant, and a healthy subsequent request retries normally (nothing is remembered between requests). Missing core tables, permission errors, malformed SQL and connection errors remain errors rather than being
+hidden as a fallback.
 
-## Stage 5 final follow-up: search degradation and final integration candidate (2026-10-24)
-
-This section supersedes the earlier Stage 5 full-suite total for the final candidate where stated. The run was reported by the owner from the project's Windows environment, MySQL 8.0.46 and the `gta6_vi_test` database only. No production database was opened.
-
-### Final candidate: `0eab145366440473f6f68004c07156189cbbb14a`
-
-| Check | Result |
-|---|---|
-| Full `pytest` suite | **1,873 passed, 0 failed, 0 errors, 0 skipped; 32 test-code ResourceWarnings** |
-| Focused search, command palette and documentation checks | **208 passed** |
-| Search fallback regression tests | **53 passed** |
-| Search and command-palette browser QA | Passed in normal and reduced-motion modes |
-| Missing-music-table browser scenarios | Passed in normal and reduced-motion modes |
-| Live security checks | **38/38 passed** |
-| Test database recovery | Database restored; all 27 tables verified |
-
-The final full-suite run above was on `0eab145`. The broader browser suites (home, characters, music, regions, vehicle details, screening, garage, accounts and admin) were run on `b73e147`, not rerun on `0eab145`; the additional change on `0eab145` was limited to search-page context behaviour. Search/palette and missing-music-table browser scenarios were rerun for the final candidate.
-
-The 32 warnings are reported as test-code `ResourceWarning`s for unclosed files, not application-code warnings. This verification is a local run report; it is not a GitHub Actions result. No workflow run was returned for the final commit when checked.
-
-### Final-candidate change
-
-The search feature now degrades gracefully if one or more optional music tables from migration 008 are missing: search continues for other kinds, the page/API identifies music as unavailable when relevant, and a healthy subsequent request retries normally. Missing core tables, permission errors, malformed SQL and connection errors remain errors rather than being hidden as a fallback.
-
-### Production readiness: still blocked
+#### Production readiness: still blocked
 
 These results do **not** authorize deployment or production database changes. Before deployment, resolve and verify:
 
@@ -475,4 +459,4 @@ These results do **not** authorize deployment or production database changes. Be
 - Validate pool capacity, worker/thread counts and host-specific connection behaviour.
 - Decide how Rockstar-owned media will be handled in light of licensing uncertainty.
 
-The host is not selected in this report. No production database, migration, deployment, or production administrator setup was performed.
+The host is not selected in this record. No production database, migration, deployment, or production administrator setup was performed.

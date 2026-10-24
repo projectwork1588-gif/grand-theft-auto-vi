@@ -141,3 +141,87 @@ def test_the_final_entry_says_what_was_not_rerun_and_claims_no_ci_run():
     assert "32 warnings" in log and "ResourceWarning: unclosed file" in log             # the warnings are kept in the record, and named for what they are
     final = log.split("### Final verification of the pull-request head `0eab145`")[1]
     assert "**Where each figure comes from.**" in final and all(word in final for word in ("Confirmed", "Reported", "Not rerun"))
+
+
+# ------------------------------------------------------------------ the verification log has ONE final entry, and its numbers belong to their commits
+FINAL_HEADING = "### Final verification of the pull-request head `0eab145` (24 October 2026)"
+
+
+def final_entry(log):
+    """The text of the one final entry: from its heading to the next heading of the same or a higher level, or the end of the file."""
+    after = log.split(FINAL_HEADING)[1]
+    return re.split(r"\n#{1,3} ", after)[0]
+
+
+def test_there_is_exactly_one_final_entry_in_the_verification_log():
+    """Two commits once each recorded 'the final results' for the same head (one local, one on the pull request branch). A second final section, however it is worded, must fail."""
+    log = text("docs/VERIFICATION.md")
+    finals = re.findall(r"^#{1,6} .*(?:final candidate|final follow-up|final verification|final integration).*$", log, flags=re.IGNORECASE | re.MULTILINE)
+    assert finals == [FINAL_HEADING], f"expected one final entry, found: {finals}"
+    assert log.count("`0eab145`**") >= 1 and log.count("Final: full suite on") == 1
+
+
+def test_a_total_is_never_paired_with_the_wrong_commit_in_the_final_entry_or_the_history():
+    log = text("docs/VERIFICATION.md")
+    final = final_entry(log)
+    assert "1,873 passed" in final
+    for line in final.splitlines():
+        if "1,820 passed" in line:                                  # the earlier total may be mentioned, but only attributed to its own commit and called history
+            assert "`a3ccbab`" in line and "historical" in line, f"the earlier run's total appears in the final entry without being attributed to a3ccbab: {line[:90]}"
+        if "1,873 passed" in line:
+            assert "`a3ccbab`" not in line, f"the final total is paired with the earlier commit: {line[:90]}"
+    for line in log.splitlines():
+        if "first verification run" in line:
+            assert "1,873" not in line and "0eab145" not in line.split("|")[1], f"the earlier run's row carries the final run's figures: {line[:90]}"
+
+
+def counts_per_commit(cell):
+    """Every 'N passed on the `sha` tree' in a cell, as {N: sha}: the generic form of a count pinned to the commit it was measured on."""
+    return {count: sha for count, sha in re.findall(r"(\d[\d,]*) passed on the `([0-9a-f]{7})` tree", cell)}
+
+
+def test_the_focused_counts_name_their_selection_their_commit_and_why_they_differ():
+    final = final_entry(text("docs/VERIFICATION.md"))
+    row = next(line for line in final.splitlines() if line.startswith("| Focused search, palette and documentation tests"))
+    for name in ("test_docs_drift.py", "test_docs_routes_sync.py", "test_docs_schema_sync.py", "test_search_degradation.py", "test_search_page.py", "test_search_api.py", "test_palette.py"):
+        assert name in row, f"the focused row does not name {name}: the selection must be exact"
+    result = row.split("|")[2]                                      # the result cell: the evidence cell may name the same commit, so only this cell can pin a count to its commit
+    assert "**208 passed on the `0eab145` tree.**" in result, "the focused count must be stated for the 0eab145 tree, in the result cell"
+    assert "210 on the local commit `5bc6274`" in result and "217 on the reconciliation commit" in result, "the larger counts must each be attributed to their own commit"
+    assert "guard tests" in result and "not because the selection changed" in result, "the row must explain why the count grew"
+    assert counts_per_commit(result) == {"208": "0eab145"}, "a count is paired with the wrong commit"
+
+
+def test_the_degradation_count_names_its_commit_and_is_inside_the_full_run():
+    final = final_entry(text("docs/VERIFICATION.md"))
+    row = next(line for line in final.splitlines() if line.startswith("| Search degradation regression tests"))
+    result = row.split("|")[2]
+    assert "**53 passed on the `0eab145` tree**" in result, "the degradation count must be stated for the 0eab145 tree, in the result cell"
+    assert "test_search_degradation.py" in result and "1,873" in result and counts_per_commit(result) == {"53": "0eab145"}
+
+
+def test_github_actions_is_never_said_to_have_passed():
+    for line in text("docs/VERIFICATION.md").splitlines():
+        if "GitHub Actions" in line:
+            assert any(marker in line for marker in ("No claim", "not a GitHub Actions", "no workflow", "No workflow", "no GitHub Actions")), f"a line talks about GitHub Actions without disclaiming a run: {line[:100]}"
+    assert not (ROOT / ".github").exists(), "a workflow directory now exists: the log's statement about CI must be revisited"
+
+
+def test_the_production_blockers_stay_in_the_final_entry_and_it_authorises_nothing():
+    final = final_entry(text("docs/VERIFICATION.md"))
+    assert "#### Production readiness: still blocked" in final and "do **not** authorize deployment" in final
+    for needle in ("WSGI server", "TLS with certificate verification", "migration state", "pool capacity", "licensing"):
+        assert needle in final, f"the blocker list lost: {needle}"
+    assert "No production database, migration, deployment" in final
+
+
+def test_the_evidence_labels_are_defined_and_used():
+    final = final_entry(text("docs/VERIFICATION.md"))
+    assert all(f"*{word}*" in final.split("| Point |")[0] for word in ("Confirmed", "Reported", "Not rerun")), "each evidence label must be defined before the table"
+    table = final.split("| Point |")[1]
+    rows = [line for line in table.splitlines() if line.startswith("| ") and not line.startswith("|--")]          # data rows only: the split already removed the header's first cells
+    assert len(rows) == 12 and rows[0].startswith("| **Final: full suite on `0eab145`**"), "every data row, starting with the full suite, must be checked" and "**Not rerun on `0eab145`**" in table
+    for row in rows:
+        evidence = row.split("|")[3].lower()
+        assert any(label in evidence for label in ("confirmed", "reported", "n/a")), f"a row of the final table has no evidence label: {row[:80]}"
+    assert sum("confirmed" in row.split("|")[3].lower() for row in rows) >= 4 and sum("reported" in row.split("|")[3].lower() for row in rows) >= 4
