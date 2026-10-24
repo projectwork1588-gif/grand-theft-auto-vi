@@ -30,7 +30,7 @@ over every searchable kind, bound parameters only, so a search is one round trip
 command palette (`static/js/palette.js`, a native `<dialog>` opened by Ctrl/Cmd+K, `/` or the header icon). No migration and no schema change; the Content-Security-Policy
 is unchanged. Details, limits and measurements: `docs/SEARCH.md`.
 
-**Sessions and CSRF (built).** `app/security.py` keeps a signed session cookie and a synchronizer CSRF token: every form carries the token, and every POST, PUT, PATCH and DELETE must send it back, compared in constant time, with a same-origin check as a second layer. The admin check is a decorator on every `/admin` route; the role is read from the database on every request. Details and limits: `docs/ACCOUNTS.md` and `docs/ADMIN.md`.
+**Sessions and CSRF (built).** `app/security.py` keeps a signed session cookie and a synchronizer CSRF token: every form carries the token, and every request whose method is not GET, HEAD or OPTIONS must send it back, compared in constant time, with a same-origin check as a second layer (the guard names the safe methods, so a method nobody thought of is protected too). A HEAD request is a GET without a body: the views that take a form ask whether the request is a POST, so HEAD never submits anything (Stage 5, `tests/test_head_and_methods.py`). The admin check is a decorator on every `/admin` route; the role is read from the database on every request. Details and limits: `docs/ACCOUNTS.md` and `docs/ADMIN.md`.
 
 ## Key decisions
 
@@ -88,7 +88,7 @@ See `docs/MEDIA_INVENTORY.md`. In short: official images and Rockstar's own vide
 
 1. **Destructive SQL:** `schema.sql` still starts with `DROP TABLE IF EXISTS` for the project's own tables, but no script runs it on a populated database without `--reset` plus a typed confirmation. Phase 2 changes go through a non-destructive migration.
 2. **Test isolation:** unchanged. Tests run only against the `*_test` database, and the suite refuses any other name.
-3. **Secrets:** `.env` is generated with random values by `scripts.make_env` and is Git-ignored. For production, set `SECRET_KEY` and the database passwords through the host's environment, serve over HTTPS, run behind a production WSGI server (not `flask run`), and add `Strict-Transport-Security`.
+3. **Secrets:** `.env` is generated with random values by `scripts.make_env` and is Git-ignored. For production, set `SECRET_KEY` and the database passwords through the host's environment, serve over HTTPS, run behind a production WSGI server (not `flask run`). The production config sends `Strict-Transport-Security` itself, over HTTPS only (`TV_HSTS_MAX_AGE`, `docs/ACCOUNTS.md`).
 4. **Verification record:** `docs/VERIFICATION.md` now records the owner's successful local verification.
 5. **Classifications:** unchanged and enforced by a database CHECK (an `official` row must have a `source_url`).
 
@@ -113,7 +113,7 @@ Resolved since these were first written: the CSRF approach (a hand-written synch
 | Heavy, awkward hero | Lighter overlays, a tracked "Grand Theft Auto" line over a large gradient VI, the lede cut to one line, and a circular play control. The extra glow layer was removed. The release date sits quietly bottom right and the "as stated on Rockstar's official site" line is gone. |
 | Weak brand and header | A gradient-bordered VI mark with a tracked wordmark and a "Team Valkyrie - Fan guide" subline, a transparent-to-solid header, and a Trailers pill. |
 | Blunt "fictional demo" wording | Calm labels, one provenance line, no notice boxes, and natural copy for every concept record (migration 003). |
-| Weak garage | Only the five vehicles Rockstar names and shows are public, each with real screenshots. The silhouette art was deleted. |
+| Weak garage | Only the five vehicles Rockstar had named at the time (migration 002; **seven** since migration 006, the Dinka Enduro Motorcycle and the Crest Kayak) are public, each with real screenshots. The silhouette art was deleted. |
 | Plain statistics | Replaced by a full-bleed closing band over official artwork with four large numerals. |
 | Typography | Anton replaced by Barlow Condensed at lighter weights, smaller section titles, more generous spacing and a stronger type scale. |
 | Official clips and video | Official trailer posters, the on-demand Rockstar player, and one poster-and-link clip card per character. No autoplay background video, for performance reasons (see the media inventory). |

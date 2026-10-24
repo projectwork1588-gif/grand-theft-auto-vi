@@ -1,5 +1,7 @@
 # Cinematic implementation (on the approved Gate 2 foundation)
 
+> **Historical record (October 2026).** Written for the owner's Gate 2 review; it describes the pages as they were then (for example, the Garage row below advances five vehicles; seven are official now). Later stages changed the site: for the current state read `README.md`, `docs/ROUTES.md` and `docs/ARCHITECTURE.md`.
+
 Status: **built, corrected once on the owner's review, awaiting visual approval.** Gate 3 and Phase 3 have not been started. The Gate 2 hero, Jason and Lucia cards, native-video foundation and Leonida explorer were kept, not redesigned.
 
 ## What was built

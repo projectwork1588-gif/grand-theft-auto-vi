@@ -53,7 +53,7 @@ a set of verified documentation drifts (M3). The rest is hardening, deployment p
 
 ### Optional improvements
 
-* O1 `robots.txt` and a favicon (both 404 today; harmless, but noisy in logs).
+* O1 `robots.txt` (404 today). *Correction made during Stage 5:* the audit first also listed a missing favicon; that was wrong. `base.html` already declares one (`static/img/favicon.svg`); only the legacy `/favicon.ico` probe returns 404, which is harmless, so nothing is needed.
 * O2 A rate limit on `/api/v1/search` (a public read costing about 6 ms; a decision, not a defect).
 * O3 FULLTEXT for search (would need a migration; not needed at about 300 rows).
 * O4 The About page's lead-in links ("Characters: ...") are 23 px tall; they sit in a sentence, so they are exempt from WCAG 2.5.8.
@@ -150,7 +150,7 @@ Branch `feature/stage5-delivery` (from `8ed0a61`), small commits, tests per mile
 | **5.1 Security fix (M1)** | Treat only POST as a submission in the 9 views; make the CSRF check cover every method that is not GET, HEAD or OPTIONS; HEAD then returns exactly what GET does with no side effect and no throttle use. Regression tests that cover **every route x every method including HEAD, OPTIONS, PUT, PATCH, DELETE and TRACE** (no state change, never 5xx), and that five `HEAD /login` calls leave the throttle untouched. Re-run the authz suites and the admin journey. | No (a fix inside the approved design). |
 | **5.2 Test tooling (M2, S5)** | Update the 403 expectation in `admin_qa.mjs`; run the admin journey normal and reduced-motion; mark the 14-minute test `slow` and document how to run everything. | No. |
 | **5.3 Documentation (M3)** | Fix the four verified drifts; add Stages 3 to 5 to `VERIFICATION.md` (with a test that its stated totals are not left stale if feasible); a doc-sync test for the `ROUTES.md` Planned table against the URL map. | No. |
-| **5.4 Hardening (S3, O1, O6)** | HSTS under the production config over HTTPS; `robots.txt` (disallow `/search`, `/api`, `/admin`) and a favicon; `Allow` header on 405. | No to HSTS/robots; say if you want O1/O6 left out. |
+| **5.4 Hardening (S3, O1, O6)** | HSTS under the production config over HTTPS; `robots.txt` (disallow `/search`, `/api/`, `/admin`; the favicon is already there, see O1); `Allow` header on 405. | No to HSTS/robots; say if you want O1/O6 left out. |
 | **5.5 Database layer (S1, S2)** | Bounded wait for a pooled connection; for the cold start, only after the experiment in section 5 confirms the cause. | **Yes: it changes `app/db.py` behaviour, which you asked me to keep separate.** |
 | **5.6 Deployment preparation (S4)** | A `requirements-prod.txt` with a WSGI server, optional `DB_SSL_CA`/TLS settings, a process file and a one-page deployment guide for the chosen host. No deployment, no database migration. | **Yes: new configuration surface, and the host choice.** |
 | **5.7 Final verification** | Full suite once, full browser QA, the 140-measurement responsive sweep, the journeys, and a report with exact totals and any flakes with rerun evidence. | No. |

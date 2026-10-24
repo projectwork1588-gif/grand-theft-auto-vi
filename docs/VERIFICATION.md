@@ -392,3 +392,23 @@ Run in a throwaway copy of the project with `git init` (the project folder itsel
 3. Tests have run only against the scratch server so far, so the "tests on your local test database" requirement is open until step 1 is done.
 4. Trailer embed URLs and download licence terms need human review before Phase 5.
 5. The `valkyrie_app` account also has rights on the test database so the suite can run; a separate test-only account is possible if desired.
+
+
+## Stages 3 to 5: admin, polish, search, final checks (October 2026)
+
+Figures below were measured on the project's own machine: Windows, MySQL 8.0.46, headless Chrome, the `gta6_vi_test` database only. The production database was never opened.
+A complete run of the suite takes 31 to 36 minutes (one test, `test_garage_pointer.py`, takes 12 to 14 minutes by itself).
+
+| Point | Result |
+|-------|--------|
+| Stage 3: administrator area for Stories and Places | `tests/test_admin_*.py`; browser journey `scripts/qa/run_admin_qa.py`, 104 checks per run (normal and reduced motion) |
+| Stage 4A (accessibility and error pages), `62d63d7` | 659 targeted tests; 40-page probe (20 pages at desktop and phone width): 0 broken images, missing alt text, heading skips, failed requests, console errors or overflow |
+| Stage 4B (search and command palette), `8ed0a61` | **Full suite: 1,749 passed, 0 failed, 0 errors, no skips, no warnings, 36 min 10 s.** An earlier run of the same code before one label was renamed had 1 failure (a text collision with an existing guard), fixed without changing that test |
+| Stage 4B browser suites, all 0 failures | palette 67, `/search` page 50, home 53, characters hero 36, music 48, regions 246, vehicle detail 227, screening 112, cast navigation 52 |
+| Stage 5 audit, `96987fd` | `docs/STAGE5_AUDIT.md`: 140 page-and-width measurements, 322 hostile requests, every route with every method, database integrity, documentation links |
+| Stage 5.1: HEAD requests (finding M1) | `tests/test_head_and_methods.py`, 16 tests: 8 failed on the old code, 16 pass on the new; with the 22 other files that touch accounts, throttles, favourites, admin and security, 627 passed |
+| Stage 5.2: admin browser script | `run_admin_qa.py` 97/104 before, 104/104 after (normal and reduced motion); `run_accounts_qa.py` 74/74 |
+| Stage 5.4: HTTP headers | `tests/test_http_headers.py`, 36 tests (405 `Allow`, HSTS, `robots.txt`); removing the code makes 17 of them fail |
+| Stage 5, final full suite and browser QA | recorded here when the final run has finished |
+
+Known flake, reported separately from failures: `scripts/qa/garage_transitions_qa.mjs` has one timing check (the picture must start changing within 250 ms) that fails when the machine is busy (2 failures in 4 runs, 22/22 on the others) with no garage code involved.

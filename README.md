@@ -3,7 +3,7 @@
 > An unofficial educational fan project by Team Valkyrie. Not affiliated with, endorsed by, or sponsored by Rockstar Games or Take-Two Interactive.
 
 A cinematic, database-driven GTA VI fan guide built for a Web Technologies and DBMS college project.
-**Status: the cinematic public website, accounts with favourites, and an administrator area for Stories and Places are built.** Accounts (username and password, no email) are described in [docs/ACCOUNTS.md](docs/ACCOUNTS.md). The admin area is built and tested on the test database only; enabling it on the live site is a separate, later decision (see [docs/ADMIN.md](docs/ADMIN.md)). The interactive atlas, the Intelligence Network, global search and the full media theatre come in later phases.
+**Status: the cinematic public website, accounts with favourites, site search with a command palette, and an administrator area for Stories and Places are built.** Accounts (username and password, no email) are described in [docs/ACCOUNTS.md](docs/ACCOUNTS.md). The admin area is built and tested on the test database only; enabling it on the live site is a separate, later decision (see [docs/ADMIN.md](docs/ADMIN.md)). The interactive atlas, the Intelligence Network, terminal-style API commands and the full media theatre come in later phases. Final testing and delivery (Stage 5) is in progress: see [docs/STAGE5_AUDIT.md](docs/STAGE5_AUDIT.md) and [docs/HOSTING.md](docs/HOSTING.md).
 
 ## What you can do today
 
@@ -188,6 +188,8 @@ GTA 6/
 * [Accounts, favourites, security and deployment settings](docs/ACCOUNTS.md)
 * [The admin area: Stories and Places](docs/ADMIN.md)
 * [Search: the API, the page and the command palette](docs/SEARCH.md)
+* [Hosting guide and options (draft, nothing deployed)](docs/HOSTING.md)
+* [Stage 5 audit and plan](docs/STAGE5_AUDIT.md)
 * [Music page](docs/MUSIC.md)
 * [Media page: "The Screening"](docs/MEDIA_SCREENING.md)
 * [Home, Characters and Garage update, and a performance pass](docs/HOME_UPDATE.md)
@@ -198,11 +200,11 @@ GTA 6/
 ## Roadmap
 
 1. Foundation (done)
-2. **Cinematic public website** (this phase)
+2. **Cinematic public website** (done)
 3. Authentication and favourites (built); admin CRUD for Stories and Places (built, test database only); CRUD for the other records (not built)
-4. Leonida Atlas, Intelligence Network, terminal commands, global search
-5. Media Theatre and cinematic polish
-6. Final testing and presentation
+4. Global search and the command palette (built); Leonida Atlas, Intelligence Network, terminal commands (not built)
+5. Media Theatre (not built; the Media page, "The Screening", is) and cinematic polish
+6. Final testing, delivery and presentation (Stage 5, in progress)
 
 ## Licence and rights
 
