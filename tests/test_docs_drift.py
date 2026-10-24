@@ -117,4 +117,27 @@ def test_the_verification_log_covers_the_stages_after_phase_two():
     log = text("docs/VERIFICATION.md")
     assert "## Stages 3 to 5" in log and "1,749 passed" in log and "104/104" in log
     assert "recorded here when" not in log, "the log still has a placeholder for results that were never filled in"
-    assert "1,820 passed" in log and "Stage 5 final: full suite on `a3ccbab`" in log
+    assert "1,820 passed" in log and "Stage 5, first verification run: full suite on `a3ccbab`" in log      # the earlier run is kept, and labelled as the earlier run
+    assert "Final verification of the pull-request head `0eab145`" in log
+
+
+def test_each_full_suite_row_carries_its_own_commit_and_count_and_only_one_is_final():
+    """A count must never drift onto the wrong commit: every row that names a commit's full suite states that commit's own total, and exactly one row is the final one."""
+    log = text("docs/VERIFICATION.md")
+    rows = [line for line in log.splitlines() if re.search(r"full suite on `[0-9a-f]{7}`", line)]
+    expected = {"a3ccbab": "1,820 passed", "0eab145": "1,873 passed"}
+    assert {re.search(r"full suite on `([0-9a-f]{7})`", row).group(1) for row in rows} == set(expected), "a full-suite row names a commit this test does not know: add its total here"
+    for row in rows:
+        sha = re.search(r"full suite on `([0-9a-f]{7})`", row).group(1)
+        others = [count for other, count in expected.items() if other != sha]
+        assert expected[sha] in row and not any(count in row for count in others), f"the row for {sha} carries another commit's total"
+    assert log.count("**Final: full suite on `0eab145`**") == 1 and log.count("Final: full suite on") == 1
+
+
+def test_the_final_entry_says_what_was_not_rerun_and_claims_no_ci_run():
+    log = text("docs/VERIFICATION.md")
+    assert "**Not rerun on `0eab145`**" in log and "Confirmed for `b73e147`" in log and "**not** for `0eab145`" in log
+    assert "GitHub Actions" in log and "No claim is made" in log
+    assert "32 warnings" in log and "ResourceWarning: unclosed file" in log             # the warnings are kept in the record, and named for what they are
+    final = log.split("### Final verification of the pull-request head `0eab145`")[1]
+    assert "**Where each figure comes from.**" in final and all(word in final for word in ("Confirmed", "Reported", "Not rerun"))
