@@ -415,3 +415,40 @@ A complete run of the suite takes 31 to 36 minutes (one test, `test_garage_point
 | **Stage 5 final: live security checks** (real servers, raw HTTP, test database) | 38 of 38. HEAD changes nothing and spends no throttle (25 x `HEAD /login`, then a real wrong password is 401, not 429); 10 state-changing addresses (admin delete, edit and new, favourites, password, sign out, sign in, sign up) refuse a missing token, a forged token and a foreign Origin; PUT, PATCH and DELETE on an admin delete address are 405; with no trusted proxy a forwarded `X-Forwarded-Proto: https` never produces HSTS, on any kind of answer; behind one trusted proxy that says https the header is exactly `max-age=31536000`; 96 live 405 answers all carry an `Allow` equal to the route's methods. The application refuses to start in production against a test database, so the HSTS checks run the test configuration with the production HSTS value and proxy settings (the same code paths); the production class's own settings are asserted separately. Authenticated destructive actions are covered by `test_head_and_methods.py` and the admin journey (104 checks, including CSRF). **A bug in this script was found and fixed during the run:** its first run reported success while having run no checks (a server failed to start and the error was swallowed); it now fails on any crash or if fewer than its 38 checks ran, and the figures here are from the fixed script |
 
 Known flake, reported separately from failures: `scripts/qa/garage_transitions_qa.mjs` has one timing check (the picture must start changing within 250 ms) that fails when the machine is busy (2 failures in 4 runs, 22/22 on the others) with no garage code involved.
+
+
+## Stage 5 final follow-up: search degradation and final integration candidate (2026-10-24)
+
+This section supersedes the earlier Stage 5 full-suite total for the final candidate where stated. The run was reported by the owner from the project's Windows environment, MySQL 8.0.46 and the `gta6_vi_test` database only. No production database was opened.
+
+### Final candidate: `0eab145366440473f6f68004c07156189cbbb14a`
+
+| Check | Result |
+|---|---|
+| Full `pytest` suite | **1,873 passed, 0 failed, 0 errors, 0 skipped; 32 test-code ResourceWarnings** |
+| Focused search, command palette and documentation checks | **208 passed** |
+| Search fallback regression tests | **53 passed** |
+| Search and command-palette browser QA | Passed in normal and reduced-motion modes |
+| Missing-music-table browser scenarios | Passed in normal and reduced-motion modes |
+| Live security checks | **38/38 passed** |
+| Test database recovery | Database restored; all 27 tables verified |
+
+The final full-suite run above was on `0eab145`. The broader browser suites (home, characters, music, regions, vehicle details, screening, garage, accounts and admin) were run on `b73e147`, not rerun on `0eab145`; the additional change on `0eab145` was limited to search-page context behaviour. Search/palette and missing-music-table browser scenarios were rerun for the final candidate.
+
+The 32 warnings are reported as test-code `ResourceWarning`s for unclosed files, not application-code warnings. This verification is a local run report; it is not a GitHub Actions result. No workflow run was returned for the final commit when checked.
+
+### Final-candidate change
+
+The search feature now degrades gracefully if one or more optional music tables from migration 008 are missing: search continues for other kinds, the page/API identifies music as unavailable when relevant, and a healthy subsequent request retries normally. Missing core tables, permission errors, malformed SQL and connection errors remain errors rather than being hidden as a fallback.
+
+### Production readiness: still blocked
+
+These results do **not** authorize deployment or production database changes. Before deployment, resolve and verify:
+
+- Choose and configure a production WSGI server and start command.
+- Implement database TLS with certificate verification.
+- Inspect the actual production migration state safely; do not run migrations until separately approved.
+- Validate pool capacity, worker/thread counts and host-specific connection behaviour.
+- Decide how Rockstar-owned media will be handled in light of licensing uncertainty.
+
+The host is not selected in this report. No production database, migration, deployment, or production administrator setup was performed.
