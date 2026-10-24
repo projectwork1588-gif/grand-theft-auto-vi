@@ -2,9 +2,14 @@
 
 One statement searches every kind of record at once (UNION ALL), so a search is one round trip. Each kind says which columns it matches, which one is its title (for
 ranking) and who may see it, with the same rules as the pages: only official characters and vehicles have public pages, and nothing here selects anything else."""
+import logging
 import re
 
+from mysql.connector import errors
+
 from ..db import query_all
+
+log = logging.getLogger(__name__)
 
 # The order kinds are listed in when two results rank the same.
 KIND_ORDER = ("character", "vehicle", "region", "place", "story", "music")
@@ -156,6 +161,41 @@ def search(kinds, terms, phrase_params, limit, offset):
     order = "FIELD(kind, " + ", ".join(["%s"] * len(KIND_ORDER)) + ")"
     sql = f"SELECT * FROM (\n{union}\n) hits ORDER BY rank_ DESC, {order}, title ASC, slug ASC LIMIT %s OFFSET %s"
     return query_all(sql, params + list(KIND_ORDER) + [limit, offset])
+
+
+# Kinds whose tables come from a later migration (008) than the rest of the schema: a database that has not had it applied has none of them, and the site still works without them
+# (the Music page shows an empty page). Only these tables may be missing without it being an error; a missing characters or regions table is a broken database.
+OPTIONAL_TABLES = {"music": frozenset({"radio_stations", "music_releases", "music_tracks"})}
+TABLE_MISSING = 1146
+_MISSING_TABLE = re.compile(r"Table '([^']+)' doesn't exist", re.IGNORECASE)
+
+
+def missing_optional_kind(exc):
+    """The kind whose optional table `exc` reports as missing, or None for anything else: a missing core table, a permission error (1142), a lost connection, bad SQL, or a
+    "table missing" message that does not name a table we can recognise. When in doubt it says None, so the error is raised, never hidden."""
+    if not isinstance(exc, errors.ProgrammingError) or exc.errno != TABLE_MISSING:
+        return None
+    found = _MISSING_TABLE.search(str(exc.msg or ""))
+    if not found:
+        return None
+    table = found.group(1).split(".")[-1]                       # the message says 'database.table'
+    return next((kind for kind, tables in OPTIONAL_TABLES.items() if table in tables), None)
+
+
+def tolerant(run, kinds, unavailable):
+    """run(kinds), leaving out an optional kind whose tables are missing: that kind is added to `unavailable` (a list the caller owns) and `run` is called again without it.
+    `kinds` already in `unavailable` are left out from the start, so a caller that asks twice does not hit the missing table twice. Every other error propagates unchanged."""
+    kinds = tuple(k for k in kinds if k not in unavailable)
+    while True:
+        try:
+            return run(kinds)
+        except errors.ProgrammingError as exc:
+            missing = missing_optional_kind(exc)
+            if missing is None or missing not in kinds:
+                raise
+            log.warning("Search leaves out %s: its tables are missing (%s). Has migration 008 been applied?", missing, exc)
+            unavailable.append(missing)
+            kinds = tuple(k for k in kinds if k != missing)
 
 
 def counts(kinds, terms):

@@ -41,7 +41,7 @@
 | `/vehicles`, `/vehicles/<slug>`, `/vehicle-categories` | New. The API serves the whole table (15 vehicles). Use `?status=official` for the public garage. `sort=featured` gives editorial order. `/vehicle-categories?status=official` counts official vehicles only |
 | `/missions`, `/missions/<slug>` | New. Lists include cast, vehicle and location counts |
 | `/locations`, `/locations/<slug>` | New |
-| `/search` | Stage 4B. The few best matches for the command palette: `q` (required, 1 to 80 characters, at most five words), `type` (`all`, `page`, `character`, `vehicle`, `region`, `place`, `story`, `music`), `limit` (1 to 20, default 8). Returns `{query, type, results: [{kind, kind_label, title, detail, summary, url, status, status_label}]}`, best first. Public records only, by the pages' own rules (official characters and vehicles; every region, place, story and music row), concept rows labelled `Concept`. One database query. See `docs/SEARCH.md` |
+| `/search` | Stage 4B. The few best matches for the command palette: `q` (required, 1 to 80 characters, at most five words), `type` (`all`, `page`, `character`, `vehicle`, `region`, `place`, `story`, `music`), `limit` (1 to 20, default 8). Returns `{query, type, results: [{kind, kind_label, title, detail, summary, url, status, status_label}]}`, best first. Public records only, by the pages' own rules (official characters and vehicles; every region, place, story and music row), concept rows labelled `Concept`. One database query. On a database without the music tables (migration 008) music is left out and the answer adds `unavailable: ["music"]`; every other database failure is still the generic 503. See `docs/SEARCH.md` |
 
 Pages and API endpoints share the same services, so they cannot disagree.
 

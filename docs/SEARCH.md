@@ -35,8 +35,19 @@ own pages first, then character, vehicle, region, place, story, music, then titl
   repository functions never see the raw query.
 * Hostile strings (quotes, `UNION SELECT`, backslashes, wildcards, control characters, full-width and emoji text, 80 characters) return a normal answer or a 400, and
   the row counts are unchanged afterwards.
-* A database failure is the generic 503 (no SQL, host or password), as everywhere else.
-* The route is read-only and public.
+* A database failure is the generic 503 (no SQL, host or password), as everywhere else, with one deliberate exception: see the next paragraph.
+
+**A database without migration 008 (the music tables).** The Music page already treats `radio_stations`, `music_releases` and `music_tracks` as optional (an empty page, not an error), so search does too.
+Because one statement spans every kind, a missing music table used to make every default (all-types) search answer 503. Now `repositories/search.tolerant()` catches that case, leaves the
+music kind out, logs the project's usual warning ("Has migration 008 been applied?") and runs the statement again without it:
+* An all-types search, and the command palette (which makes the same request), return what the other kinds find, ranked and labelled exactly as before. The API adds `"unavailable": ["music"]`
+  **only in this case**; a healthy answer keeps its old shape. The results page shows one line, "Music results are not available on this copy of the site."
+* An explicit music search is an empty 200 (`results: []` plus `unavailable`); nothing is made up.
+* **Only a missing music table counts.** The error must be MySQL's "table missing" (1146, a `ProgrammingError`) and its message must name one of the three music tables. A missing core table
+  (characters, regions, ...), a permission error (1142), a lost or refused connection, bad SQL, a "table missing" message that names nothing recognisable, or any error raised again by the
+  retry is **not** hidden: it is the generic 503 as before. When in doubt the classifier says no.
+* Nothing is remembered: each request tries the tables again, so the moment migration 008 is applied the music results return. In the degraded case a search costs one failed statement and one good one.
+* Tests: `tests/test_search_degradation.py` (simulated errors for every kind of error; real renamed tables in the test database for the genuinely-missing cases).* The route is read-only and public.
 
 **Cost** (test database, through the Flask test client, warm, 1,950 requests over 13 queries): p50 5.3 ms, p95 5.9 ms, p99 6.9 ms; the largest response is 2.0 KB.
 The budget the plan set was p95 <= 50 ms and 6 KB; `tests/test_search_api.py` enforces it with those limits.

@@ -121,12 +121,13 @@ def _kinds(kind):
     return KINDS if kind == "all" else (kind,)
 
 
-def _find(q, kind, limit, offset):
-    """The merged, ranked rows for a query: the database's rows for the record kinds plus the site's own pages."""
+def _find(q, kind, limit, offset, unavailable):
+    """The merged, ranked rows for a query: the database's rows for the record kinds plus the site's own pages. A kind whose optional tables are missing (the music tables of
+    migration 008) is left out and named in `unavailable`; nothing is made up for it, and every other database error still propagates."""
     terms, phrase_params = like_parts(q)
     kinds = _kinds(kind)
     record_kinds = tuple(k for k in kinds if k != "page")
-    rows = repo.search(record_kinds, terms, phrase_params, offset + limit, 0)
+    rows = repo.tolerant(lambda ks: repo.search(ks, terms, phrase_params, offset + limit, 0), record_kinds, unavailable)
     pages = _page_hits(q) if "page" in kinds else []
     order = {name: position for position, name in enumerate(repo.KIND_ORDER)}
     merged = sorted(pages, key=lambda h: (-h["rank_"], h["title"])) + rows
@@ -143,8 +144,12 @@ def api_search(args):
     if not q and "q" not in problems:
         problems["q"] = "is required"
     v.raise_if_problems(problems)
-    hits = _find(q, kind, limit, 0)
-    return {"query": q, "type": kind, "results": [_present(h) for h in hits]}
+    unavailable = []
+    hits = _find(q, kind, limit, 0, unavailable)
+    body = {"query": q, "type": kind, "results": [_present(h) for h in hits]}
+    if unavailable:                       # only on a database without migration 008: a healthy answer keeps exactly the shape it always had
+        body["unavailable"] = unavailable
+    return body
 
 
 def page_search(args):
@@ -158,15 +163,16 @@ def page_search(args):
         problems["page"] = f"a search shows at most {MAX_RESULTS} results"
     v.raise_if_problems(problems)
     empty = {"query": q, "type": kind, "results": [], "counts": {}, "total": 0, "pagination": v.pagination_meta(1, per_page, 0), "kinds": KINDS,
-             "kind_labels": KIND_LABELS, "searched": False}
+             "kind_labels": KIND_LABELS, "searched": False, "unavailable": []}
     if not q:
         return empty
     terms, _ = like_parts(q)
-    counts = repo.counts(tuple(k for k in KINDS if k != "page"), terms)
+    unavailable = []
+    counts = repo.tolerant(lambda ks: repo.counts(ks, terms), tuple(k for k in KINDS if k != "page"), unavailable)
     page_hits = _page_hits(q)
     counts["page"] = len(page_hits)
     counts = {k: counts.get(k, 0) for k in KINDS}
     total = min(sum(counts.values()) if kind == "all" else counts[kind], MAX_RESULTS)
-    hits = _find(q, kind, per_page, (page - 1) * per_page) if total else []
+    hits = _find(q, kind, per_page, (page - 1) * per_page, unavailable) if total else []
     return {"query": q, "type": kind, "results": [_present(h) for h in hits], "counts": counts, "total": total,
-            "pagination": v.pagination_meta(page, per_page, total), "kinds": KINDS, "kind_labels": KIND_LABELS, "searched": True}
+            "pagination": v.pagination_meta(page, per_page, total), "kinds": KINDS, "kind_labels": KIND_LABELS, "searched": True, "unavailable": unavailable}
