@@ -116,3 +116,5 @@ def test_the_readme_links_the_document(name):
 def test_the_verification_log_covers_the_stages_after_phase_two():
     log = text("docs/VERIFICATION.md")
     assert "## Stages 3 to 5" in log and "1,749 passed" in log and "104/104" in log
+    assert "recorded here when" not in log, "the log still has a placeholder for results that were never filled in"
+    assert "1,820 passed" in log and "Stage 5 final: full suite on `a3ccbab`" in log
