@@ -40,7 +40,7 @@ def story_list():
 @admin_bp.route("/stories/new", methods=["GET", "POST"])
 @security.admin_required
 def story_new():
-    if request.method == "GET":
+    if request.method != "POST":
         return _form_page(creating=True, slug=None, values=DEFAULTS, selection={"characters": {}, "vehicles": {}, "locations": {}}, errors={})
     try:
         stories.create(request.form, g.user)
@@ -55,7 +55,7 @@ def story_new():
 @admin_bp.route("/stories/<slug>/edit", methods=["GET", "POST"])
 @security.admin_required
 def story_edit(slug):
-    if request.method == "GET":
+    if request.method != "POST":
         story, selection = stories.load_for_edit(slug)
         return _form_page(creating=False, slug=slug, values=story, selection=selection, errors={})
     try:
@@ -71,7 +71,7 @@ def story_edit(slug):
 @admin_bp.route("/stories/<slug>/delete", methods=["GET", "POST"])
 @security.admin_required
 def story_delete(slug):
-    if request.method == "GET":
+    if request.method != "POST":
         story, impact = stories.load_for_delete(slug)
         return render_template("admin/story_delete.html", story=story, impact=impact)
     title = stories.delete(slug, g.user)
@@ -99,7 +99,7 @@ def place_list():
 @admin_bp.route("/places/new", methods=["GET", "POST"])
 @security.admin_required
 def place_new():
-    if request.method == "GET":
+    if request.method != "POST":
         return _place_form_page(creating=True, slug=None, values=PLACE_DEFAULTS, errors={})
     try:
         places.create(request.form, g.user)
@@ -112,7 +112,7 @@ def place_new():
 @admin_bp.route("/places/<slug>/edit", methods=["GET", "POST"])
 @security.admin_required
 def place_edit(slug):
-    if request.method == "GET":
+    if request.method != "POST":
         place = places.load_for_edit(slug)
         return _place_form_page(creating=False, slug=slug, values=_place_values(place), errors={})
     try:
@@ -126,7 +126,7 @@ def place_edit(slug):
 @admin_bp.route("/places/<slug>/delete", methods=["GET", "POST"])
 @security.admin_required
 def place_delete(slug):
-    if request.method == "GET":
+    if request.method != "POST":
         place, impact, residents = places.load_for_delete(slug)
         return render_template("admin/place_delete.html", place=place, impact=impact, residents=residents)
     name = places.delete(slug, g.user)

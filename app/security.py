@@ -22,7 +22,8 @@ from .services.accounts import USERNAME_PATTERN
 
 CSRF_FIELD = "csrf_token"
 CSRF_HEADER = "X-CSRF-Token"
-UNSAFE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
+# The only methods a request may use without the token. Everything else needs it: the guard names what is safe, not what is dangerous, so a method nobody thought of is protected too.
+SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 
 
 class CSRFError(BadRequest):
@@ -56,7 +57,7 @@ def _same_origin():
 
 
 def protect_csrf():
-    if request.method not in UNSAFE_METHODS:
+    if request.method in SAFE_METHODS:
         return None
     if request.url_rule is None or request.method not in request.url_rule.methods:
         return None             # no route accepts this method here, so there is nothing to protect: the normal 404/405 answer stands
