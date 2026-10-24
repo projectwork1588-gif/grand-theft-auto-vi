@@ -1,6 +1,6 @@
 """Consistent error handling: JSON for /api/*, a branded HTML page for everything else."""
 from flask import jsonify, render_template, request
-from werkzeug.exceptions import HTTPException
+from werkzeug.exceptions import HTTPException, MethodNotAllowed
 
 from .db import DatabaseError
 from .services.validation import ValidationError
@@ -29,18 +29,18 @@ def _retry_url():
     return None
 
 
-def _respond(status, title, message, details=None, own_message=False):
-    """`own_message` is True when the route chose the sentence itself, so the page keeps it instead of the branded one."""
+def _respond(status, title, message, details=None, own_message=False, headers=None):
+    """`own_message` is True when the route chose the sentence itself, so the page keeps it instead of the branded one. `headers` are added to the answer (a 405 must say what is allowed)."""
     if _wants_json():
         body = {"error": {"status": status, "title": title, "message": message}}
         if details:
             body["error"]["details"] = details
-        return jsonify(body), status
+        return jsonify(body), status, headers or {}
     headline, lede = BRANDED.get(status, (title, message))
     if own_message:
         lede = message
     retry = _retry_url() if status in RETRY else None
-    return render_template("error.html", status=status, title=title, headline=headline, message=lede, details=details, retry_url=retry), status
+    return render_template("error.html", status=status, title=title, headline=headline, message=lede, details=details, retry_url=retry), status, headers or {}
 
 
 def register_error_handlers(app):
@@ -50,7 +50,8 @@ def register_error_handlers(app):
 
     @app.errorhandler(HTTPException)
     def handle_http(error):
-        return _respond(error.code, error.name, error.description, own_message=error.description != type(error).description)
+        headers = {"Allow": ", ".join(sorted(error.valid_methods))} if isinstance(error, MethodNotAllowed) and error.valid_methods else None      # RFC 9110: a 405 lists what is allowed
+        return _respond(error.code, error.name, error.description, own_message=error.description != type(error).description, headers=headers)
 
     @app.errorhandler(DatabaseError)
     def handle_database(error):

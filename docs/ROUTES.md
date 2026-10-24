@@ -29,6 +29,7 @@
 | `/account/password` | Change password (the current password is verified first). Signed-in only |
 | `POST /favourites/<kind>/<slug>`, `POST /favourites/<kind>/<slug>/remove` | Save or remove a favourite (`kind`: `characters`, `vehicles`, `locations`, `missions`). Signed-in only; always acts on the signed-in user; answers 303; 404 for an unknown or unpublished record. Every POST needs the CSRF token (400 without) |
 | `/admin`, `/admin/stories`, `/admin/stories/new`, `/admin/stories/<slug>/edit`, `/admin/stories/<slug>/delete`, `/admin/places`, `/admin/places/new`, `/admin/places/<slug>/edit`, `/admin/places/<slug>/delete` | **Administrators only** (signed out: redirect to `/login`; signed in but not an administrator: 403). Dashboard and create, read, update and delete for Stories (with their links) and Places (with their region). Every POST needs the CSRF token; official stories are read-only. See `docs/ADMIN.md` |
+| `/robots.txt` | Plain text for crawlers: everything allowed except the search page, the JSON API, the admin and account areas, sign-in, sign-up and the health check. Cached for an hour and needs no database, so a host can use it as its "is the site up" probe while MySQL sleeps (`/health` also checks the database) |
 | `/health` | JSON health check, public and deliberately bare: `{"status":"ok","database":"connected"}` (200), or `{"status":"error","database":"unreachable"}` (503) when MySQL is down. No server version, host, account or error text (the reason goes to the server log only). Not linked from the site |
 
 ### JSON API (`/api/v1`)
@@ -53,7 +54,7 @@ Pages and API endpoints share the same services, so they cannot disagree.
 | 429 | Sign-in, change-password or sign-up form with a message and a `Retry-After` header (too many failed attempts, or too many accounts from one address) | n/a (no API route writes) |
 | 403 | Branded page ("Restricted area"); a sentence the route chose, such as the admin one ("This area is for administrators."), is kept | JSON error |
 | 404 | Branded page, "Off the map" (unknown route, unknown slug, or a slug that is not lowercase `a-z0-9-`) | JSON error |
-| 405 | Branded page, "Wrong turn" | JSON error |
+| 405 | Branded page, "Wrong turn", with an `Allow` header listing the methods the address does accept (for example `GET, HEAD, OPTIONS, POST` for `/login`) | JSON error, same `Allow` header |
 | 503 | Branded page, "Back in a moment", titled "Database unavailable", with a "Try again" link for a GET and no SQL or credentials shown | JSON error |
 | 500 | Branded page, "Something broke on our side", with a "Try again" link for a GET and nothing about the cause | JSON error |
 
@@ -64,8 +65,8 @@ Every branded page is a full page of the site (header, footer), has one `h1`, sh
 | Phase | Routes |
 |-------|--------|
 | 3 Admin | Stories and Places CRUD and the dashboard are built (see above and `docs/ADMIN.md`); CRUD for the other records, character relationship editors and an audit table are not |
-| 4 Signature | `/atlas` (reuses `/regions/<slug>` and `/locations/<slug>`), `/network`, `POST /api/v1/terminal`, `/search`, `/trails` |
-| 5 Media + polish | `/theatre`, wallpaper and screenshot galleries, official vehicle imagery (needs a `media_vehicles` junction), animation pass |
+| 4 Signature | `/atlas` (reuses `/regions/<slug>` and `/locations/<slug>`), `/network`, `POST /api/v1/terminal`, `/trails`. (Global search, its page, the command palette and its API were built in Stage 4B: see above and `docs/SEARCH.md`.) |
+| 5 Media + polish | `/theatre` (a full media theatre). Built already: the Media page ("The Screening", with every screenshot, artwork and wallpaper collection) and official vehicle imagery (`media_vehicles`, migration 002) |
 | 6 Final | Integration and security testing, performance, documentation, viva preparation |
 
 Optional features (radio, comparison, economy simulator, news, reviews, activity tracking) wait until all of the above is verified.

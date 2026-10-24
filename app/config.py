@@ -21,6 +21,21 @@ def _int(name, default):
         return int(default)
 
 
+HSTS_DEFAULT_SECONDS = 31536000          # one year
+HSTS_MAX_SECONDS = 63072000              # two years: a typo in the setting must not pin a site to https for a decade
+
+
+def hsts_max_age(value):
+    """Seconds for the Strict-Transport-Security header from TV_HSTS_MAX_AGE. Unset or not a whole number: the default (one year). 0 (or less): off. Never more than two years."""
+    if value is None or str(value).strip() == "":
+        return HSTS_DEFAULT_SECONDS
+    try:
+        seconds = int(str(value).strip())
+    except ValueError:
+        return HSTS_DEFAULT_SECONDS
+    return min(max(seconds, 0), HSTS_MAX_SECONDS)
+
+
 def normalise_origin(value):
     """'HTTPS://Example.org/' -> 'https://example.org'; None unless it is a bare origin (http or https scheme, a host, no path, query, fragment or credentials)."""
     parts = urlsplit((value or "").strip().lower().rstrip("/"))
@@ -60,6 +75,7 @@ class Config:
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_SECURE = False       # True in ProductionConfig (a cookie marked Secure is not sent over plain http)
+    HSTS_MAX_AGE = 0                    # Strict-Transport-Security seconds; 0 = never sent. Only ProductionConfig turns it on, and only over HTTPS (see security_headers)
     SESSION_REFRESH_EACH_REQUEST = False
     PERMANENT_SESSION_LIFETIME = timedelta(hours=8)    # the longest a sign-in lasts, however busy the visitor is
     # Login throttle (in-process; see app/security.py): failures allowed per username+address and per address within the window.
@@ -125,6 +141,7 @@ class ProductionConfig(DevelopmentConfig):
     AUTOPLAY_ALWAYS = False
     SECRET_KEY = os.getenv("SECRET_KEY")       # no fallback: get_config("production") refuses to start without a real one
     SESSION_COOKIE_SECURE = True
+    HSTS_MAX_AGE = hsts_max_age(os.getenv("TV_HSTS_MAX_AGE"))      # one year unless TV_HSTS_MAX_AGE says otherwise; 0 turns it off
 
 
 class TestingConfig(Config):
