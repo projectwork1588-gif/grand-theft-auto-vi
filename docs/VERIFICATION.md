@@ -460,3 +460,23 @@ These results do **not** authorize deployment or production database changes. Be
 - Decide how Rockstar-owned media will be handled in light of licensing uncertainty.
 
 The host is not selected in this record. No production database, migration, deployment, or production administrator setup was performed.
+
+### Full-suite run on the reconciliation head `2182cbe` (24 October 2026)
+
+This entry adds a run; it does not replace the entry above. That entry is titled for `0eab145` because `0eab145` was the pull-request head when it was written. Since then the branch `feature/stage5-delivery`
+has moved to `2182cbeb48d43362bf3ee83e91418d0a4cfacfd6` through the merge `217c933` of the two documentation commits (`5bc6274` and `0f101ec`) and the reconciliation commit `2182cbe` (confirmed with
+`git ls-remote` after the push; the PR page itself was not read). Between `0eab145` and `2182cbe` exactly two files differ, `docs/VERIFICATION.md` and `tests/test_docs_drift.py`: no application code, template,
+stylesheet, script, configuration, migration or hosting file changed (re-checked with `git diff --name-only 0eab145 2182cbe` while this entry was written).
+
+The run below is of the tree of `2182cbe`. This entry is added by a later commit, so the run is not of the commit that adds it; that commit changes this file only.
+
+| Point | Result | Evidence |
+|-------|--------|----------|
+| Full-suite run on `2182cbe` | **1,882 passed, 0 failed, 0 errors, 0 skipped, 32 warnings, exit code 0, 2,225.83 s (37 min 5 s).** Command: `.venv/Scripts/python.exe -m pytest -q -p no:cacheprovider -W default`, run from the repository root on 24 October 2026 (14:05:30 to 14:42:38, local time of the machine). All 32 warnings are `ResourceWarning: unclosed file`, reported against these tests: 15 in `test_site_integrity.py`, 9 in `test_pages.py`, 6 in `test_garage_pointer.py`, 1 in `test_setup_safety.py` and 1 in `test_http_headers.py`. By the location pytest printed for each, 23 surfaced at lines in test files, 6 at `werkzeug/serving.py:376` (`connection_dropped`) during the garage-pointer tests, and 3 at `_pytest/python.py:167` (`testfunction(**testargs)`) during `test_pages.py` tests; none was located in `app/`. `-W default` is what makes them visible. These locations show where Python reported each warning, not its root cause, which was not investigated. No other warning type appeared | Confirmed (read from the run log kept outside the repository, which names the commit) |
+| Why 1,882 and not 1,873 | The nine additional tests are documentation guard tests in `tests/test_docs_drift.py`: two added by `5bc6274` and seven by `2182cbe` (nine test functions in the diff from `0eab145`). The same nine are the difference between the 208 and the 217 of the focused set recorded above. The 1,873 of `0eab145` remains the result for that commit | Confirmed (counted in the diff while this entry was written) |
+| State of the repository | Branch `feature/stage5-delivery`, HEAD `2182cbeb48d43362bf3ee83e91418d0a4cfacfd6` before and after the run; the working tree was clean before and after, with no untracked files and a clean `git diff --check`; the run created no files in the repository (`-p no:cacheprovider` writes no cache) | Confirmed |
+| Test database | Only `gta6_vi_test` was used. A read-only check before and after the run found 27 tables, none renamed aside and none of the music tables missing; no restoration was needed. The production database `gta6_vi` was not touched and no migration was run | Confirmed |
+| Browser QA | **Not rerun on `2182cbe`.** The attribution above is unchanged: the palette, `/search`, music-tables-missing and live security checks were run on `0eab145`; every other browser suite was run on `b73e147` only. The two files that differ afterwards hold documentation and tests, which no browser suite exercises | Not rerun |
+| GitHub Actions | **No claim is made.** This is a run on the local machine, not a GitHub Actions or other CI result. The repository has no workflow configuration and no workflow run is confirmed for `2182cbe` | Confirmed (no `.github` directory); no run claimed |
+
+**Production readiness is unchanged: still blocked.** This run does **not** authorize deployment, a merge, or any production database change, and the application is not deployed. The five items listed under "Production readiness: still blocked" above remain open: no production WSGI server and start command, no database TLS with certificate verification, an unknown production migration state, unvalidated connection-pool capacity, and the licensing of Rockstar-owned media.
