@@ -210,6 +210,27 @@ def test_the_results_page_says_music_is_unavailable_and_does_not_invent_any(clie
     assert page.count("search-note") == 1 and page.count("<h1") == 1
 
 
+@pytest.mark.parametrize("kind,query,shows_note", [("all", "vice", True), ("music", "flash", True), ("character", "jason", False), ("vehicle", "cheetah", False), ("region", "vice", False),
+                                                    ("place", "neon", False), ("story", "harbour", False), ("page", "garage", False)])
+def test_the_note_appears_only_on_a_search_that_could_have_included_music(client, monkeypatch, kind, query, shows_note):
+    """The page's counts always look at every kind, so they find the missing tables even on a characters-only search; the note must not appear there (found in the browser QA)."""
+    Spy(monkeypatch, music_is_missing)
+    response = client.get("/search", query_string={"q": query, "type": kind})
+    page = response.get_data(as_text=True)
+    assert response.status_code == 200 and (NOTE in page) is shows_note, (kind, shows_note)
+    if kind not in ("music",):
+        assert 'class="hit"' in page, "the search itself still returns its results"
+
+
+def test_the_page_context_names_only_relevant_unavailable_kinds(app, monkeypatch):
+    from app.services import search as service
+    Spy(monkeypatch, music_is_missing)
+    with app.test_request_context("/search"):
+        assert service.page_search({"q": "vice"})["unavailable"] == ["music"]
+        assert service.page_search({"q": "vice", "type": "music"})["unavailable"] == ["music"]
+        assert service.page_search({"q": "jason", "type": "character"})["unavailable"] == []
+
+
 def test_the_degraded_state_is_not_remembered_the_next_request_sees_the_tables_again(client, monkeypatch):
     with monkeypatch.context() as m:
         Spy(m, music_is_missing)
@@ -266,6 +287,8 @@ def test_with_the_music_tables_really_missing_search_degrades_and_the_music_page
         assert palette.status_code == 200 and any(h["kind"] == "character" for h in palette.get_json()["results"])
         page = client.get("/search", query_string={"q": "vice"})
         assert page.status_code == 200 and NOTE in page.get_data(as_text=True)
+        characters = client.get("/search", query_string={"q": "jason", "type": "character"})
+        assert characters.status_code == 200 and NOTE not in characters.get_data(as_text=True) and 'class="hit"' in characters.get_data(as_text=True)
         assert client.get("/music").status_code == 200
     healthy = find(client, "flash")
     assert "unavailable" not in healthy and any(h["kind"] == "music" for h in healthy["results"])

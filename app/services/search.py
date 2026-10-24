@@ -175,4 +175,5 @@ def page_search(args):
     total = min(sum(counts.values()) if kind == "all" else counts[kind], MAX_RESULTS)
     hits = _find(q, kind, per_page, (page - 1) * per_page, unavailable) if total else []
     return {"query": q, "type": kind, "results": [_present(h) for h in hits], "counts": counts, "total": total,
-            "pagination": v.pagination_meta(page, per_page, total), "kinds": KINDS, "kind_labels": KIND_LABELS, "searched": True, "unavailable": unavailable}
+            "pagination": v.pagination_meta(page, per_page, total), "kinds": KINDS, "kind_labels": KIND_LABELS, "searched": True,
+            "unavailable": [k for k in unavailable if kind in ("all", k)]}      # the counts always look at every kind; say so only when this search could have included it

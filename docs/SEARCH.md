@@ -41,7 +41,7 @@ own pages first, then character, vehicle, region, place, story, music, then titl
 Because one statement spans every kind, a missing music table used to make every default (all-types) search answer 503. Now `repositories/search.tolerant()` catches that case, leaves the
 music kind out, logs the project's usual warning ("Has migration 008 been applied?") and runs the statement again without it:
 * An all-types search, and the command palette (which makes the same request), return what the other kinds find, ranked and labelled exactly as before. The API adds `"unavailable": ["music"]`
-  **only in this case**; a healthy answer keeps its old shape. The results page shows one line, "Music results are not available on this copy of the site."
+  **only in this case**; a healthy answer keeps its old shape. The results page shows one line, "Music results are not available on this copy of the site.", only on a search that could have included music (all types, or music itself), never on a characters-only or places-only search.
 * An explicit music search is an empty 200 (`results: []` plus `unavailable`); nothing is made up.
 * **Only a missing music table counts.** The error must be MySQL's "table missing" (1146, a `ProgrammingError`) and its message must name one of the three music tables. A missing core table
   (characters, regions, ...), a permission error (1142), a lost or refused connection, bad SQL, a "table missing" message that names nothing recognisable, or any error raised again by the
