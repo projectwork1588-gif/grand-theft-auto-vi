@@ -75,7 +75,8 @@ _SELECTS = {
         WHERE {where:m.title,m.summary,m.mission_type}""",
 }
 
-# The Music page holds stations, the score and the album on one page: its search rows say which section to land on.
+# The Music page holds stations, the score and the album on one page: its search rows say which section to land on. It shows only official rows (repositories/music.py),
+# so search finds only official rows too; a track is as visible as its release, because a track has no status of its own.
 _MUSIC = (
     """
         SELECT 'music' AS kind,
@@ -87,7 +88,7 @@ _MUSIC = (
                'radio' AS anchor,
                {rank:s.name} AS rank_
         FROM radio_stations s
-        WHERE {where:s.name,s.hosts,s.description}""",
+        WHERE s.content_status = 'official' AND {where:s.name,s.hosts,s.description}""",
     """
         SELECT 'music' AS kind,
                mr.slug AS slug,
@@ -98,7 +99,7 @@ _MUSIC = (
                mr.kind AS anchor,
                {rank:mr.title} AS rank_
         FROM music_releases mr
-        WHERE {where:mr.title,mr.byline}""",
+        WHERE mr.content_status = 'official' AND {where:mr.title,mr.byline}""",
     """
         SELECT 'music' AS kind,
                mr.slug AS slug,
@@ -110,7 +111,7 @@ _MUSIC = (
                {rank:t.title} AS rank_
         FROM music_tracks t
         JOIN music_releases mr ON mr.release_id = t.release_id
-        WHERE {where:t.title,t.artists}""",
+        WHERE mr.content_status = 'official' AND {where:t.title,t.artists}""",
 )
 
 _RANK_PARAMS = 4          # exact, prefix, word prefix, contains

@@ -17,7 +17,7 @@ change: search reads the existing tables.
 | `region` | `regions` | name, summary | all |
 | `place` | `locations` (+ its region's name) | name, summary, region | all; shown as **Concept** |
 | `story` | `missions` | title, summary, type | all; shown as **Concept** |
-| `music` | `radio_stations`, `music_releases`, `music_tracks` | name, hosts, description, title, byline, artists | all; links to the section of `/music` |
+| `music` | `radio_stations`, `music_releases`, `music_tracks` | name, hosts, description, title, byline, artists | official only, as on the Music page (a track follows its release); links to the section of `/music` |
 | `page` | a short list in the service | title, a line, a few extra words | the site's own pages |
 
 **The query.** `q` is trimmed, control characters become spaces, runs of white space collapse. At most 80 characters and five words, otherwise a 400 that names the

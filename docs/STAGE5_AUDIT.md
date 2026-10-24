@@ -4,6 +4,17 @@ Scope: the whole repository as it stands at the end of Stage 4B (`feature/stage4
 migrated; the production database `gta6_vi` was never opened. Everything that touched MySQL used the test configuration and `gta6_vi_test`. The only repository file written
 during the audit was a temporary probe test (created, run and deleted; the working tree was clean afterwards). This file is the audit's one product.
 
+> **Note added after Stage 5 (the report below is unchanged).** Everything below is the audit as written at `8ed0a61`, before any Stage 5 change, and it is kept as a record of what
+> was found then; the findings are not rewritten and the issues were real when they were reported. What happened to them afterwards:
+>
+> * **M1 (a `HEAD` request skips CSRF and runs a view's submission branch) was fixed in Stage 5**, in commit `eac606e`. The CSRF guard in `app/security.py` now names the safe methods
+>   (`GET`, `HEAD`, `OPTIONS`) and protects every other one, and the nine views that take a form ask `request.method != "POST"` instead of `== "GET"`. The regression tests are in
+>   `tests/test_head_and_methods.py` (HEAD on every admin and public route changes nothing and answers what GET answers; every POST route refuses a missing token, a wrong token and a
+>   foreign origin; methods no route accepts are 405). The live check on real servers (HEAD, CSRF, `Allow`, HSTS, `robots.txt`) is recorded in `docs/VERIFICATION.md`, where the
+>   latest figures are 38 of 38 live security checks and the full-suite runs.
+> * **M2** (the admin browser check expected the old 403 page) was fixed in `bcd79de`, and **M3** (documentation drift) in `a3ccbab`.
+> * The other items below (decisions, optional improvements, known limitations) are not all resolved: `docs/VERIFICATION.md` lists what is still open before any deployment.
+
 ## 1. Git state (verified, not assumed)
 
 ```
