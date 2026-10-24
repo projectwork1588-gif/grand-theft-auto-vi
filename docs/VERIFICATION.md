@@ -439,3 +439,40 @@ was written. *Reported* means it comes from the description of PR #2 and was not
 | The earlier run on `a3ccbab` (1,820 passed) | Remains a historical result, kept in the table above; it is not the result for the pull-request head | n/a |
 
 Known flake, reported separately from failures: `scripts/qa/garage_transitions_qa.mjs` has one timing check (the picture must start changing within 250 ms) that fails when the machine is busy (2 failures in 4 runs, 22/22 on the others) with no garage code involved.
+
+
+## Stage 5 final follow-up: search degradation and final integration candidate (2026-10-24)
+
+This section supersedes the earlier Stage 5 full-suite total for the final candidate where stated. The run was reported by the owner from the project's Windows environment, MySQL 8.0.46 and the `gta6_vi_test` database only. No production database was opened.
+
+### Final candidate: `0eab145366440473f6f68004c07156189cbbb14a`
+
+| Check | Result |
+|---|---|
+| Full `pytest` suite | **1,873 passed, 0 failed, 0 errors, 0 skipped; 32 test-code ResourceWarnings** |
+| Focused search, command palette and documentation checks | **208 passed** |
+| Search fallback regression tests | **53 passed** |
+| Search and command-palette browser QA | Passed in normal and reduced-motion modes |
+| Missing-music-table browser scenarios | Passed in normal and reduced-motion modes |
+| Live security checks | **38/38 passed** |
+| Test database recovery | Database restored; all 27 tables verified |
+
+The final full-suite run above was on `0eab145`. The broader browser suites (home, characters, music, regions, vehicle details, screening, garage, accounts and admin) were run on `b73e147`, not rerun on `0eab145`; the additional change on `0eab145` was limited to search-page context behaviour. Search/palette and missing-music-table browser scenarios were rerun for the final candidate.
+
+The 32 warnings are reported as test-code `ResourceWarning`s for unclosed files, not application-code warnings. This verification is a local run report; it is not a GitHub Actions result. No workflow run was returned for the final commit when checked.
+
+### Final-candidate change
+
+The search feature now degrades gracefully if one or more optional music tables from migration 008 are missing: search continues for other kinds, the page/API identifies music as unavailable when relevant, and a healthy subsequent request retries normally. Missing core tables, permission errors, malformed SQL and connection errors remain errors rather than being hidden as a fallback.
+
+### Production readiness: still blocked
+
+These results do **not** authorize deployment or production database changes. Before deployment, resolve and verify:
+
+- Choose and configure a production WSGI server and start command.
+- Implement database TLS with certificate verification.
+- Inspect the actual production migration state safely; do not run migrations until separately approved.
+- Validate pool capacity, worker/thread counts and host-specific connection behaviour.
+- Decide how Rockstar-owned media will be handled in light of licensing uncertainty.
+
+The host is not selected in this report. No production database, migration, deployment, or production administrator setup was performed.
