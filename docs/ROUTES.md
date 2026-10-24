@@ -20,6 +20,7 @@
 | `/locations/<slug>` | Detail: missions, residents, passers-by, neighbours |
 | `/missions` | Stories (no longer in the main menu; Home, place pages and vehicle pages still link to it). Query: `q`, `type`, `status`, `sort` (title_asc, title_desc, type, newest), `page`, `per_page` |
 | `/missions/<slug>` | Story: synopsis, people, vehicles, places, more stories |
+| `/search` | Stage 4B. Site search: a form, result-type chips with a count for each kind, and ranked result rows (kind, title, detail, a short line, an Official or Concept label). Query: `q` (1 to 80 characters, at most five words), `type` (`all`, `page`, `character`, `vehicle`, `region`, `place`, `story`, `music`), `page`, `per_page` (1 to 50, default 12); at most 200 results are reachable. Server-rendered, works without JavaScript, `noindex`. The form, chips and pager all land on the `#results` region. Without `q` it is the help state and does no database work. Invalid input is the branded 400 page. Same records and rules as the JSON search API (see the API table below). See `docs/SEARCH.md` |
 | `/about` | What the project is, what the labels mean, how it was made |
 | `/credits` | Attribution, non-affiliation, fonts and licence |
 | `/media/clips/<name>.mp4` or `.jpg` | Locally built loops only. A safe-name pattern and an existing file are required; anything else is a 404 |
@@ -27,6 +28,8 @@
 | `/account/favourites` | The signed-in visitor's saved characters, vehicles, places and stories, with a Remove button each. Signed-out visitors are sent to `/login` |
 | `/account/password` | Change password (the current password is verified first). Signed-in only |
 | `POST /favourites/<kind>/<slug>`, `POST /favourites/<kind>/<slug>/remove` | Save or remove a favourite (`kind`: `characters`, `vehicles`, `locations`, `missions`). Signed-in only; always acts on the signed-in user; answers 303; 404 for an unknown or unpublished record. Every POST needs the CSRF token (400 without) |
+| `/admin`, `/admin/stories`, `/admin/stories/new`, `/admin/stories/<slug>/edit`, `/admin/stories/<slug>/delete`, `/admin/places`, `/admin/places/new`, `/admin/places/<slug>/edit`, `/admin/places/<slug>/delete` | **Administrators only** (signed out: redirect to `/login`; signed in but not an administrator: 403). Dashboard and create, read, update and delete for Stories (with their links) and Places (with their region). Every POST needs the CSRF token; official stories are read-only. See `docs/ADMIN.md` |
+| `/robots.txt` | Plain text for crawlers: everything allowed except the search page, the JSON API, the admin and account areas, sign-in, sign-up and the health check. Cached for an hour and needs no database, so a host can use it as its "is the site up" probe while MySQL sleeps (`/health` also checks the database) |
 | `/health` | JSON health check, public and deliberately bare: `{"status":"ok","database":"connected"}` (200), or `{"status":"error","database":"unreachable"}` (503) when MySQL is down. No server version, host, account or error text (the reason goes to the server log only). Not linked from the site |
 
 ### JSON API (`/api/v1`)
@@ -38,6 +41,7 @@
 | `/vehicles`, `/vehicles/<slug>`, `/vehicle-categories` | New. The API serves the whole table (15 vehicles). Use `?status=official` for the public garage. `sort=featured` gives editorial order. `/vehicle-categories?status=official` counts official vehicles only |
 | `/missions`, `/missions/<slug>` | New. Lists include cast, vehicle and location counts |
 | `/locations`, `/locations/<slug>` | New |
+| `/search` | Stage 4B. The few best matches for the command palette: `q` (required, 1 to 80 characters, at most five words), `type` (`all`, `page`, `character`, `vehicle`, `region`, `place`, `story`, `music`), `limit` (1 to 20, default 8). Returns `{query, type, results: [{kind, kind_label, title, detail, summary, url, status, status_label}]}`, best first. Public records only, by the pages' own rules (official characters and vehicles; every region, place, story and music row), concept rows labelled `Concept`. One database query. On a database without the music tables (migration 008) music is left out and the answer adds `unavailable: ["music"]`; every other database failure is still the generic 503. See `docs/SEARCH.md` |
 
 Pages and API endpoints share the same services, so they cannot disagree.
 
@@ -48,17 +52,21 @@ Pages and API endpoints share the same services, so they cannot disagree.
 | 400 | Styled page listing the invalid parameters; also a POST whose CSRF token is missing or wrong | JSON `error.details` |
 | 413 | Styled page: a form body over 16 KiB is refused before it is read | JSON error |
 | 429 | Sign-in, change-password or sign-up form with a message and a `Retry-After` header (too many failed attempts, or too many accounts from one address) | n/a (no API route writes) |
-| 404 | Styled page (unknown route, unknown slug, or a slug that is not lowercase `a-z0-9-`) | JSON error |
-| 503 | "Database unavailable", with no SQL or credentials shown | JSON error |
-| 500 | Generic message | JSON error |
+| 403 | Branded page ("Restricted area"); a sentence the route chose, such as the admin one ("This area is for administrators."), is kept | JSON error |
+| 404 | Branded page, "Off the map" (unknown route, unknown slug, or a slug that is not lowercase `a-z0-9-`) | JSON error |
+| 405 | Branded page, "Wrong turn", with an `Allow` header listing the methods the address does accept (for example `GET, HEAD, OPTIONS, POST` for `/login`) | JSON error, same `Allow` header |
+| 503 | Branded page, "Back in a moment", titled "Database unavailable", with a "Try again" link for a GET and no SQL or credentials shown | JSON error |
+| 500 | Branded page, "Something broke on our side", with a "Try again" link for a GET and nothing about the cause | JSON error |
+
+Every branded page is a full page of the site (header, footer), has one `h1`, shows "Error <code> · <standard name>" and the standard name in the browser title, and offers links to the five sections. "Try again" points at the same path without its query string.
 
 ## Planned (not built)
 
 | Phase | Routes |
 |-------|--------|
-| 3 Admin | `/admin/...` CRUD, relationship editors, statistics (accounts, sign-in and favourites are built: see above) |
-| 4 Signature | `/atlas` (reuses `/regions/<slug>` and `/locations/<slug>`), `/network`, `POST /api/v1/terminal`, `/search`, `/trails` |
-| 5 Media + polish | `/theatre`, wallpaper and screenshot galleries, official vehicle imagery (needs a `media_vehicles` junction), animation pass |
+| 3 Admin | Stories and Places CRUD and the dashboard are built (see above and `docs/ADMIN.md`); CRUD for the other records, character relationship editors and an audit table are not |
+| 4 Signature | `/atlas` (reuses `/regions/<slug>` and `/locations/<slug>`), `/network`, `POST /api/v1/terminal`, `/trails`. (Global search, its page, the command palette and its API were built in Stage 4B: see above and `docs/SEARCH.md`.) |
+| 5 Media + polish | `/theatre` (a full media theatre). Built already: the Media page ("The Screening", with every screenshot, artwork and wallpaper collection) and official vehicle imagery (`media_vehicles`, migration 002) |
 | 6 Final | Integration and security testing, performance, documentation, viva preparation |
 
 Optional features (radio, comparison, economy simulator, news, reviews, activity tracking) wait until all of the above is verified.

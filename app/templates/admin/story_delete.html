@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "admin/_macros.html" import hero, nav %}
+{% block title %}Delete story{% endblock %}
+{% block description %}Administrators: confirm deleting a story.{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">{% endblock %}
+{% block content %}
+{{ hero('Admin', 'Delete this story?', 'Nothing is deleted until you press the button on this page.') }}
+<section class="section section--tight">
+  <div class="container adm">
+    {{ nav('stories') }}
+    <div class="acct-alert" role="alert" tabindex="-1" id="form-errors">
+      <p><strong>{{ story.title }}</strong> (<code>/missions/{{ story.slug }}</code>) will be deleted for good.</p>
+      <p>This also removes:</p>
+      <ul>
+        <li>{{ impact.characters }} character link{{ '' if impact.characters == 1 else 's' }}</li>
+        <li>{{ impact.vehicles }} vehicle link{{ '' if impact.vehicles == 1 else 's' }}</li>
+        <li>{{ impact.locations }} place link{{ '' if impact.locations == 1 else 's' }}</li>
+        <li>{{ impact.favourites }} saved favourite{{ '' if impact.favourites == 1 else 's' }} of this story</li>
+      </ul>
+      <p>The characters, vehicles and places themselves are not touched.</p>
+    </div>
+    <form class="adm-actions" method="post" action="{{ url_for('admin.story_delete', slug=story.slug) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn adm-danger" type="submit">Delete this story</button>
+      <a class="btn btn--ghost" href="{{ url_for('admin.story_list') }}">Keep it</a>
+    </form>
+  </div>
+</section>
+{% endblock %}

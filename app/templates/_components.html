@@ -26,17 +26,17 @@
   {{ (name.split()[:2] | map('first') | join('')) | upper }}
 {%- endmacro %}
 
-{# Pagination. `p` is the pagination dict from the services. #}
-{% macro pager(p) -%}
+{# Pagination. `p` is the pagination dict from the services; `anchor` is an element id the page links land on. #}
+{% macro pager(p, anchor=none) -%}
   {% if p.pages > 1 %}
   <nav class="pager" aria-label="Pagination">
-    {% if p.page > 1 %}<a href="{{ page_url(p.page - 1) }}" rel="prev" aria-label="Previous page">Prev</a>{% else %}<span class="is-disabled" aria-hidden="true">Prev</span>{% endif %}
+    {% if p.page > 1 %}<a href="{{ page_url(p.page - 1, anchor) }}" rel="prev" aria-label="Previous page">Prev</a>{% else %}<span class="is-disabled" aria-hidden="true">Prev</span>{% endif %}
     {% for n in page_window(p.page, p.pages) %}
       {% if n is none %}<span aria-hidden="true">&hellip;</span>
       {% elif n == p.page %}<span aria-current="page"><span class="visually-hidden">Page </span>{{ n }}</span>
-      {% else %}<a href="{{ page_url(n) }}"><span class="visually-hidden">Page </span>{{ n }}</a>{% endif %}
+      {% else %}<a href="{{ page_url(n, anchor) }}"><span class="visually-hidden">Page </span>{{ n }}</a>{% endif %}
     {% endfor %}
-    {% if p.page < p.pages %}<a href="{{ page_url(p.page + 1) }}" rel="next" aria-label="Next page">Next</a>{% else %}<span class="is-disabled" aria-hidden="true">Next</span>{% endif %}
+    {% if p.page < p.pages %}<a href="{{ page_url(p.page + 1, anchor) }}" rel="next" aria-label="Next page">Next</a>{% else %}<span class="is-disabled" aria-hidden="true">Next</span>{% endif %}
   </nav>
   {% endif %}
 {%- endmacro %}

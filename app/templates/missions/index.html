@@ -8,13 +8,13 @@
 <section class="section section--tight">
   <div class="container">
     <nav class="chips chips--spaced" aria-label="Story types">
-      <a class="chip" href="{{ url_for('pages.missions') }}"{% if not filters.type %} aria-current="true"{% endif %}>All</a>
+      <a class="chip" href="{{ url_for('pages.missions', _anchor='results') }}"{% if not filters.type %} aria-current="true"{% endif %}>All</a>
       {% for t in mission_types %}
-      <a class="chip" href="{{ url_for('pages.missions', type=t) }}"{% if filters.type == t %} aria-current="true"{% endif %}>{{ t | capitalize }}</a>
+      <a class="chip" href="{{ url_for('pages.missions', type=t, _anchor='results') }}"{% if filters.type == t %} aria-current="true"{% endif %}>{{ t | capitalize }}</a>
       {% endfor %}
     </nav>
 
-    <form class="filters" method="get" action="{{ url_for('pages.missions') }}" role="search" aria-label="Search and filter stories">
+    <form class="filters" method="get" action="{{ url_for('pages.missions', _anchor='results') }}" role="search" aria-label="Search and filter stories">
       <label>Search
         <input type="search" name="q" value="{{ filters.q or '' }}" maxlength="80" placeholder="Title or summary">
       </label>
@@ -34,10 +34,11 @@
       </label>
       <div class="filters__actions">
         <button class="btn" type="submit">Apply</button>
-        <a class="link-arrow" href="{{ url_for('pages.missions') }}">Reset</a>
+        <a class="link-arrow" href="{{ url_for('pages.missions', _anchor='results') }}">Reset</a>
       </div>
     </form>
 
+    <section id="results" class="story-results" aria-label="Story results">
     <p class="results-meta" role="status">{{ results_line(pagination) }}</p>
 
     {% if data %}
@@ -57,9 +58,10 @@
       {% endfor %}
     </ol>
     {% else %}
-    <div class="empty"><h2>No stories found</h2><p>Nothing matches those filters. <a href="{{ url_for('pages.missions') }}">Reset the filters</a>.</p></div>
+    <div class="empty"><h2>No stories found</h2><p>Nothing matches those filters. <a href="{{ url_for('pages.missions', _anchor='results') }}">Reset the filters</a>.</p></div>
     {% endif %}
-    {{ pager(pagination) }}
+    {{ pager(pagination, 'results') }}
+    </section>
   </div>
 </section>
 {% endblock %}

@@ -1,0 +1,24 @@
+/* ==========================================================================
+   Search (/search): the form, the result-type chips and the result rows. Built only from tokens.css and the shared .filters, .chips, .badge and .empty.
+   ========================================================================== */
+.search-form { grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
+.search-help { margin: 10px 0 24px; color: var(--text-3); font-size: var(--t-small); }
+.chip small { color: var(--text-3); }
+.chip[aria-current="true"] small { color: inherit; }
+.search-results { scroll-margin-top: 16px; }   /* the page's scroll-padding (site.css) already clears the fixed header */
+.search-list { list-style: none; margin: 0; padding: 0; }
+.search-list > li { border-top: 1px solid var(--line); }
+.search-list > li:last-child { border-bottom: 1px solid var(--line); }
+.hit { display: grid; grid-template-columns: 7.5rem 1fr auto; gap: 24px; align-items: start; padding: 22px 4px; color: var(--text); text-decoration: none; }
+.hit:hover .hit__title { color: var(--action); }
+.hit__kind { padding-top: 5px; color: var(--text-3); font: 700 var(--t-micro)/1.2 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; }
+.hit__main { display: grid; gap: 4px; min-width: 0; }
+.hit__title { font: 700 var(--t-lead)/1.2 var(--font-body); letter-spacing: var(--track-tight); overflow-wrap: anywhere; }
+.hit__detail { color: var(--text-2); font-size: var(--t-small); }
+.hit__summary { color: var(--text-3); font-size: var(--t-small); overflow-wrap: anywhere; }
+.hit__tag { justify-self: end; }
+@media (max-width: 640px) {
+  .search-form { grid-template-columns: 1fr; }
+  .hit { grid-template-columns: 1fr auto; gap: 6px 16px; }
+  .hit__kind { grid-column: 1 / -1; padding-top: 0; }
+}

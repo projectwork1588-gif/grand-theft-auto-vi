@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/account.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/palette.css') }}">
   {% block head_extra %}{% endblock %}
 </head>
 <body{% if config.AUTOPLAY_ALWAYS %} data-autoplay="always"{% endif %}>
@@ -38,6 +39,7 @@
         </ul>
       </nav>
       <div class="header-actions">
+        <a class="header-search" href="{{ url_for('pages.search') }}" aria-label="Search" aria-keyshortcuts="Control+K Meta+K" data-palette-open><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15 15l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
         <a class="header-pill" href="{{ url_for('main.index') }}#media"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> Trailers</a>
         <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-menu" data-nav-toggle>
           <span class="menu-btn__label" data-nav-label>Menu</span>
@@ -62,6 +64,7 @@
         <div>
           <p class="site-menu__label">The project</p>
           <ul class="site-menu__links">
+            <li><a href="{{ url_for('pages.search') }}"{% if request.endpoint == 'pages.search' %} aria-current="page"{% endif %}>Search</a></li>
             <li><a href="{{ url_for('main.about') }}"{% if request.endpoint == 'main.about' %} aria-current="page"{% endif %}>About the project</a></li>
             <li><a href="{{ url_for('main.credits') }}"{% if request.endpoint == 'main.credits' %} aria-current="page"{% endif %}>Credits and legal</a></li>
           </ul>
@@ -139,9 +142,34 @@
     </div>
   </dialog>
 
+  <dialog class="palette" id="palette" aria-label="Search the site" data-palette>
+    <div class="palette__frame">
+      <div class="palette__bar">
+        <span class="palette__prompt" aria-hidden="true">&gt;_</span>
+        <input class="palette__input" type="text" role="combobox" aria-expanded="false" aria-controls="palette-list" aria-autocomplete="list" aria-label="Search the site" aria-describedby="palette-hint" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Search, or type &gt; for commands" maxlength="80" data-palette-input>
+        <button class="palette__close" type="button" data-palette-close>Close</button>
+      </div>
+      <ul class="palette__list" id="palette-list" role="listbox" aria-label="Results" data-palette-list></ul>
+      <p class="palette__foot" id="palette-hint"><a href="{{ url_for('pages.search') }}" data-palette-all>All results</a><span class="palette__keys" aria-hidden="true">&uarr;&darr; move &middot; Enter open &middot; Esc close</span><span class="visually-hidden">Use the arrow keys to move, Enter to open, Escape to close. Type &gt; for commands.</span></p>
+      <p class="visually-hidden" role="status" aria-live="polite" data-palette-status></p>
+      <template data-palette-commands>
+        <li data-name="Go to Home" data-href="{{ url_for('main.index') }}"></li>
+        {% for endpoints, label in nav_items %}<li data-name="Go to {{ label }}" data-href="{{ url_for(endpoints[0]) }}"></li>
+        {% endfor %}<li data-name="Go to Stories" data-href="{{ url_for('pages.missions') }}"></li>
+        <li data-name="Go to About" data-href="{{ url_for('main.about') }}"></li>
+        <li data-name="Go to Credits" data-href="{{ url_for('main.credits') }}"></li>
+        <li data-name="Open the full search page" data-href="{{ url_for('pages.search') }}"></li>
+        {% if current_user %}<li data-name="Go to your favourites" data-href="{{ url_for('account.favourites_page') }}"></li>
+        {% else %}<li data-name="Go to Sign in" data-href="{{ url_for('account.login') }}"></li>
+        {% endif %}<li data-name="Turn motion and footage on or off" data-action="motion"></li>
+      </template>
+    </div>
+  </dialog>
+
   {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}
   <div class="flash-stack" role="status" aria-live="polite">{% for category, message in messages %}<p class="flash flash--{{ category }}">{{ message }}</p>{% endfor %}</div>
   {% endif %}{% endwith %}
   <script src="{{ url_for('static', filename='js/site.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/palette.js') }}" defer></script>
 </body>
 </html>

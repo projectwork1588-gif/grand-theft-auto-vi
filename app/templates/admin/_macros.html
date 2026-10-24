@@ -1,0 +1,98 @@
+{# Shared pieces of the admin pages. Built on the account form macros (labels, hints, error notes) and the site's own classes. No script: every control is a plain form control. #}
+{% from "account/_form.html" import summary %}
+
+{% macro hero(eyebrow, title, lede='') -%}
+<section class="page-hero">
+  <div class="media page-hero__bg"><span class="media__fallback" aria-hidden="true"></span></div>
+  <div class="page-hero__shade" aria-hidden="true"></div>
+  <div class="container page-hero__inner">
+    <p class="eyebrow">{{ eyebrow }}</p>
+    <h1>{{ title }}</h1>
+    {% if lede %}<p class="page-hero__lede">{{ lede }}</p>{% endif %}
+  </div>
+</section>
+{%- endmacro %}
+
+{% macro nav(active) -%}
+<nav class="adm-nav" aria-label="Admin">
+  <a class="chip" href="{{ url_for('admin.dashboard') }}"{% if active == 'dashboard' %} aria-current="page"{% endif %}>Dashboard</a>
+  <a class="chip" href="{{ url_for('admin.story_list') }}"{% if active == 'stories' %} aria-current="page"{% endif %}>Stories</a>
+  <a class="chip" href="{{ url_for('admin.place_list') }}"{% if active == 'places' %} aria-current="page"{% endif %}>Places</a>
+  <a class="chip" href="{{ url_for('admin.story_new') }}"{% if active == 'new' %} aria-current="page"{% endif %}>New story</a>
+  <a class="chip" href="{{ url_for('admin.place_new') }}"{% if active == 'new_place' %} aria-current="page"{% endif %}>New place</a>
+  <a class="chip" href="{{ url_for('account.favourites_page') }}">Back to your account</a>
+</nav>
+{%- endmacro %}
+
+{% macro text_field(name, label, errors, values, maxlength, hint='', required=true, readonly=false, autofocus=false) -%}
+  <div class="acct-field{% if errors.get(name) %} acct-field--bad{% endif %}">
+    <label for="{{ name }}">{{ label }}{% if not required %} <span class="adm-optional">(optional)</span>{% endif %}</label>
+    <input id="{{ name }}" name="{{ name }}" type="text" value="{{ values.get(name) or '' }}" maxlength="{{ maxlength }}" autocomplete="off"
+           {% if required %}required{% endif %} {% if readonly %}readonly{% endif %} {% if autofocus %}autofocus{% endif %}
+           {% if errors.get(name) %}aria-invalid="true"{% endif %}
+           {% if errors.get(name) or hint %}aria-describedby="{{ name }}-note"{% endif %}>
+    {% if errors.get(name) %}<p class="acct-note acct-note--bad" id="{{ name }}-note">{{ errors.get(name) }}</p>
+    {% elif hint %}<p class="acct-note" id="{{ name }}-note">{{ hint }}</p>{% endif %}
+  </div>
+{%- endmacro %}
+
+{% macro textarea_field(name, label, errors, values, maxlength, hint='', rows=8) -%}
+  <div class="acct-field{% if errors.get(name) %} acct-field--bad{% endif %}">
+    <label for="{{ name }}">{{ label }}</label>
+    <textarea id="{{ name }}" name="{{ name }}" rows="{{ rows }}" maxlength="{{ maxlength }}" required
+              {% if errors.get(name) %}aria-invalid="true"{% endif %}
+              {% if errors.get(name) or hint %}aria-describedby="{{ name }}-note"{% endif %}>{{ values.get(name) or '' }}</textarea>
+    {% if errors.get(name) %}<p class="acct-note acct-note--bad" id="{{ name }}-note">{{ errors.get(name) }}</p>
+    {% elif hint %}<p class="acct-note" id="{{ name }}-note">{{ hint }}</p>{% endif %}
+  </div>
+{%- endmacro %}
+
+{% macro select_field(name, label, errors, choices, current, hint='') -%}
+  <div class="acct-field{% if errors.get(name) %} acct-field--bad{% endif %}">
+    <label for="{{ name }}">{{ label }}</label>
+    <select id="{{ name }}" name="{{ name }}" required {% if errors.get(name) %}aria-invalid="true"{% endif %}
+            {% if errors.get(name) or hint %}aria-describedby="{{ name }}-note"{% endif %}>
+      {% for value, text in choices %}<option value="{{ value }}"{% if value == current %} selected{% endif %}>{{ text }}</option>{% endfor %}
+    </select>
+    {% if errors.get(name) %}<p class="acct-note acct-note--bad" id="{{ name }}-note">{{ errors.get(name) }}</p>
+    {% elif hint %}<p class="acct-note" id="{{ name }}-note">{{ hint }}</p>{% endif %}
+  </div>
+{%- endmacro %}
+
+{# One group of links (characters, vehicles or places): a fieldset with a legend, one row per record that can be linked. `selection` maps slug -> note
+   (places: slug -> is the main place). Characters and vehicles carry a required note; places carry a "main place" choice instead. #}
+{% macro link_group(kind, title, entries, selection, errors, note_label, note_max, selected_primary='') -%}
+  <fieldset class="adm-links" id="{{ kind }}"{% if errors.get(kind) %} aria-describedby="{{ kind }}-note"{% endif %}>
+    <legend>{{ title }}</legend>
+    {% if errors.get(kind) %}<p class="acct-note acct-note--bad" id="{{ kind }}-note">{{ errors.get(kind) }}</p>{% endif %}
+    {% for entry in entries %}
+    {% set chosen = entry.slug in selection %}
+    <div class="adm-link-row">
+      <span class="adm-link-pick">
+        <input type="checkbox" id="{{ kind }}__{{ entry.slug }}" name="{{ kind }}" value="{{ entry.slug }}"{% if chosen %} checked{% endif %}>
+        <label for="{{ kind }}__{{ entry.slug }}">{{ entry.name }} <span class="adm-status">{{ entry.content_status }}</span></label>
+      </span>
+      {% if kind != 'locations' %}
+      {% set field = kind ~ '_note__' ~ entry.slug %}
+      <span class="adm-link-note">
+        <label class="visually-hidden" for="{{ field }}">{{ note_label }} for {{ entry.name }}</label>
+        <input type="text" id="{{ field }}" name="{{ field }}" maxlength="{{ note_max }}" autocomplete="off" placeholder="{{ note_label }}"
+               value="{{ selection.get(entry.slug) or '' }}"{% if errors.get(field) %} aria-invalid="true" aria-describedby="{{ field }}-note"{% endif %}>
+        {% if errors.get(field) %}<span class="acct-note acct-note--bad" id="{{ field }}-note">{{ errors.get(field) }}</span>{% endif %}
+      </span>
+      {% endif %}
+    </div>
+    {% endfor %}
+    {% if kind == 'locations' %}
+    <div class="acct-field adm-main-place{% if errors.get('primary_location') %} acct-field--bad{% endif %}">
+      <label for="primary_location">Main place</label>
+      <select id="primary_location" name="primary_location"{% if errors.get('primary_location') %} aria-invalid="true" aria-describedby="primary_location-note"{% endif %}>
+        <option value="">No main place</option>
+        {% for entry in entries %}<option value="{{ entry.slug }}"{% if selected_primary == entry.slug %} selected{% endif %}>{{ entry.name }}</option>{% endfor %}
+      </select>
+      {% if errors.get('primary_location') %}<p class="acct-note acct-note--bad" id="primary_location-note">{{ errors.get('primary_location') }}</p>
+      {% else %}<p class="acct-note">It must be one of the ticked places.</p>{% endif %}
+    </div>
+    {% endif %}
+  </fieldset>
+{%- endmacro %}

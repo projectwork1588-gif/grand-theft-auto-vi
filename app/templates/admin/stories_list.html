@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% from "_components.html" import badge, type_badge, pager, results_line, option %}
+{% from "admin/_macros.html" import hero, nav %}
+{% block title %}Stories (admin){% endblock %}
+{% block description %}Administrators: every story, with the ones that can be edited.{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">{% endblock %}
+{% block content %}
+{{ hero('Admin', 'Stories', 'Every story in the database. Fan and demo stories can be edited or deleted; official stories are read-only.') }}
+<section class="section section--tight">
+  <div class="container adm adm--wide">
+    {{ nav('stories') }}
+    <form class="filters" method="get" action="{{ url_for('admin.story_list') }}" role="search" aria-label="Search and filter stories">
+      <label>Search
+        <input type="search" name="q" value="{{ filters.q or '' }}" maxlength="80" placeholder="Title or summary">
+      </label>
+      <label>Type
+        <select name="type">
+          {{ option('', 'Any type', filters.type or '') }}
+          {% for t in mission_types %}{{ option(t, t | capitalize, filters.type) }}{% endfor %}
+        </select>
+      </label>
+      <label>Label
+        <select name="status">
+          {{ option('', 'Any label', filters.status or '') }}
+          {% for s in ['official', 'fan', 'demo'] %}{{ option(s, s | capitalize, filters.status) }}{% endfor %}
+        </select>
+      </label>
+      <label>Sort by
+        <select name="sort">
+          {{ option('title_asc', 'Title A to Z', filters.sort) }}
+          {{ option('title_desc', 'Title Z to A', filters.sort) }}
+          {{ option('type', 'Type', filters.sort) }}
+          {{ option('newest', 'Newest first', filters.sort) }}
+        </select>
+      </label>
+      <div class="filters__actions">
+        <button class="btn" type="submit">Apply</button>
+        <a class="link-arrow" href="{{ url_for('admin.story_list') }}">Reset</a>
+      </div>
+    </form>
+    <p class="results-meta" role="status">{{ results_line(pagination) }}</p>
+    <p><a class="btn btn--small" href="{{ url_for('admin.story_new') }}">New story</a></p>
+
+    {% if data %}
+    <div class="adm-table-wrap">
+      <table class="adm-table">
+        <caption class="visually-hidden">Stories</caption>
+        <thead><tr><th scope="col">Title</th><th scope="col">Type</th><th scope="col">Label</th><th scope="col">Links</th><th scope="col">Actions</th></tr></thead>
+        <tbody>
+          {% for m in data %}
+          <tr>
+            <th scope="row"><a href="{{ url_for('pages.mission_detail', slug=m.slug) }}">{{ m.title }}</a><span class="adm-slug">{{ m.slug }}</span></th>
+            <td>{{ type_badge(m.mission_type) }}</td>
+            <td>{{ badge(m.content_status) }}</td>
+            <td>{{ m.cast_count }} / {{ m.vehicle_count }} / {{ m.location_count }}<span class="visually-hidden"> characters, vehicles, places</span></td>
+            <td class="adm-row-actions">
+              {% if m.content_status == 'official' %}
+              <span class="adm-readonly-tag">Read-only (official)</span>
+              {% else %}
+              <a class="btn btn--ghost btn--small" href="{{ url_for('admin.story_edit', slug=m.slug) }}">Edit<span class="visually-hidden"> {{ m.title }}</span></a>
+              <a class="btn btn--ghost btn--small" href="{{ url_for('admin.story_delete', slug=m.slug) }}">Delete<span class="visually-hidden"> {{ m.title }}</span></a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {{ pager(pagination) }}
+    {% else %}
+    <div class="empty"><h2>No stories found</h2><p>Nothing matches those filters. <a href="{{ url_for('admin.story_list') }}">Reset the filters</a>.</p></div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

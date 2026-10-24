@@ -148,7 +148,7 @@ html:not(.js) .hero, html:not(.js) .page-hero { padding-top: 48px; }
 .footer-main { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 32px; }
 .footer-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 18px 44px; }
 .footer-nav ul { display: flex; flex-wrap: wrap; gap: 8px 26px; }
-.footer-nav a { text-decoration: none; font-size: var(--t-small); font-weight: 600; opacity: .86; }
+.footer-nav a { padding-block: 4px; margin-block: -4px; text-decoration: none; font-size: var(--t-small); font-weight: 600; opacity: .86; }
 .footer-nav a:hover { color: var(--action); opacity: 1; }
 .footer-nav__small a { font-weight: 500; color: var(--text-2); font-size: var(--t-small); }
 .footer-base { margin-top: 36px; padding-top: 24px; border-top: 1px solid var(--line); }

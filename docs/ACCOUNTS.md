@@ -47,7 +47,7 @@ So the site now has all four CRUD operations on real tables. (Deleting an accoun
 | Fixation | a successful sign-in or password change starts a **new** session (the old one, with its CSRF token, is discarded) | `security.sign_in` |
 | Sign out | clears the session. See the limitation below | `security.sign_out` |
 | Password change | the password stamp (an HMAC of the stored hash with the secret key) is kept in the session, so **changing the password signs every other browser out** | `security.password_stamp` |
-| CSRF | synchronizer token: random per session, in a hidden field of every form (or an `X-CSRF-Token` header), compared in constant time on **every** POST/PUT/PATCH/DELETE, including register and sign in; a cross-site `Origin` is refused too; `SameSite=Lax` is the second layer. 400 on failure | `security.protect_csrf` |
+| CSRF | synchronizer token: random per session, in a hidden field of every form (or an `X-CSRF-Token` header), compared in constant time on **every** request whose method is not GET, HEAD or OPTIONS (POST, PUT, PATCH, DELETE and anything else), including register and sign in; a HEAD request is a GET without a body and never submits a form, spends a throttle or changes data; a cross-site `Origin` is refused too; `SameSite=Lax` is the second layer. 400 on failure | `security.protect_csrf` |
 | Authorization | the user is `g.user`, loaded from the session; every favourite statement names that user. A forged `user_id` field is ignored | `blueprints/account.py`, `repositories/favourites.py` |
 | Production secret | `get_config("production")` refuses to start unless `SECRET_KEY` is set, is at least 32 characters and is not a known development or placeholder value. Without `SECRET_KEY`, development and tests use a random key per process, so no well-known key exists | `config.check_secret_key` |
 | Caching | account pages send `Cache-Control: no-store`; other pages for a signed-in visitor send `private`; anonymous browsing never sets a cookie | `security.add_cache_headers` |
@@ -124,6 +124,7 @@ Every POST must carry the CSRF token **and**, if the browser sends an `Origin` h
 * `TV_PUBLIC_ORIGINS` is set and every entry is https.
 * `DB_NAME` does not end in `_test` and is not the test database.
 * `TV_TRUSTED_PROXIES` is a whole number from 0 to 5, written in plain digits. A malformed value (`abc`, `1.5`, `-1`, `+2`, blank, `1,2`) stops the site from starting in **every** environment; it is never read as "no proxies". Not set at all means 0.
+* `TV_HSTS_MAX_AGE` (optional): the lifetime, in seconds, of the `Strict-Transport-Security` header. The **production** config sends it (default 31536000, one year); development and testing never do. It is sent only on a response to a request that really arrived over https: behind a proxy that terminates TLS the site knows this only if `TV_TRUSTED_PROXIES` is set correctly (a client cannot fake it with a forwarded header; a test checks that). There is no `includeSubDomains` and no `preload`. `0` turns it off; a value that is not a whole number falls back to the default; nothing above two years is accepted. Test: `tests/test_http_headers.py`.
 
 There is no quiet fall-back to development: `FLASK_ENV` must be `development`, `production` or `testing`. A typo (`prod`) or an empty value stops the site from starting. **Not set at all** depends on how the site is started:
 
@@ -164,13 +165,14 @@ The Garage uses Chrome's cross-document view transitions (the picture of the cho
 ## Known limitations
 
 * **Sign out clears the browser's cookie but cannot revoke a stolen copy of it.** Sessions are stateless signed cookies (no sessions table, by decision). A copy stays valid until the 8 hours pass or the password is changed (which invalidates it, see above).
+* **Roles:** `users.role` is `user` or `admin`. Sign-up always creates `user`; the admin area (`docs/ADMIN.md`) reads the role from the database on every request. Until that area is enabled on the live site, nothing there needs a role, and the first administrator is made only on the test database by `scripts/make_admin.py`.
 * No email, so **no password reset**: a forgotten password cannot be recovered. No account deletion feature and no admin screens. The `role` column exists; registration always creates `user`, and nothing reads it.
 * Sign-up is limited per client address (above), not per person: an attacker with many addresses can still create many accounts. No CAPTCHA, no email check.
 * The database account the site uses keeps `SELECT, INSERT, UPDATE, DELETE` on the whole database (unchanged). A narrower, per-table grant is possible; see "Least privilege" below.
 
 ## Least privilege (recommendation, not applied)
 
-The features need only: `SELECT` everywhere; `INSERT` and `UPDATE (password_hash)` on `users`; `INSERT` and `DELETE` on the four `favourite_*` tables. A DBA could grant exactly that instead of database-wide DML. `tests/test_privileges.py` pins the present grants, so it would be updated together with such a change. Not applied here.
+(The admin area for Stories also needs `INSERT`, `UPDATE` and `DELETE` on `missions` and the three `mission_*` link tables, which the present database-wide grant already covers.) The account features need only: `SELECT` everywhere; `INSERT` and `UPDATE (password_hash)` on `users`; `INSERT` and `DELETE` on the four `favourite_*` tables. A DBA could grant exactly that instead of database-wide DML. `tests/test_privileges.py` pins the present grants, so it would be updated together with such a change. Not applied here.
 
 ## Migration 010
 

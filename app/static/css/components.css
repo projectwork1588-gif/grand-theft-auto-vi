@@ -36,6 +36,8 @@
 .link-arrow { color: var(--text); font: 700 var(--t-micro)/1 var(--font-body); letter-spacing: var(--track-ui); text-decoration: none; }
 .link-arrow::after { content: "\2192"; margin-left: 10px; display: inline-block; transition: transform .35s var(--ease-out); }
 .link-arrow:hover { color: var(--pink); }
+/* Taller hit areas for small text links, with nothing moving: the padding and the equal negative margin cancel out, and an inline link ignores vertical margin altogether. */
+.link-arrow { padding-block: 7px; margin-block: -7px; }
 .link-arrow:hover::after { transform: translateX(6px); }
 
 /* ---------- The card: art, eyebrow, condensed title, one line, one pill (Design reset, Gate 2) ---------- */
@@ -81,6 +83,7 @@ a:hover .media__img, .hover-zoom:hover .media__img, button:hover .media__img { t
 .filters input, .filters select { width: 100%; min-height: 48px; padding: 11px 16px; border-radius: var(--r-tile); border: 1px solid var(--line); background: var(--ink); color: var(--text); font: 500 var(--t-body)/1.3 var(--font-body); letter-spacing: 0; transition: border-color .25s, background .25s; }
 .filters input:hover, .filters select:hover { border-color: var(--line-strong); }
 .filters input:focus, .filters select:focus { outline: none; border-color: var(--pink); background: var(--surface); }
+.filters input:focus-visible, .filters select:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
 .filters input::placeholder { color: var(--soft); }
 .filters select { appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 20px) 21px, calc(100% - 15px) 21px; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 38px; }
 .filters .btn { min-height: 48px; padding: 12px 26px; box-shadow: none; }
@@ -190,7 +193,7 @@ dialog[open] .dialog-frame { animation: dialogIn var(--dur-3) var(--ease) both; 
 .motion-switch b { flex: none; padding: 4px 12px; border-radius: var(--r-pill); border: 1px solid var(--line-strong); color: var(--text); font: 700 var(--t-micro)/1 var(--font-body); letter-spacing: var(--track-ui); }
 .motion-switch[aria-pressed="true"] b { background: var(--action); border-color: var(--action); color: var(--on-action); }
 .motion-switch:hover { color: var(--text); }
-.footer-motion { padding: 0; border: 0; background: none; color: var(--text-2); font: 500 var(--t-small)/1.2 var(--font-text); cursor: pointer; }
+.footer-motion { padding: 4px 0; margin-block: -4px; border: 0; background: none; color: var(--text-2); font: 500 var(--t-small)/1.2 var(--font-text); cursor: pointer; }
 .footer-motion b { margin-left: 6px; padding: 3px 10px; border-radius: var(--r-pill); border: 1px solid var(--line-strong); color: var(--text); font: 700 var(--t-micro)/1 var(--font-body); letter-spacing: var(--track-ui); }
 .footer-motion[aria-pressed="true"] b { background: var(--action); border-color: var(--action); color: var(--on-action); }
 .footer-motion:hover { color: var(--text); }

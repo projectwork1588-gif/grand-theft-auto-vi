@@ -2,7 +2,7 @@
 import logging
 import os
 
-from flask import Flask, g
+from flask import Flask, g, request
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from . import db, media_slots, media_urls, security
@@ -70,9 +70,15 @@ def create_app(config_name=None):
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
         response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        # HSTS tells a browser to use https for this host from now on. Only when the production config asks for it AND this very request came over https
+        # (request.is_secure reads the proxy's scheme header only when TV_TRUSTED_PROXIES says a proxy is there, so a client cannot fake it). No includeSubDomains, no preload.
+        max_age = app.config.get("HSTS_MAX_AGE", 0)
+        if max_age and request.is_secure:
+            response.headers.setdefault("Strict-Transport-Security", f"max-age={max_age}")
         return response
 
     from .blueprints.account import account_bp
+    from .blueprints.admin import admin_bp
     from .blueprints.api import api_bp
     from .blueprints.main import main_bp, media_file_url, page_url, page_window
     from .blueprints.pages import pages_bp
@@ -90,5 +96,6 @@ def create_app(config_name=None):
     app.register_blueprint(main_bp)
     app.register_blueprint(pages_bp)
     app.register_blueprint(account_bp)
+    app.register_blueprint(admin_bp)
     app.register_blueprint(api_bp, url_prefix="/api/v1")
     return app

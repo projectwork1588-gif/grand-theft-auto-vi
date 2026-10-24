@@ -1,7 +1,7 @@
 """JSON API (version 1). Routes stay thin: parse the request, call a service, return JSON."""
 from flask import Blueprint, jsonify, request
 
-from ..services import characters, locations, missions, regions, vehicles
+from ..services import characters, locations, missions, regions, search, vehicles
 
 api_bp = Blueprint("api", __name__)
 
@@ -60,3 +60,9 @@ def list_locations():
 @api_bp.route("/locations/<slug>")
 def location_detail(slug):
     return jsonify(locations.get_location(slug))
+
+
+@api_bp.route("/search")
+def search_site():
+    """The few best matches for the command palette (Stage 4B). Public, read-only, one database query."""
+    return jsonify(search.api_search(request.args))

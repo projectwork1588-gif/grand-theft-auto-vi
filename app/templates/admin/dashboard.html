@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% from "admin/_macros.html" import hero, nav %}
+{% block title %}Admin{% endblock %}
+{% block description %}Administrators: what the database holds and how stories are doing.{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">{% endblock %}
+{% block content %}
+{{ hero('Admin', 'Dashboard', 'Counts read straight from the database. Stories are the first thing managed here.') }}
+<section class="section section--tight">
+  <div class="container adm adm--wide">
+    {{ nav('dashboard') }}
+    <div class="adm-grid">
+      <section class="adm-card" aria-labelledby="d-tables">
+        <h2 class="panel-title" id="d-tables">Rows per table</h2>
+        <table class="adm-table adm-table--compact">
+          <caption class="visually-hidden">Rows per table</caption>
+          <thead><tr><th scope="col">Table</th><th scope="col">Rows</th></tr></thead>
+          <tbody>{% for t in stats.tables %}<tr><th scope="row">{{ t.name }}</th><td>{{ t.n }}</td></tr>{% endfor %}</tbody>
+        </table>
+      </section>
+      <section class="adm-card" aria-labelledby="d-stories">
+        <h2 class="panel-title" id="d-stories">Stories by label and type</h2>
+        <table class="adm-table adm-table--compact">
+          <caption class="visually-hidden">Stories by label and type</caption>
+          <thead><tr><th scope="col">Label</th><th scope="col">Type</th><th scope="col">Stories</th></tr></thead>
+          <tbody>{% for s in stats.stories %}<tr><th scope="row">{{ s.content_status }}</th><td>{{ s.mission_type }}</td><td>{{ s.n }}</td></tr>{% else %}<tr><td colspan="3">No stories.</td></tr>{% endfor %}</tbody>
+        </table>
+      </section>
+      <section class="adm-card" aria-labelledby="d-users">
+        <h2 class="panel-title" id="d-users">Accounts by role</h2>
+        <table class="adm-table adm-table--compact">
+          <caption class="visually-hidden">Accounts by role</caption>
+          <thead><tr><th scope="col">Role</th><th scope="col">Accounts</th></tr></thead>
+          <tbody>{% for r in stats.roles %}<tr><th scope="row">{{ r.role }}</th><td>{{ r.n }}</td></tr>{% else %}<tr><td colspan="2">No accounts.</td></tr>{% endfor %}</tbody>
+        </table>
+      </section>
+      <section class="adm-card" aria-labelledby="d-favs">
+        <h2 class="panel-title" id="d-favs">Favourites saved</h2>
+        <table class="adm-table adm-table--compact">
+          <caption class="visually-hidden">Favourites saved per kind of record</caption>
+          <thead><tr><th scope="col">Kind</th><th scope="col">Saved</th></tr></thead>
+          <tbody>{% for f in stats.favourites %}<tr><th scope="row">{{ f.kind }}</th><td>{{ f.n }}</td></tr>{% endfor %}</tbody>
+        </table>
+      </section>
+      <section class="adm-card" aria-labelledby="d-top">
+        <h2 class="panel-title" id="d-top">Most saved stories</h2>
+        {% if stats.top_stories %}
+        <ol class="adm-plain">{% for s in stats.top_stories %}<li><a href="{{ url_for('pages.mission_detail', slug=s.slug) }}">{{ s.title }}</a> <span class="adm-count">{{ s.saved }}</span></li>{% endfor %}</ol>
+        {% else %}<p class="acct-empty">No story has been saved yet.</p>{% endif %}
+      </section>
+      <section class="adm-card" aria-labelledby="d-unlinked">
+        <h2 class="panel-title" id="d-unlinked">Stories with no links</h2>
+        {% if stats.unlinked %}
+        <ul class="adm-plain">{% for s in stats.unlinked %}<li><a href="{{ url_for('pages.mission_detail', slug=s.slug) }}">{{ s.title }}</a></li>{% endfor %}</ul>
+        {% else %}<p class="acct-empty">Every story links to at least one character, vehicle or place.</p>{% endif %}
+      </section>
+    </div>
+  </div>
+</section>
+{% endblock %}

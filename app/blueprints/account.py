@@ -33,7 +33,7 @@ def _too_many(template, wait, what="failed attempts", **context):
 def register():
     if g.user:
         return _to("account.favourites_page")
-    if request.method == "GET":
+    if request.method != "POST":
         return _page("account/register.html", errors={}, values={})
     wait, ticket = security.begin_registration()                 # check and reserve in one step: simultaneous sign-ups cannot all pass the check
     if wait:
@@ -59,7 +59,7 @@ def register():
 def login():
     if g.user:
         return _to("account.favourites_page")
-    if request.method == "GET":
+    if request.method != "POST":
         return _page("account/login.html", errors={}, values={})
     username = accounts.normalise_username(request.form.get("username"))
     wait, ticket = security.begin_login_attempt(username)        # check and reserve in one step, BEFORE the (slow) password check
@@ -90,7 +90,7 @@ def logout():
 @account_bp.route("/account/password", methods=["GET", "POST"])
 @security.login_required
 def password():
-    if request.method == "GET":
+    if request.method != "POST":
         return _page("account/password.html", errors={})
     username = g.user["username"]
     wait, ticket = security.begin_login_attempt(username)        # the "current password" field is a password check, held to the same limits as sign-in

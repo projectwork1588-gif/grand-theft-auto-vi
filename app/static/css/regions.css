@@ -92,7 +92,7 @@ html.motion-on .rgh__copy > :nth-child(5) { animation-delay: .36s; }
 .rg-lede { max-width: 32ch; font: 500 var(--t-h3)/1.26 var(--font-text); letter-spacing: var(--track-tight); color: var(--text); text-wrap: pretty; }
 .rga--plain .rg-lede { max-width: 40ch; }
 .rg-prov { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
-.rg-prov a, .rga__facts a { color: var(--text); text-decoration-color: var(--line-strong); text-underline-offset: 4px; }
+.rg-prov a, .rga__facts a { padding-block: 6px; margin-block: -6px; color: var(--text); text-decoration-color: var(--line-strong); text-underline-offset: 4px; }
 .rg-prov a:hover, .rga__facts a:hover { color: var(--tint); }
 .rg-note { max-width: 44ch; font: 500 var(--t-small)/1.5 var(--font-text); color: var(--text-3); }
 .rga__facts { display: flex; flex-wrap: wrap; gap: 0 clamp(28px, 5vw, 64px); width: 100%; margin-top: clamp(16px, 2vw, 28px); padding-top: 18px; border-top: 1px solid var(--line); }

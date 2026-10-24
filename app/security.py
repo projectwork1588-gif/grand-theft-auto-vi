@@ -14,7 +14,7 @@ import time
 from functools import wraps
 
 from flask import current_app, flash, g, redirect, request, session, url_for
-from werkzeug.exceptions import BadRequest
+from werkzeug.exceptions import BadRequest, Forbidden
 
 from .config import normalise_origin
 from .repositories import users as users_repo
@@ -22,7 +22,8 @@ from .services.accounts import USERNAME_PATTERN
 
 CSRF_FIELD = "csrf_token"
 CSRF_HEADER = "X-CSRF-Token"
-UNSAFE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
+# The only methods a request may use without the token. Everything else needs it: the guard names what is safe, not what is dangerous, so a method nobody thought of is protected too.
+SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 
 
 class CSRFError(BadRequest):
@@ -56,7 +57,7 @@ def _same_origin():
 
 
 def protect_csrf():
-    if request.method not in UNSAFE_METHODS:
+    if request.method in SAFE_METHODS:
         return None
     if request.url_rule is None or request.method not in request.url_rule.methods:
         return None             # no route accepts this method here, so there is nothing to protect: the normal 404/405 answer stands
@@ -117,9 +118,26 @@ def login_required(view):
     return wrapped
 
 
+def admin_required(view):
+    """Only a signed-in administrator may run the view. A signed-out visitor is sent to the sign-in page (303); a signed-in user who is not an administrator gets
+    403. The role is read from the database on every request (load_user), so taking the role away applies to the very next request. The mark on the function is
+    what tests/test_admin_authz.py checks for on every route of the admin blueprint, so a route added later cannot be forgotten."""
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        user = g.get("user")
+        if user is None:
+            flash("Sign in to continue.", "info")
+            return redirect(url_for("account.login"), code=303)
+        if user.get("role") != "admin":
+            raise Forbidden("This area is for administrators.")
+        return view(*args, **kwargs)
+    wrapped.admin_protected = True
+    return wrapped
+
+
 def add_cache_headers(response):
-    """Pages that differ per visitor must not be stored by shared caches; account pages are not stored at all."""
-    if request.endpoint and request.endpoint.startswith("account."):
+    """Pages that differ per visitor must not be stored by shared caches; account and admin pages are not stored at all."""
+    if request.endpoint and request.endpoint.startswith(("account.", "admin.")):
         response.headers["Cache-Control"] = "no-store"
     elif g.get("user"):
         response.headers.setdefault("Cache-Control", "private")

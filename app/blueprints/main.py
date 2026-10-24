@@ -1,5 +1,5 @@
 """The homepage, about and credits pages, locally built media, and the health check."""
-from flask import Blueprint, abort, current_app, jsonify, render_template, request, send_from_directory, url_for
+from flask import Blueprint, Response, abort, current_app, jsonify, render_template, request, send_from_directory, url_for
 
 from .. import local_media
 from ..db import DatabaseError
@@ -22,9 +22,11 @@ NAV = (
 )
 
 
-def page_url(number):
-    """Current address with only the page number changed, so filters and sorting are kept."""
+def page_url(number, anchor=None):
+    """Current address with only the page number changed, so filters and sorting are kept. `anchor` names an element id to land on."""
     params = {**(request.view_args or {}), **request.args.to_dict(), "page": number}
+    if anchor:
+        params["_anchor"] = anchor
     return url_for(request.endpoint, **params)
 
 
@@ -71,6 +73,17 @@ def media_file(filename):
     if not local_media.is_servable(filename):
         abort(404)
     return send_from_directory(local_media.root(), filename, max_age=3600, conditional=True)
+
+
+# What a well-behaved crawler should leave alone: results pages and JSON (no value in an index), the account and admin areas, and the health check.
+ROBOTS_DISALLOWED = ("/search", "/api/", "/admin", "/account/", "/login", "/register", "/health")
+ROBOTS_TXT = "\n".join(["User-agent: *", "Allow: /"] + [f"Disallow: {path}" for path in ROBOTS_DISALLOWED]) + "\n"
+
+
+@main_bp.route("/robots.txt")
+def robots():
+    """For crawlers, and a liveness address that needs no database (so a host can probe it while MySQL sleeps)."""
+    return Response(ROBOTS_TXT, mimetype="text/plain", headers={"Cache-Control": "public, max-age=3600"})
 
 
 @main_bp.route("/health")

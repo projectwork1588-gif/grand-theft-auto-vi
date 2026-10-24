@@ -1,0 +1,59 @@
+/* ==========================================================================
+   Command palette (Ctrl/Cmd+K) and the header search icon. Built only from tokens.css. The palette is a native <dialog>, so the page behind it is inert and Esc
+   closes it. Nothing animates unless the site's own motion switch is on (html.motion-on), and never for reduced motion.
+   ========================================================================== */
+
+/* The header icon hangs in the space between the menu and the Trailers pill: its negative margin cancels its own width, so nothing else in the header moves. */
+.header-search { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 40px; height: 40px; margin-left: -48px; border-radius: 50%; color: var(--text-2); text-decoration: none; transition: color var(--dur-2), background var(--dur-2); }
+.header-search svg { width: 20px; height: 20px; }
+.header-search:hover { color: var(--text); background: rgba(255, 255, 255, .1); }
+.header-search:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+@media (max-width: 359px) { .header-search { display: none; } }          /* the site menu has a Search row for the narrowest phones */
+
+.palette { width: min(640px, calc(100vw - 2 * var(--gutter))); max-height: min(560px, calc(100vh - 2 * var(--s5))); margin: min(14vh, 120px) auto auto; padding: 0; border: 1px solid var(--line-strong); border-radius: var(--r-card); background: var(--ground-2); color: var(--text); overflow: hidden; box-shadow: 0 30px 80px rgba(0, 0, 0, .55); }
+.palette::backdrop { background: rgba(13, 11, 32, .72); }
+html:has(.palette[open]) { overflow: hidden; }
+.palette__frame { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; max-height: inherit; }
+.palette__bar { display: flex; align-items: center; gap: 12px; padding: 14px 16px 14px 20px; border-bottom: 1px solid var(--line); }
+.palette__prompt { flex: none; color: var(--action); font: 700 var(--t-h4)/1 var(--font-mark); letter-spacing: var(--track-caps); }
+.palette__input { flex: 1; min-width: 0; height: 44px; padding: 0; border: 0; background: transparent; color: var(--text); font: 500 var(--t-lead)/1.2 var(--font-body); letter-spacing: 0; }
+.palette__input::placeholder { color: var(--text-3); }
+.palette__input:focus { outline: none; }
+.palette__bar:focus-within { box-shadow: inset 0 -2px 0 var(--action); }
+.palette__close { flex: none; display: inline-flex; align-items: center; justify-content: center; min-width: 44px; height: 32px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: var(--r-tile); background: transparent; color: var(--text-2); font: 700 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; cursor: pointer; }
+.palette__close:hover { color: var(--text); border-color: var(--text); }
+.palette__close:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+.palette__list { list-style: none; margin: 0; padding: 8px; overflow-y: auto; overscroll-behavior: contain; }
+.palette__list:empty { display: none; }
+.palette__item { border-radius: var(--r-tile); }
+.palette__link { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr) auto; gap: 14px; align-items: center; min-height: 52px; padding: 10px 12px; color: var(--text); text-decoration: none; cursor: pointer; }
+.palette__link:hover { color: var(--text); }
+.palette__item:hover { background: rgba(255, 255, 255, .06); }
+.palette__item.is-active { background: rgba(255, 95, 150, .16); outline: 2px solid var(--text); outline-offset: -2px; }
+.palette__kind { color: var(--text-3); font: 700 var(--t-micro)/1.2 var(--font-text); letter-spacing: var(--track-label); text-transform: uppercase; }
+.palette__main { display: grid; gap: 2px; min-width: 0; }
+.palette__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 var(--t-body)/1.25 var(--font-body); }
+.palette__detail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-2); font-size: var(--t-small); }
+.palette__tag { color: var(--text-2); font: 600 var(--t-micro)/1 var(--font-text); letter-spacing: var(--track-ui); }
+.palette__title mark, .palette__detail mark { background: transparent; color: var(--action); font-weight: 800; }
+.palette__note { margin: 0; padding: 18px 20px; color: var(--text-2); font-size: var(--t-small); }
+.palette__item--command .palette__link { grid-template-columns: 6.5rem minmax(0, 1fr); }
+
+.palette__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin: 0; padding: 10px 20px 12px; border-top: 1px solid var(--line); color: var(--text-3); font-size: var(--t-micro); }
+.palette__foot a { padding-block: 6px; margin-block: -6px; color: var(--text-2); font-weight: 700; letter-spacing: var(--track-ui); }
+.palette__foot a:hover { color: var(--text); }
+.palette__foot a:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+html.motion-on .palette[open] { animation: palette-in var(--dur-2) var(--ease) both; }
+@keyframes palette-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 640px) {
+  .palette { width: 100vw; max-width: none; height: 100dvh; max-height: none; margin: 0; border: 0; border-radius: 0; }
+  .palette__frame { height: 100%; }
+  .palette__link { grid-template-columns: minmax(0, 1fr) auto; min-height: 56px; }
+  .palette__kind { grid-column: 1 / -1; }
+  .palette__item--command .palette__link { grid-template-columns: minmax(0, 1fr); }
+  .palette__keys { display: none; }
+}
+@media (forced-colors: active) { .palette__item.is-active { outline: 2px solid Highlight; } }

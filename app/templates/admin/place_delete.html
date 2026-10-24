@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% from "admin/_macros.html" import hero, nav %}
+{% block title %}Delete place{% endblock %}
+{% block description %}Administrators: confirm deleting a place.{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">{% endblock %}
+{% block content %}
+{{ hero('Admin', 'Delete this place?' if not impact.official_residents else 'This place cannot be deleted', 'Nothing is deleted until you press the button on this page.' if not impact.official_residents else 'An official record depends on it.') }}
+<section class="section section--tight">
+  <div class="container adm">
+    {{ nav('places') }}
+    {% if impact.official_residents %}
+    <div class="acct-alert" role="alert" tabindex="-1" id="form-errors">
+      <p><strong>{{ place.name }}</strong> (<code>/locations/{{ place.slug }}</code>) is the home of {{ impact.official_residents }} official character{{ '' if impact.official_residents == 1 else 's' }}.</p>
+      <p>Deleting it would clear that home and so change an official record, which the admin area never does.</p>
+    </div>
+    <p class="adm-actions"><a class="btn btn--ghost" href="{{ url_for('admin.place_list') }}">Back to the places</a></p>
+    {% else %}
+    <div class="acct-alert" role="alert" tabindex="-1" id="form-errors">
+      <p><strong>{{ place.name }}</strong> (<code>/locations/{{ place.slug }}</code>) in {{ place.region_name }} will be deleted for good.</p>
+      <p>The database then does this for you:</p>
+      <ul>
+        <li>{{ impact.residents }} character{{ '' if impact.residents == 1 else 's' }} will have no home place (their home is cleared; the characters stay){% if residents %}: {% for r in residents %}{{ r.full_name }}{{ ', ' if not loop.last else '' }}{% endfor %}{% endif %}</li>
+        <li>{{ impact.story_links }} story link{{ '' if impact.story_links == 1 else 's' }} to this place will be removed (the stories stay)</li>
+        <li>{{ impact.favourites }} saved favourite{{ '' if impact.favourites == 1 else 's' }} of this place will be removed</li>
+        <li>{{ impact.media_links }} media link{{ '' if impact.media_links == 1 else 's' }} to this place will be removed (the pictures stay)</li>
+      </ul>
+    </div>
+    <form class="adm-actions" method="post" action="{{ url_for('admin.place_delete', slug=place.slug) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn adm-danger" type="submit">Delete this place</button>
+      <a class="btn btn--ghost" href="{{ url_for('admin.place_list') }}">Keep it</a>
+    </form>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

@@ -1,6 +1,7 @@
 """Server-rendered catalogue and detail pages. Each route: read the request, call a service, render a template."""
 from flask import Blueprint, redirect, render_template, request, url_for
 
+from ..services import search as search_service
 from ..services import site
 
 pages_bp = Blueprint("pages", __name__)
@@ -63,6 +64,12 @@ def locations():
 @pages_bp.route("/locations/<slug>")
 def location_detail(slug):
     return render_template("locations/detail.html", location=site.location_detail(slug))
+
+
+@pages_bp.route("/search")
+def search():
+    """Site search (Stage 4B): server-rendered, works without JavaScript. The palette (Ctrl/Cmd+K) uses /api/v1/search; this is the full page behind it."""
+    return render_template("search/index.html", **search_service.page_search(request.args))
 
 
 @pages_bp.route("/missions")

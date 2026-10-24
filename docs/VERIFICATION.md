@@ -392,3 +392,91 @@ Run in a throwaway copy of the project with `git init` (the project folder itsel
 3. Tests have run only against the scratch server so far, so the "tests on your local test database" requirement is open until step 1 is done.
 4. Trailer embed URLs and download licence terms need human review before Phase 5.
 5. The `valkyrie_app` account also has rights on the test database so the suite can run; a separate test-only account is possible if desired.
+
+
+## Stages 3 to 5: admin, polish, search, final checks (October 2026)
+
+Figures below were measured on the project's own machine: Windows, MySQL 8.0.46, headless Chrome, the `gta6_vi_test` database only. The production database was never opened.
+A complete run of the suite takes 28 to 37 minutes (27 min 51 s to 36 min 24 s in the runs below; one test, `test_garage_pointer.py`, takes 12 to 14 minutes by itself).
+
+| Point | Result |
+|-------|--------|
+| Stage 3: administrator area for Stories and Places | `tests/test_admin_*.py`; browser journey `scripts/qa/run_admin_qa.py`, 104 checks per run (normal and reduced motion) |
+| Stage 4A (accessibility and error pages), `62d63d7` | 659 targeted tests; 40-page probe (20 pages at desktop and phone width): 0 broken images, missing alt text, heading skips, failed requests, console errors or overflow |
+| Stage 4B (search and command palette), `8ed0a61` | **Full suite: 1,749 passed, 0 failed, 0 errors, no skips, no warnings, 36 min 10 s.** An earlier run of the same code before one label was renamed had 1 failure (a text collision with an existing guard), fixed without changing that test |
+| Stage 4B browser suites, all 0 failures | palette 67, `/search` page 50, home 53, characters hero 36, music 48, regions 246, vehicle detail 227, screening 112, cast navigation 52 |
+| Stage 5 audit, `96987fd` | `docs/STAGE5_AUDIT.md`: 140 page-and-width measurements, 322 hostile requests, every route with every method, database integrity, documentation links |
+| Stage 5.1: HEAD requests (finding M1) | `tests/test_head_and_methods.py`, 16 tests: 8 failed on the old code, 16 pass on the new; with the 22 other files that touch accounts, throttles, favourites, admin and security, 627 passed |
+| Stage 5.2: admin browser script | `run_admin_qa.py` 97/104 before, 104/104 after (normal and reduced motion); `run_accounts_qa.py` 74/74 |
+| Stage 5.4: HTTP headers | `tests/test_http_headers.py`, 36 tests (405 `Allow`, HSTS, `robots.txt`); removing the code makes 17 of them fail |
+| **Stage 5, first verification run: full suite on `a3ccbab`** (historical; the search code was changed after it, see the final entry below) | **1,820 passed, 0 failed, 0 errors, 0 skipped, 31 warnings, 27 min 51 s.** One run; the working tree was clean before and after; Windows, MySQL 8.0.46. It was run with `-W default`, which shows warnings Python normally hides: all 31 are `ResourceWarning: unclosed file`, raised by tests that read a static file through the test client (or `open(...).read()`) without closing it: 15 in `test_site_integrity.py`, 9 in `test_pages.py`, 5 in `test_garage_pointer.py` (through the development server), 1 each in `test_setup_safety.py` and `test_http_headers.py`. None is in application code and none affects a result |
+| **Stage 5, first verification run: browser QA on `a3ccbab`** (headless Chrome, test-configured servers; 0 failures in every suite) | palette 67 (normal) and 67 (reduced motion); `/search` page 50 and 50; home 53; characters hero 36; cast navigation 52; music 48 and 48; regions 246 (normal) and 240 plus 6 information lines (reduced: the region-camera check reports instead of asserting, because the script switches the site's own motion setting on, which by design overrides the system setting); media screening 112; vehicle detail 227; garage transitions 22 (its load-sensitive timing check passed this time); garage concept 22; accounts journey 74; admin journey 104 (normal) and 104 (reduced motion) |
+| **Stage 5, first verification run: responsive and accessibility sweep** (on `a3ccbab`) | 20 pages at 7 widths (320 to 1920 px), run twice (normal and reduced motion): 280 measurements with 0 horizontal overflow, 0 images without alt text, 0 broken images, 0 heading skips, 0 console, page, request or CSP errors, exactly one `h1` and one `main` everywhere, no unlabelled field, no unnamed control, no clipped text. The only targets under 24 px are 4 links inside sentences (exempt from WCAG 2.5.8). Reduced motion: 0 running animations and 0 autoplaying videos |
+| **Stage 5, first verification run: live security checks** (on `a3ccbab`; real servers, raw HTTP, test database) | 38 of 38. HEAD changes nothing and spends no throttle (25 x `HEAD /login`, then a real wrong password is 401, not 429); 10 state-changing addresses (admin delete, edit and new, favourites, password, sign out, sign in, sign up) refuse a missing token, a forged token and a foreign Origin; PUT, PATCH and DELETE on an admin delete address are 405; with no trusted proxy a forwarded `X-Forwarded-Proto: https` never produces HSTS, on any kind of answer; behind one trusted proxy that says https the header is exactly `max-age=31536000`; 96 live 405 answers all carry an `Allow` equal to the route's methods. The application refuses to start in production against a test database, so the HSTS checks run the test configuration with the production HSTS value and proxy settings (the same code paths); the production class's own settings are asserted separately. Authenticated destructive actions are covered by `test_head_and_methods.py` and the admin journey (104 checks, including CSRF). **A bug in this script was found and fixed during the run:** its first run reported success while having run no checks (a server failed to start and the error was swallowed); it now fails on any crash or if fewer than its 38 checks ran, and the figures here are from the fixed script |
+
+Known flake, reported separately from failures: `scripts/qa/garage_transitions_qa.mjs` has one timing check (the picture must start changing within 250 ms) that fails when the machine is busy (2 failures in 4 runs, 22/22 on the others) with no garage code involved.
+
+### Final verification of the pull-request head `0eab145` (24 October 2026)
+
+Pull request: [#2](https://github.com/projectwork1588-gif/grand-theft-auto-vi/pull/2), base `main` at `a2cc94b724a2d11d844f66c27d88a23d56c88846`, head `0eab145366440473f6f68004c07156189cbbb14a`.
+Two commits came after the run recorded above for `a3ccbab` (and after the record commit `33903da`): `b73e147` (search leaves music out instead of answering 503 when migration 008's music
+tables are absent) and `0eab145` (the "music is not available" note is shown only on a search that could include music).
+
+**This is the one final entry.** It supersedes the `a3ccbab` totals for the final candidate (those rows above stay as history) and it replaces the separate section that commit `0f101ec` added to this file
+on the pull request branch: its figures, its not-rerun note, its description of the change and its production-readiness list are folded in below. The two records agreed on every figure.
+
+**Where each figure comes from.** *Confirmed* means the figure was read from a run log kept outside the repository (the log names the commit and the state of the tree), or re-run while this entry
+was written. *Reported* means it comes from the description of PR #2 or from commit `0f101ec` (the project owner's report of the same run) and was not independently read from GitHub. *Not rerun* means exactly that.
+
+| Point | Result | Evidence |
+|-------|--------|----------|
+| **Final: full suite on `0eab145`** | **1,873 passed, 0 failed, 0 errors, 0 skipped, 32 warnings, 36 min 24 s.** 1,873 is the 1,820 of the earlier run plus the 53 tests of `tests/test_search_degradation.py`. Run with `-W default`, which shows warnings Python normally hides: all 32 are `ResourceWarning: unclosed file` raised by test code that reads a static file without closing it (15 in `test_site_integrity.py`, 9 in `test_pages.py`, 6 in `test_garage_pointer.py`, 1 in `test_setup_safety.py`, 1 in `test_http_headers.py`). None is in application code. The count in `test_garage_pointer.py` varies by one from run to run (5 on the previous commit) with when its development server drops a connection | Confirmed (run log, tagged with the commit, tree clean before) and reported |
+| Focused search, palette and documentation tests | **208 passed on the `0eab145` tree.** The selection is exactly seven files: `test_docs_drift.py`, `test_docs_routes_sync.py`, `test_docs_schema_sync.py`, `test_search_degradation.py`, `test_search_page.py`, `test_search_api.py`, `test_palette.py`, run together with `python -m pytest <those files> -q -p no:cacheprovider -W default`. The same seven files collect more tests on later commits only because documentation guard tests were added to `test_docs_drift.py`, not because the selection changed: 210 on the local commit `5bc6274` (two guard tests added) and 217 on the reconciliation commit that adds this entry (seven more) | Reported (208), and re-run on the `0eab145` tree: 208 passed in 36.56 s; re-run on the content of `5bc6274`: 210 passed in 38.82 s |
+| Search degradation regression tests | **53 passed on the `0eab145` tree** (`python -m pytest tests/test_search_degradation.py`; 19 test functions expanded by parametrisation). They are inside the 1,873 of the full run and inside the 208 above. They cover simulated database errors of every kind, real renamed tables in the test database, and the note shown only where relevant. Removing the tolerance fails 11 of them; accepting any missing table fails 6; reverting the relevance rule fails 8 | Reported, and re-run on the `0eab145` tree: 53 passed in 36.65 s |
+| Browser QA, command palette | 67 checks in normal motion and 67 in reduced motion, 0 failures | Confirmed (run summary tagged with the commit) and reported |
+| Browser QA, `/search` page | 50 in normal motion and 50 in reduced motion, 0 failures | Confirmed and reported |
+| Browser QA, the music tables really missing | 23 checks in normal and 23 in reduced motion, 0 failures: the palette and the results page work, no music row is invented, no error note, every search request answers 200, the Music page still renders. The runner renames the three music tables of the test database, restores them and checks the row count (9 before, 9 after) | Confirmed and reported |
+| Live security checks | 38 of 38 (HEAD, CSRF, forwarded-header HSTS, `Allow`, `robots.txt`; real servers, raw HTTP) | Confirmed and reported |
+| Test database | Restored; all 27 tables present, none left renamed aside | Confirmed after the final run and again after the re-runs above |
+| **Not rerun on `0eab145`**: home, characters, cast navigation, music, regions, media screening, vehicle detail, garage, accounts journey, admin journey, responsive and accessibility sweep | All passed with 0 failures on `b73e147` (the same commit minus the relevance change), in normal and reduced motion where applicable: home 53, characters hero 36, cast 52, music 48/48, regions 246/240, screening 112, vehicle detail 227, garage transitions 22, garage concept 22, accounts 74, admin 104/104, responsive and accessibility sweep 140 + 140 measurements with 0 problems (0 running animations under reduced motion). The change made afterwards is limited to the search results page's context (one list comprehension in `page_search`) plus tests and a documentation sentence, so they were not repeated | Confirmed for `b73e147` (run summary), **not** for `0eab145` |
+| What the `b73e147` browser run found | The degraded-state check failed 4 checks per motion mode. Two were a real flaw, now fixed in `0eab145`: a characters-only search showed "Music results are not available". Two were a wrong expectation in the check itself ("radio" legitimately matches the Music page) | Confirmed |
+| GitHub Actions | **No claim is made.** The repository has no workflow configuration (no `.github` directory) and no workflow run has been confirmed for this commit. Commit `0f101ec` adds that no workflow run was returned for the final commit when it was checked; that is reported, not independently confirmed here. This record is a local run report, not a GitHub Actions result | Reported; the absence of workflow configuration is confirmed |
+| The earlier run on `a3ccbab` (1,820 passed) | Remains a historical result, kept in the table above; it is not the result for the pull-request head | n/a |
+
+#### What `0eab145` changed
+
+The search feature now degrades gracefully if one or more optional music tables from migration 008 are missing: search continues for other kinds, the page and the API identify music as unavailable when
+relevant, and a healthy subsequent request retries normally (nothing is remembered between requests). Missing core tables, permission errors, malformed SQL and connection errors remain errors rather than being
+hidden as a fallback.
+
+#### Production readiness: still blocked
+
+These results do **not** authorize deployment or production database changes. Before deployment, resolve and verify:
+
+- Choose and configure a production WSGI server and start command.
+- Implement database TLS with certificate verification.
+- Inspect the actual production migration state safely; do not run migrations until separately approved.
+- Validate pool capacity, worker/thread counts and host-specific connection behaviour.
+- Decide how Rockstar-owned media will be handled in light of licensing uncertainty.
+
+The host is not selected in this record. No production database, migration, deployment, or production administrator setup was performed.
+
+### Full-suite run on the reconciliation head `2182cbe` (24 October 2026)
+
+This entry adds a run; it does not replace the entry above. That entry is titled for `0eab145` because `0eab145` was the pull-request head when it was written. Since then the branch `feature/stage5-delivery`
+has moved to `2182cbeb48d43362bf3ee83e91418d0a4cfacfd6` through the merge `217c933` of the two documentation commits (`5bc6274` and `0f101ec`) and the reconciliation commit `2182cbe` (confirmed with
+`git ls-remote` after the push; the PR page itself was not read). Between `0eab145` and `2182cbe` exactly two files differ, `docs/VERIFICATION.md` and `tests/test_docs_drift.py`: no application code, template,
+stylesheet, script, configuration, migration or hosting file changed (re-checked with `git diff --name-only 0eab145 2182cbe` while this entry was written).
+
+The run below is of the tree of `2182cbe`. This entry is added by a later commit, so the run is not of the commit that adds it; that commit changes this file only.
+
+| Point | Result | Evidence |
+|-------|--------|----------|
+| Full-suite run on `2182cbe` | **1,882 passed, 0 failed, 0 errors, 0 skipped, 32 warnings, exit code 0, 2,225.83 s (37 min 5 s).** Command: `.venv/Scripts/python.exe -m pytest -q -p no:cacheprovider -W default`, run from the repository root on 24 October 2026 (14:05:30 to 14:42:38, local time of the machine). All 32 warnings are `ResourceWarning: unclosed file`, reported against these tests: 15 in `test_site_integrity.py`, 9 in `test_pages.py`, 6 in `test_garage_pointer.py`, 1 in `test_setup_safety.py` and 1 in `test_http_headers.py`. By the location pytest printed for each, 23 surfaced at lines in test files, 6 at `werkzeug/serving.py:376` (`connection_dropped`) during the garage-pointer tests, and 3 at `_pytest/python.py:167` (`testfunction(**testargs)`) during `test_pages.py` tests; none was located in `app/`. `-W default` is what makes them visible. These locations show where Python reported each warning, not its root cause, which was not investigated. No other warning type appeared | Confirmed (read from the run log kept outside the repository, which names the commit) |
+| Why 1,882 and not 1,873 | The nine additional tests are documentation guard tests in `tests/test_docs_drift.py`: two added by `5bc6274` and seven by `2182cbe` (nine test functions in the diff from `0eab145`). The same nine are the difference between the 208 and the 217 of the focused set recorded above. The 1,873 of `0eab145` remains the result for that commit | Confirmed (counted in the diff while this entry was written) |
+| State of the repository | Branch `feature/stage5-delivery`, HEAD `2182cbeb48d43362bf3ee83e91418d0a4cfacfd6` before and after the run; the working tree was clean before and after, with no untracked files and a clean `git diff --check`; the run created no files in the repository (`-p no:cacheprovider` writes no cache) | Confirmed |
+| Test database | Only `gta6_vi_test` was used. A read-only check before and after the run found 27 tables, none renamed aside and none of the music tables missing; no restoration was needed. The production database `gta6_vi` was not touched and no migration was run | Confirmed |
+| Browser QA | **Not rerun on `2182cbe`.** The attribution above is unchanged: the palette, `/search`, music-tables-missing and live security checks were run on `0eab145`; every other browser suite was run on `b73e147` only. The two files that differ afterwards hold documentation and tests, which no browser suite exercises | Not rerun |
+| GitHub Actions | **No claim is made.** This is a run on the local machine, not a GitHub Actions or other CI result. The repository has no workflow configuration and no workflow run is confirmed for `2182cbe` | Confirmed (no `.github` directory); no run claimed |
+
+**Production readiness is unchanged: still blocked.** This run does **not** authorize deployment, a merge, or any production database change, and the application is not deployed. The five items listed under "Production readiness: still blocked" above remain open: no production WSGI server and start command, no database TLS with certificate verification, an unknown production migration state, unvalidated connection-pool capacity, and the licensing of Rockstar-owned media.

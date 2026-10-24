@@ -374,7 +374,8 @@
 .p-facts dd { margin: 0; font-weight: 600; }
 .p-facts small { display: block; margin-top: 4px; color: var(--text-3); font-weight: 500; font-size: var(--t-small); }
 .p-source { margin: 0; font-size: var(--t-small); }
-.p-source a { color: var(--text-2); }
+.p-source a { padding-block: 6px; margin-block: -6px; color: var(--text-2); }
+.p-facts dd a { padding-block: 6px; margin-block: -6px; }
 .p-story__media { min-width: 0; }
 .p-media { --ov-x: clamp(16px, 3vw, 42px); --ov-y: clamp(26px, 3.4vw, 50px); position: relative; margin: 0 var(--ov-x) calc(var(--ov-y) + 26px) 0; }
 /* no second picture (Real Dimez): nothing overhangs, so the large picture takes the whole column and keeps room for its caption */
@@ -419,10 +420,11 @@
 .p-next__body span { color: var(--text-2); font-size: var(--t-small); }
 .p-all { margin-top: var(--s4); display: flex; align-items: center; justify-content: space-between; gap: var(--s3); flex-wrap: wrap; padding-top: var(--s3); border-top: 1px solid var(--line); }
 .p-all ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px var(--s3); }
-.p-all a { text-decoration: none; font: 700 var(--t-small)/1 var(--font-text); letter-spacing: var(--track-ui); color: var(--text-2); }
+.p-all a { padding-block: 4px; margin-block: -4px; text-decoration: none; font: 700 var(--t-small)/1 var(--font-text); letter-spacing: var(--track-ui); color: var(--text-2); }
 .p-all li a span { margin-right: 8px; color: var(--text-3); font-size: var(--t-micro); letter-spacing: var(--track-label); }
 .p-all a[aria-current="page"] { color: var(--action); }
 .p-all a:hover { color: var(--text); }
+.p-all a.link-arrow { padding-block: 6px; margin-block: -6px; }
 
 /* ---------- tablet and phone ---------- */
 @media (max-width: 1100px) {
