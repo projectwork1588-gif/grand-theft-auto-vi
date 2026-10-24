@@ -165,12 +165,13 @@ def test_development_and_testing_workflows_are_unchanged(monkeypatch):
 
 # ------------------------------------------------------------------ production
 @pytest.fixture()
-def production(monkeypatch):
+def production(monkeypatch, db_ca_file):
     """ProductionConfig with every setting valid; each test breaks exactly one."""
     monkeypatch.setattr(config.ProductionConfig, "SECRET_KEY", "5f3a9c1e7b2d4a60" * 4)
     monkeypatch.setattr(config.ProductionConfig, "PUBLIC_ORIGINS", (PUBLIC,))
     monkeypatch.setattr(config.ProductionConfig, "DB_NAME", "gta6_vi")
     monkeypatch.setattr(config.ProductionConfig, "TRUSTED_PROXY_COUNT", 0)
+    monkeypatch.setattr(config.ProductionConfig, "DB_SSL_CA", db_ca_file)
     assert config.get_config("production") is config.ProductionConfig
     return monkeypatch
 

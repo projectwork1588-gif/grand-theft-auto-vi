@@ -5,6 +5,7 @@ Nothing secret lives in the source code: copy .env.example to .env and edit it.
 import os
 import re
 import secrets
+import ssl
 from datetime import timedelta
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -100,6 +101,10 @@ class Config:
     DB_NAME = os.getenv("DB_NAME", "gta6_vi")
     DB_USER = os.getenv("DB_USER", "valkyrie_app")
     DB_PASSWORD = os.getenv("DB_PASSWORD", "")
+    # DB_SSL_CA: path of a PEM file holding the CA certificate that signed the database server's certificate (a managed MySQL's "CA certificate"). Optional in
+    # development and testing (empty: the connector's default, an encrypted connection whose server is NOT verified). When it is set, db_kwargs() turns on
+    # certificate AND host-name verification, and a server without TLS is refused. REQUIRED in production: see check_database_tls().
+    DB_SSL_CA = os.getenv("DB_SSL_CA", "").strip()
     # Separate account used ONLY by scripts that create/drop tables (never by the running site).
     MIGRATE_DB_USER = os.getenv("MIGRATE_DB_USER", "valkyrie_migrator")
     MIGRATE_DB_PASSWORD = os.getenv("MIGRATE_DB_PASSWORD", "")
@@ -108,8 +113,10 @@ class Config:
 
     @classmethod
     def db_kwargs(cls):
-        """Arguments for mysql.connector.connect(). Strict mode and utf8mb4 are explicit."""
-        return {
+        """Arguments for mysql.connector.connect(). Strict mode and utf8mb4 are explicit. With DB_SSL_CA set, the server's certificate is checked against that CA and
+        its host name against DB_HOST (mysql-connector-python's ssl_ca / ssl_verify_cert / ssl_verify_identity); a failed check, or a server without TLS, is an error,
+        never a quiet fall-back to an unverified or unencrypted connection. The TLS versions stay at the connector's default (TLS 1.2 and newer)."""
+        kwargs = {
             "host": cls.DB_HOST,
             "port": cls.DB_PORT,
             "database": cls.DB_NAME,
@@ -121,6 +128,9 @@ class Config:
             "use_pure": True,
             "connection_timeout": 5,
         }
+        if cls.DB_SSL_CA:
+            kwargs.update(ssl_ca=cls.DB_SSL_CA, ssl_verify_cert=True, ssl_verify_identity=True)
+        return kwargs
 
     @classmethod
     def migration_kwargs(cls):
@@ -186,6 +196,28 @@ def check_origins(origins, require_https=False, required=False):
             raise RuntimeError("Refusing to start in production: TV_PUBLIC_ORIGINS must use https (the session cookie is marked Secure).")
 
 
+def check_database_tls(config):
+    """Raise RuntimeError unless `config` connects to MySQL with the server's certificate AND host name verified. Used for production only.
+
+    DB_SSL_CA must name a readable PEM file that really holds at least one CA certificate (a leaf or server certificate is refused: it could not anchor the
+    check). The connection options db_kwargs() builds must then switch both checks on and must not disable TLS, so a later edit that weakened them would stop
+    the site from starting. The messages name the setting, never a path's contents. Whether the server's certificate really matches the CA and DB_HOST is only
+    known at connection time, where a mismatch is an error (see Config.db_kwargs)."""
+    path = (config.DB_SSL_CA or "").strip()
+    if not path:
+        raise RuntimeError("Refusing to start in production: DB_SSL_CA is not set. Set it to the path of the database server's CA certificate (PEM), "
+                           "for example a Render secret file such as /etc/secrets/db-ca.pem (see docs/HOSTING.md).")
+    try:
+        context = ssl.create_default_context(cafile=path)             # reads and parses the file; it trusts nothing but what the file holds
+    except (OSError, ssl.SSLError, ValueError):
+        raise RuntimeError("Refusing to start in production: DB_SSL_CA does not name a readable PEM certificate file.") from None
+    if not context.get_ca_certs():
+        raise RuntimeError("Refusing to start in production: the file named by DB_SSL_CA holds no CA certificate.")
+    options = config.db_kwargs()
+    if not (options.get("ssl_ca") == path and options.get("ssl_verify_cert") is True and options.get("ssl_verify_identity") is True and not options.get("ssl_disabled")):
+        raise RuntimeError("Refusing to start in production: certificate and host-name verification are not switched on for the database connection.")
+
+
 def deployment_config_name(environ=None):
     """The configuration name for the WSGI entry point (wsgi.py), which both `flask --app wsgi run` and a production server import.
 
@@ -227,4 +259,5 @@ def get_config(name=None):
             raise RuntimeError("Refusing to start in production: DB_NAME is a test database.")
         check_secret_key(config.SECRET_KEY)
         check_origins(config.PUBLIC_ORIGINS, require_https=True, required=True)
+        check_database_tls(config)
     return config

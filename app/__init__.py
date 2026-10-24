@@ -40,8 +40,9 @@ def create_app(config_name=None):
         app.logger.setLevel(logging.INFO)       # the default (WARNING) would hide the line below; an operator who set a level of their own keeps it
     # One line an operator can look for. Only facts that are safe to print: which configuration, and yes/no or counts. Never the secret key, the database name,
     # user or password, or the origin addresses themselves.
-    app.logger.info("Starting with %s (secure session cookie: %s, public origins configured: %d, trusted proxies: %d)", config.__name__,
-                    "yes" if app.config["SESSION_COOKIE_SECURE"] else "no", len(app.config["PUBLIC_ORIGINS"]), app.config["TRUSTED_PROXY_COUNT"])
+    app.logger.info("Starting with %s (secure session cookie: %s, public origins configured: %d, trusted proxies: %d, database certificate verified: %s)", config.__name__,
+                    "yes" if app.config["SESSION_COOKIE_SECURE"] else "no", len(app.config["PUBLIC_ORIGINS"]), app.config["TRUSTED_PROXY_COUNT"],
+                    "yes" if config.db_kwargs().get("ssl_verify_cert") else "no")
     if config_name is None and config.__name__ == "DevelopmentConfig" and os.getenv("FLASK_ENV") is None and os.getenv("FLASK_RUN_FROM_CLI") != "true":
         # create_app() called directly (wsgi.py refuses this case outright) with FLASK_ENV unset: say so where an operator will see it.
         app.logger.warning("FLASK_ENV is not set, so this is running with DEVELOPMENT settings. A deployment must set FLASK_ENV=production.")

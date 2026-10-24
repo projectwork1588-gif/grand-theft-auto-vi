@@ -91,9 +91,9 @@ def test_every_setting_the_hosting_guide_names_exists_in_the_configuration():
     settings = set(re.findall(r"`((?:TV|DB|MIGRATE_DB|FLASK|SECRET)_[A-Z_]+|SECRET_KEY)`", guide))
     assert {"FLASK_ENV", "SECRET_KEY", "TV_PUBLIC_ORIGINS", "TV_TRUSTED_PROXIES", "TV_HSTS_MAX_AGE", "DB_HOST", "DB_PASSWORD"} <= settings
     known = text("app/config.py") + text(".env.example")
-    missing = sorted(name for name in settings if name not in known and name != "DB_SSL_CA")       # DB_SSL_CA is a proposal, named as one in section 5
+    missing = sorted(name for name in settings if name not in known)
     assert missing == [], f"the hosting guide names settings that the code does not read: {missing}"
-    assert "DB_SSL_CA" not in known, "DB_SSL_CA became real: update the hosting guide's section 5"
+    assert "DB_SSL_CA" in settings and "DB_SSL_CA" in known            # database TLS verification is built (Render + Aiven branch): the guide documents it as a setting, not a proposal
 
 
 def test_the_routes_the_hosting_guide_relies_on_exist(rules):

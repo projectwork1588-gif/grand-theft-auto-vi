@@ -267,13 +267,14 @@ def test_a_system_that_asks_for_reduced_motion_but_has_opted_in_still_sees_the_c
     assert all(line.strip().startswith("html.motion-on") for line in block.strip().splitlines())      # nothing is given back without the motion class
 
 
-def test_the_server_setting_that_overrides_a_systems_reduced_motion_is_a_development_setting(monkeypatch):
+def test_the_server_setting_that_overrides_a_systems_reduced_motion_is_a_development_setting(monkeypatch, db_ca_file):
     from app import config
     assert config.ProductionConfig.AUTOPLAY_ALWAYS is False                                           # a deployed site always respects a visitor's system setting
     # production now refuses to start without a real secret and its public https origin, so the test supplies them instead of relying on this machine's environment
     monkeypatch.setattr(config.ProductionConfig, "SECRET_KEY", "5f3a9c1e7b2d4a60" * 4)
     monkeypatch.setattr(config.ProductionConfig, "PUBLIC_ORIGINS", ("https://valkyrie.example.org",))
     monkeypatch.setattr(config.ProductionConfig, "DB_NAME", "gta6_vi")
+    monkeypatch.setattr(config.ProductionConfig, "DB_SSL_CA", db_ca_file)
     assert config.get_config("production") is config.ProductionConfig and config.get_config("development") is config.DevelopmentConfig
     js = (ROOT / "app" / "static" / "js" / "garage_concept.js").read_text(encoding="utf-8")
     assert "console.info" in js and "TV_AUTOPLAY_ALWAYS" in js                                        # when it is the only reason motion is on, the page says so

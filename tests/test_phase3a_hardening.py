@@ -270,15 +270,17 @@ def test_an_operators_own_log_level_is_respected():
     assert log.text == "" and level_after == logging.ERROR
 
 
-def test_production_reports_a_secure_cookie_in_the_startup_line(monkeypatch):
+def test_production_reports_a_secure_cookie_in_the_startup_line(monkeypatch, db_ca_file):
     """The line an operator looks for after a deployment. get_config('production') is satisfied with test values; no database is contacted."""
     monkeypatch.setattr(config.ProductionConfig, "SECRET_KEY", "5f3a9c1e7b2d4a60" * 4)
     monkeypatch.setattr(config.ProductionConfig, "PUBLIC_ORIGINS", ("https://valkyrie.example.org",))
     monkeypatch.setattr(config.ProductionConfig, "DB_NAME", "gta6_vi")
+    monkeypatch.setattr(config.ProductionConfig, "DB_SSL_CA", db_ca_file)
     with Capture() as log:
         log.logger.setLevel(logging.NOTSET)
         production = create_app("production")                                    # building the app does not open a database connection
     assert "Starting with ProductionConfig" in log.text and "secure session cookie: yes" in log.text and "public origins configured: 1" in log.text
+    assert "database certificate verified: yes" in log.text and db_ca_file not in log.text                 # the operator sees that the database check is on; the path is not printed
     assert "5f3a9c1e" not in log.text and production.config["SESSION_COOKIE_SECURE"] is True
 
 

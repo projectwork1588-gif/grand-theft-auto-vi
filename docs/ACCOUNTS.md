@@ -123,6 +123,9 @@ Every POST must carry the CSRF token **and**, if the browser sends an `Origin` h
 * `SECRET_KEY` is set, at least 32 characters, at least 10 distinct characters, and not a known placeholder (the example value in `.env.example` is rejected). Generate one with `python -c "import secrets; print(secrets.token_hex(32))"` (256 random bits from the operating system) and keep it out of Git. Changing it signs everyone out. Use the same value in every worker.
 * `TV_PUBLIC_ORIGINS` is set and every entry is https.
 * `DB_NAME` does not end in `_test` and is not the test database.
+* `DB_SSL_CA` names a readable PEM file that holds at least one CA certificate (the database server's CA, supplied by the host as a secret file; never committed). The database connection then
+  verifies the server's certificate and host name, and a server without TLS is refused; a missing, unreadable or non-CA file stops the site from starting. Development and testing are unchanged
+  when it is not set (`docs/HOSTING.md`, section 5).
 * `TV_TRUSTED_PROXIES` is a whole number from 0 to 5, written in plain digits. A malformed value (`abc`, `1.5`, `-1`, `+2`, blank, `1,2`) stops the site from starting in **every** environment; it is never read as "no proxies". Not set at all means 0.
 * `TV_HSTS_MAX_AGE` (optional): the lifetime, in seconds, of the `Strict-Transport-Security` header. The **production** config sends it (default 31536000, one year); development and testing never do. It is sent only on a response to a request that really arrived over https: behind a proxy that terminates TLS the site knows this only if `TV_TRUSTED_PROXIES` is set correctly (a client cannot fake it with a forwarded header; a test checks that). There is no `includeSubDomains` and no `preload`. `0` turns it off; a value that is not a whole number falls back to the default; nothing above two years is accepted. Test: `tests/test_http_headers.py`.
 

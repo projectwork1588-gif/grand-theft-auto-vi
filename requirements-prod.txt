@@ -1,0 +1,4 @@
+# Production (Render and other Linux hosts): the site's requirements plus the WSGI server. Not for a Windows developer machine (gunicorn needs Linux or macOS).
+# Build command: pip install -r requirements-prod.txt   Start command: see docs/HOSTING.md, section 9.
+-r requirements.txt
+gunicorn==26.2.0

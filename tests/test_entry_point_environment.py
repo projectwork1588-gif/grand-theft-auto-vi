@@ -34,11 +34,12 @@ def environment(monkeypatch):
 
 
 @pytest.fixture()
-def valid_production(environment):
+def valid_production(environment, db_ca_file):
     environment.setattr(config.ProductionConfig, "SECRET_KEY", GOOD_SECRET)
     environment.setattr(config.ProductionConfig, "PUBLIC_ORIGINS", (PUBLIC,))
     environment.setattr(config.ProductionConfig, "DB_NAME", "gta6_vi")
     environment.setattr(config.ProductionConfig, "TRUSTED_PROXY_COUNT", 0)
+    environment.setattr(config.ProductionConfig, "DB_SSL_CA", db_ca_file)
     return environment
 
 

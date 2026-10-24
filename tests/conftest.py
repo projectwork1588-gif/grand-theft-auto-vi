@@ -7,10 +7,20 @@ import pytest
 from app import create_app
 from app.config import TestingConfig
 from scripts.init_db import init_database
+from tests import tls_helpers
 
 
 CLIP_SLUGS = ("jason-duval", "lucia-caminos", "cal-hampton", "boobie-ike",
               "dre-quan-priest", "real-dimez", "raul-bautista", "brian-heder")
+
+
+@pytest.fixture(scope="session")
+def db_ca_file(tmp_path_factory):
+    """The path of a valid CA certificate file (a throwaway test CA, see tests/tls_helpers.py). Production refuses to start without DB_SSL_CA pointing at one, so
+    every test that builds a valid production configuration sets ProductionConfig.DB_SSL_CA to this."""
+    path = tmp_path_factory.mktemp("db-tls") / "db-ca.pem"
+    path.write_text(tls_helpers.TEST_CA_PEM, encoding="ascii")
+    return str(path)
 
 
 @pytest.fixture(scope="session")

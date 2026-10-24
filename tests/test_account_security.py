@@ -100,7 +100,7 @@ def test_a_long_random_secret_is_accepted():
     config.check_secret_key(secrets.token_hex(32))                                           # what the documented command produces
 
 
-def test_the_production_config_refuses_to_load_with_the_development_secret(monkeypatch):
+def test_the_production_config_refuses_to_load_with_the_development_secret(monkeypatch, db_ca_file):
     monkeypatch.setattr(config.ProductionConfig, "SECRET_KEY", "dev-only-insecure-key")
     with pytest.raises(RuntimeError):
         config.get_config("production")
@@ -110,6 +110,7 @@ def test_the_production_config_refuses_to_load_with_the_development_secret(monke
     monkeypatch.setattr(config.ProductionConfig, "SECRET_KEY", "5f3a9c1e7b2d4a60" * 4)
     monkeypatch.setattr(config.ProductionConfig, "PUBLIC_ORIGINS", ("https://valkyrie.example.org",))
     monkeypatch.setattr(config.ProductionConfig, "DB_NAME", "gta6_vi")
+    monkeypatch.setattr(config.ProductionConfig, "DB_SSL_CA", db_ca_file)
     assert config.get_config("production") is config.ProductionConfig                       # only the class is returned: nothing connects to a database
 
 
